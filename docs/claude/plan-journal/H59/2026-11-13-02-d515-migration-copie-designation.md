@@ -1,0 +1,7 @@
+- **Mise à jour (2026-11-13, lot D-277, migration de [[D-515]] §4)** : migration `20261113180000_d515_designation_suicide_assignation_v1`, seule, sans code consommateur (étape 1 de [[D-515]] §6).
+  - **Colonnes.** Sur `assignations`, sur le nommage de `cabinet_instruments` : `question_suicide_id` (TEXT), `question_suicide_option_non` (INTEGER), `question_suicide_copie` (JSONB, copie figée : instrument, énoncé, options verbatim). Nullables, sans défaut.
+  - **CHECK** `assignations_designation_suicide_coherente` : les trois toutes remplies ou toutes vides, remplies seulement si `pose_question_suicide IS TRUE`, copie seulement objet JSON. Sous « oui », la désignation absente reste admise : inconnue, jamais « non » (§7).
+  - **Aucune reprise** : l'existant reste NULL.
+  - **Contrat** `prisma/checks/d515_designation_suicide_assignation_v1_negatif.sql` en CI ; le contrat NF-7 exclut nommément cette contrainte de son compte sur `pose_question_suicide`.
+  - **Migrations de H59** : celle-ci s'ajoute aux deux de la fiche ; la troisième prévue (CHECK « valide ⇒ déclaré ») suit toujours l'allumage.
+  - **Reste** : merge, release-db approuvée par le responsable, constat par conteneur ; puis le lot de code.
