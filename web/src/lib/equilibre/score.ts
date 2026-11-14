@@ -78,8 +78,12 @@ function extraireValeurBrute(resultat: Record<string, unknown>, sousScore?: stri
     // lui-même (`scored: false` ET des items manquants) : le sous-score servi
     // tombe avec le total ([[D-517]], D-403 §6 — l'enquête SiiN incomplète ne
     // nourrit plus le besoin 3). Le motif est celui du total, et non
-    // « sous-score absent », qui se lirait comme un défaut du résultat.
-    if (resultat.scored === false && typeof resultat.missing === 'number' && resultat.missing > 0) {
+    // « sous-score absent », qui se lirait comme un défaut du résultat. Bornée
+    // au moteur `seuils_points`, le seul que vise D-517 : un autre moteur qui
+    // rendrait `scored: false` avec des manquants garde sa lecture de
+    // sous-score (revue PR-Agent de #2096).
+    if (resultat.type === 'seuils_points' && resultat.scored === false
+      && typeof resultat.missing === 'number' && resultat.missing > 0) {
       return { motif: 'recueil_incomplet' };
     }
     const porteurs = [resultat.subScores, resultat.scoresBesoins];
