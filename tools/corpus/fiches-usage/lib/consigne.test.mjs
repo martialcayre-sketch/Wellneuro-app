@@ -113,5 +113,10 @@ test('v7 : conditions entières, rien d’ajouté, un fait dans sa rubrique, ré
     assert.match(c, /« cet\s+examen »/);
   }
   assert.match(contreLecture, /une rubrique qui ne présente aucun usage n'a\s+pas à le dire/);
+  // Contre-revue Codex : une limite sourcée se restitue, et une condition de
+  // sécurité qu'aucune rubrique demandée ne couvre ne se tait pas.
+  assert.match(redaction, /telle limite qu'un claim établit lui-même se restitue/);
+  assert.match(redaction, /se restitue dans la rubrique demandée la plus proche de\s+son objet plutôt que d'être tue/);
+  assert.match(contreLecture, /restituée dans la rubrique demandée la plus proche de son objet, n'est pas\s+un débordement/);
   assert.match(contreLecture, /FIDÈLE si\s+aucun claim ne porte sur l'objet de la rubrique/);
 });

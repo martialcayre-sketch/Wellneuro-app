@@ -51,7 +51,8 @@ pas des contenus : ils bornent ce que le texte peut dire, ils n'apportent
 aucun fait. Ne les recopie pas et ne les nomme pas dans le texte. Ne les
 énonce pas non plus comme des faits, même par la négative : n'écris pas
 que la mesure n'est pas directe, pas standard ou pas validée, hors la
-réserve de la « question » et ce qu'impose le statut « non_valide ».
+réserve de la « question » et ce qu'impose le statut « non_valide ». Une
+telle limite qu'un claim établit lui-même se restitue, comme toute limite.
 
 - STATUT D'USAGE. « etaye_valide » : rien de plus que ce que les claims
   établissent. « preuves_limitees » : aucune formulation ne présente
@@ -122,7 +123,11 @@ la surveillance et le critère d'arrêt ; limites : les limites ;
 argument_preference : l'argument de préférence. Range chaque fait dans la
 rubrique dont il relève, et écris-le là seulement : un fait qui relève de
 l'objet d'une autre rubrique ne s'écrit pas, même porté par un claim, même
-si cette autre rubrique n'est pas demandée.
+si cette autre rubrique n'est pas demandée. Seule exception : quand le
+marqueur sécurité / admissibilité est « oui », une condition de sécurité ou
+d'admissibilité que porte un claim, et que l'objet d'aucune rubrique
+demandée ne couvre, se restitue dans la rubrique demandée la plus proche de
+son objet plutôt que d'être tue.
 
 MODE « fiche ». Rédige chaque rubrique demandée, et elles seules, dans
 l'ordre donné. Une rubrique ne répète pas sa voisine ; aucune ne déborde sur
