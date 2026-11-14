@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { contexteResolution, importsResolus } from '../bio-parcours/resolutionImports';
 
 // GARDE : QUI ÉCRIT LE CATALOGUE DES FICHES D'ASSIETTE ([[D-251]], lots 4 et 6).
 //
@@ -44,9 +45,19 @@ function occurrences(motif: RegExp): { fichier: string; n: number }[] {
     .filter(o => o.n > 0);
 }
 
-/** Les chemins que `fichier` importe (`from '…'`), tels qu'écrits. */
-function imports(fichier: string): string[] {
-  return [...readFileSync(path.join(RACINE, fichier), 'utf8').matchAll(/from\s+'([^']+)'/g)].map(m => m[1]);
+/**
+ * Les imports de `fichier` qui mènent à `motif` : par leur spécificateur
+ * (décodé) ou par le FICHIER atteint. LE PARSEUR ET LA RÉSOLUTION (lot
+ * `bp17-extension-bancs-garde`) : guillemets doubles, `import()`, `require`,
+ * import latéral, alias ou lien symbolique ne cachent plus l'import — l'ancien
+ * motif ne lisait que `from '…'`. Un import indéterminé (non constant, nom nu
+ * inconnu) mène à tout.
+ */
+let contexte: ReturnType<typeof contexteResolution> | undefined;
+function importsVers(fichier: string, motif: RegExp, source?: string): string[] {
+  return importsResolus(`web/src/${fichier.split(path.sep).join('/')}`, (contexte ??= contexteResolution()), source)
+    .filter(i => i.indetermine || motif.test(i.specificateur) || (i.atteint !== null && motif.test(i.atteint)))
+    .map(i => i.specificateur);
 }
 
 const CREER_VERSION = /\.ficheAssietteVersion\s*\.\s*create\s*\(/;
@@ -78,8 +89,19 @@ describe('Catalogue des fiches d’assiette — qui écrit (D-251, lots 4 et 6)'
   });
 
   it('le dépôt et la décision ne s’importent pas l’un l’autre (DC-16)', () => {
-    expect(imports(DECISION).filter(i => /ingestion|api\/internal/.test(i))).toEqual([]);
-    expect(imports(INGESTION).filter(i => /decision/.test(i))).toEqual([]);
+    expect(importsVers(DECISION, /ingestion|api\/internal/)).toEqual([]);
+    expect(importsVers(INGESTION, /decision/)).toEqual([]);
+    // CONTRE-ÉPREUVE (absente avant le lot) : les formes que l'ancien motif ne voyait pas.
+    for (const source of [
+      'import { x } from "./ingestion";',
+      "const i = await import('./ingestion');",
+      "import './ingestion';",
+      'const r = require("@/app/api/" + "internal/x/route");',
+      'const m = await import(chemin);',
+    ]) {
+      expect(importsVers(DECISION, /ingestion|api\/internal/, source), source).toHaveLength(1);
+    }
+    expect(importsVers(DECISION, /ingestion|api\/internal/, "import { y } from './controles';")).toEqual([]);
   });
 
   it('aucun code ne réécrit ni n’efface une version ou un acte, par Prisma ou en SQL brut', () => {

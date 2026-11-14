@@ -1,14 +1,21 @@
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import {
+import * as ts from 'typescript';
+import type { Node, PropertyAccessExpression } from 'typescript';
+
+// LIÉES UNE FOIS, au chargement : sous Vitest, chaque import nommé d'un paquet
+// CommonJS devient un accès par l'espace de noms du module, payé à chaque
+// appel — sur les deux millions de nœuds de `web/src`, le parcours en prenait
+// dix fois plus que le parseur lui-même (mesuré : 77 s contre 7 s).
+const {
   createSourceFile, forEachChild, isArrayLiteralExpression, isAsExpression, isBinaryExpression, isCallExpression,
   isElementAccessExpression, isExportDeclaration, isFunctionLike, isObjectLiteralExpression,
-  isExternalModuleReference, isIdentifier, isImportDeclaration, isImportTypeNode, isLiteralTypeNode, isMetaProperty,
-  isNewExpression, isNonNullExpression, isNumericLiteral, isParenthesizedExpression, isPropertyAccessExpression,
+  isExternalModuleReference, isIdentifier, isImportDeclaration, isImportEqualsDeclaration, isImportTypeNode,
+  isLiteralTypeNode, isMetaProperty, isNamedExports, isNamedImports, isNewExpression, isNonNullExpression, isNumericLiteral, isParenthesizedExpression, isPropertyAccessExpression,
   isSatisfiesExpression, isStringLiteralLike, isTemplateExpression, isTypeAssertionExpression, ScriptKind, ScriptTarget,
-  SyntaxKind, type Node, type PropertyAccessExpression,
-} from 'typescript';
+  SyntaxKind,
+} = ts;
 
 // Outillage des bancs BP-01 ([[D-266]]) — lecture du SOURCE, jamais exécuté
 // par l'application : aucun module de production ne l'importe (le banc des
@@ -81,12 +88,36 @@ export function specificateursImportes(source: string): string[] {
  * nœud : elle n'est jamais lue.
  */
 export function specificateursSyntaxiques(source: string, chemin = 'source.tsx'): string[] {
+  return importsSyntaxiques(source, chemin).map(i => i.specificateur);
+}
+
+/** Un import lu par le parseur : son spécificateur, et s'il n'importe QUE des types. */
+export interface ImportSyntaxique {
+  specificateur: string;
+  /**
+   * `import type …`, `export type … from`, `import { type A, type B }` (tous
+   * les noms en `type`), `import type X = require(…)` et `typeof import(…)` :
+   * effacés à la compilation, ils ne chargent rien. Tout le reste est un
+   * import de VALEUR — un import nommé sans `type`, même s'il ne sert qu'en
+   * type, est compté comme valeur (lecture prudente).
+   *
+   * VALABLE TANT QUE `web/tsconfig.json` ne pose ni `verbatimModuleSyntax` ni
+   * `preserveValueImports` (verrou de `resolutionImports.guard.test.ts`) :
+   * sous l'une ou l'autre, `import { type A } from 'x'` devient
+   * `import 'x'`, qui CHARGE le module (`wn-reviewer` sur ce lot).
+   */
+  typeSeul: boolean;
+}
+
+/** Comme `specificateursSyntaxiques`, chaque import marqué de type seul ou de valeur. */
+export function importsSyntaxiques(source: string, chemin = 'source.tsx'): ImportSyntaxique[] {
   const nature = chemin.endsWith('.tsx') ? ScriptKind.TSX
     : chemin.endsWith('.jsx') ? ScriptKind.JSX
       : /\.[cm]?js$/.test(chemin) ? ScriptKind.JS
         : /\.[cm]?ts$/.test(chemin) ? ScriptKind.TS : ScriptKind.TSX;
   const fichier = createSourceFile(chemin, source, ScriptTarget.Latest, true, nature);
-  const trouves: string[] = [];
+  const trouves: ImportSyntaxique[] = [];
+  const sentinelle = () => trouves.push({ specificateur: IMPORT_NON_CONSTANT, typeSeul: false });
   // L'APPELÉ est lu déballé — `(require)(x)`, `(0, require)(x)`,
   // `(require as F)(x)` —, et `module.require(x)` comme `module["require"](x)`
   // en sont (contre-passes Codex sur 302b80d8 et c847d0f5). Toute AUTRE
@@ -105,7 +136,10 @@ export function specificateursSyntaxiques(source: string, chemin = 'source.tsx')
   // Codex sur #2006. Un argument non constant ferme le verrou : il rend
   // `IMPORT_NON_CONSTANT`, qu'un banc traite comme un lecteur possible (le
   // bundler en ferait un module de contexte, qui embarque tout un dossier).
-  const argument = (n: Node | undefined) => trouves.push((n && valeurConstante(n)) ?? IMPORT_NON_CONSTANT);
+  const argument = (n: Node | undefined, typeSeul = false) => {
+    const valeur = n && valeurConstante(n);
+    trouves.push(valeur == null ? { specificateur: IMPORT_NON_CONSTANT, typeSeul: false } : { specificateur: valeur, typeSeul });
+  };
   // `define([...], f)` AMD : le bundler charge chaque dépendance du tableau
   // (`wn-reviewer` sur #2006). Le nom d'un module nommé, une fabrique ou un
   // objet ne chargent rien ; tout autre argument, et toute autre mention de
@@ -119,9 +153,9 @@ export function specificateursSyntaxiques(source: string, chemin = 'source.tsx')
       // Une fabrique À PARAMÈTRES ferme le verrou : le bundler renomme le
       // paramètre placé en face de `"require"` (ou le premier, sans tableau),
       // et `r("x")` charge `x` (contre-passe `wn-reviewer` sur b1524e75).
-      else if (isFunctionLike(a) && a.parameters.length > 0) trouves.push(IMPORT_NON_CONSTANT);
+      else if (isFunctionLike(a) && a.parameters.length > 0) sentinelle();
       else if (!(isStringLiteralLike(a) || isFunctionLike(a) || isObjectLiteralExpression(a))) {
-        trouves.push(IMPORT_NON_CONSTANT);
+        sentinelle();
       }
     }
   };
@@ -132,7 +166,7 @@ export function specificateursSyntaxiques(source: string, chemin = 'source.tsx')
   // (contre-passes `wn-reviewer` sur #2006). TOUTE mention ferme donc le
   // verrou, prose comprise. Aucune n'existe en production — ce fichier écrit le
   // mot en deux morceaux pour ne pas s'y compter.
-  if (PRAGMA_SOURCE_JSX.test(source)) trouves.push(IMPORT_NON_CONSTANT);
+  if (PRAGMA_SOURCE_JSX.test(source)) sentinelle();
   // `module.hot.accept(x)` et `module.hot.decline(x)` : le remplacement à
   // chaud de webpack charge `x` (routé de #2006 vers BP-17 PR 4). En
   // développement seulement — un build de production n'embarque rien —, mais
@@ -152,10 +186,23 @@ export function specificateursSyntaxiques(source: string, chemin = 'source.tsx')
     else argument(a);
   };
   const visiter = (n: Node): void => {
-    if (isImportDeclaration(n) || isExportDeclaration(n)) {
-      if (n.moduleSpecifier) argument(n.moduleSpecifier);
-    } else if (isExternalModuleReference(n)) argument(n.expression);
-    else if (isImportTypeNode(n) && isLiteralTypeNode(n.argument)) argument(n.argument.literal);
+    if (isImportDeclaration(n)) {
+      const clause = n.importClause;
+      const liaisons = clause?.namedBindings;
+      const typeSeul = !!clause && (
+        clause.isTypeOnly ||
+        (!clause.name && !!liaisons && isNamedImports(liaisons) && liaisons.elements.length > 0 &&
+          liaisons.elements.every(e => e.isTypeOnly))
+      );
+      argument(n.moduleSpecifier, typeSeul);
+    } else if (isExportDeclaration(n)) {
+      const clause = n.exportClause;
+      const typeSeul = n.isTypeOnly ||
+        (!!clause && isNamedExports(clause) && clause.elements.length > 0 && clause.elements.every(e => e.isTypeOnly));
+      if (n.moduleSpecifier) argument(n.moduleSpecifier, typeSeul);
+    } else if (isExternalModuleReference(n)) {
+      argument(n.expression, isImportEqualsDeclaration(n.parent) && n.parent.isTypeOnly);
+    } else if (isImportTypeNode(n) && isLiteralTypeNode(n.argument)) argument(n.argument.literal, true);
     else if (isCallExpression(n)) {
       const appele = deballer(n.expression);
       if (appele.kind === SyntaxKind.ImportKeyword || estRequire(appele)) {
@@ -184,9 +231,9 @@ export function specificateursSyntaxiques(source: string, chemin = 'source.tsx')
         argument(n.arguments?.[0]);
       }
     } else if (estRequire(n) || estDefine(n) || estHot(n)) {
-      if (!reconnus.has(n)) trouves.push(IMPORT_NON_CONSTANT);
+      if (!reconnus.has(n)) sentinelle();
     } else if (isMetaProperty(n) && n.keywordToken === SyntaxKind.ImportKeyword && !reconnus.has(n)) {
-      trouves.push(IMPORT_NON_CONSTANT);
+      sentinelle();
     }
     forEachChild(n, visiter);
   };

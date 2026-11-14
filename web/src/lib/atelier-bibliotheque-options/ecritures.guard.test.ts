@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { contexteResolution, designe, importsResolus } from '../bio-parcours/resolutionImports';
 
 // GARDE : QUI ÉCRIT ET QUI LIT LE TEXTE DE LA BIBLIOTHÈQUE DES OPTIONS
 // ([[D-480]] §3, §8 ; patron de `positions-expert/ecritures.guard.test.ts`).
@@ -50,7 +51,16 @@ const TABLES = '(?:bibliotheque_options_textes_actes|bibliotheque_options_textes
 const SQL_BRUT = new RegExp(`(?:INSERT\\s+INTO|UPDATE|DELETE\\s+FROM|TRUNCATE(?:\\s+TABLE)?)\\s+(?:public\\.)?"?${TABLES}\\b`, 'i');
 const SQL_LECTURE = new RegExp(`\\b(?:FROM|JOIN)\\s+(?:public\\.)?"?${TABLES}\\b`, 'i');
 const IMBRIQUEE = /\b(?:actes|texte)\s*:\s*\{\s*(?:create|createMany|connectOrCreate|upsert|update|updateMany|delete|deleteMany|set)\b/;
-const IMPORT_LECTURE = /import\s+(?!type\b)[^;]*from\s+['"]@\/lib\/atelier-bibliotheque-options\/(?:lecture|ecriture|http)['"]/;
+// L'IMPORT est lu par le parseur et RÉSOLU (lot `bp17-extension-bancs-garde`) :
+// relatif, `require`, `import()`, commentaire glissé, alias ou lien symbolique
+// ne le cachent plus ; un import indéterminé (non constant, nom nu inconnu)
+// compte comme lecteur. `import type` reste exempté.
+const MODULES_LECTURE = ['lecture', 'ecriture', 'http'].map(m => `web/src/lib/atelier-bibliotheque-options/${m}.ts`);
+let contexte: ReturnType<typeof contexteResolution> | undefined;
+const importeLaLecture = (fichier: string, source?: string) =>
+  importsResolus(`web/src/${fichier.split(path.sep).join('/')}`, (contexte ??= contexteResolution()), source).some(
+    i => !i.typeSeul && designe(i, /(^|\/)atelier-bibliotheque-options\/(?:lecture|ecriture|http)$/, MODULES_LECTURE),
+  );
 
 describe('Bibliothèque des options — qui écrit et qui lit le texte (D-480 §3, §8)', () => {
   it('chaque table ne reçoit d’insertion que dans `ecriture.ts` — et y en reçoit (le banc n’est pas vide)', () => {
@@ -70,17 +80,32 @@ describe('Bibliothèque des options — qui écrit et qui lit le texte (D-480 §
       || fichier.startsWith(path.join('app', 'api', 'praticien', 'atelier-options') + path.sep);
     for (const m of MODELES) expect(occurrences(modele(m, LIRE)).filter(o => !admis(o.fichier))).toEqual([]);
     expect(occurrences(SQL_LECTURE).filter(o => !admis(o.fichier))).toEqual([]);
-    expect(occurrences(IMPORT_LECTURE).filter(o => !admis(o.fichier))).toEqual([]);
-    // Le banc n'est pas vide : la lecture lit bien.
+    expect(SOURCES.map(s => s.fichier).filter(f => !admis(f) && importeLaLecture(f))).toEqual([]);
+    // Le banc n'est pas vide : la lecture lit bien, et ses routes l'importent.
     expect(occurrences(modele('bibliothequeOptionTexte', LIRE)).length).toBeGreaterThan(0);
-  });
+    expect(SOURCES.map(s => s.fichier).filter(f => admis(f) && importeLaLecture(f)).length).toBeGreaterThan(0);
+    // Le parseur et le résolveur lisent tout `web/src` : délai élargi.
+  }, 120_000);
 
   it('la garde rougit sur une source fabriquée (elle n’est pas décorative)', () => {
     expect(modele('bibliothequeOptionTexteActe', REECRIRE).test('tx.bibliothequeOptionTexteActe.update({})')).toBe(true);
     expect(SQL_BRUT.test('DELETE FROM public.bibliotheque_options_textes')).toBe(true);
     expect(SQL_LECTURE.test('SELECT * FROM "bibliotheque_options_textes_actes"')).toBe(true);
     expect(IMBRIQUEE.test('actes: { create: {} }')).toBe(true);
-    expect(IMPORT_LECTURE.test("import { lireAtelierOptions } from '@/lib/atelier-bibliotheque-options/lecture';")).toBe(true);
-    expect(IMPORT_LECTURE.test("import type { AtelierOptions } from '@/lib/atelier-bibliotheque-options/lecture';")).toBe(false);
+    const neuf = path.join('lib', 'neuf', 'a.ts');
+    for (const source of [
+      "import { lireAtelierOptions } from '@/lib/atelier-bibliotheque-options/lecture';",
+      "import { lireAtelierOptions } from '../atelier-bibliotheque-options/lecture';",
+      'import/**/"@/lib/atelier-bibliotheque-options/ecriture";',
+      'const h = require("@/lib/atelier-bibliotheque-options/" + "http");',
+      'const m = await import(chemin);',
+    ]) {
+      expect(importeLaLecture(neuf, source), source).toBe(true);
+    }
+    expect(importeLaLecture(neuf, "import type { AtelierOptions } from '@/lib/atelier-bibliotheque-options/lecture';")).toBe(false);
+    // Tous les noms en `type` : effacé à la compilation (tant que `verbatimModuleSyntax` reste absent, verrou commun).
+    expect(importeLaLecture(neuf, "import { type AtelierOptions } from '@/lib/atelier-bibliotheque-options/lecture';")).toBe(false);
+    expect(importeLaLecture(neuf, "import { type AtelierOptions, lireAtelierOptions } from '@/lib/atelier-bibliotheque-options/lecture';")).toBe(true);
+    expect(importeLaLecture(neuf, "import { x } from '@/lib/atelier-bibliotheque-options/etat';")).toBe(false);
   });
 });
