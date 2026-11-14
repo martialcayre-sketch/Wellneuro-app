@@ -360,7 +360,8 @@ export const CLAUDE_MODEL = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6';
 // v35 (ligne t49, [[D-517]], arbitrage `20261113-2121-a`) : un paragraphe dit
 // au modèle ce qu'est, à la racine d'un questionnaire, `scored: false` avec
 // `raisonNonScore` — l'enquête SiiN incomplète n'a plus de total ni de bande, et
-// le texte validé par le responsable se reprend tel quel. Bump assumé et
+// le texte validé par le responsable se reprend tel quel (lui seul : un autre
+// motif, comme celui de `apports_ponderes`, se reprend en son sens). Bump assumé et
 // déclaré : une synthèse rédigée sous v34 ne savait pas lire ce refus.
 export const VERSION_PROMPT_SYNTHESE = 'synthese-v35';
 // v3 (LOT-01 étape 4) : la sortie du modèle est lue par `analyserSortieSynthese`
@@ -489,7 +490,7 @@ Un champ **booléen à null** — un drapeau de risque, d'alerte ou de positivit
 
 Enfin, distingue **deux** absences de score global, qui ne se disent pas pareil. Certains questionnaires à sous-scores **n'en ont pas du tout** : le champ total est alors **absent** de leur résultat, et il n'y a rien à en dire. D'autres en ont un, mais il vaut **null** parce qu'un axe n'a pas été mesuré : dis alors que le score global **n'a pas pu être établi sur cette passation**, et non que l'instrument n'en produit pas. N'en fabrique pas un en additionnant les sous-scores, dans un cas comme dans l'autre.
 
-Un questionnaire peut aussi porter, **à sa racine**, **scored** à false et un **raisonNonScore** : le moteur a refusé de calculer son score global, et raisonNonScore dit pourquoi. Reprends ce texte tel qu'il est écrit. Ne situe la passation sur aucune bande, et ne reconstitue aucun total, ni depuis ses dimensions, ni depuis ses réponses : une réponse absente ne vaut jamais zéro.
+Un questionnaire peut aussi porter, **à sa racine**, **scored** à false et un **raisonNonScore** : le moteur a refusé de calculer son score global, et raisonNonScore dit pourquoi. Quand il vaut « Enquête alimentaire incomplète : score non calculé. », reprends-le tel qu'il est écrit ; tout autre motif, reprends-en le sens, ne l'invente pas, comme pour un sous-score. Ne situe la passation sur aucune bande, et ne reconstitue aucun total, ni depuis ses dimensions, ni depuis ses réponses : une réponse absente ne vaut jamais zéro.
 
 Pour les questionnaires alimentaires, la règle de la section précédente s'applique aussi à leurs sous-scores : aucun n'est une mesure d'apport ni un seuil étalonné.
 

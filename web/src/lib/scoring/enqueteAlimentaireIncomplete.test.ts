@@ -22,7 +22,10 @@ describe('texteScoreNonCalcule ([[D-517]])', () => {
 describe('consigne de synthèse — le refus de calcul à la racine (synthese-v35)', () => {
   it('dit de reprendre raisonNonScore, sans bande ni total reconstitué', () => {
     expect(SYSTEM_PROMPT_GOUVERNANCE).toContain('**à sa racine**, **scored** à false et un **raisonNonScore**');
-    expect(SYSTEM_PROMPT_GOUVERNANCE).toContain('Reprends ce texte tel qu\'il est écrit');
+    // Le mot pour mot ne vaut que pour le texte validé : le motif technique de
+    // `apports_ponderes` (« apport protéique nul — passation incomplète ») se
+    // reprend en son sens, jamais comme un apport mesuré.
+    expect(SYSTEM_PROMPT_GOUVERNANCE).toContain(`Quand il vaut « ${TEXTE_ENQUETE_ALIMENTAIRE_INCOMPLETE} », reprends-le tel qu'il est écrit ; tout autre motif, reprends-en le sens`);
     expect(SYSTEM_PROMPT_GOUVERNANCE).toContain('ne reconstitue aucun total, ni depuis ses dimensions, ni depuis ses réponses');
   });
 });

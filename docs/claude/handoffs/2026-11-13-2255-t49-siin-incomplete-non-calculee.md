@@ -52,6 +52,11 @@ Appliquer [[D-403]] §6 (ligne t49 du §8 du plan, fiche H40) : l'enquête SiiN 
 - Recomptage de production avant merge, le 2026-11-13 vers 21 h 50 UTC, par conteneur détaché en lecture seule, agrégats seulement : 20 SiiN à 57 items, toutes complètes ; 8 formes courtes ; **0 passation partielle**. Résultat identique au cadrage.
 - Contre-revue Codex P0 en mode `revue` sur le diff `68cc8c75` : conforme, aucun constat. Codex dit ne pas pouvoir vérifier la normalisation des réponses vides. La session l'a vérifiée : `getVal` rend `null` pour `undefined`, `null` et la chaîne vide, et `NaN` pour une valeur non numérique, deux cas comptés manquants.
 - T1 complet (`npm run check`) et suite Vitest entière drapeau allumé (`npm run test:siin57`) : résultats dans la PR.
+- Revue interne `wn-reviewer` sur le diff local, avant le premier push (#2089) : GO, aucun P0 ni P1. Trois P2 corrigés dans le commit suivant :
+  - le mot pour mot de la consigne v35 est réservé au texte validé, parce que le motif technique de `Q_ALI_03` (« apport protéique nul — passation incomplète ») aurait été repris tel quel ; empreintes v35 reportées, D-517 §3 complétée ;
+  - les commentaires d'`orientationEngine.ts` et de `plancherOrientation.guard.test.ts` disent désormais que le moteur refuse lui-même le recueil ;
+  - D-517 §4 nomme la discordance de rythme, laissée hors du périmètre.
+- Après ces corrections : 134 fichiers (lot et `src/lib/clinical`) verts dans les deux positions du drapeau ; `bancs-outillage-check` et `tsc` à 0.
 
 ## Problèmes ouverts
 

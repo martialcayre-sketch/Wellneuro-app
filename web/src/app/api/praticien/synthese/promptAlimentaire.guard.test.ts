@@ -171,7 +171,9 @@ const SOURCE_ROUTE = readFileSync(join(__dirname, '../../../../lib/synthese/gene
 // part par `promptReglesNonServies.guard.test.ts`.
 // v35 (2026-11-13, D-517, t49) : un paragraphe sur `scored: false` et `raisonNonScore` à la
 // racine d'un questionnaire (enquête SiiN incomplète) ; aucune autre ligne ne bouge.
-const EMPREINTE_V35 = 'cff2deb70e027e4b';
+// Retouché avant tout service (revue P0) : le mot pour mot réservé au texte validé,
+// tout autre motif repris en son sens (D-517 §3).
+const EMPREINTE_V35 = '4f3c795c70ca0ba8';
 
 /**
  * La seule phrase de la consigne autorisée à attribuer une validité — parce

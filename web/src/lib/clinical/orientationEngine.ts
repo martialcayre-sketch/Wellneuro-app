@@ -493,6 +493,10 @@ export function derniereReponseParQuestionnaire(reponses: ReponseOrientation[]):
  * l'a trouvé : aucune règle d'orientation publiée ne lit cette bande
  * aujourd'hui, et fermer `seuils_points` est un geste clinique qui demande sa
  * propre décision.
+ * DEPUIS [[D-517]] (t49, 2026-11-13), cette décision est prise : un seul des 57
+ * items manquant rend `scored: false`, `total: null`, `interpretation: null`.
+ * Le paragraphe ci-dessus décrit l'état d'avant ; la garde d'`extraireCible`
+ * reste, en second rideau, pour les passations enregistrées avant elle.
  *
  * ASYMÉTRIE À NE PAS PERDRE — `Q_MOD_03` est immunisé PAR CONSTRUCTION, et
  * `Q_MOD_01` ne l'est pas. Le moteur `plaintes_actuelles` de `Q_MOD_03` fait de
@@ -652,7 +656,10 @@ function extraireCible(scores: ScoresStockes, sousScore: string | undefined): {
   // `sum` la retire depuis #561. Une enquête SIIN abandonnée après trois items
   // rend donc un total de quelques points sur 90 — bande « danger » —, et
   // `R2-ALI-01` y engagerait un PACK. C'est le scénario du dessus, transposé du
-  // sous-score au score global.
+  // sous-score au score global. Depuis [[D-517]], le moteur refuse lui-même ce
+  // recueil (`interpretation: null`) : cette garde en devient le second rideau,
+  // gardé pour les résultats d'avant et pour tout moteur qui publierait ses
+  // comptes sans retirer sa bande.
   //
   // `psqi` (`Q_SOM_01`) publie `missing`/`repondus` depuis le lot de signature
   // et passe donc par cette garde ; `Q_STR_02` (`sum`) rend déjà
