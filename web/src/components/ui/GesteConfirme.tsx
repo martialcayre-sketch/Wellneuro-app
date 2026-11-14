@@ -11,8 +11,8 @@ import { Button, type ButtonVariant } from '@/components/ui/Button';
  *
  * Patron de l'atelier de règles (« Confirmer la désactivation » / « Annuler »)
  * et du prototype PRA-4 : un bloc `alertdialog` dans le flux, pas un panneau
- * superposé. Le focus va à la question à l'ouverture ; « Annuler » ou Échap le
- * rendent au déclencheur.
+ * superposé. Le focus va à la question à l'ouverture ; « Annuler », Échap ou
+ * la confirmation le rendent au déclencheur, tant qu'il existe.
  *
  * Aucun texte ici : chaque appelant passe les siens, pris de [[D-488]].
  */
@@ -41,14 +41,20 @@ export function GesteConfirme({
   const rendreFocus = useRef(false);
   const idQuestion = useId();
 
+  // Le focus revient au déclencheur après « Annuler » comme après la
+  // confirmation (constat PR-Agent sur #2139) : un geste refusé laisse la
+  // ligne en place, et le clavier ne doit pas retomber sur la page. Pendant
+  // l'action, l'appelant désactive le déclencheur, qui ne peut pas recevoir
+  // le focus : on attend qu'il redevienne actif. S'il a disparu (la ligne est
+  // partie avec le succès), il n'y a plus rien à rendre.
   useEffect(() => {
     if (ouverte) {
       blocRef.current?.focus();
-    } else if (rendreFocus.current) {
+    } else if (rendreFocus.current && !desactive && declencheurRef.current) {
       rendreFocus.current = false;
-      declencheurRef.current?.focus();
+      declencheurRef.current.focus();
     }
-  }, [ouverte]);
+  }, [ouverte, desactive]);
 
   function annuler() {
     rendreFocus.current = true;
@@ -93,6 +99,7 @@ export function GesteConfirme({
           type="button"
           disabled={desactive}
           onClick={() => {
+            rendreFocus.current = true;
             setOuverte(false);
             onConfirmer();
           }}

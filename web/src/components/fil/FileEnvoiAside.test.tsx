@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { FileEnvoiAside } from './FileEnvoiAside';
 
@@ -151,8 +151,10 @@ describe('FileEnvoiAside', () => {
     await envoyerEtConfirmer();
 
     expect(await screen.findByText('Envoi impossible : Dossier clos.')).toBeTruthy();
-    // L'échec n'a pas consommé le brouillon : le geste reste possible.
-    expect(await screen.findByRole('button', { name: /envoyer \(2\)/i })).toBeTruthy();
+    // L'échec n'a pas consommé le brouillon : le geste reste possible, et le
+    // focus lui revient (constat PR-Agent sur #2139), pas à la page.
+    const declencheur = await screen.findByRole('button', { name: /envoyer \(2\)/i });
+    await waitFor(() => expect(document.activeElement).toBe(declencheur));
   });
 
   it('garde l’état connu quand la relecture après envoi échoue', async () => {

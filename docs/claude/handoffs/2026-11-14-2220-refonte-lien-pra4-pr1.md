@@ -34,7 +34,7 @@ Poser dans le code les réponses (a) de D-481 (complément DOC-13) qui touchent 
 ## Problèmes ouverts
 
 - Le sélecteur de statut des assignations récentes n'a pas de libellé accessible ; le poser demande un texte hors de D-488 (à inscrire au registre avant tout code).
-- Après « Confirmer l'envoi » dans la Bibliothèque, le déclencheur revient désactivé pendant l'envoi : le focus retombe sur la page jusqu'à la relecture.
+- Constat PR-Agent sur #2139 (focus perdu après la confirmation) : corrigé dans un second commit. Le focus revient au déclencheur dès qu'il redevient actif, s'il existe encore ; banc ajouté au refus d'envoi du Fil du jour, prouvé rouge sans le correctif. Après un succès, la ligne disparaît et il n'y a plus de déclencheur.
 - Hors PRA-4 (inchangé) : `chargerBibliotheque` avale l'échec ; `bibliotheque/options` sans entrée ; décor après COM-1.
 
 ## Prochaine action exacte
