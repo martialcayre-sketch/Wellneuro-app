@@ -38,6 +38,7 @@ import { isMotifValide } from '@/lib/consultation/motifs';
 import type { QuestionnaireDef } from '@/lib/questionnaire-types';
 import { definitionLectureAgendaAli } from './libellesAgendas';
 import type {
+  BiologieExport,
   ConsultationExport,
   DonneesDateesExport,
   PassationExport,
@@ -908,5 +909,26 @@ export function masquerSynthese(s: SyntheseExport, masquer: Masqueur): SyntheseE
     ...s,
     syntheseJson: masquerProfond(s.syntheseJson, masquer),
     notesPraticien: masquerOuNull(s.notesPraticien, masquer),
+  };
+}
+
+/**
+ * La biologie ([[D-519]] §4) : l'intervalle et l'unité sont des textes relevés
+ * sur le compte rendu, masqués comme tout texte libre ; le laboratoire est
+ * RETIRÉ (il peut situer le patient). Valeur, date et libellé du catalogue ne
+ * sont pas des textes libres.
+ */
+export function masquerBiologie(b: BiologieExport, masquer: Masqueur): BiologieExport {
+  return {
+    ...b,
+    analytes: b.analytes.map(a => ({
+      ...a,
+      mesures: a.mesures.map(m => ({
+        ...m,
+        unite: masquerOuNull(m.unite, masquer),
+        intervalle: 'texte' in m.intervalle ? { texte: masquer(m.intervalle.texte) } : m.intervalle,
+        laboratoire: null,
+      })),
+    })),
   };
 }

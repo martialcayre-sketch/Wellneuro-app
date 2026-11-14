@@ -755,8 +755,9 @@ traitement n'existe** : ni code d'extraction, ni table, ni drapeau.
     les traitements et l'état inflammatoire sont des données de santé.
   - **Ce qui ne change pas.** Base légale et finalité : le suivi du patient
     par son praticien. **Aucun destinataire, aucun sous-traitant, aucun flux
-    nouveau** ; rien n'en part à l'IA, et l'export du dossier, qui ne porte
-    aucun résultat de biologie, ne le porte pas non plus. Le laboratoire et
+    nouveau** ; rien n'en part à l'IA, et l'export du dossier ne le porte
+    pas (il porte les résultats de biologie depuis [[D-519]], jamais leur
+    contexte). Le laboratoire et
     l'heure du prélèvement restent ceux que l'import lit déjà ; le sexe et le
     statut menstruel restent ceux de [[D-335]], affichés à côté, jamais
     recopiés.
@@ -1257,7 +1258,7 @@ données ? », accusé exigé ([[D-364]] §4).
 
 | Destinataire | Traitement, données, geste | Réserve |
 |---|---|---|
-| OpenAI (ChatGPT, offre individuelle) | analyse du dossier par un outil d'IA externe choisi par le praticien ; données : l'export pseudonymisé (version « Pour une IA externe », [[D-252]] §2), qui porte aussi les données physiologiques et les traitements datés du dossier ([[D-391]] §2, déclaré le 2026-10-28 ; patient informé par la v22) ; geste : téléchargement, puis envoi par le praticien lui-même ; transfert hors de l'Union | aucun accord de sous-traitance (art. 28), aucun mécanisme de transfert contractuel ; base légale (art. 6 et 9) à établir avec le conseil. Ce trou rejoint ceux de [[D-283]] §9, à l'échéance du 2027-06-30 ([[D-265]]) |
+| OpenAI (ChatGPT, offre individuelle) | analyse du dossier par un outil d'IA externe choisi par le praticien ; données : l'export pseudonymisé (version « Pour une IA externe », [[D-252]] §2), qui porte aussi les données physiologiques et les traitements datés du dossier ([[D-391]] §2, déclaré le 2026-10-28 ; patient informé par la v22) et, depuis le 2026-11-14, les résultats de biologie validés et lus ([[D-519]] ; patient non encore informé, écart daté ci-dessous) ; geste : téléchargement, puis envoi par le praticien lui-même ; transfert hors de l'Union | aucun accord de sous-traitance (art. 28), aucun mécanisme de transfert contractuel ; base légale (art. 6 et 9) à établir avec le conseil. Ce trou rejoint ceux de [[D-283]] §9, à l'échéance du 2027-06-30 ([[D-265]]) |
 
 **Envois suspendus depuis le 2026-11-05 ([[D-449]] §3).** Le responsable
 n'envoie plus d'export de dossier à ChatGPT. C'est son geste : l'application
@@ -1290,6 +1291,32 @@ La profession et les lieux cités dans un texte libre ne sont pas masqués
 automatiquement : la relecture avant l'envoi reste demandée. Le document reste
 **pseudonymisé** : le RGPD s'y applique entièrement, et la réserve du tableau
 ci-dessus est inchangée.
+
+**Biologie dans l'export, le 2026-11-14 ([[D-519]], qui amende [[D-252]]
+§4).** Les deux versions de l'export portent désormais les résultats de
+biologie validés par le praticien. Ceux d'un import n'y figurent qu'après la
+lecture consignée ([[D-268]]). Chaque mesure donne la valeur, l'unité, la
+date du prélèvement et l'intervalle imprimé par le laboratoire, sans
+interprétation. La version « Pour une IA externe » retire le nom du
+laboratoire, écrit les dates en jours relatifs et masque l'intervalle et
+l'unité comme tout texte libre. Elle ne porte jamais :
+
+- le compte rendu ;
+- les commentaires du laboratoire ;
+- le contexte du prélèvement ;
+- les statuts ni les constats du praticien.
+
+**Écart daté, choisi par le responsable le 2026-11-14 ([[D-519]] §6).** Une
+catégorie nouvelle sort ainsi vers OpenAI. Or « Vos données personnelles »
+v23 ne le dit pas : le paragraphe ChatGPT parle d'« une version de votre
+dossier », sans en détailler le contenu. Le §2 veut l'information **avant**
+la sortie. Le responsable a retenu de servir le code sans nouvelle version,
+au motif que les envois sont suspendus ([[D-449]] §3). L'écart se lève par
+la première de deux conditions :
+
+- une version de « Vos données personnelles » qui dit que les résultats
+  d'analyses figurent dans cette version ;
+- la reprise des envois, qui l'exige d'abord.
 
 **Déclaré le 2026-10-15 (D4, [[D-299]]) :** OpenAI figure au tableau ci-dessus et dans « Vos données personnelles » v18, accusé exigé ; le flux est inchangé. La contre-lecture des fiches d'assiette par OpenAI s'exécute hors de l'application, sur le seul texte des fiches, sans donnée personnelle : elle est déclarée par `docs/TRUST_IA_FICHES_ASSIETTE.md` et n'est pas un sous-traitant de données patient. Le constat d'origine suit, inchangé.
 

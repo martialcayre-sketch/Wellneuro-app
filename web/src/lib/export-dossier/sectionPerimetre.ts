@@ -38,7 +38,7 @@ const VERSION_COMPLETE =
 const CONTENU =
   'Contenu : 1. renseignements administratifs ; 2. fiche signalétique et anamnèse déposées par le ' +
   'patient ; 3. réponses à tous les questionnaires soumis, avec les scores calculés à la soumission ; ' +
-  '4. dernière synthèse validée par le praticien.';
+  '4. dernière synthèse validée par le praticien ; 5. résultats de biologie validés par le praticien.';
 
 // Les lignes datées du dossier ([[D-391]] §2) : le praticien en pose aussi.
 // Dit seulement quand le dossier en porte, pour qu'un export sans ligne reste
@@ -47,7 +47,8 @@ const CONTENU_AVEC_LIGNES =
   'Contenu : 1. renseignements administratifs ; 2. données physiologiques et traitements datés du ' +
   'dossier, déclarés par le patient ou confirmés par le praticien, puis fiche signalétique et anamnèse ' +
   'déposées par le patient ; 3. réponses à tous les questionnaires soumis, avec les scores calculés à ' +
-  'la soumission ; 4. dernière synthèse validée par le praticien.';
+  'la soumission ; 4. dernière synthèse validée par le praticien ; 5. résultats de biologie validés par ' +
+  'le praticien.';
 
 const ABSENCE =
   "Une donnée absente n'est jamais une valeur normale ni un zéro : « Non renseigné » ou « Sans " +
@@ -66,7 +67,9 @@ const SCORES =
 const NON_INCLUS =
   "Non inclus : les questionnaires commencés mais non soumis (brouillons restés sur l'appareil du " +
   "patient), les saisies d'un agenda non encore clôturé, l'espace « Ce qui compte pour moi », les " +
-  'résultats de biologie et les synthèses non validées.';
+  'synthèses non validées et, pour la biologie, les comptes rendus eux-mêmes, les commentaires du ' +
+  "laboratoire, les circonstances des prélèvements et les résultats d'un compte rendu dont la lecture " +
+  "n'est pas consignée.";
 
 // [[D-512]] §3 : un dossier sans aucune date enregistrée n'a pas de J0.
 const SANS_JOUR_ZERO =

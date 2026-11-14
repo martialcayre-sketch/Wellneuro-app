@@ -41,6 +41,10 @@ const ACCES_ADMIS = [
   // n'écrivent que dans la table des constats sur un besoin.
   'web/src/lib/constats-besoin/ecriture.ts',
   'web/src/lib/constats-besoin/lecture.ts',
+  // L'export PDF du dossier ([[D-519]]) : lit les lignes du dossier, leur fil
+  // et leur ligne lue pour restituer les mesures qui font foi (valeur, unité,
+  // date) — aucune écriture, aucune qualification.
+  'web/src/lib/export-dossier/assembler.ts',
   // Seul chemin d'un import vers les résultats : la décision du praticien.
   'web/src/lib/biology-library/import/decisions.ts',
   // L'entrée publiée de BioFlow ([[D-306]] §1) NOMME la table parmi celles
@@ -113,6 +117,10 @@ const FAITS_ADMIS = [
   'web/src/app/api/praticien/biologie/resultats/route.ts',
   // Série des mesures : transmet la charge de la route au rendu attribué.
   'web/src/components/patient-cockpit/EstimeMesurePanel.tsx',
+  // Export PDF du dossier ([[D-519]] §3) : l'intervalle lu, cité attribué au
+  // laboratoire, avec les silences de §5 ; jamais la marque.
+  'web/src/lib/export-dossier/assembler.ts',
+  'web/src/lib/export-dossier/biologieExport.ts',
 ];
 
 const MOTIF_FAITS = /\b(?:(?:intervalle|marquage)(?:Lu|_lu|NonTranscrit|_non_transcrit)|faitsLaboratoire)\b/;
