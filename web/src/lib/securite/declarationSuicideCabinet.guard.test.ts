@@ -219,13 +219,25 @@ describe('D-515 §4 — la copie de la désignation n’a qu’un écrivain', ()
     expect(nomment).toEqual(['lib/securite/declarationSuicideCabinet.ts']);
   });
 
+  // L'identifiant ENTIER, pas l'appel `nom(` : la ligne d'import attrape
+  // aussi un alias, un passage par référence ou une réexportation (revue
+  // wn-reviewer de 8805bce1, P3-1).
+  const NOMME_LE_CONSTRUCTEUR = /\bcopieDesignationSuicide\b/;
+  const CONSTRUCTEUR = 'lib/securite/declarationSuicideCabinet.ts';
+
   it('le constructeur n’a qu’un appelant de production : l’envoi (revue wn-reviewer de #2103)', () => {
     const appelants = sources(RACINE_SRC)
-      .filter(fichier => /copieDesignationSuicide\(/.test(sansCommentaires(readFileSync(fichier, 'utf8'))))
+      .filter(fichier => NOMME_LE_CONSTRUCTEUR.test(sansCommentaires(readFileSync(fichier, 'utf8'))))
       .map(fichier => path.relative(RACINE_SRC, fichier))
-      .filter(fichier => fichier !== 'lib/securite/declarationSuicideCabinet.ts')
+      .filter(fichier => fichier !== CONSTRUCTEUR)
       .sort();
     expect(appelants).toEqual(['app/api/praticien/file-envoi/envoyer/route.ts']);
+  });
+
+  it('et son propre fichier ne le nomme qu’une fois : sa déclaration', () => {
+    const texte = sansCommentaires(readFileSync(path.join(RACINE_SRC, CONSTRUCTEUR), 'utf8'));
+    expect(texte.match(new RegExp(NOMME_LE_CONSTRUCTEUR.source, 'g'))).toHaveLength(1);
+    expect(texte).toMatch(/export function copieDesignationSuicide\(/);
   });
 
   it('et l’envoi, qui l’écrit, ne la nomme pas : il la reçoit entière du constructeur', () => {
