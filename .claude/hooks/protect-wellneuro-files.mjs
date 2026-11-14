@@ -104,6 +104,10 @@ const MOTIFS_DESTRUCTIFS = [
   // (PR-Agent, #2137) : la RLS ne protège plus ce qu'elle protégeait.
   { nom: "GRANT à un rôle ouvert", motif: /\bgrant\b[^;]*\bto\s+[^;]*\b(public|anon|authenticated)\b/ },
   { nom: "ALTER POLICY", motif: /\balter\s+policy\b/ },
+  // Contourner la RLS sans toucher à la politique : un rôle BYPASSRLS ou
+  // SUPERUSER, ou un nouveau propriétaire de table (PR-Agent, #2137).
+  { nom: "BYPASSRLS ou SUPERUSER", motif: /\b(bypassrls|superuser)\b/ },
+  { nom: "OWNER TO", motif: /\bowner\s+to\b/ },
   { nom: "session_replication_role", motif: /\bsession_replication_role\b/ }
 ];
 

@@ -117,6 +117,7 @@ for (const sql of [
   'CREATE TRIGGER "t" BEFORE TRUNCATE ON "x" FOR EACH STATEMENT EXECUTE FUNCTION f();',
   'REVOKE UPDATE, DELETE, TRUNCATE ON "x" FROM app;',
   'DO $$ BEGIN REVOKE EXECUTE ON FUNCTION f() FROM anon; END $$;',
+  'ALTER ROLE app NOBYPASSRLS NOSUPERUSER;',
 ]) {
   test(`silence D-523, migration non destructive : ${sql.slice(0, 50)}`, () => {
     assert.equal(jugement(MIGRATION, { content: sql }).verdict, "passe");
@@ -217,6 +218,10 @@ for (const [motif, sql] of [
   ["ALTER POLICY", 'ALTER POLICY "p" ON "patients" USING (true);'],
   ["GRANT à un rôle ouvert", 'GRANT SELECT, UPDATE ON "Patient" TO "anon";'],
   ["GRANT à un rôle ouvert", 'GRANT SELECT ON "public"."Patient" TO "authenticated";'],
+  // PR-Agent sur 3121d6c3 : contourner la RLS par le rôle ou le propriétaire.
+  ["BYPASSRLS ou SUPERUSER", "ALTER ROLE app BYPASSRLS;"],
+  ["BYPASSRLS ou SUPERUSER", "CREATE ROLE r WITH LOGIN SUPERUSER;"],
+  ["OWNER TO", 'ALTER TABLE "patients" OWNER TO app;'],
   // Revue de tête de #2137 : beaucoup de blancs entre DO/AS et le littéral.
   ["TRUNCATE dans un corps", `DO${" ".repeat(300)}'BEGIN TRUNCATE "Patient"; END';`],
   ["TRUNCATE dans un corps", `DO${"\n".repeat(300)}'BEGIN TRUNCATE "Patient"; END';`],
