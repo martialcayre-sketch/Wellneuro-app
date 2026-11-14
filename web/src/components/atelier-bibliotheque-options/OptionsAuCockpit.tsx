@@ -22,6 +22,15 @@ export const AVERTISSEMENT_COCKPIT =
 
 export const TOUJOURS_AFFICHE = 'Toujours possible : ne rien changer, ou surveiller.';
 
+/**
+ * Le constat confirmé est « à relire » (pièce corrigée ou annulée, prélèvement
+ * plus récent, hypothèse sortie de la structure) : le bloc le dit en tête, avant
+ * toute option (`wn-reviewer` sur la PR 6, P2-1). Le masquer est un arbitrage
+ * laissé au responsable avant l'allumage.
+ */
+export const CONSTAT_A_RELIRE =
+  'Le constat qui confirme cette hypothèse est à relire : relisez-le avant de vous appuyer sur ces options.';
+
 export const MESSAGE_STRUCTURE: Record<Exclude<EtatStructureAuCockpit, 'signee'>, string> = {
   non_signee: 'La bibliothèque des options n’est pas encore signée : aucune option ne s’affiche.',
   signature_rompue:
@@ -41,13 +50,22 @@ export const LIBELLE_RUBRIQUE_NON_VALIDEE: Record<Exclude<EtatRubriqueAuCockpit,
 const jour = (iso: string) =>
   new Date(iso).toLocaleDateString('fr-FR', { timeZone: 'Europe/Paris', day: '2-digit', month: '2-digit', year: 'numeric' });
 
-export function OptionsAuCockpitBloc({ hypotheseCode, options }: { hypotheseCode: string; options: OptionsAuCockpit }) {
+export function OptionsAuCockpitBloc({
+  hypotheseCode,
+  options,
+  constatARelire = false,
+}: {
+  hypotheseCode: string;
+  options: OptionsAuCockpit;
+  constatARelire?: boolean;
+}) {
   const titre = `options-${hypotheseCode}`;
   return (
     <section aria-labelledby={titre} className="mt-3 rounded-md border border-border p-3">
       <h5 id={titre} className="text-sm font-medium text-foreground">
         Bibliothèque des options
       </h5>
+      {constatARelire && <p className="mt-1 text-sm font-medium text-foreground">{CONSTAT_A_RELIRE}</p>}
       {options.lecture === 'echec' ? (
         <p className="mt-1 text-sm text-status-danger">La bibliothèque des options n’a pas pu être lue.</p>
       ) : (
@@ -93,7 +111,7 @@ function ListeOptions({ hypotheseCode, options }: { hypotheseCode: string; optio
                     <span className="text-muted-foreground">{LIBELLE_RUBRIQUE_NON_VALIDEE[r.etat === 'validee' ? 'illisible' : r.etat]}</span>
                   )}
                   <span className="block text-xs text-muted-foreground">
-                    Sources : {r.renvois.length > 0 ? r.renvois.map(libelleRenvoi).join(' · ') : 'aucune'}
+                    {r.renvois.length > 0 ? `Sources : ${r.renvois.map(libelleRenvoi).join(' · ')}` : 'Aucune source déclarée.'}
                   </span>
                 </dd>
               </div>

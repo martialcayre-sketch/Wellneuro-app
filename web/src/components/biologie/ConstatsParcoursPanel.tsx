@@ -464,7 +464,11 @@ export function ConstatsParcoursPanel({ idPatient }: { idPatient: string }) {
                 {tete ? <Acte acte={tete} /> : <p className="text-xs text-muted-foreground">Aucun constat posé.</p>}
                 {/* Sous un constat CONFIRMÉ seulement : toutes les options de l'hypothèse (BP-17 PR 6). */}
                 {tete?.acte === 'pose' && tete.verdict === 'confirmee' && donnees.optionsBibliotheque && (
-                  <OptionsAuCockpitBloc hypotheseCode={code} options={donnees.optionsBibliotheque} />
+                  <OptionsAuCockpitBloc
+                    hypotheseCode={code}
+                    options={donnees.optionsBibliotheque}
+                    constatARelire={(lue?.aRelire.length ?? 0) > 0}
+                  />
                 )}
                 {lue && lue.aRelire.length > 0 && (
                   <div className="mt-2 rounded-md border border-border bg-muted/40 p-2">

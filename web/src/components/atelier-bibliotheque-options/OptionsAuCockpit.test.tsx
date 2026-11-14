@@ -2,7 +2,14 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import type { OptionsAuCockpit, RubriqueAuCockpit } from '@/lib/atelier-bibliotheque-options/cockpit';
-import { AVERTISSEMENT_COCKPIT, MESSAGE_STRUCTURE, OptionsAuCockpitBloc, TOUJOURS_AFFICHE } from './OptionsAuCockpit';
+import {
+  AVERTISSEMENT_COCKPIT,
+  CONSTAT_A_RELIRE,
+  LIBELLE_RUBRIQUE_NON_VALIDEE,
+  MESSAGE_STRUCTURE,
+  OptionsAuCockpitBloc,
+  TOUJOURS_AFFICHE,
+} from './OptionsAuCockpit';
 
 // Le bloc du cockpit ([[D-480]] §8, BP-17 PR 6). Identifiants et textes
 // synthétiques : aucune option ni aucun texte réel au dépôt.
@@ -89,8 +96,36 @@ describe('bibliothèque des options au cockpit', () => {
     expect(bloc().textContent).toContain(TOUJOURS_AFFICHE);
   });
 
-  it('aucun libellé du bloc ne dit qu’une interaction a été cherchée', () => {
-    const textes = [AVERTISSEMENT_COCKPIT, TOUJOURS_AFFICHE, ...Object.values(MESSAGE_STRUCTURE)].join(' ');
-    expect(textes).not.toMatch(/aucune interaction (détectée|trouvée)|compatible|recommand/i);
+  it('aucun libellé du bloc ne dit qu’une interaction a été cherchée (banc élargi, P3-2 de `wn-reviewer`)', () => {
+    const textes = [
+      AVERTISSEMENT_COCKPIT,
+      TOUJOURS_AFFICHE,
+      CONSTAT_A_RELIRE,
+      ...Object.values(MESSAGE_STRUCTURE),
+      ...Object.values(LIBELLE_RUBRIQUE_NON_VALIDEE),
+    ].join(' ');
+    expect(textes).not.toMatch(/aucune interaction|aucune contre-indication|compatible|recommand|sans risque/i);
+  });
+
+  it('une rubrique sans renvoi dit « Aucune source déclarée », jamais « aucune » seul (P3-2)', () => {
+    render(<OptionsAuCockpitBloc hypotheseCode="HYP_BANC" options={signee([{ id: 'OPT_BANC_A', populations: ['POP_BANC'], rubriques: [r('interactions')] }])} />);
+    expect(bloc().textContent).toContain('Aucune source déclarée.');
+    expect(bloc().textContent).not.toMatch(/Sources : aucune/);
+  });
+
+  it('constat confirmé à relire : la mention vient en tête du bloc, avant toute option (P2-1)', () => {
+    render(
+      <OptionsAuCockpitBloc
+        hypotheseCode="HYP_BANC"
+        constatARelire
+        options={signee([{ id: 'OPT_BANC_A', populations: ['POP_BANC'], rubriques: [r('dose')] }])}
+      />,
+    );
+    const texte = bloc().textContent ?? '';
+    expect(texte).toContain(CONSTAT_A_RELIRE);
+    expect(texte.indexOf(CONSTAT_A_RELIRE)).toBeLessThan(texte.indexOf('OPT_BANC_A'));
+    cleanup();
+    render(<OptionsAuCockpitBloc hypotheseCode="HYP_BANC" options={signee([])} />);
+    expect(bloc().textContent).not.toContain(CONSTAT_A_RELIRE);
   });
 });

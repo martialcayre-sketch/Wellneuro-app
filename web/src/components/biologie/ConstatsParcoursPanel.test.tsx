@@ -279,6 +279,13 @@ describe('ConstatsParcoursPanel — bibliothèque des options sous un constat co
     expect(bloc.textContent).not.toMatch(/aucune interaction détectée/i);
   });
 
+  it('tête confirmée « à relire » : le bloc le dit en tête (P2-1 de `wn-reviewer`)', async () => {
+    stubFetch({ ...LECTURE, hypotheses: [{ ...LECTURE.hypotheses[0], tete: CONFIRMEE, aRelire: ['nouveau_prelevement'] }], optionsBibliotheque: OPTIONS });
+    rendre();
+    const bloc = await screen.findByRole('region', { name: 'Bibliothèque des options' });
+    expect(bloc.textContent).toContain('Le constat qui confirme cette hypothèse est à relire');
+  });
+
   it('tête non confirmée, ou drapeau éteint (`null`) : aucun bloc', async () => {
     stubFetch({ ...LECTURE, optionsBibliotheque: OPTIONS });
     rendre();
