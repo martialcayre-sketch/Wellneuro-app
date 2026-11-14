@@ -220,8 +220,12 @@ for (const { motif, raison } of refusStructure) {
 
 // La dérogation n'agit qu'ici : le niveau « refus » ci-dessus s'applique à
 // toutes les commandes, sans exception.
+// Les redirections (`2>&1`, `>&2`, `&>`, `&>>`) ne chaînent rien : leur `&`
+// ne doit pas couper un segment, sinon `… --script 2>&1 | psql` échappe au
+// motif du tube (PR-Agent, #2137).
+const masqueeSansRedirection = masquee.replace(/\d*[<>]&\d*-?|&>>?/g, " ");
 for (const { motif, raison } of enveloppeSure ? [] : demande) {
-  if (motif.test(masquee)) {
+  if (motif.test(masqueeSansRedirection)) {
     process.stdout.write(JSON.stringify({
       hookSpecificOutput: {
         hookEventName: "PreToolUse",

@@ -142,6 +142,7 @@ test("prisma migrate status et diff passent en silence (D-523)", () => {
   assert.equal(verdict("cat web/prisma/schema.prisma | sed -n 1,20p"), "passe");
   assert.equal(verdict("git diff main -- web/prisma/migrations | awk '{print $1}'"), "passe");
   assert.equal(verdict("ls web/prisma/migrations | sort"), "passe");
+  assert.equal(verdict("npx prisma migrate status 2>&1 | tail -5"), "passe");
   assert.equal(verdict("x=$(ls web/prisma/migrations | tail -1)"), "passe");
 });
 
@@ -178,6 +179,10 @@ test("prisma@x, --config et diff --from-migrations demandent (D-523)", () => {
     "npx prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --script | less -o prisma/migrations/2099_x/migration.sql",
     "npx prisma migrate diff --from-empty --to-schema s --script | sort -o m.sql",
     "psql -f <(npx prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --script)",
+    // PR-Agent, #2137 : une redirection avant le tube ne coupe plus le segment.
+    "npx prisma migrate diff --from-empty --to-schema s --script 2>&1 | psql $DATABASE_URL",
+    "npx prisma migrate diff --from-empty --to-schema s --script &> /dev/null | psql x",
+    "npx prisma migrate deploy 2>&1 | tail",
   ]) {
     assert.equal(verdict(cmd), "demande", cmd);
   }
