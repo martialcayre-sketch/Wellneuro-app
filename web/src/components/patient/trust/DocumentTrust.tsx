@@ -1,5 +1,6 @@
 import { Fragment } from 'react';
 import type { VersionDocumentTrust } from '@/lib/trust/types';
+import { datePublicationEnLettres } from '@/lib/trust/datePublication';
 
 /**
  * Rendu de la version canonique HTML d'un document d'information TRUST.
@@ -20,7 +21,7 @@ export function DocumentTrust({
   return (
     <div className="space-y-3">
       <p className="text-xs text-muted-foreground">
-        Version {document.version} — publiée le {document.publieLe}
+        Version {document.version} — publiée le {datePublicationEnLettres(document.publieLe)}
       </p>
       {document.sections.map((section, index) => {
         // Un document assemblé ([[D-292]]) titre chaque partie à sa première section.

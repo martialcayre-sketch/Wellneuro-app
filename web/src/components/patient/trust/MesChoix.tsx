@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FINALITES } from '@/lib/trust/finalitesChoix';
 import type { ChoixEtat } from '@/app/api/portail/trust/etat/route';
 import { PatientButton } from '@/components/patient/ui/PatientButton';
@@ -42,10 +42,28 @@ export function MesChoix({
   onChange: () => void;
 }) {
   const [enCours, setEnCours] = useState<string | null>(null);
-  const [erreur, setErreur] = useState('');
+  // L'erreur paraît dans l'accordéon du choix qui a échoué, pas sous la liste
+  // (Q5 a du prototype PAT-6, [[D-481]] complément DOC-11).
+  const [erreur, setErreur] = useState<{ finalite: string; texte: string } | null>(null);
+  // Q6 a : le statut affiché est annoncé aux lecteurs d'écran SEULEMENT quand
+  // le serveur a accepté le choix ET que la page l'a relu (nouveaux
+  // `choixCourants`) — jamais sur la seule réponse de l'écriture.
+  const [attendu, setAttendu] = useState<{ finalite: string; statut: string } | null>(null);
+  const [annonce, setAnnonce] = useState('');
+
+  useEffect(() => {
+    if (!attendu) return;
+    const courant = choixCourants.find(c => c.finalite === attendu.finalite);
+    if (courant?.statut !== attendu.statut) return;
+    const libelle = FINALITES.find(f => f.finalite === attendu.finalite)?.libelle ?? '';
+    setAnnonce(`${libelle} — ${LIBELLE_STATUT[courant.statut] ?? courant.statut}`);
+    setAttendu(null);
+  }, [attendu, choixCourants]);
 
   const enregistrer = async (finalite: string, statut: 'accorde' | 'refuse' | 'retire') => {
-    setErreur('');
+    setErreur(null);
+    setAnnonce('');
+    setAttendu(null);
     setEnCours(finalite);
     try {
       const res = await fetch('/api/portail/trust/choix', {
@@ -54,10 +72,13 @@ export function MesChoix({
         body: JSON.stringify({ token, finalite, statut }),
       });
       const data = (await res.json()) as { ok: boolean; error?: string };
-      if (!data.ok) setErreur(data.error ?? 'Erreur. Réessayez.');
-      else onChange();
+      if (!data.ok) setErreur({ finalite, texte: data.error ?? 'Erreur. Réessayez.' });
+      else {
+        setAttendu({ finalite, statut });
+        onChange();
+      }
     } catch {
-      setErreur('Erreur réseau. Réessayez.');
+      setErreur({ finalite, texte: 'Erreur réseau. Réessayez.' });
     } finally {
       setEnCours(null);
     }
@@ -65,6 +86,7 @@ export function MesChoix({
 
   return (
     <div className="space-y-3">
+      <p role="status" className="sr-only">{annonce}</p>
       {FINALITES.map(def => {
         const courant = choixCourants.find(c => c.finalite === def.finalite);
         const statut = courant?.statut ?? null;
@@ -94,6 +116,9 @@ export function MesChoix({
                 <span className="font-semibold text-foreground">Effet d’un refus : </span>
                 {def.effetRefus}
               </p>
+              {erreur?.finalite === def.finalite && (
+                <PatientInlineMessage tone="error">{erreur.texte}</PatientInlineMessage>
+              )}
               <div className="flex flex-wrap gap-2 pt-1">
                 {statut !== 'accorde' && (
                   <PatientButton
@@ -150,7 +175,6 @@ export function MesChoix({
         <span className="text-foreground">Réutilisation secondaire de vos données</span>
         <span className="text-muted-foreground">Non proposée</span>
       </div>
-      {erreur && <PatientInlineMessage tone="error">{erreur}</PatientInlineMessage>}
       <p className="text-xs text-muted-foreground">
         Aucun choix n’est précoché ; refuser un choix facultatif ne bloque jamais votre
         accompagnement.

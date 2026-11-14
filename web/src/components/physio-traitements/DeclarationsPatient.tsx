@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { formaterDatePeriode, valeurDatePeriode } from '@/lib/physio-traitements/dates';
 import {
   BLOCS_PATIENT,
@@ -33,17 +33,32 @@ import { corpsTraitement, FormulaireTraitement } from './FormulaireTraitement';
 // compléments » pour les traitements) ; la page de la fiche les montre toutes.
 //
 // FAIL-CLOSED : tant que la route n'a pas répondu « ouvert », rien ne s'affiche.
+//
+// Prototype PAT-6 ([[D-481]], complément DOC-11) : les mentions datées en
+// lettres (Q7 a) ; l'erreur d'un enregistrement à l'endroit du geste, sans
+// doublon (Q5 a) ; l'état confirmé par le serveur et relu, annoncé aux
+// lecteurs d'écran sans texte neuf (Q6 a) ; sur la page de la fiche seule, une
+// lecture refusée en 401 renvoie à l'entrée (Q4 a). La fiche de l'entrée (U07)
+// ne passe pas `onSessionExpiree` et garde son comportement de lecture.
 
 type Ouverte = Extract<PortailPhysioTraitementsResponse, { saisieOuverte: boolean }>;
 
+// Un horodatage d'acte : le jour se lit à l'heure de Paris, comme avant ;
+// seule la forme passe des chiffres aux lettres (Q7 a).
 const jour = (iso: string) =>
-  new Date(iso).toLocaleDateString('fr-FR', { timeZone: 'Europe/Paris', day: '2-digit', month: '2-digit', year: 'numeric' });
+  new Date(iso).toLocaleDateString('fr-FR', { timeZone: 'Europe/Paris', day: 'numeric', month: 'long', year: 'numeric' });
+
+const texteMention = (ligne: { source: 'patient' | 'praticien'; acteLe: string }) =>
+  `${MENTION_SOURCE_PATIENT[ligne.source]} ${jour(ligne.acteLe)}`;
+
+const titreLigne = (t: TraitementPatient) =>
+  `${t.nom}${t.dose ? ` — ${t.dose}` : ''}${t.moment ? ` — ${t.moment}` : ''}`;
 
 const classeBouton = 'min-h-11 rounded-lg border border-border px-3 py-2 text-sm text-foreground disabled:opacity-50';
 const classePrincipal = 'min-h-11 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50';
 
 function Mention({ ligne }: { ligne: { source: 'patient' | 'praticien'; acteLe: string } }) {
-  return <p className="text-xs text-muted-foreground">{MENTION_SOURCE_PATIENT[ligne.source]} {jour(ligne.acteLe)}</p>;
+  return <p className="text-xs text-muted-foreground">{texteMention(ligne)}</p>;
 }
 
 function QuestionFermee({
@@ -53,6 +68,7 @@ function QuestionFermee({
   envoi,
   actif,
   poseOuverte = true,
+  erreur,
   onEnvoyer,
 }: {
   critere: 'sexe_declare' | 'statut_menstruel';
@@ -62,6 +78,8 @@ function QuestionFermee({
   actif: boolean;
   /** Le statut menstruel ne se pose plus quand le sexe déclaré ne l'ouvre pas ; il se supprime encore. */
   poseOuverte?: boolean;
+  /** Le message d'un enregistrement de cette question qui a échoué (Q5 a). */
+  erreur?: ReactNode;
   onEnvoyer: (corps: Record<string, unknown>) => void;
 }) {
   const [choix, setChoix] = useState(tete?.reponse ?? '');
@@ -78,6 +96,7 @@ function QuestionFermee({
         ))}
       </fieldset>
       {tete && <Mention ligne={tete} />}
+      {erreur}
       {actif && (
         <div className="flex flex-wrap gap-2">
           {poseOuverte && (
@@ -122,6 +141,7 @@ export function DeclarationsPatient({
   parties,
   onEditionChange,
   onLectureEchouee,
+  onSessionExpiree,
 }: {
   parties: 'sexe' | 'traitements' | 'tout';
   /** Une ligne est en cours de saisie, non enregistrée : la fiche englobante ne se valide pas. */
@@ -132,10 +152,22 @@ export function DeclarationsPatient({
    * n'aurait aucun moyen de déclarer ses traitements (revue CodeRabbit, P1).
    */
   onLectureEchouee?: (echouee: boolean) => void;
+  /**
+   * Page de la fiche (U35) seule (Q4 a) : une LECTURE refusée en 401 y renvoie
+   * à l'entrée. Une erreur réseau ou une lecture indisponible garde sa phrase
+   * et « Réessayer ». Doit être stable (`useCallback`) : il entre dans la
+   * lecture.
+   */
+  onSessionExpiree?: () => void;
 }) {
   const [donnees, setDonnees] = useState<Ouverte | null>(null);
   const [illisible, setIllisible] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  // L'ancre dit où le message s'affiche : la question, la ligne ou le
+  // formulaire dont l'enregistrement a échoué (Q5 a).
+  const [message, setMessage] = useState<{ texte: string; ancre: string } | null>(null);
+  // L'état confirmé par le serveur et relu, annoncé par une région `status`
+  // (Q6 a) : jamais avant la confirmation, jamais sur une relecture en échec.
+  const [annonce, setAnnonce] = useState('');
   const [envoi, setEnvoi] = useState(false);
   const [edition, setEdition] = useState<string | null>(null);
   const [finArret, setFinArret] = useState('');
@@ -151,30 +183,43 @@ export function DeclarationsPatient({
   }, [illisible, onLectureEchouee]);
   useEffect(() => () => onLectureEchouee?.(false), [onLectureEchouee]);
 
-  const charger = useCallback(async () => {
+  // Rend les données relues, ou `null` quand la lecture n'a pas abouti (ou a
+  // été dépassée par une plus récente).
+  const charger = useCallback(async (): Promise<Ouverte | null> => {
     const numero = ++lecture.current;
     try {
       const res = await fetch('/api/portail/physio-traitements');
+      if (res.status === 401 && onSessionExpiree) {
+        if (numero === lecture.current) onSessionExpiree();
+        return null;
+      }
       const data = (await res.json()) as PortailPhysioTraitementsResponse;
-      if (numero !== lecture.current) return;
+      if (numero !== lecture.current) return null;
       if (res.ok && data.ok && 'saisieOuverte' in data) {
         setDonnees(data);
         setIllisible(false);
-      } else {
-        setIllisible(true);
+        return data;
       }
+      setIllisible(true);
     } catch {
       if (numero === lecture.current) setIllisible(true);
     }
-  }, []);
+    return null;
+  }, [onSessionExpiree]);
 
   useEffect(() => {
     void charger();
   }, [charger]);
 
-  const envoyer = async (corps: Record<string, unknown>) => {
+  const envoyer = async (
+    corps: Record<string, unknown>,
+    ancre: string,
+    /** Le texte déjà affiché qui dit l'état confirmé, lu dans les données relues (Q6 a). */
+    annoncer?: (relu: Ouverte) => string,
+  ) => {
     setEnvoi(true);
     setMessage(null);
+    setAnnonce('');
     try {
       const res = await fetch('/api/portail/physio-traitements', {
         method: 'POST',
@@ -183,10 +228,15 @@ export function DeclarationsPatient({
       });
       const data = (await res.json()) as { ok: boolean; error?: string };
       if (data.ok) setEdition(null);
-      else setMessage(data.error ?? 'Votre demande n’a pas pu être enregistrée.');
-      await charger();
+      else setMessage({ texte: data.error ?? 'Votre demande n’a pas pu être enregistrée.', ancre });
+      // Sur la page de la fiche, un enregistrement refusé en 401 ne se relit
+      // pas : la relecture échouerait aussi et renverrait à l'entrée (Q4 a),
+      // emportant la saisie que l'échec doit garder.
+      if (res.status === 401 && onSessionExpiree) return;
+      const relu = await charger();
+      if (data.ok && relu && annoncer) setAnnonce(annoncer(relu));
     } catch {
-      setMessage('Votre demande n’a pas pu être enregistrée. Réessayez.');
+      setMessage({ texte: 'Votre demande n’a pas pu être enregistrée. Réessayez.', ancre });
     } finally {
       setEnvoi(false);
     }
@@ -206,6 +256,33 @@ export function DeclarationsPatient({
   const sexe = donnees.donnees.criteres.find(c => c.critere === 'sexe_declare')?.tete ?? null;
   const cycles = donnees.donnees.criteres.find(c => c.critere === 'statut_menstruel')?.tete ?? null;
   const cyclesOuverts = sexe !== null && SEXES_OUVRANT_LE_STATUT.includes(sexe.reponse ?? '');
+  const cyclesAffiches = cyclesOuverts || cycles !== null;
+
+  // Q5 a : le message paraît là où le patient a agi. Si ce lieu n'est plus à
+  // l'écran (la ligne a disparu à la relecture), il paraît en tête, une fois.
+  const ancrePresente = (ancre: string) => {
+    if (ancre === 'critere:sexe_declare') return parties !== 'traitements';
+    if (ancre === 'critere:statut_menstruel') return parties !== 'traitements' && cyclesAffiches;
+    if (parties === 'sexe') return false;
+    if (ancre.startsWith('ajout:')) return edition === ancre;
+    const present = donnees.donnees.traitements.some(t => ancre === `ligne:${t.id}` || ancre === `arret:${t.id}`);
+    return present && (ancre.startsWith('ligne:') || edition === ancre);
+  };
+  const erreurA = (ancre: string) =>
+    message?.ancre === ancre ? <p role="alert" className="text-sm text-foreground">{message.texte}</p> : null;
+
+  // Q6 a : la réponse retenue et sa mention, telles qu'affichées.
+  const annonceCritere = (critere: 'sexe_declare' | 'statut_menstruel', avant: typeof sexe) => (relu: Ouverte) => {
+    const tete = relu.donnees.criteres.find(c => c.critere === critere)?.tete ?? null;
+    if (!tete || tete.id === avant?.id) return '';
+    return `${LIBELLES_REPONSE_PATIENT[critere][tete.reponse ?? ''] ?? ''} — ${texteMention(tete)}`;
+  };
+  // Q6 a : la ligne neuve (un ajout, ou l'arrêt, qui est une ligne de plus) et sa mention.
+  const connues = new Set(donnees.donnees.traitements.map(t => t.id));
+  const annonceLigneNeuve = (relu: Ouverte) => {
+    const neuve = relu.donnees.traitements.find(t => !connues.has(t.id));
+    return neuve ? `${titreLigne(neuve)} — ${texteMention(neuve)}` : '';
+  };
 
   const blocTraitements = (nature: Nature) => {
     const lignes = donnees.donnees.traitements.filter(t => t.nature === nature);
@@ -217,9 +294,7 @@ export function DeclarationsPatient({
           const enCours = t.finPrecision === null;
           return (
             <div key={t.id} className="space-y-1 rounded-lg border border-border p-3">
-              <p className="text-sm text-foreground">
-                {t.nom}{t.dose ? ` — ${t.dose}` : ''}{t.moment ? ` — ${t.moment}` : ''}
-              </p>
+              <p className="text-sm text-foreground">{titreLigne(t)}</p>
               <p className="text-xs text-muted-foreground">
                 {CHAMPS_PATIENT.depuis} : {formaterDatePeriode(t.debut, t.debutPrecision, DATE_INCONNUE_PATIENT)}
                 {!enCours && ` · ${CHAMPS_PATIENT.arret} (${formaterDatePeriode(t.fin, t.finPrecision, DATE_INCONNUE_PATIENT)})`}
@@ -229,6 +304,7 @@ export function DeclarationsPatient({
                 {CHAMPS_PATIENT.prescrit} {LIBELLES_PRESCRIT_PATIENT[(t.prescritParTiers ?? 'inconnu') as PrescritParTiers]}
               </p>
               <Mention ligne={t} />
+              {erreurA(`ligne:${t.id}`)}
               {actif && edition === null && (
                 <div className="flex flex-wrap gap-2">
                   {enCours && (
@@ -249,7 +325,7 @@ export function DeclarationsPatient({
                       type="button"
                       disabled={envoi}
                       className={classeBouton}
-                      onClick={() => void envoyer({ objet: 'traitement', acte: 'retrait', remplace: t.id })}
+                      onClick={() => void envoyer({ objet: 'traitement', acte: 'retrait', remplace: t.id }, `ligne:${t.id}`)}
                     >
                       {CHAMPS_PATIENT.supprimer}
                     </button>
@@ -266,14 +342,17 @@ export function DeclarationsPatient({
                     desactive={envoi}
                     idBase={`portail-arret-${t.id}`}
                   />
+                  {erreurA(`arret:${t.id}`)}
                   <div className="flex flex-wrap gap-2">
                     <button
                       type="button"
                       disabled={envoi}
                       className={classePrincipal}
-                      onClick={() => void envoyer({
-                        objet: 'traitement', acte: 'pose', remplace: t.id, ...corpsTraitement(nature, valeursDe(t, finArret)),
-                      })}
+                      onClick={() => void envoyer(
+                        { objet: 'traitement', acte: 'pose', remplace: t.id, ...corpsTraitement(nature, valeursDe(t, finArret)) },
+                        `arret:${t.id}`,
+                        annonceLigneNeuve,
+                      )}
                     >
                       Enregistrer
                     </button>
@@ -296,7 +375,12 @@ export function DeclarationsPatient({
             libelleEnvoi="Enregistrer"
             envoi={envoi}
             idBase={`portail-ajout-${nature}`}
-            onEnvoyer={v => void envoyer({ objet: 'traitement', acte: 'pose', remplace: null, ...corpsTraitement(nature, v) })}
+            erreur={erreurA(`ajout:${nature}`)}
+            onEnvoyer={v => void envoyer(
+              { objet: 'traitement', acte: 'pose', remplace: null, ...corpsTraitement(nature, v) },
+              `ajout:${nature}`,
+              annonceLigneNeuve,
+            )}
             onAnnuler={() => setEdition(null)}
           />
         )}
@@ -314,7 +398,8 @@ export function DeclarationsPatient({
       }}
     >
       {alerteLecture}
-      {message && <p role="alert" className="text-sm text-foreground">{message}</p>}
+      <p role="status" className="sr-only">{annonce}</p>
+      {message && !ancrePresente(message.ancre) && <p role="alert" className="text-sm text-foreground">{message.texte}</p>}
       {!actif && (
         <p className="text-sm text-muted-foreground">Cette partie de votre fiche ne peut pas être modifiée pour le moment.</p>
       )}
@@ -327,9 +412,14 @@ export function DeclarationsPatient({
             tete={sexe}
             envoi={envoi}
             actif={actif}
-            onEnvoyer={corps => void envoyer(corps)}
+            erreur={erreurA('critere:sexe_declare')}
+            onEnvoyer={corps => void envoyer(
+              corps,
+              'critere:sexe_declare',
+              corps.acte === 'pose' ? annonceCritere('sexe_declare', sexe) : undefined,
+            )}
           />
-          {(cyclesOuverts || cycles !== null) && (
+          {cyclesAffiches && (
             <QuestionFermee
               key={`cycles-${cycles?.id ?? 'aucune'}`}
               critere="statut_menstruel"
@@ -338,7 +428,12 @@ export function DeclarationsPatient({
               envoi={envoi}
               actif={actif}
               poseOuverte={cyclesOuverts}
-              onEnvoyer={corps => void envoyer(corps)}
+              erreur={erreurA('critere:statut_menstruel')}
+              onEnvoyer={corps => void envoyer(
+                corps,
+                'critere:statut_menstruel',
+                corps.acte === 'pose' ? annonceCritere('statut_menstruel', cycles) : undefined,
+              )}
             />
           )}
         </>

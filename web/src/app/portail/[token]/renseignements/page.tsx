@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { DeclarationsPatient } from '@/components/physio-traitements/DeclarationsPatient';
+import { DeclarationsDeLaFiche } from '@/components/physio-traitements/DeclarationsDeLaFiche';
 import { PatientCard } from '@/components/patient/ui/PatientCard';
 import { PatientPageHeader } from '@/components/patient/ui/PatientPageHeader';
 import { isPhysioTraitementsEnabled } from '@/lib/physio-traitements/drapeau';
@@ -27,7 +27,7 @@ export default async function PortailRenseignementsPage({ params }: { params: Pr
       </Link>
       <PatientCard className="space-y-6">
         <PatientPageHeader title="Ma fiche de renseignements" />
-        <DeclarationsPatient parties="tout" />
+        <DeclarationsDeLaFiche token={token} />
       </PatientCard>
     </div>
   );

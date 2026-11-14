@@ -446,7 +446,7 @@ test.describe.serial('Parcours portail patient — Phase 0 (Michel Dogné, patie
         page.getByRole('heading', { name: 'Informations, confidentialité et droits' }),
       ).toBeVisible();
       // Version visible et état de lecture tracé par la séquence du début.
-      await expect(page.getByText('Version v1 — publiée le 2026-07-16').first()).toBeVisible();
+      await expect(page.getByText('Version v1 — publiée le 16 juillet 2026').first()).toBeVisible();
       await expect(page.getByText(/Pris connaissance le/).first()).toBeVisible();
       // Accordéon accessible : les numéros d'urgence s'affichent à la demande.
       await page.getByRole('group').filter({ hasText: 'En cas d’urgence' }).locator('summary').click();
