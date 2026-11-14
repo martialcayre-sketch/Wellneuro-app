@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { QuestionnaireDef } from '@/lib/questionnaire-types';
-import { QUESTIONNAIRE_CATALOGUE } from '@/lib/questions';
+import { QUESTIONNAIRE_CATALOGUE, computeScoreFromDef } from '@/lib/questions';
+import { TEXTE_ENQUETE_ALIMENTAIRE_INCOMPLETE } from '@/lib/scoring/enqueteAlimentaireIncomplete';
 import { Q_ALI_01_COURT_14, Q_ALI_01_SIIN_57 } from '@/lib/questionnaires/alimentaire';
 import { Q_PED_02 } from '@/lib/questionnaires/pediatrie';
 import { Q_SOM_09 } from '@/lib/questionnaires/sommeil';
@@ -176,6 +177,39 @@ describe('sectionQuestionnaires — scores comme à l’écran', () => {
     expect(blocs[i + 1]).toEqual({ type: 'liste', elements: ['Catégorie 1 : positive', 'Catégorie 2 : négative'] });
     // Pas de score principal ni d'interprétation : aucun champ fabriqué.
     expect(champ(blocs, 'Score')).toBeUndefined();
+  });
+
+  it('enquête SIIN incomplète : le texte validé tient lieu de score, sans bande ([[D-517]])', () => {
+    const brutes = Object.fromEntries(
+      Q_ALI_01_SIIN_57.sections.flatMap(s => s.questions).slice(1).map(q => [q.id, Number((q.options ?? [])[0]?.v)]),
+    );
+    const scores = { ...computeScoreFromDef(Q_ALI_01_SIIN_57, brutes), rawAnswers: brutes };
+    const blocs = sectionQuestionnaires(
+      [passation({ idQuestionnaire: 'Q_ALI_01', titre: Q_ALI_01_SIIN_57.titre, scores, definition: Q_ALI_01_SIIN_57 })],
+      [],
+    );
+    expect(champ(blocs, 'Score')).toBe(TEXTE_ENQUETE_ALIMENTAIRE_INCOMPLETE);
+    expect(champ(blocs, 'Interprétation')).toBeUndefined();
+    expect(champ(blocs, 'Qualité')).toContain('1 item(s) manquant(s)');
+    // Les catégories descriptives restent restituées.
+    expect(blocs.some(b => b.type === 'paragraphe' && b.texte === 'Détail :')).toBe(true);
+  });
+
+  it('contrôle — une enquête SIIN complète garde son score et sa bande', () => {
+    const brutes = Object.fromEntries(
+      Q_ALI_01_SIIN_57.sections.flatMap(s => s.questions).map(q => [q.id, Number((q.options ?? [])[0]?.v)]),
+    );
+    const scores = { ...computeScoreFromDef(Q_ALI_01_SIIN_57, brutes), rawAnswers: brutes };
+    expect(scores.scored).toBe(true);
+    const blocs = sectionQuestionnaires(
+      [passation({
+        idQuestionnaire: 'Q_ALI_01', titre: Q_ALI_01_SIIN_57.titre, scores, definition: Q_ALI_01_SIIN_57,
+        scorePrincipal: scores.total, interpretation: scores.interpretation?.label ?? null,
+      })],
+      [],
+    );
+    expect(champ(blocs, 'Score')).toBe(`${scores.total}/90`);
+    expect(champ(blocs, 'Score')).not.toBe(TEXTE_ENQUETE_ALIMENTAIRE_INCOMPLETE);
   });
 });
 

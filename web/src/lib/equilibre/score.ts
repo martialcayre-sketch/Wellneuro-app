@@ -74,6 +74,18 @@ function extraireValeurBrute(resultat: Record<string, unknown>, sousScore?: stri
     // l'autre — que ce soit par l'ordre de la boucle ou parce que les totaux
     // coïncident — servirait une couverture FAUSSE. Une absence de mesure se
     // voit (`missing_data`) ; une valeur fausse, non.
+    // Recueil INCOMPLET de l'instrument entier, quand le moteur le refuse
+    // lui-même (`scored: false` ET des items manquants) : le sous-score servi
+    // tombe avec le total ([[D-517]], D-403 §6 — l'enquête SiiN incomplète ne
+    // nourrit plus le besoin 3). Le motif est celui du total, et non
+    // « sous-score absent », qui se lirait comme un défaut du résultat. Bornée
+    // au moteur `seuils_points`, le seul que vise D-517 : un autre moteur qui
+    // rendrait `scored: false` avec des manquants garde sa lecture de
+    // sous-score (revue PR-Agent de #2096).
+    if (resultat.type === 'seuils_points' && resultat.scored === false
+      && typeof resultat.missing === 'number' && resultat.missing > 0) {
+      return { motif: 'recueil_incomplet' };
+    }
     const porteurs = [resultat.subScores, resultat.scoresBesoins];
     const candidats: Record<string, unknown>[] = [];
     for (const porteur of porteurs) {
@@ -133,7 +145,8 @@ function extraireValeurBrute(resultat: Record<string, unknown>, sousScore?: stri
   // fondent sont complets. La complétude d'un sous-score se juge donc au grain
   // de l'axe, dans la branche du haut (`sousScoreComplet`, [[D-329]] §1) — et
   // non plus seulement chez `scoresBesoins`, le seul porteur qui l'exigeait
-  // jusque-là.
+  // jusque-là. Seule exception, en tête de cette branche : un moteur qui
+  // REFUSE lui-même le recueil incomplet (`scored: false`, [[D-517]]).
   if (typeof resultat.missing === 'number' && resultat.missing > 0) return { motif: 'recueil_incomplet' };
   return typeof resultat.total === 'number' ? { valeur: resultat.total } : { motif: 'calcul_en_erreur' };
 }

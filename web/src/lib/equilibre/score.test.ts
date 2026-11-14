@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { agregerEquilibre, calculerCouvertureBesoin, calculerCouvertureSource, clamp01 } from './score';
-import { PLAFOND_FONDATION_CRITIQUE } from './constants';
+import { agregerEquilibre, calculerCouvertureBesoin, calculerCouvertureSource, clamp01, evaluerCouvertureSource } from './score';
+import { BESOIN_SOURCES, PLAFOND_FONDATION_CRITIQUE } from './constants';
 import { QUESTIONNAIRE_CATALOGUE } from '../questions';
+import { Q_ALI_01_SIIN_57 } from '../questionnaires/alimentaire';
 
 // Scénarios portés depuis l'ancien score.check.ts (auto-vérification
 // "zéro dépendance", supprimé au profit de ce fichier Vitest). Rationale
@@ -75,12 +76,36 @@ describe('calculerCouvertureBesoin', () => {
     expect(calculerCouvertureBesoin(3, { Q_ALI_01: { AL1: '1', AL2: '2' } })).toBeNull();
   });
 
+  // Depuis [[D-517]], seule une enquête COMPLÈTE nourrit le besoin 3 : les
+  // 53 autres items reçoivent ici la première option de leur liste, sans effet
+  // sur les quatre items servis.
+  const completer = (rythme: Record<string, number>): Record<string, number> => ({
+    ...Object.fromEntries(
+      Q_ALI_01_SIIN_57.sections.flatMap(s => s.questions).map(q => [q.id, Number((q.options ?? [])[0]?.v)]),
+    ),
+    ...rythme,
+  });
+
   it('besoin 3 : une passation SIIN complète le renseigne, et seulement en position SIIN', () => {
     // Les quatre items servis, au repère : SIIN52/53/55 en Oui (1), SIIN54 à
     // 12 h de jeûne. Attendu écrit à la main : 7 points sur 7, donc couverture 1.
-    const reponsesAuRepere = { SIIN52: 1, SIIN53: 1, SIIN54: 12, SIIN55: 1 };
+    const reponsesAuRepere = completer({ SIIN52: 1, SIIN53: 1, SIIN54: 12, SIIN55: 1 });
     expect(calculerCouvertureBesoin(3, { Q_ALI_01: reponsesAuRepere }))
       .toBe(SIIN57_ACTIF ? 1 : null);
+  });
+
+  it('besoin 3 : ses quatre items complets ne suffisent plus si l’enquête est incomplète ([[D-517]])', () => {
+    // D-403 §6 à la lettre (arbitrage `20261113-2123-a`) : une passation
+    // partielle ne nourrit plus les besoins 1 et 3, même quand les quatre items
+    // du rythme sont remplis. Vrai dans les deux positions du drapeau.
+    const reponses = completer({ SIIN52: 1, SIIN53: 1, SIIN54: 12, SIIN55: 1 });
+    delete reponses.SIIN01;
+    expect(calculerCouvertureBesoin(3, { Q_ALI_01: reponses })).toBeNull();
+    expect(calculerCouvertureBesoin(1, { Q_ALI_01: reponses })).toBeNull();
+    if (SIIN57_ACTIF) {
+      const source = BESOIN_SOURCES[3].find(s => s.idQuestionnaire === 'Q_ALI_01')!;
+      expect(evaluerCouvertureSource(source, { Q_ALI_01: reponses })).toEqual({ motif: 'recueil_incomplet' });
+    }
   });
 
   it('besoin 3 : une passation SIIN qui n’aborde AUCUN item de rythme reste non mesurée', () => {
@@ -112,7 +137,7 @@ describe('calculerCouvertureBesoin', () => {
     // Contrôle négatif du test ci-dessus : sans lui, une couverture figée à 1
     // passerait au vert. SIIN54 à 7 h (< 10) et SIIN52 en Non retirent 4 points
     // sur 7 — il en reste 3, soit 3/7.
-    const horsRepere = { SIIN52: 0, SIIN53: 1, SIIN54: 7, SIIN55: 1 };
+    const horsRepere = completer({ SIIN52: 0, SIIN53: 1, SIIN54: 7, SIIN55: 1 });
     expect(calculerCouvertureBesoin(3, { Q_ALI_01: horsRepere }))
       .toBe(SIIN57_ACTIF ? 3 / 7 : null);
   });

@@ -70,6 +70,7 @@ import {
   syntheseSansRedondanceSousScores,
 } from '@/lib/scoring/descriptifsScores';
 import { ETIQUETTE_NON_INTERPRETABLE } from '@/lib/scoring/passationsNonInterpretables';
+import { texteScoreNonCalcule } from '@/lib/scoring/enqueteAlimentaireIncomplete';
 import { ScoreGauge } from '@/components/ui/ScoreGauge';
 import { ScoreZones } from '@/components/ui/ScoreZones';
 import { Badge, varianteInterpretation } from '@/components/ui/Badge';
@@ -1698,6 +1699,9 @@ export function FichePatientPanel({
                 const missingIds = getArrayField(scores, 'missingIds');
                 const notApplicable = getArrayField(scores, 'notApplicable');
                 const note = typeof scores?.note === 'string' ? scores.note : '';
+                // Enquête SiiN incomplète ([[D-517]]) : le moteur n'a rendu ni
+                // total ni bande ; le dire, sinon le « — » se lit comme un incident.
+                const scoreNonCalcule = texteScoreNonCalcule(scores);
                 const subScores = Array.isArray(scores?.subScores)
                   ? (scores!.subScores as ScoreSubScore[])
                   : [];
@@ -1736,6 +1740,11 @@ export function FichePatientPanel({
                           title={r.nonInterpretable}
                         >
                           {ETIQUETTE_NON_INTERPRETABLE} — {r.nonInterpretable}
+                        </div>
+                      )}
+                      {scoreNonCalcule && (
+                        <div className="mt-1 max-w-md text-xs font-normal text-status-warning">
+                          {scoreNonCalcule}
                         </div>
                       )}
                       {/* « Résumé du score » et non « Synthèse » : la Synthèse

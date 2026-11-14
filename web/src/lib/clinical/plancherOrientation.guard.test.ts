@@ -196,10 +196,11 @@ describe('le plancher allume l\'orientation — et seulement quand la zone le co
     //     décroissante, aucun plancher servi) doublée du retrait de bande que
     //     `sum` opère déjà sur recueil partiel.
     //   · drapeau ALLUMÉ (l'état de production) — c'est l'Enquête SIIN 57,
-    //     moteur `seuils_points`, `missing: 38`, et ce moteur sert son
-    //     `interpretation` SANS condition de complétude. L'extinction vient
-    //     alors de `recueilIncomplet` dans `extraireCible`, qui annule la mesure
-    //     avant toute lecture de bande — et l'inéligibilité tient toujours.
+    //     moteur `seuils_points`, `missing: 38`. Depuis [[D-517]], ce moteur
+    //     refuse lui-même le recueil incomplet (`interpretation: null`) ; la
+    //     garde `recueilIncomplet` d'`extraireCible`, qui annule la mesure avant
+    //     toute lecture de bande, en reste le second rideau — et
+    //     l'inéligibilité tient toujours.
     // Les assertions ci-dessous sont vraies dans les deux états, et chacune est
     // gardée par un mécanisme différent selon l'état : c'est voulu, et c'est
     // pourquoi ce cas ne fixe pas le drapeau.

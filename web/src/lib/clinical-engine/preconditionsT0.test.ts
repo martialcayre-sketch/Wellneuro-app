@@ -155,6 +155,31 @@ describe('préconditions de confirmation T0 (D-052)', () => {
     expect(dure(resultat, 'rideau_t0').detail).toContain('Q_ALI_01');
   });
 
+  it('une enquête SIIN incomplète d’UN item ne compte pas pour le rideau ([[D-517]])', () => {
+    // D-403 §6 à la lettre (arbitrage `20261113-2123-a`) : le moteur ne calcule
+    // plus le total d'une SIIN incomplète. Seule la forme SIIN est concernée
+    // (drapeau allumé) ; la forme courte garde son moteur `sum`.
+    const brutes = reponsesCompletes('Q_ALI_01');
+    const premier = Object.keys(brutes)[0];
+    delete brutes[premier];
+    const resultat = evaluerPreconditionsT0(entrees({
+      passations: [
+        ...rideauComplet().filter(p => p.idQuestionnaire !== 'Q_ALI_01'),
+        passation('Q_ALI_01', { scoresJson: { rawAnswers: brutes } }),
+      ],
+    }), 'T0');
+    if (process.env.WN_ALI_01_SIIN57 === 'true') {
+      expect(resultat.bloquant).toBe(true);
+      expect(dure(resultat, 'rideau_t0').detail).toContain('Q_ALI_01');
+    } else {
+      expect(premier).toMatch(/^AL/);
+    }
+  });
+
+  it('contrôle — la même enquête SIIN complète compte pour le rideau', () => {
+    expect(evaluerPreconditionsT0(entrees(), 'T0').bloquant).toBe(false);
+  });
+
   it('une passation présente mais non cotable ne vaut pas une mesure', () => {
     const resultat = evaluerPreconditionsT0(entrees({
       passations: [
