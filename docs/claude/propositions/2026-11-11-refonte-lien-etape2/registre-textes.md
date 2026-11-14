@@ -294,9 +294,33 @@ et « ← Mon espace » (U38, T-34 refusé), la date de version en AAAA-MM-JJ
 (confiée à PAT-6), et les apostrophes droites des textes signés. Le bouton
 « Imprimer ou enregistrer en PDF » n'est pas étendu à U24 et U25 (Q5a).
 
+## 2.9 PAT-6, transmissions et droits — DOC-11
+
+Réponses du responsable le 2026-11-14 au prototype PAT-6, itération 1
+(`Q1b — Q2a — Q3a — Q4a — Q5a — Q6a — Q7a`), avec l'acceptation mot pour
+mot du réemploi de T-36 aux emplacements de Q2a et Q3a. Source canonique :
+[[D-488]], amendement DOC-11, et [[D-481]], complément DOC-11.
+
+| Texte | Statut final | Portée |
+|---|---|---|
+| Session expirée. Reconnectez-vous. (texte de la route), emplacement | retenu par Q2a, inscription DOC-11 | affiché sous le bouton d'envoi de U33 et U34 quand le dépôt est refusé en 401 ; chargement et accusé de U34 inchangés |
+| T-36, emplacement | accepté mot pour mot, inscription DOC-11 | sous ce message sur U33 et U34, et sous le 401 d'un enregistrement de U35 (page seule), U39 et U40 ; vers /portail/connexion, nouvel onglet |
+
+Aucun texte neuf ni nouvel identifiant. Changent de présentation seulement :
+la date de version, en lettres dans `DocumentTrust` et dans les deux mentions
+de U37 (Q1b), et les mentions datées de U35 (Q7a). Ne sont pas proposés, et
+restent tels qu'au code : les titres « Ma fiche de renseignements » et « Mes
+choix et autorisations » (le catalogue dit « Renseignements et
+déclarations », « Mes choix et droits ») ; l'explication « votre praticien ne
+l’a pas encore ouvert » de U34 (D-269 §4), quand U33 ne le dit jamais
+(D-330) ; les espaces ordinaires avant « : » des mentions de traitement et
+des intitulés de « Mes choix » ; les numéros d'urgence de « Signaler un
+problème ». Un accusé explicite sur U35 et U39 reste à examiner dans un
+micro-lot documentaire distinct (recommandation du responsable, Q6).
+
 ## 3. Récapitulatif
 
 | Plan | Textes à accepter avant le lot |
 |---|---|
 | Praticien | T-01 à T-05, T-07, T-10, T-12, T-13 (PRA-1) ; T-14, T-15 (PRA-3) ; T-16 (PRA-2a, inscrit par DOC-1) ; T-17 (PRA-2a), T-18, T-19 (PRA-2b), acceptés et inscrits dans D-488 par DOC-6 ; T-60 à T-66 (PRA-3b), acceptés et inscrits dans D-488 par DOC-8 |
-| Patient | T-21 à T-23, T-32 (PAT-1) ; T-31 (PAT-2) ; T-30 (PAT-3) ; T-33, T-34 (PAT-5), avec l'emplacement neuf de T-36 inscrit par DOC-9 (celui de la phrase vide de U28 retiré par DOC-10) ; T-36 à T-39 inscrits par DOC-5 ; T-40 à T-44, T-48 et nouvel emplacement T-36 inscrits par DOC-7 (PAT-4), T-49/T-50 inscrits pour Q5b ; T-34 refusé, T-35 reste proposé, T-45 sans objet |
+| Patient | T-21 à T-23, T-32 (PAT-1) ; T-31 (PAT-2) ; T-30 (PAT-3) ; T-33, T-34 (PAT-5), avec l'emplacement neuf de T-36 inscrit par DOC-9 (celui de la phrase vide de U28 retiré par DOC-10) ; T-36 à T-39 inscrits par DOC-5 ; emplacements neufs de T-36 et du message de session expirée inscrits par DOC-11 (PAT-6) ; T-40 à T-44, T-48 et nouvel emplacement T-36 inscrits par DOC-7 (PAT-4), T-49/T-50 inscrits pour Q5b ; T-34 refusé, T-35 reste proposé, T-45 sans objet |

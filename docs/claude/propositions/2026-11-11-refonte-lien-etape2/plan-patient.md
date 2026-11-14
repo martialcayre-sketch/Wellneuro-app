@@ -220,6 +220,26 @@ v3 gardent chacun leur version et leur date ; leur mise en forme reste
 indépendante. Aucune date canonique ni aucun texte de document ne change ;
 PAT-2 ne réalise pas cette modification.
 
+**Arbitrages PAT-6 du 2026-11-14** : `Q1b — Q2a — Q3a — Q4a — Q5a — Q6a —
+Q7a`, sur le prototype https://claude.ai/artifact/NsqRAGHvr96QcrjoxBZX3N ;
+inscrits par DOC-11 dans [[D-481]] et [[D-488]]. Date de version en lettres
+dans `DocumentTrust` et dans les deux mentions de U37, format seul (Q1b).
+Sur un 401 de dépôt, U33 et U34 restent ouvertes, affichent le message de la
+route et T-36 dans un nouvel onglet (Q2a) ; T-36, nouvel onglet, sous le 401
+d'un enregistrement de U35 (page seule), U39 et U40 (Q3a). Lecture refusée
+en 401 sur la page U35 : renvoi à l'entrée, les autres échecs gardent
+« Réessayer » (Q4a). Erreur à l'endroit du geste sur U35 et U39 (Q5a). État
+confirmé et relu annoncé par une région `status`, sans texte neuf ni faux
+succès (Q6a). Mentions datées de U35 en lettres (Q7a). **Réception
+ajoutée** : E2E de non-perte (saisie gardée au 401, renvoi manuel après
+reconnexion dans un second onglet, changement de compte patient sans
+écriture dans un autre dossier), aucun envoi automatique. **Préalable de
+Q2a et Q3a** : les routes d'écriture prennent le dossier dans la seule
+session ; une garde doit refuser, sans écrire, l'envoi d'une page ouverte
+pour un autre dossier (constat de PR-Agent sur #2104, question
+`20261114-1105-d`). Le code attend la validation visuelle du prototype et le
+feu vert du responsable.
+
 ### PAT-7 — Vérification et stabilisation
 
 Les vérifications du cadrage v3 l.540-553 côté patient : quatre largeurs,
