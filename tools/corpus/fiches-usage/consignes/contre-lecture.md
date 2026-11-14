@@ -75,12 +75,15 @@ Il est INFIDÈLE s'il contient au moins un des défauts suivants :
   n'omet rien ;
 - un sens déplacé : une association présentée comme une cause, une
   possibilité comme une certitude, une hypothèse comme un diagnostic ;
-- un médicament nommé (spécialité, nom commercial) ou sa posologie, une
-  prescription, une donnée de patient ou un exemple de cas ; la catégorie
+- un médicament nommé (spécialité ou nom commercial, principe actif ou
+  classe thérapeutique nommés en tant que médicaments) ou une posologie,
+  une prescription, une donnée de patient ou un exemple de cas ; la catégorie
   « médicaments », citée parce qu'un claim la mentionne dans un fait
   descriptif de sécurité ou de comparaison, sans spécialité nommée ni
   schéma de prise, n'est pas un défaut ; un fait propre à une spécialité
-  généralisé à cette catégorie en est un ;
+  généralisé à cette catégorie en est un ; nommer une forme de nutriment
+  (un sel, un composé) n'est pas, en soi, nommer un médicament, sauf quand
+  elle est nommée en tant que médicament ;
 - une quantité à prendre ou à consommer (dose, volume, nombre d'unités,
   apport recommandé ou de référence), une fréquence ou un fractionnement
   des prises, une durée de prise ou de traitement, ou toute autre valeur
@@ -122,8 +125,8 @@ rubrique comme dit plus haut : quand le marqueur est « oui », la rubrique
 qui accueille cette condition l'écrit à la place de la phrase d'absence,
 et la phrase d'absence seule y est une condition tue.
 
-Un fait qui ne peut s'écrire sans une quantité exclue ou sans une
-spécialité ne s'écrit pas du tout : son omission entière n'est pas une
+Un fait qui ne peut s'écrire sans une quantité exclue ou sans un
+médicament nommé ne s'écrit pas du tout : son omission entière n'est pas une
 condition tue, et ce fait ne compte pas parmi ceux qui portent sur l'objet
 de la rubrique pour juger la phrase d'absence ; les autres faits du même
 claim restent jugés comme tels. Cette exemption ne

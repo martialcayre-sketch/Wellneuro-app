@@ -54,16 +54,19 @@ Les DÉSIGNATIONS APPROUVÉES servent seulement à nommer (voir plus bas).
   Ces règles ne visent pas une valeur ni une unité reprise telle quelle
   d'une désignation approuvée, au sein de cette seule désignation, qui sert
   à nommer et n'établit aucun fait.
-- Un fait qui ne peut s'écrire sans une quantité exclue, ou sans une
-  spécialité (voir plus bas), ne s'écrit pas du tout : ce n'est pas une
+- Un fait qui ne peut s'écrire sans une quantité exclue, ou sans un
+  médicament nommé (voir plus bas), ne s'écrit pas du tout : ce n'est pas une
   condition tue, et ce fait ne compte pas parmi ceux qui portent sur
   l'objet de la rubrique ; les autres faits du même claim se restituent
   comme tout fait. Si le marqueur sécurité / admissibilité est
   « oui » et qu'une condition de sécurité ou d'admissibilité ne peut
-  s'écrire qu'avec une quantité exclue ou une spécialité, ne rédige rien :
+  s'écrire qu'avec une quantité exclue ou un médicament nommé, ne rédige rien :
   réponds {"refus": "<motif en une phrase>"}.
-- LES MÉDICAMENTS. Aucun médicament nommé (spécialité, nom commercial), ni
-  sa posologie. La catégorie « médicaments » peut être citée seulement
+- LES MÉDICAMENTS. Aucun médicament nommé : ni spécialité ou nom
+  commercial, ni principe actif ou classe thérapeutique nommés en tant que
+  médicaments ; ni aucune posologie. Nommer une forme de nutriment (un
+  sel, un composé) n'est pas, en soi, nommer un médicament, sauf quand
+  elle est nommée en tant que médicament. La catégorie « médicaments » peut être citée seulement
   quand un claim la mentionne dans un fait descriptif de sécurité ou de
   comparaison, sans spécialité nommée ni schéma de prise. Un fait propre à
   une spécialité ne se généralise jamais à cette catégorie.

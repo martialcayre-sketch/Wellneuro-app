@@ -160,6 +160,17 @@ test('v8 : population nommée, quantités selon leur fonction, catégorie « mé
   // défaut, et l'exemption écarte le seul fait inexprimable, pas le claim.
   assert.match(contreLecture, /une valeur ou une unité reprise telle quelle\s+d'une désignation approuvée, au sein de cette seule désignation employée\s+pour nommer, n'en est pas un/);
   assert.match(contreLecture, /hors une\s+valeur reprise d'une désignation approuvée comme dit plus haut/);
+  // PR-Agent (#2135) : principe actif et classe thérapeutique restent interdits ;
+  // une forme de nutriment n'est pas un médicament. Des deux côtés.
+  for (const c of [redaction, contreLecture]) {
+    assert.match(c, /principe\s+actif\s+ou\s+classe\s+thérapeutique\s+nommés\s+en\s+tant\s+que\s+médicaments/);
+    assert.match(c, /nommer\s+une\s+forme\s+de\s+nutriment\s+\(un\s+sel,\s+un\s+composé\)\s+n'est\s+pas,\s+en\s+soi,\s+nommer\s+un\s+médicament,\s+sauf\s+quand\s+elle\s+est\s+nommée\s+en\s+tant\s+que\s+médicament/i);
+    // Codex (cinquième passe) : l'exemption d'omission et le refus sous « oui »
+    // couvrent tout médicament nommé, plus la seule spécialité.
+    assert.match(c, /sans\s+un\s+médicament\s+nommé/);
+    assert.doesNotMatch(c, /sans\s+une\s+spécialité/);
+  }
+  assert.match(redaction, /qu'avec\s+une\s+quantité\s+exclue\s+ou\s+un\s+médicament\s+nommé,\s+ne\s+rédige\s+rien/);
   assert.match(redaction, /Ces règles ne visent pas une valeur ni une unité reprise telle quelle\s+d'une désignation approuvée/);
   assert.match(redaction, /les autres faits du même claim se restituent\s+comme tout fait/);
   assert.match(contreLecture, /les autres faits du même\s+claim restent jugés comme tels/);
