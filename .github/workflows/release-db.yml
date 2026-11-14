@@ -174,19 +174,31 @@ jobs:
           # puisqu'il fait approuver.
           BORNE=""
           BORNE_DATE=""
-          if RUNS=$(gh api \
-            "/repos/$DEPOT/actions/workflows/release-db.yml/runs?status=success&branch=main&per_page=1" \
-            2>erreur-runs.txt); then
-            # `|| true` : sous `bash -e`, un `jq` en échec tuerait l'étape, et
-            # `resume` n'a pas de `continue-on-error` — un hoquet de parsing
-            # bloquerait TOUTE release. Le repli « borne inconnue » existe déjà et
-            # sait le dire ; il vaut mieux y retomber que bloquer.
-            BORNE=$(printf '%s' "$RUNS" | jq -r '.workflow_runs[0].head_sha // empty' || true)
-            BORNE_DATE=$(printf '%s' "$RUNS" | jq -r '.workflow_runs[0].created_at // empty' || true)
-          else
-            echo "— liste des runs de release-db illisible :" >&2
-            cat erreur-runs.txt >&2
-          fi
+          # D-520 §8 : PLUS PERSONNE NE LIT CE RÉSUMÉ AVANT L'ÉCRITURE. Ce qu'il
+          # avertissait, il l'arrête désormais (fin de l'étape) : une borne
+          # inconnue sur un push, un diff en échec toujours. `ARRET` les réunit.
+          # Trois lectures à 10 s d'intervalle, pour qu'un hoquet de l'API
+          # n'arrête pas une release (arbitrage `20261114-1459-d`).
+          ARRET=""
+          for ESSAI in 1 2 3; do
+            if RUNS=$(gh api \
+              "/repos/$DEPOT/actions/workflows/release-db.yml/runs?status=success&branch=main&per_page=1" \
+              2>erreur-runs.txt); then
+              # `|| true` : sous `bash -e`, un `jq` en échec tuerait l'étape sans
+              # dire pourquoi. Le repli « borne inconnue » sait le dire.
+              BORNE=$(printf '%s' "$RUNS" | jq -r '.workflow_runs[0].head_sha // empty' || true)
+              BORNE_DATE=$(printf '%s' "$RUNS" | jq -r '.workflow_runs[0].created_at // empty' || true)
+            else
+              echo "— liste des runs de release-db illisible (lecture $ESSAI/3) :" >&2
+              cat erreur-runs.txt >&2
+            fi
+            if [ -n "$BORNE" ]; then
+              break
+            fi
+            if [ "$ESSAI" -lt 3 ]; then
+              sleep 10
+            fi
+          done
           # Une borne qu'on ne peut pas atteindre dans l'historique ne borne rien.
           if [ -n "$BORNE" ] && ! git cat-file -e "$BORNE^{commit}" 2>/dev/null; then
             echo "— borne $BORNE inatteignable dans l'historique, ignorée." >&2
@@ -246,9 +258,20 @@ jobs:
               echo "> (premier run, API muette, ou commit inatteignable), donc la plage"
               echo "> se réduit à ce que ce déclenchement laisse voir. \`migrate deploy\`"
               echo "> applique TOUTES les migrations en attente, y compris celles d'un"
-              echo "> push antérieur dont la release n'a jamais été approuvée : le"
+              echo "> push antérieur dont la release n'a jamais abouti : le"
               echo "> reliquat n'est pas visible ici."
               echo
+              # Le sort de la borne inconnue (D-520 §8, `20261114-1459-d`) : un
+              # push s'arrête avant l'environnement — sa migration reste en
+              # attente, et la sonde gèle les chemins déclencheurs jusqu'à un
+              # dispatch humain (§3 bis). Un dispatch continue : l'humain qui l'a
+              # lancé est là pour lire ce résumé.
+              if [ "$EVENEMENT" = "push" ]; then
+                echo "> **Run arrêté** : sur un push, une borne inconnue arrête la release"
+                echo "> avant toute écriture (D-520 §8). Reprise : \`workflow_dispatch\` humain."
+                echo
+                ARRET="${ARRET}borne inconnue sur un push (arbitrage 20261114-1459-d) ; "
+              fi
               # Un `before` de zéros (première poussée) ou un commit devenu
               # inatteignable après réécriture : se rabattre sur le commit de tête
               # plutôt que de faire échouer le résumé.
@@ -321,7 +344,8 @@ jobs:
             else
               # Distinct du cas « aucune migration » : là, on ne SAIT pas.
               echo "**Le diff a échoué** — impossible de dire ce que ce push apporte."
-              echo "Ne pas approuver sans avoir regardé le contenu du push à la main."
+              echo "Le run s'arrête ici, avant toute écriture (D-520 §8)."
+              ARRET="${ARRET}diff des migrations en échec ; "
             fi
             # D-389 §5, D-416, D-480 §5 : les tables signées hors de
             # `clinical/` et les contrats de fraîcheur ne sont pas des migrations, et la liste
@@ -344,7 +368,9 @@ jobs:
               fi
             else
               echo
-              echo "**Le diff des tables signées a échoué** — regarder le push à la main."
+              echo "**Le diff des tables signées a échoué** — le run s'arrête ici, avant"
+              echo "toute écriture (D-520 §8)."
+              ARRET="${ARRET}diff des tables signées en échec ; "
             fi
             echo
             echo "### Ce qui part (D-520 : sans approbation humaine)"
@@ -360,6 +386,15 @@ jobs:
             echo "  restauration de base ; un ADD exige que le code qui le lit soit derrière"
             echo "  un drapeau éteint — voir \`docs/DEPLOIEMENT_RELEASE_DB.md\`."
           } >> "$GITHUB_STEP_SUMMARY"
+          # APRÈS le résumé, pour qu'il dise pourquoi. `release` dépend de ce
+          # job : un échec ici l'empêche d'atteindre l'environnement.
+          if [ -n "$ARRET" ]; then
+            echo "❌ Release arrêtée avant l'environnement (D-520 §8) : ${ARRET%; }." >&2
+            echo "   Aucune écriture. Lire le résumé du run ; la reprise est un" >&2
+            echo "   workflow_dispatch humain (D-520 §5), la migration en attente gèle" >&2
+            echo "   les chemins déclencheurs d'ici là (§3 bis)." >&2
+            exit 1
+          fi
 
   # N'écrire que ce qui est passé par une PR relue et mergée. Le `if:` ci-dessous
   # est évalué AVANT les règles de l'environnement : il ne consomme aucune

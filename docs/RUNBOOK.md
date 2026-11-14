@@ -82,7 +82,13 @@ scalingo --app wellneuro --region osc-fr1 one-off-stop one-off-NNNN
    sous `WN_MIGRATIONS_PAR_RELEASE_DB=1`) — proposé automatiquement au merge
    d'une migration, appliqué en one-off après le minuteur de l'environnement,
    **sans approbation humaine** depuis [[D-520]] (la porte est le merge revu).
-   Séquence et gardes : `docs/DEPLOIEMENT_RELEASE_DB.md`. Jamais de
+   **Période transitoire** (§6) : tant que l'environnement garde ses
+   relecteurs requis, le run attend que l'intégrateur l'approuve, sous la
+   délégation du 2026-11-14. Le retrait vient après le lot de gardes (§8),
+   sur un accord daté du responsable ; ensuite, le run part seul après le
+   minuteur. Après le constat par conteneur, la ligne
+   `WN_CONSTAT_RELEASE_DB run=<id>` sur la PR de la migration ouvre la
+   suivante (§3). Séquence et gardes : `docs/DEPLOIEMENT_RELEASE_DB.md`. Jamais de
    `migrate deploy` à la main contre la production.
 5. Attendre le déploiement (CI de `main` ~13 min, puis build de 5 à 14 min)
    puis contrôle post-déploiement

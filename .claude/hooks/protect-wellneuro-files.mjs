@@ -120,10 +120,11 @@ function juger(filePath, toolInput) {
         motif,
         raison:
           `Écriture de schéma ou de migration Prisma (${motif}). ` +
-          `Le SQL committé deviendra applicable à la base de production ` +
-          `Supabase HORS du build : rien ne part automatiquement, il faudra ` +
-          `déclencher à la main le workflow GitHub Actions release-db et le ` +
-          `faire approuver dans l'environnement protégé release-db. ` +
+          `Le SQL committé s'appliquera à la base de production Scalingo ` +
+          `HORS du build : le merge sur main lance le workflow release-db, ` +
+          `qui l'écrit après le minuteur de son environnement, sans clic ` +
+          `humain (D-520). La porte est donc le merge : contre-revue Codex ` +
+          `P0 et GO de wn-reviewer avant lui, une migration à la fois. ` +
           `Une migration doit rester additive : ` +
           `colonnes nullables, ni DROP ni renommage.`
       };
