@@ -673,10 +673,13 @@ describe('instruments — déclaration « question sur le suicide » (NF-7)', ()
       expect(prisma.cabinetInstrument.update.mock.calls[0][0].data.poseQuestionSuicide).toBeNull();
     });
 
-    it('modifier le titre seul garde la déclaration', async () => {
+    it('modifier le titre seul garde la déclaration, par une écriture gardée sur la date relue (20261114-1217-a)', async () => {
       prisma.cabinetInstrument.findFirst.mockResolvedValue({ ...INSTRUMENT, statutRelecture: 'valide', poseQuestionSuicide: true });
       await PATCH(patchRequest({ idInstrument: 'CAB_1', titre: 'Nouveau titre' }));
-      expect('poseQuestionSuicide' in prisma.cabinetInstrument.update.mock.calls[0][0].data).toBe(false);
+      expect(prisma.cabinetInstrument.update).not.toHaveBeenCalled();
+      const appel = prisma.cabinetInstrument.updateMany.mock.calls[0][0];
+      expect(appel.where).toEqual({ idInstrument: 'CAB_1', updatedAt: INSTRUMENT.updatedAt });
+      expect('poseQuestionSuicide' in appel.data).toBe(false);
       expect(prisma.$transaction).not.toHaveBeenCalled();
     });
 
@@ -696,7 +699,10 @@ describe('instruments — déclaration « question sur le suicide » (NF-7)', ()
       };
       // 1. Le PATCH du titre lit la V1 déclarée « oui », puis attend.
       prisma.cabinetInstrument.findFirst.mockResolvedValueOnce({ ...base });
-      prisma.cabinetInstrument.update.mockImplementationOnce(async ({ data }: { data: Record<string, unknown> }) => {
+      prisma.cabinetInstrument.updateMany.mockImplementationOnce(async ({ where, data }: {
+        where: { updatedAt: Date };
+        data: Record<string, unknown>;
+      }) => {
         // 2. Entre-temps : V2, publiée avec « non », puis un envoi commité.
         Object.assign(base, {
           definitionJson: V2,
@@ -705,20 +711,25 @@ describe('instruments — déclaration « question sur le suicide » (NF-7)', ()
           poseQuestionSuicide: false,
           questionSuicideId: null,
           questionSuicideOptionNon: null,
+          updatedAt: new Date('2026-07-24T11:00:00Z'),
         });
         prisma.assignation.count.mockResolvedValue(1);
-        // 3. Le PATCH reprend et écrit.
+        // 3. Le PATCH reprend : son écriture est gardée sur la date relue
+        // (20261114-1217-a), la ligne a bougé, rien n'est écrit.
+        if ((base.updatedAt as Date).getTime() !== where.updatedAt.getTime()) return { count: 0 };
         Object.assign(base, data);
-        return base;
+        return { count: 1 };
       });
       const res = await PATCH(patchRequest({ idInstrument: 'CAB_1', titre: 'Nouveau titre' }));
-      expect(res.status).toBe(200);
-      expect(Object.keys(prisma.cabinetInstrument.update.mock.calls[0][0].data).sort()).toEqual([
+      expect(res.status).toBe(409);
+      expect((await res.json()).reason).toBe('conflit_statut');
+      // Ce que l'écriture aurait porté : les seules métadonnées.
+      expect(Object.keys(prisma.cabinetInstrument.updateMany.mock.calls[0][0].data).sort()).toEqual([
         'categorie',
         'description',
         'titre',
       ]);
-      expect(base.titre).toBe('Nouveau titre');
+      expect(base.titre).toBe(INSTRUMENT.titre);
       expect(base.definitionJson).toBe(V2);
       expect(base.scoringJson).toBe(GRILLE_V2);
       expect(base.statutRelecture).toBe('valide');
@@ -874,6 +885,227 @@ describe('instruments — geste « Déclarer » (NF-7, P2-1)', () => {
       const res = await declarer({ poseQuestionSuicide: false });
       expect(res.status).toBe(409);
       expect((await res.json()).reason).toBe('conflit_statut');
+    });
+  });
+});
+
+// ── Réponse 20261114-1217-a : les libellés que la lettre citera ─────────────
+// Drapeau allumé, sous « oui », le nom de l'instrument, l'énoncé de la
+// question désignée et les libellés de ses options passent la garde du rendu
+// médecin, à la publication, à la déclaration et à la modification d'un
+// instrument publié. Le refus nomme le champ. L'identité de la garde avec
+// celle de la lettre est tenue par `lib/securite/libellesCitables.guard.test.ts`.
+describe('instruments — libellés citables par la lettre (20261114-1217-a)', () => {
+  const OUI = { poseQuestionSuicide: true, questionSuicideId: 'Q1', questionSuicideOptionNon: 0 };
+  const NON = { poseQuestionSuicide: false };
+
+  function definitionAvec(q1: { texte?: string; options?: { v: number; l: string }[] }) {
+    const [section] = DEFINITION_VALIDE.sections;
+    const [premiere, ...autres] = section.questions;
+    return { ...DEFINITION_VALIDE, sections: [{ ...section, questions: [{ ...premiere, ...q1 }, ...autres] }] };
+  }
+
+  const MOTIF_NOM =
+    'Le nom de l’instrument contient un terme de prescription, que la lettre d’adressage au médecin refuse : reformulez-le.';
+  const MOTIF_ENONCE =
+    'L’énoncé de la question désignée contient un terme de prescription, que la lettre d’adressage au médecin refuse : reformulez-le.';
+  const motifOption = (l: string) =>
+    `La réponse « ${l} » de la question désignée contient un terme de prescription, que la lettre d’adressage au médecin refuse : reformulez-la.`;
+
+  const CAS_FAUTIFS: [string, Record<string, unknown>, string[]][] = [
+    ['le nom', { titre: 'Ordonnance du sommeil' }, [MOTIF_NOM]],
+    ['l’énoncé', { definitionJson: definitionAvec({ texte: 'Posologie de votre sommeil ?' }) }, [MOTIF_ENONCE]],
+    [
+      'une option',
+      { definitionJson: definitionAvec({ options: [{ v: 0, l: 'Jamais' }, { v: 1, l: 'Selon le dosage' }, { v: 2, l: 'Souvent' }] }) },
+      [motifOption('Selon le dosage')],
+    ],
+    [
+      'l’option « non »',
+      { definitionJson: definitionAvec({ options: [{ v: 0, l: 'Sans prescription' }, { v: 1, l: 'Parfois' }, { v: 2, l: 'Souvent' }] }) },
+      [motifOption('Sans prescription')],
+    ],
+  ];
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    delete process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB;
+    prisma.cabinetInstrument.update.mockResolvedValue({});
+    prisma.cabinetInstrument.updateMany.mockResolvedValue({ count: 1 });
+    prisma.assignation.count.mockResolvedValue(0);
+  });
+
+  afterEach(() => {
+    delete process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB;
+  });
+
+  describe('drapeau allumé', () => {
+    beforeEach(() => {
+      process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB = 'true';
+    });
+
+    describe('publier', () => {
+      for (const [champ, surcharge, motifs] of CAS_FAUTIFS) {
+        it(`« oui », ${champ} porte un terme refusé : 400, le champ est nommé, rien n’est écrit`, async () => {
+          prisma.cabinetInstrument.findFirst.mockResolvedValue({ ...INSTRUMENT, statutRelecture: 'grille_a_relire', ...surcharge });
+          const res = await PATCH(patchRequest({ idInstrument: 'CAB_1', action: 'publier', ...OUI }));
+          expect(res.status).toBe(400);
+          const json = await res.json();
+          expect(json.reason).toBe('invalid_payload');
+          expect(json.erreurs).toEqual(motifs);
+          expect(json.error).toBe(motifs.join(' '));
+          expect(prisma.cabinetInstrument.updateMany).not.toHaveBeenCalled();
+          expect(prisma.cabinetInstrument.update).not.toHaveBeenCalled();
+        });
+      }
+
+      it('« oui », plusieurs champs fautifs : un motif par champ', async () => {
+        prisma.cabinetInstrument.findFirst.mockResolvedValue({
+          ...INSTRUMENT,
+          statutRelecture: 'grille_a_relire',
+          titre: 'Ordonnance',
+          definitionJson: definitionAvec({ texte: 'Dosage ?' }),
+        });
+        const json = await (await PATCH(patchRequest({ idInstrument: 'CAB_1', action: 'publier', ...OUI }))).json();
+        expect(json.erreurs).toEqual([MOTIF_NOM, MOTIF_ENONCE]);
+      });
+
+      it('« oui », libellés propres : publié', async () => {
+        prisma.cabinetInstrument.findFirst.mockResolvedValue({ ...INSTRUMENT, statutRelecture: 'grille_a_relire' });
+        const res = await PATCH(patchRequest({ idInstrument: 'CAB_1', action: 'publier', ...OUI }));
+        expect(res.status).toBe(200);
+        expect(prisma.cabinetInstrument.updateMany).toHaveBeenCalledTimes(1);
+      });
+
+      it('« non » : rien n’est cité, rien n’est jugé — publié malgré le terme', async () => {
+        prisma.cabinetInstrument.findFirst.mockResolvedValue({ ...INSTRUMENT, statutRelecture: 'grille_a_relire', titre: 'Ordonnance du sommeil' });
+        const res = await PATCH(patchRequest({ idInstrument: 'CAB_1', action: 'publier', ...NON }));
+        expect(res.status).toBe(200);
+      });
+
+      it('une question non désignée n’est pas jugée', async () => {
+        const [section] = DEFINITION_VALIDE.sections;
+        const definition = {
+          ...DEFINITION_VALIDE,
+          sections: [{ ...section, questions: [section.questions[0], { ...section.questions[1], texte: 'Une ordonnance ?' }] }],
+        };
+        prisma.cabinetInstrument.findFirst.mockResolvedValue({ ...INSTRUMENT, statutRelecture: 'grille_a_relire', definitionJson: definition });
+        const res = await PATCH(patchRequest({ idInstrument: 'CAB_1', action: 'publier', ...OUI }));
+        expect(res.status).toBe(200);
+      });
+    });
+
+    describe('déclarer', () => {
+      const PUBLIE_NON_DECLARE = {
+        ...INSTRUMENT,
+        statutRelecture: 'valide',
+        poseQuestionSuicide: null,
+        questionSuicideId: null,
+        questionSuicideOptionNon: null,
+      };
+
+      for (const [champ, surcharge, motifs] of CAS_FAUTIFS) {
+        it(`« oui », ${champ} porte un terme refusé : 400, le champ est nommé, rien n’est écrit`, async () => {
+          prisma.cabinetInstrument.findFirst.mockResolvedValue({ ...PUBLIE_NON_DECLARE, ...surcharge });
+          const res = await PATCH(patchRequest({ idInstrument: 'CAB_1', action: 'declarer', ...OUI }));
+          expect(res.status).toBe(400);
+          expect((await res.json()).erreurs).toEqual(motifs);
+          expect(prisma.cabinetInstrument.updateMany).not.toHaveBeenCalled();
+        });
+      }
+
+      it('« non » : déclaré malgré le terme', async () => {
+        prisma.cabinetInstrument.findFirst.mockResolvedValue({ ...PUBLIE_NON_DECLARE, titre: 'Ordonnance du sommeil' });
+        const res = await PATCH(patchRequest({ idInstrument: 'CAB_1', action: 'declarer', ...NON }));
+        expect(res.status).toBe(200);
+      });
+    });
+
+    describe('modifier un instrument publié', () => {
+      const PUBLIE_OUI = { ...INSTRUMENT, statutRelecture: 'valide', ...OUI };
+
+      it('déclaré « oui », nom modifié vers un terme refusé : 400, le champ est nommé, rien n’est écrit', async () => {
+        prisma.cabinetInstrument.findFirst.mockResolvedValue(PUBLIE_OUI);
+        const res = await PATCH(patchRequest({ idInstrument: 'CAB_1', titre: 'Ordonnance du sommeil' }));
+        expect(res.status).toBe(400);
+        expect((await res.json()).erreurs).toEqual([MOTIF_NOM]);
+        expect(prisma.cabinetInstrument.updateMany).not.toHaveBeenCalled();
+        expect(prisma.cabinetInstrument.update).not.toHaveBeenCalled();
+      });
+
+      it('déclaré « oui », description seule modifiée sur un énoncé fautif déjà publié : refusé, l’énoncé est nommé', async () => {
+        prisma.cabinetInstrument.findFirst.mockResolvedValue({ ...PUBLIE_OUI, definitionJson: definitionAvec({ texte: 'Posologie ?' }) });
+        const res = await PATCH(patchRequest({ idInstrument: 'CAB_1', description: 'Nouvelle description' }));
+        expect(res.status).toBe(400);
+        expect((await res.json()).erreurs).toEqual([MOTIF_ENONCE]);
+      });
+
+      it('déclaré « oui », nom propre : écrit, gardé sur la date relue', async () => {
+        prisma.cabinetInstrument.findFirst.mockResolvedValue(PUBLIE_OUI);
+        const res = await PATCH(patchRequest({ idInstrument: 'CAB_1', titre: 'Sommeil, version 2' }));
+        expect(res.status).toBe(200);
+        expect(prisma.cabinetInstrument.updateMany.mock.calls[0][0]).toMatchObject({
+          where: { idInstrument: 'CAB_1', updatedAt: INSTRUMENT.updatedAt },
+          data: { titre: 'Sommeil, version 2' },
+        });
+      });
+
+      it('déclaré « oui », instrument modifié entre la lecture et l’écriture : 409, rien n’est écrit', async () => {
+        prisma.cabinetInstrument.findFirst.mockResolvedValue(PUBLIE_OUI);
+        prisma.cabinetInstrument.updateMany.mockResolvedValue({ count: 0 });
+        const res = await PATCH(patchRequest({ idInstrument: 'CAB_1', titre: 'Sommeil, version 2' }));
+        expect(res.status).toBe(409);
+        expect((await res.json()).reason).toBe('conflit_statut');
+      });
+
+      // La course que l'écriture gardée ferme : la garde a jugé le nom sur un
+      // instrument non déclaré ; une déclaration « oui » concurrente touche
+      // `updatedAt`, et le nom non jugé n'est pas écrit.
+      it('non déclaré à la lecture, déclaré « oui » avant l’écriture : 409, le nom non jugé n’est pas écrit', async () => {
+        const ligne: Record<string, unknown> = { ...INSTRUMENT, statutRelecture: 'valide', poseQuestionSuicide: null };
+        prisma.cabinetInstrument.findFirst.mockResolvedValue({ ...ligne });
+        prisma.cabinetInstrument.updateMany.mockImplementationOnce(async ({ where, data }: {
+          where: { updatedAt: Date };
+          data: Record<string, unknown>;
+        }) => {
+          Object.assign(ligne, OUI, { updatedAt: new Date('2026-07-24T11:00:00Z') });
+          if ((ligne.updatedAt as Date).getTime() !== where.updatedAt.getTime()) return { count: 0 };
+          Object.assign(ligne, data);
+          return { count: 1 };
+        });
+        const res = await PATCH(patchRequest({ idInstrument: 'CAB_1', titre: 'Ordonnance du sommeil' }));
+        expect(res.status).toBe(409);
+        expect(ligne.titre).toBe(INSTRUMENT.titre);
+      });
+
+      it('déclaré « non » : le nom n’est pas cité, pas jugé', async () => {
+        prisma.cabinetInstrument.findFirst.mockResolvedValue({ ...INSTRUMENT, statutRelecture: 'valide', ...NON });
+        const res = await PATCH(patchRequest({ idInstrument: 'CAB_1', titre: 'Ordonnance du sommeil' }));
+        expect(res.status).toBe(200);
+      });
+
+      it('questions modifiées : la déclaration est effacée, rien n’est jugé ici — la publication suivante repasse par la garde', async () => {
+        prisma.cabinetInstrument.findFirst.mockResolvedValue(PUBLIE_OUI);
+        const res = await PATCH(
+          patchRequest({ idInstrument: 'CAB_1', titre: 'Ordonnance du sommeil', definition: DEFINITION_VALIDE }),
+        );
+        expect(res.status).toBe(200);
+        expect(prisma.cabinetInstrument.update.mock.calls[0][0].data).toMatchObject({
+          statutRelecture: 'brouillon',
+          poseQuestionSuicide: null,
+        });
+      });
+    });
+  });
+
+  describe('drapeau éteint : rien ne change', () => {
+    it('publier et modifier passent malgré le terme, par l’écriture d’avant', async () => {
+      prisma.cabinetInstrument.findFirst.mockResolvedValue({ ...INSTRUMENT, statutRelecture: 'grille_a_relire', titre: 'Ordonnance' });
+      expect((await PATCH(patchRequest({ idInstrument: 'CAB_1', action: 'publier', ...OUI }))).status).toBe(200);
+      prisma.cabinetInstrument.findFirst.mockResolvedValue({ ...INSTRUMENT, statutRelecture: 'valide', ...OUI });
+      expect((await PATCH(patchRequest({ idInstrument: 'CAB_1', titre: 'Ordonnance' }))).status).toBe(200);
+      expect(prisma.cabinetInstrument.updateMany).not.toHaveBeenCalled();
+      expect(prisma.cabinetInstrument.update).toHaveBeenCalledTimes(2);
     });
   });
 });
