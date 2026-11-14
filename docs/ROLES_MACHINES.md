@@ -315,6 +315,79 @@ bornée, et la croire plus large est le risque :
   dépôt ;
 - il ne recopie aucun texte libre d'une ligne.
 
+**Le manifeste d'export.** Un dossier ne montre pas la page qu'on a oublié de
+lire. La session qui exporte pose donc `manifeste.json` à la racine du
+dossier : `{ "schema": 1, "exporte_le": "<ISO, en UTC>", "collections": {
+"messages": { "lignes": <n>, "curseur_epuise": true }, … } }`, avec pour
+chaque collection le nombre de lignes que l'outil a rendu, et `true`
+seulement si aucun curseur de suite ne restait. Un nombre de fichiers
+différent, une collection non déclarée, un curseur non épuisé ou une heure
+dans le futur ou sans fuseau (`Z`) sont des écarts : code `2`. Sans manifeste, la complétude
+n'est pas attestée, et la sortie le dit en tête. Le manifeste ne prouve rien
+de plus que la parole de la session qui l'écrit.
+
+### Le superviseur rejoué (`wn-superviseur.mjs`)
+
+Le contrôle des registres ne voit pas GitHub. Le superviseur croise un export
+et un instantané GitHub, à une heure donnée :
+
+```bash
+node scripts/wn-instantane-github.mjs --sortie <bloc-notes>/instantane.json
+node scripts/wn-superviseur.mjs <dossier-export> --instantane <bloc-notes>/instantane.json
+```
+
+L'instantané rassemble, en lecture seule, ce que rendent les sondes déjà en
+service. Pour chaque PR ouverte, il garde l'auteur, la tête et son origine
+(dépôt de la branche, auteur du commit), les fichiers, les checks de la tête,
+les déclarations « prête @<sha> » (auteur, association au dépôt, date, sha),
+puis les codes de `wn-revue-pr-agent` et de `wn-sonde-release-db`. Pour les
+PR fermées récentes, il garde leur état et le merge. Le 2026-11-14, il a pris
+89 s pour six PR ouvertes, et sa durée croît avec leur nombre.
+`--sans-sondes` le raccourcit, mais aucune PR n'est alors examinable. Son
+chemin de sortie est refusé dans tout arbre Git (ce worktree, la copie
+principale, un autre dépôt), liens symboliques résolus.
+
+Le superviseur reprend les actions dues du contrôle des registres et y ajoute
+ce que GitHub permet d'établir :
+
+- `merge_fait_manquant` : une ligne `prete` non traitée alors que sa PR est mergée ;
+- `prete_perimee` : la tête a avancé après la déclaration ;
+- `merge_a_examiner` ou `prete_en_attente`, avec les conditions manquantes.
+  Une PR n'est examinable que si toutes ces conditions sont vues dans
+  l'instantané : une déclaration sur la tête, faite par un auteur qui a
+  l'accès au dépôt ; une tête dans le dépôt ; la base `main` ; pas de
+  brouillon ; aucun check en échec ni en cours, et `verify` conclu
+  `success` ; les deux gardes à `0`. Une ligne émise après l'instantané
+  attend le suivant ;
+- `declaration_sans_message` : une PR déclarée sans ligne au registre ;
+- `lot_a_passer_fait`, `lot_pr_fermee`, `question_a_clore` ;
+- `chevauchement_signale` : un signal, l'ordre des merges ne change pas.
+
+Une tête venue d'un fork, ou une déclaration d'un auteur sans accès au dépôt,
+est une anomalie. Il rend aussi la prochaine échéance.
+
+Sa portée est celle du contrôle des registres, en plus étroite encore :
+
+- il décrit un état passé. Chaque action porte ce qu'elle a vu (`observe` :
+  PR, tête, heure de l'instantané) et les lectures à refaire sur l'état réel
+  avant d'agir (`a_confronter`). `merge_a_examiner` ne remplace ni l'étape
+  7 bis de `wn-merge` ni ses gardes ;
+- le mode dégradé ne rend jamais `0`. C'est le cas d'un instantané absent,
+  hors contrat, périmé (plus de trente minutes), partiel ou pris sans les
+  sondes, ou d'un export sans manifeste ou périmé. Un état de PR hors
+  énumération est une anomalie ;
+- il ne recopie aucun texte libre, ni des registres ni de GitHub (titres,
+  corps de PR, textes de commentaires) ;
+- il n'écrit rien et ne lance aucun agent. Le faire tourner sans session
+  (routine) reste une décision à part ;
+- l'identité n'est pas établie : les sessions écrivent sous le compte du
+  responsable, et une déclaration de session et un clic du responsable ont le
+  même auteur. L'auteur et la vérification du commit de tête sont gardés dans
+  l'instantané, mais le superviseur n'en juge rien.
+
+Codes : `0` rien de dû, `1` actions dues ou mode dégradé, `2` anomalie,
+`3` usage.
+
 ## Le risque concret, en une phrase
 
 Les tests E2E lancés via `npm run test:e2e` réinitialisent le patient fictif

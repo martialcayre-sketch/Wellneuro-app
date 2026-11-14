@@ -20,16 +20,23 @@
 // `if_version`. Ce script ne lit pas les registres lui-même : un automatisme
 // sans session n'est décidé ni par `D-503` ni par `D-510`.
 //
+// Le manifeste d'export (`<dossier>/manifeste.json`, lot L2) est écrit par
+// la session qui exporte : par collection, le nombre de lignes que l'outil a
+// rendu et l'assurance que le curseur de pagination est épuisé. Il ne prouve
+// rien de plus que la parole de la session ; il rend visible une page
+// oubliée, qu'un dossier seul ne montre pas. Absent : complétude non
+// attestée, dite en tête. En écart avec les fichiers : anomalie.
+//
 // Codes de sortie :
 //   0  registres conformes aux règles écrites, rien de dû
 //   1  des actions sont dues (aucune anomalie de règle)
-//   2  au moins une anomalie de règle
+//   2  au moins une anomalie de règle, ou un manifeste en écart
 //   3  usage invalide ou export illisible
 
 import { existsSync, readdirSync, readFileSync, realpathSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { analyser, boite, court } from './lib/registres.mjs';
+import { analyser, boite, court, instant } from './lib/registres.mjs';
 
 export const SORTIE_CONFORME = 0;
 export const SORTIE_ACTIONS = 1;
@@ -95,12 +102,74 @@ export function lireExport(dossier) {
   return lu;
 }
 
+export const FICHIER_MANIFESTE = 'manifeste.json';
+export const SCHEMA_MANIFESTE = 1;
+
+/**
+ * Le manifeste confronté à l'export lu. Rend `{ etat, ecarts, exporteLe }` :
+ * `etat` vaut `absent`, `conforme` ou `ecart`. Une collection que le
+ * manifeste déclare vide (0 ligne, curseur épuisé) et dont le dossier manque
+ * n'est plus « absente » : l'outil n'écrit pas de dossier pour une collection
+ * vide. `lu.absentes` est corrigé en place dans ce seul cas.
+ */
+export function lireManifeste(dossier, lu, maintenant = null) {
+  const chemin = join(dossier, FICHIER_MANIFESTE);
+  if (!existsSync(chemin)) return { etat: 'absent', ecarts: [], exporteLe: null };
+  let m;
+  try {
+    m = JSON.parse(readFileSync(chemin, 'utf8'));
+  } catch {
+    return { etat: 'ecart', ecarts: ['manifeste illisible (JSON)'], exporteLe: null };
+  }
+  if (!m || typeof m !== 'object' || m.schema !== SCHEMA_MANIFESTE || !m.collections || typeof m.collections !== 'object') {
+    return { etat: 'ecart', ecarts: [`manifeste hors contrat (schéma attendu ${SCHEMA_MANIFESTE}, champ \`collections\`)`], exporteLe: null };
+  }
+  const ecarts = [];
+  // Un fuseau explicite (`Z` ou `±hh:mm`) : sans lui, l'heure se lirait à
+  // l'heure locale et vieillirait l'export en silence.
+  const avecFuseau = typeof m.exporte_le === 'string' && /(?:Z|[+-]\d{2}:?\d{2})$/.test(m.exporte_le.trim());
+  const exporteLe = avecFuseau ? instant(m.exporte_le) : null;
+  if (exporteLe === null) ecarts.push('`exporte_le` absent, illisible ou sans fuseau (`Z`)');
+  else if (maintenant !== null && exporteLe > maintenant + 5 * 60000) ecarts.push('`exporte_le` dans le futur — heure de Paris écrite pour UTC ?');
+  for (const collection of COLLECTIONS) {
+    const d = m.collections[collection];
+    if (!d || typeof d !== 'object') {
+      ecarts.push(`${collection} : non déclarée au manifeste`);
+      continue;
+    }
+    if (d.curseur_epuise !== true) ecarts.push(`${collection} : pagination non attestée épuisée (\`curseur_epuise\`)`);
+    if (!Number.isInteger(d.lignes) || d.lignes < 0) {
+      ecarts.push(`${collection} : \`lignes\` n'est pas un entier`);
+      continue;
+    }
+    const absente = lu.absentes.includes(collection);
+    if (absente && d.lignes === 0 && d.curseur_epuise === true) {
+      lu.absentes = lu.absentes.filter((c) => c !== collection);
+      continue;
+    }
+    const surDisque = absente ? 0 : lu[collection].length + lu.illisibles.filter((f) => f.startsWith(`${collection}/`)).length;
+    if (surDisque !== d.lignes) ecarts.push(`${collection} : ${surDisque} fichier(s) pour ${d.lignes} ligne(s) déclarée(s)`);
+  }
+  return { etat: ecarts.length === 0 ? 'conforme' : 'ecart', ecarts, exporteLe };
+}
+
+/**
+ * L'âge de l'export, en minutes : le plus ancien de la date des fichiers et
+ * de l'heure que déclare le manifeste — la plus prudente des deux.
+ */
+export function ageExport(lu, manifeste, maintenant) {
+  const bornes = [lu.plusAncien, manifeste?.exporteLe ?? null].filter((t) => t !== null);
+  return bornes.length === 0 ? null : Math.max(0, (maintenant - Math.min(...bornes)) / 60000);
+}
+
 const age = (h) => (h === null ? '' : ` · ${h} h`);
 
 /** Le rendu texte : comptes, anomalies, avis, actions dues, lots suivants, boîte, ligne machine. */
-export function rendre(analyse, { absentes = [], illisibles = [], ageExportMin = null, boiteNom = null, lignesBoite = [] } = {}) {
+export function rendre(analyse, { absentes = [], illisibles = [], ageExportMin = null, boiteNom = null, lignesBoite = [], manifeste = null } = {}) {
   const lignes = [];
   if (ageExportMin !== null && ageExportMin > EXPORT_PERIME_MIN) lignes.push(`⚠ export vieux de ${Math.round(ageExportMin)} min — il décrit un état passé ; refaire l'export avant tout geste.`);
+  if (manifeste?.etat === 'absent') lignes.push(`· export sans ${FICHIER_MANIFESTE} : complétude de la pagination non attestée.`);
+  for (const e of manifeste?.ecarts ?? []) lignes.push(`✗ manifeste en écart : ${court(e, 120)}`);
   if (absentes.length > 0) lignes.push(`· collection(s) absente(s) de l'export, non contrôlée(s) : ${absentes.join(', ')}`);
   for (const f of illisibles) lignes.push(`✗ fichier illisible : ${court(f, 80)}`);
   const { comptes, anomalies, avis, actions, suivants } = analyse;
@@ -128,13 +197,14 @@ export function rendre(analyse, { absentes = [], illisibles = [], ageExportMin =
     lignes.push(lignesBoite.length === 0 ? `✓ boîte « ${court(boiteNom)} » : aucune ligne en attente.` : `→ boîte « ${court(boiteNom)} » : ${lignesBoite.length} ligne(s) non traitée(s) :`);
     for (const m of lignesBoite) lignes.push(`  ${m.id} [${m.etat}] ${m.objet} de ${m.de}${m.ref ? ` · ref ${m.ref}` : ''}`);
   }
-  lignes.push(`REGISTRES anomalies=${anomalies.length + illisibles.length} avis=${avis.length} actions=${actions.length}${boiteNom !== null ? ` boite=${lignesBoite.length}` : ''}`);
+  const ecarts = manifeste?.ecarts?.length ?? 0;
+  lignes.push(`REGISTRES anomalies=${anomalies.length + illisibles.length + ecarts} avis=${avis.length} actions=${actions.length}${boiteNom !== null ? ` boite=${lignesBoite.length}` : ''}${manifeste && manifeste.etat !== 'absent' ? ` manifeste=${manifeste.etat}` : ''}`);
   return lignes;
 }
 
-/** Le code de sortie : l'anomalie prime sur l'action due. */
-export function codeDeSortie(analyse, illisibles = []) {
-  if (analyse.anomalies.length > 0 || illisibles.length > 0) return SORTIE_ANOMALIES;
+/** Le code de sortie : l'anomalie (manifeste en écart compris) prime sur l'action due. */
+export function codeDeSortie(analyse, illisibles = [], manifeste = null) {
+  if (analyse.anomalies.length > 0 || illisibles.length > 0 || manifeste?.etat === 'ecart') return SORTIE_ANOMALIES;
   return analyse.actions.length > 0 ? SORTIE_ACTIONS : SORTIE_CONFORME;
 }
 
@@ -142,18 +212,19 @@ export function controler(argv, { maintenant = Date.now() } = {}) {
   const { options, erreur } = analyserArguments(argv);
   if (erreur) return { code: SORTIE_USAGE, lignes: [`✗ ${erreur}`, USAGE] };
   if (!existsSync(options.dossier) || !statSync(options.dossier).isDirectory()) return { code: SORTIE_USAGE, lignes: [`✗ dossier d'export introuvable : ${options.dossier}`, USAGE] };
-  const lu = lireExport(options.dossier);
-  if (lu.absentes.length === COLLECTIONS.length) return { code: SORTIE_USAGE, lignes: [`✗ aucune collection (${COLLECTIONS.join(', ')}) sous ${options.dossier}`, USAGE] };
   const instantT = options.maintenant ?? maintenant;
+  const lu = lireExport(options.dossier);
+  const manifeste = lireManifeste(options.dossier, lu, instantT);
+  if (lu.absentes.length === COLLECTIONS.length && manifeste.etat !== 'conforme') return { code: SORTIE_USAGE, lignes: [`✗ aucune collection (${COLLECTIONS.join(', ')}) sous ${options.dossier}`, USAGE] };
   const analyse = analyser(lu, instantT);
-  const ageExportMin = lu.plusAncien === null ? null : Math.max(0, (instantT - lu.plusAncien) / 60000);
+  const ageExportMin = ageExport(lu, manifeste, instantT);
   const lignesBoite = options.boite === null ? [] : boite(lu.messages, options.boite);
-  const code = codeDeSortie(analyse, lu.illisibles);
+  const code = codeDeSortie(analyse, lu.illisibles, manifeste);
   if (options.json) {
-    const sortie = { ...analyse, absentes: lu.absentes, illisibles: lu.illisibles, export_age_min: ageExportMin === null ? null : Math.round(ageExportMin), ...(options.boite === null ? {} : { boite: { nom: options.boite, lignes: lignesBoite } }), code };
+    const sortie = { ...analyse, absentes: lu.absentes, illisibles: lu.illisibles, manifeste: { etat: manifeste.etat, ecarts: manifeste.ecarts }, export_age_min: ageExportMin === null ? null : Math.round(ageExportMin), ...(options.boite === null ? {} : { boite: { nom: options.boite, lignes: lignesBoite } }), code };
     return { code, lignes: [JSON.stringify(sortie, null, 2)] };
   }
-  return { code, lignes: rendre(analyse, { absentes: lu.absentes, illisibles: lu.illisibles, ageExportMin, boiteNom: options.boite, lignesBoite }) };
+  return { code, lignes: rendre(analyse, { absentes: lu.absentes, illisibles: lu.illisibles, ageExportMin, boiteNom: options.boite, lignesBoite, manifeste }) };
 }
 
 const direct = process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url);
