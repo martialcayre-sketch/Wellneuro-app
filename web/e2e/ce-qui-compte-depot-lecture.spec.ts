@@ -19,7 +19,9 @@ const PATIENT = {
   idPatient: 'PAT_SEED_01',
   email: 'sophie.nicola@fictif.wellneuro.fr',
 };
-const JETON = 'jeton-de-parcours';
+// Le segment de la page est l'`idPatient` de la session : sous un autre segment,
+// la page renvoie à l'entrée et les envois sont refusés ([[D-481]], DOC-12).
+const JETON = PATIENT.idPatient;
 const TEXTE = 'Pouvoir reprendre la marche le dimanche matin avec ma sœur.\nEt dormir sans me réveiller à 4 h.';
 
 test.describe.serial('« Ce qui compte » — dépôt au portail, lecture au cockpit', () => {

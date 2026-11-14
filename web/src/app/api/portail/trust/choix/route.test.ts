@@ -10,16 +10,23 @@ const { prisma, authentifierPatientPortail } = vi.hoisted(() => ({
 }));
 
 vi.mock('@/lib/prisma', () => ({ prisma }));
-vi.mock('@/lib/trust/portailAuth', () => ({ authentifierPatientPortail }));
+// La garde du dossier de la page reste la vraie ([[D-481]], DOC-12) : seule
+// l'authentification est simulée.
+vi.mock('@/lib/trust/portailAuth', async importOriginal => ({
+  ...(await importOriginal<typeof import('@/lib/trust/portailAuth')>()),
+  authentifierPatientPortail,
+}));
 
 import { POST } from './route';
+import { EN_TETE_DOSSIER_PAGE, MESSAGE_AUTRE_DOSSIER } from '@/lib/portail/dossierPage';
 
 const URL_BASE = 'http://localhost/api/portail/trust/choix';
 
-function requete(corps: unknown): Request {
+/** `segment` : celui de la page qui envoie ; `null` : en-tête absent. Défaut : le dossier de la session. */
+function requete(corps: unknown, segment: string | null = 'PAT_TEST'): Request {
   return new Request(URL_BASE, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...(segment === null ? {} : { [EN_TETE_DOSSIER_PAGE]: segment }) },
     body: JSON.stringify(corps),
   });
 }
@@ -41,6 +48,29 @@ describe('POST /api/portail/trust/choix', () => {
       $queryRaw: prisma.$queryRaw,
     }));
     delete process.env.WN_TRACE_FORMULATION_CHOIX;
+  });
+
+  it('page ouverte sous un autre dossier : 409 (T-51), sans verrou ni écriture', async () => {
+    const res = await POST(requete({ finalite: 'partage_medecin_traitant', statut: 'accorde' }, 'PAT_AUTRE'));
+    expect(res.status).toBe(409);
+    expect(await res.json()).toEqual({ ok: false, reason: 'autre_dossier', error: MESSAGE_AUTRE_DOSSIER });
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(prisma.trustChoiceEvent.create).not.toHaveBeenCalled();
+  });
+
+  it('segment absent : 409, sans écriture', async () => {
+    const res = await POST(requete({ finalite: 'partage_medecin_traitant', statut: 'retire' }, null));
+    expect(res.status).toBe(409);
+    expect(prisma.trustChoiceEvent.create).not.toHaveBeenCalled();
+  });
+
+  it('401 et 403 passent avant la garde du dossier de la page', async () => {
+    const { NextResponse } = await import('next/server');
+    for (const status of [401, 403]) {
+      authentifierPatientPortail.mockResolvedValueOnce({ erreur: NextResponse.json({ ok: false }, { status }) });
+      const res = await POST(requete({ finalite: 'partage_medecin_traitant', statut: 'accorde' }, 'PAT_AUTRE'));
+      expect(res.status).toBe(status);
+    }
   });
 
   it('★ PREND LE VERROU DE LIGNE — sans lui, la garde des routes praticien ne sérialise rien', () => {

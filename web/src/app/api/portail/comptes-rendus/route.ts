@@ -12,7 +12,7 @@ import {
   type DocumentTransmisLu,
 } from '@/lib/biology-library/import/transmission';
 import { MESSAGES_TRANSMISSION } from '@/lib/biology-library/import/transmissionStatut';
-import { authentifierPatientPortail } from '@/lib/trust/portailAuth';
+import { authentifierPatientPortail, refusAutreDossier } from '@/lib/trust/portailAuth';
 import { classeEtCode } from '@/lib/observability/classeEtCode';
 
 // Le compte rendu d'analyses TRANSMIS PAR LE PATIENT depuis son portail
@@ -86,6 +86,9 @@ export async function POST(req: Request) {
     const auth = await authentifierPatientPortail(req);
     if (auth.erreur) return auth.erreur;
     const { patient } = auth;
+    // Le dossier de la page ([[D-481]], DOC-12) : après 401/403, avant tout le reste.
+    const autreDossier = refusAutreDossier(req, patient.idPatient);
+    if (autreDossier) return autreDossier;
 
     const documentAccuse = documentExigeAuDepot();
     if (!(await aPrisConnaissanceAuDepot(patient.idPatient, documentAccuse))) {

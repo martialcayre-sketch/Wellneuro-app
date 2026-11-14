@@ -59,7 +59,12 @@ function request(body: object): Request {
   const cookie = signPatientSession({ idPatient: patient.idPatient, email: patient.email });
   return new Request('http://localhost/api/portail/trust/signalement', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', cookie: `wn_portail=${encodeURIComponent(cookie)}` },
+    headers: {
+      'Content-Type': 'application/json',
+      cookie: `wn_portail=${encodeURIComponent(cookie)}`,
+      // Le segment de la page : celui du dossier de la session ([[D-481]], DOC-12).
+      'x-wn-dossier-page': patient.idPatient,
+    },
     body: JSON.stringify(body),
   });
 }

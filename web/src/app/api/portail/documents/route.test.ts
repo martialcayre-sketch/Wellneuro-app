@@ -13,6 +13,7 @@ const { prisma } = vi.hoisted(() => ({
 vi.mock('@/lib/prisma', () => ({ prisma }));
 
 import { signPatientSession } from '@/lib/patient-session';
+import { EN_TETE_DOSSIER_PAGE, MESSAGE_AUTRE_DOSSIER } from '@/lib/portail/dossierPage';
 import { GET, POST } from './route';
 
 // Le dépôt d'un document par le patient ([[D-330]]). Ce banc tient l'ORDRE
@@ -41,7 +42,16 @@ function cookie(avecSession: boolean): Record<string, string> {
 }
 
 async function requete(
-  opts: { session?: boolean; longueur?: string | null; type?: string; octets?: Buffer; categorie?: string | null; nom?: string } = {},
+  opts: {
+    session?: boolean;
+    longueur?: string | null;
+    type?: string;
+    octets?: Buffer;
+    categorie?: string | null;
+    nom?: string;
+    /** Segment de la page qui envoie ; `null` : en-tête absent. Défaut : le dossier de la session. */
+    segment?: string | null;
+  } = {},
 ) {
   const form = new FormData();
   if (opts.categorie !== null) form.set('categorie', opts.categorie ?? 'courrier');
@@ -56,6 +66,8 @@ async function requete(
   const headers = new Headers({ 'content-type': enveloppe.headers.get('content-type') ?? '', ...cookie(opts.session ?? true) });
   const longueur = opts.longueur === undefined ? String(corps.length) : opts.longueur;
   if (longueur !== null) headers.set('content-length', longueur);
+  const segment = opts.segment === undefined ? patient.idPatient : opts.segment;
+  if (segment !== null) headers.set(EN_TETE_DOSSIER_PAGE, segment);
   const req = new Request('http://localhost/api/portail/documents', { method: 'POST', body: corps, headers });
   const lecture = vi.spyOn(req, 'formData');
   return { req, lecture };
@@ -111,6 +123,28 @@ describe('POST /api/portail/documents — l’ordre des gardes', () => {
     const { req, lecture } = await requete({ session: false });
     expect((await POST(req)).status).toBe(401);
     expect(lecture).not.toHaveBeenCalled();
+  });
+
+  it('sans session, segment d’un autre dossier : 401 passe avant la garde du dossier', async () => {
+    const { req } = await requete({ session: false, segment: 'PAT_AUTRE' });
+    expect((await POST(req)).status).toBe(401);
+  });
+
+  it('page ouverte sous un autre dossier : 409 (T-51), corps non lu, rien d’écrit', async () => {
+    const { req, lecture } = await requete({ segment: 'PAT_AUTRE' });
+    const res = await POST(req);
+    expect(res.status).toBe(409);
+    expect(await res.json()).toEqual({ ok: false, reason: 'autre_dossier', error: MESSAGE_AUTRE_DOSSIER });
+    expect(lecture).not.toHaveBeenCalled();
+    expect(prisma.documentDeposePatient.create).not.toHaveBeenCalled();
+    expect(prisma.$executeRaw).not.toHaveBeenCalled();
+  });
+
+  it('segment absent (page servie avant la garde) : 409, rien d’écrit', async () => {
+    const { req, lecture } = await requete({ segment: null });
+    expect((await POST(req)).status).toBe(409);
+    expect(lecture).not.toHaveBeenCalled();
+    expect(prisma.documentDeposePatient.create).not.toHaveBeenCalled();
   });
 
   it('dossier clos : 409, corps non lu', async () => {

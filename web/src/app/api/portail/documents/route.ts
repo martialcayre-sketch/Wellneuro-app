@@ -10,7 +10,7 @@ import {
   listerDepotsPatient,
   type DepotLu,
 } from '@/lib/collecte/documentsDeposesServeur';
-import { authentifierPatientPortail } from '@/lib/trust/portailAuth';
+import { authentifierPatientPortail, refusAutreDossier } from '@/lib/trust/portailAuth';
 import { classeEtCode } from '@/lib/observability/classeEtCode';
 
 // LE DÉPÔT D'UN DOCUMENT PAR LE PATIENT ([[D-330]], J3-collecte). Le dossier est
@@ -96,6 +96,9 @@ export async function POST(req: Request) {
     const auth = await authentifierPatientPortail(req);
     if (auth.erreur) return auth.erreur;
     const { patient } = auth;
+    // Le dossier de la page ([[D-481]], DOC-12) : après 401/403, avant tout le reste.
+    const autreDossier = refusAutreDossier(req, patient.idPatient);
+    if (autreDossier) return autreDossier;
 
     if (!accepteNouvelEnvoi(patient)) return echec(RAISON_DOSSIER_CLOS, MESSAGES_DEPOT_DOCUMENT.dossier_cloture, 409);
     const refusAge = refusSaisieSante(statutAge(patient.dateNaissance, Date.now()));

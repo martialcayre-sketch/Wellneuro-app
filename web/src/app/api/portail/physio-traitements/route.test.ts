@@ -17,10 +17,16 @@ const { prisma, auth } = vi.hoisted(() => ({
 }));
 
 vi.mock('@/lib/prisma', () => ({ prisma }));
-vi.mock('@/lib/trust/portailAuth', () => ({ authentifierPatientPortail: auth }));
+// La garde du dossier de la page reste la vraie ([[D-481]], DOC-12) : seule
+// l'authentification est simulée.
+vi.mock('@/lib/trust/portailAuth', async importOriginal => ({
+  ...(await importOriginal<typeof import('@/lib/trust/portailAuth')>()),
+  authentifierPatientPortail: auth,
+}));
 vi.mock('@/lib/dateParis', () => ({ dateJourParis: () => '2026-10-21' }));
 
 import { GET, POST } from './route';
+import { EN_TETE_DOSSIER_PAGE, MESSAGE_AUTRE_DOSSIER } from '@/lib/portail/dossierPage';
 
 const PATIENT = {
   idPatient: 'PAT_SOPHIE',
@@ -29,10 +35,11 @@ const PATIENT = {
   dateNaissance: '1990-04-02' as string | null,
 };
 
-const requete = (body: unknown) =>
+/** `segment` : celui de la page qui envoie ; `null` : en-tête absent. Défaut : le dossier de la session. */
+const requete = (body: unknown, segment: string | null = PATIENT.idPatient) =>
   new Request('http://localhost/api/portail/physio-traitements', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...(segment === null ? {} : { [EN_TETE_DOSSIER_PAGE]: segment }) },
     body: JSON.stringify(body),
   });
 
@@ -92,6 +99,27 @@ describe('drapeau, session, interrupteur', () => {
 });
 
 describe('POST — gardes et main du patient', () => {
+  it('page ouverte sous un autre dossier : 409 (T-51), rien de lu ni d’écrit', async () => {
+    const res = await POST(requete(SEXE, 'PAT_AUTRE'));
+    expect(res.status).toBe(409);
+    expect(await res.json()).toEqual({ ok: false, reason: 'autre_dossier', error: MESSAGE_AUTRE_DOSSIER });
+    expect(prisma.donneePhysiologique.count).not.toHaveBeenCalled();
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(prisma.donneePhysiologique.create).not.toHaveBeenCalled();
+    expect(prisma.traitementEnCours.create).not.toHaveBeenCalled();
+  });
+
+  it('segment absent : 409, rien d’écrit', async () => {
+    expect((await POST(requete(SEXE, null))).status).toBe(409);
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('401 passe avant la garde du dossier de la page', async () => {
+    const { NextResponse } = await import('next/server');
+    auth.mockResolvedValueOnce({ erreur: NextResponse.json({ ok: false }, { status: 401 }) });
+    expect((await POST(requete(SEXE, 'PAT_AUTRE'))).status).toBe(401);
+  });
+
   it('pose sans e-mail, dossier pris à la session', async () => {
     const reponse = await POST(requete({ ...SEXE, idPatient: 'AUTRE_DOSSIER' }));
     expect(reponse.status).toBe(201);

@@ -5,6 +5,7 @@ import { FINALITES } from '@/lib/trust/finalitesChoix';
 import type { ChoixEtat } from '@/app/api/portail/trust/etat/route';
 import { PatientButton } from '@/components/patient/ui/PatientButton';
 import { PatientInlineMessage } from '@/components/patient/ui/PatientInlineMessage';
+import { enTeteDossierPage } from '@/lib/portail/dossierPage';
 
 /**
  * « Mes choix et autorisations » (TRUST LOT-03) — chaque finalité facultative
@@ -68,7 +69,9 @@ export function MesChoix({
     try {
       const res = await fetch('/api/portail/trust/choix', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        // Le segment de la page : la route refuse (409, T-51, affiché à
+        // l'endroit du geste) s'il n'est pas le dossier de la session.
+        headers: { 'Content-Type': 'application/json', ...enTeteDossierPage(token) },
         body: JSON.stringify({ token, finalite, statut }),
       });
       const data = (await res.json()) as { ok: boolean; error?: string };

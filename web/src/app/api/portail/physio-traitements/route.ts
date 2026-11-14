@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { dateJourParis } from '@/lib/dateParis';
 import { accepteNouvelEnvoi, RAISON_DOSSIER_CLOS } from '@/lib/patient/cycleDeVie';
 import { refusSaisieSante, statutAge } from '@/lib/patient/gardeAge';
-import { authentifierPatientPortail } from '@/lib/trust/portailAuth';
+import { authentifierPatientPortail, refusAutreDossier } from '@/lib/trust/portailAuth';
 import { cadenceAtteinte, MESSAGE_CADENCE_PATIENT } from '@/lib/securite/cadenceEcritures';
 import { classeEtCode } from '@/lib/observability/classeEtCode';
 import { estConflitConcurrent, estRefusDeLaBase } from '@/lib/bio-parcours/constats/erreurs';
@@ -80,6 +80,9 @@ export async function POST(req: Request) {
     if (auth.erreur) return auth.erreur as NextResponse<PortailPhysioTraitementsResponse>;
     const { patient } = auth;
     const { idPatient } = patient;
+    // Le dossier de la page ([[D-481]], DOC-12) : après 401/403, avant tout le reste.
+    const autreDossier = refusAutreDossier(req, idPatient);
+    if (autreDossier) return autreDossier as NextResponse<PortailPhysioTraitementsResponse>;
 
     if (!accepteNouvelEnvoi(patient)) return echec(RAISON_DOSSIER_CLOS, 409);
     const refusAge = refusSaisieSante(statutAge(patient.dateNaissance, Date.now()));

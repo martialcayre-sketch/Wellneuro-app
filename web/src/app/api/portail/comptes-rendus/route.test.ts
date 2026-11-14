@@ -13,6 +13,7 @@ const { prisma } = vi.hoisted(() => ({
 vi.mock('@/lib/prisma', () => ({ prisma }));
 
 import { signPatientSession } from '@/lib/patient-session';
+import { EN_TETE_DOSSIER_PAGE, MESSAGE_AUTRE_DOSSIER } from '@/lib/portail/dossierPage';
 import { GET, POST } from './route';
 
 // La transmission du compte rendu par le patient ([[D-269]], LOT-04). Ce banc
@@ -42,7 +43,17 @@ function cookie(avecSession: boolean): Record<string, string> {
   return { cookie: `wn_portail=${encodeURIComponent(jeton)}` };
 }
 
-async function requete(opts: { session?: boolean; longueur?: string | null; type?: string; octets?: Buffer; url?: string } = {}) {
+async function requete(
+  opts: {
+    session?: boolean;
+    longueur?: string | null;
+    type?: string;
+    octets?: Buffer;
+    url?: string;
+    /** Segment de la page qui envoie ; `null` : en-tête absent. Défaut : le dossier de la session. */
+    segment?: string | null;
+  } = {},
+) {
   const form = new FormData();
   form.set('fichier', new Blob([new Uint8Array(opts.octets ?? PDF)], { type: opts.type ?? 'application/pdf' }));
   const enveloppe = new Response(form);
@@ -50,6 +61,8 @@ async function requete(opts: { session?: boolean; longueur?: string | null; type
   const headers = new Headers({ 'content-type': enveloppe.headers.get('content-type') ?? '', ...cookie(opts.session ?? true) });
   const longueur = opts.longueur === undefined ? String(corps.length) : opts.longueur;
   if (longueur !== null) headers.set('content-length', longueur);
+  const segment = opts.segment === undefined ? patient.idPatient : opts.segment;
+  if (segment !== null) headers.set(EN_TETE_DOSSIER_PAGE, segment);
   const req = new Request(opts.url ?? 'http://localhost/api/portail/comptes-rendus', { method: 'POST', body: corps, headers });
   const lecture = vi.spyOn(req, 'formData');
   return { req, lecture };
@@ -114,6 +127,29 @@ describe('POST /api/portail/comptes-rendus — l’ordre des gardes (D-269 §5)'
     const { req, lecture } = await requete();
     expect((await POST(req)).status).toBe(403);
     expect(lecture).not.toHaveBeenCalled();
+  });
+
+  it('401 et 403 passent avant la garde du dossier de la page', async () => {
+    expect((await POST((await requete({ session: false, segment: 'PAT_AUTRE' })).req)).status).toBe(401);
+    prisma.patient.findUnique.mockResolvedValueOnce({ ...patient, accessTokenRevoked: true });
+    expect((await POST((await requete({ segment: 'PAT_AUTRE' })).req)).status).toBe(403);
+  });
+
+  it('page ouverte sous un autre dossier : 409 (T-51) avant l’accusé, corps non lu, rien d’écrit', async () => {
+    const { req, lecture } = await requete({ segment: 'PAT_AUTRE' });
+    const res = await POST(req);
+    expect(res.status).toBe(409);
+    expect(await res.json()).toEqual({ ok: false, reason: 'autre_dossier', error: MESSAGE_AUTRE_DOSSIER });
+    expect(prisma.trustAcknowledgement.count).not.toHaveBeenCalled();
+    expect(lecture).not.toHaveBeenCalled();
+    expect(prisma.compteRenduBiologique.create).not.toHaveBeenCalled();
+    expect(prisma.$executeRaw).not.toHaveBeenCalled();
+  });
+
+  it('segment absent : 409, rien d’écrit', async () => {
+    const { req } = await requete({ segment: null });
+    expect((await POST(req)).status).toBe(409);
+    expect(prisma.compteRenduBiologique.create).not.toHaveBeenCalled();
   });
 
   it('sans accusé de la version courante d’`usage_ia` : 403 `accuse_requis`, corps non lu', async () => {

@@ -13,6 +13,7 @@ import { DocumentTrust } from '@/components/patient/trust/DocumentTrust';
 import { PatientCard } from '@/components/patient/ui/PatientCard';
 import { PatientButton } from '@/components/patient/ui/PatientButton';
 import { PatientInlineMessage } from '@/components/patient/ui/PatientInlineMessage';
+import { enTeteDossierPage, estRefusAutreDossier, MESSAGE_AUTRE_DOSSIER } from '@/lib/portail/dossierPage';
 import { PatientErrorState } from '@/components/patient/PatientErrorState';
 import { DateNaissanceEcran } from '@/components/patient/DateNaissanceEcran';
 import { MESSAGE_CIRCUIT_MINEUR } from '@/lib/patient/gardeAge';
@@ -46,6 +47,8 @@ export function TransmissionCompteRendu({ token }: { token: string }) {
   const [cleFichier, setCleFichier] = useState(0);
   const [occupe, setOccupe] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
+  // Refus de la garde du dossier de la page ([[D-481]] DOC-12) : T-51 sous le bouton.
+  const [refusDossier, setRefusDossier] = useState(false);
   const [info, setInfo] = useState<string | null>(null);
   const annuleRef = useRef(false);
 
@@ -107,16 +110,23 @@ export function TransmissionCompteRendu({ token }: { token: string }) {
     if (!fichier) return;
     setOccupe(true);
     setErreur(null);
+    setRefusDossier(false);
     setInfo(null);
     try {
       const form = new FormData();
       form.append('fichier', fichier);
-      const res = await fetch('/api/portail/comptes-rendus', { method: 'POST', body: form });
+      const res = await fetch('/api/portail/comptes-rendus', { method: 'POST', body: form, headers: enTeteDossierPage(token) });
       if (res.status === 401) {
         router.replace(`/portail/${token}`);
         return;
       }
-      const data = (await res.json().catch(() => null)) as { ok?: boolean; error?: string } | null;
+      const data = (await res.json().catch(() => null)) as { ok?: boolean; reason?: string; error?: string } | null;
+      // Rien n'est parti : la page ne relit pas la liste, qui serait celle de
+      // l'autre compte, et garde le fichier choisi.
+      if (estRefusAutreDossier(res.status, data)) {
+        setRefusDossier(true);
+        return;
+      }
       if (!res.ok || !data?.ok) {
         setErreur(data?.error ?? 'Le document n’a pas pu être envoyé. Réessayez.');
       } else {
@@ -225,6 +235,7 @@ export function TransmissionCompteRendu({ token }: { token: string }) {
               <PatientButton onClick={() => void envoyer()} disabled={!fichier} loading={occupe} loadingLabel="Envoi…">
                 Envoyer à mon praticien
               </PatientButton>
+              {refusDossier && <PatientInlineMessage tone="error">{MESSAGE_AUTRE_DOSSIER}</PatientInlineMessage>}
             </div>
           )}
         </div>
