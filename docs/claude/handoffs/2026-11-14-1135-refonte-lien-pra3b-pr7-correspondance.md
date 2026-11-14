@@ -2,7 +2,8 @@
 
 ## Branche et état du dépôt
 
-- Branche `worktree-refonte-lien-pra3b-pr7-correspondance`, créée depuis `origin/main@42b83323`.
+- Branche `worktree-refonte-lien-pra3b-pr7-correspondance`, créée depuis `origin/main@42b83323`. Après le premier commit, le crochet de fraîcheur a bloqué la correction de revue : `origin/main` (#2105 D-519, #2103, #2107) fusionné sur arbitrage du responsable, sans conflit (seul fichier commun : `ExportDossierPanel.test.tsx`).
+- Revue PR-Agent (« Bouton plus petit que 44 px ») : « Reprendre « … » » passe en `text-sm` comme les « Réessayer », banc ajouté.
 - Worktree `.claude/worktrees/refonte-lien-pra3b-pr7-correspondance`. La session ne merge pas : l'intégrateur merge sur « prête @<sha> ».
 
 ## Objectif

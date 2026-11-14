@@ -352,7 +352,11 @@ describe('CorrespondanceMedecinPanel (C3 LOT-06)', () => {
     // validerait sans être lue.
     expect(champ.value).toBe('');
 
-    fireEvent.click(screen.getByRole('button', { name: /Reprendre « Dr Martin, médecin traitant »/ }));
+    // PRA-3b, PR 7 : la reprise est un geste de 44 px, au texte des autres gestes (revue PR-Agent).
+    const reprendre = screen.getByRole('button', { name: /Reprendre « Dr Martin, médecin traitant »/ });
+    expect(reprendre.className).toContain('min-h-11');
+    expect(reprendre.className).toContain('text-sm');
+    fireEvent.click(reprendre);
     expect(champ.value).toBe('Dr Martin, médecin traitant');
     // La reprise faite, l'offre s'efface : elle ne peut plus écraser une saisie.
     expect(screen.queryByRole('button', { name: /Reprendre/ })).toBeNull();

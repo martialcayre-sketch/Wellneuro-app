@@ -449,7 +449,7 @@ export function CorrespondanceMedecinPanel({ idPatient }: { idPatient: string })
                 <button
                   type="button"
                   onClick={() => setMedecinLibelle(dernierMedecin)}
-                  className="mt-1 min-h-11 rounded-lg border border-border px-3 py-1 text-xs font-medium text-muted-foreground hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                  className="mt-1 min-h-11 rounded-lg border border-border px-3 py-1 text-sm font-medium text-muted-foreground hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                 >
                   Reprendre « {dernierMedecin} »
                 </button>
