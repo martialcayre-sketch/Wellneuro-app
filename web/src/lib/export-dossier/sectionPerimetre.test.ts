@@ -18,7 +18,7 @@ const COMMUNS_APRES: BlocExport[] = [
   {
     type: 'paragraphe',
     texte:
-      'Contenu : 1. renseignements administratifs ; 2. fiche signalétique et anamnèse déposées par le patient ; 3. réponses à tous les questionnaires soumis, avec les scores calculés à la soumission ; 4. dernière synthèse validée par le praticien.',
+      'Contenu : 1. renseignements administratifs ; 2. fiche signalétique et anamnèse déposées par le patient ; 3. réponses à tous les questionnaires soumis, avec les scores calculés à la soumission ; 4. dernière synthèse validée par le praticien ; 5. résultats de biologie validés par le praticien.',
   },
   {
     type: 'paragraphe',
@@ -38,7 +38,7 @@ const COMMUNS_APRES: BlocExport[] = [
   {
     type: 'paragraphe',
     texte:
-      "Non inclus : les questionnaires commencés mais non soumis (brouillons restés sur l'appareil du patient), les saisies d'un agenda non encore clôturé, l'espace « Ce qui compte pour moi », les résultats de biologie et les synthèses non validées.",
+      "Non inclus : les questionnaires commencés mais non soumis (brouillons restés sur l'appareil du patient), les saisies d'un agenda non encore clôturé, l'espace « Ce qui compte pour moi », les synthèses non validées et, pour la biologie, les comptes rendus eux-mêmes, les commentaires du laboratoire, les circonstances des prélèvements et les résultats d'un compte rendu dont la lecture n'est pas consignée.",
     ton: 'discret',
   },
 ];
@@ -117,7 +117,7 @@ describe('sectionPerimetre', () => {
         {
           type: 'paragraphe',
           texte:
-            'Contenu : 1. renseignements administratifs ; 2. données physiologiques et traitements datés du dossier, déclarés par le patient ou confirmés par le praticien, puis fiche signalétique et anamnèse déposées par le patient ; 3. réponses à tous les questionnaires soumis, avec les scores calculés à la soumission ; 4. dernière synthèse validée par le praticien.',
+            'Contenu : 1. renseignements administratifs ; 2. données physiologiques et traitements datés du dossier, déclarés par le patient ou confirmés par le praticien, puis fiche signalétique et anamnèse déposées par le patient ; 3. réponses à tous les questionnaires soumis, avec les scores calculés à la soumission ; 4. dernière synthèse validée par le praticien ; 5. résultats de biologie validés par le praticien.',
         },
       ]);
     }

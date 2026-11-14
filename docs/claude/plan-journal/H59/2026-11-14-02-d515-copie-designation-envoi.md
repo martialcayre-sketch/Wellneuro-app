@@ -1,0 +1,5 @@
+- **Mise à jour (2026-11-14, lot D-277, code de [[D-515]] §6.2, PR 1 sur 4)** : la copie de la désignation à l'envoi, derrière `WN_ENABLE_DECLARATION_SUICIDE_CAB`, éteint.
+  - **Envoi** (`file-envoi/envoyer`). Sous « oui », la désignation de l'instrument est lue sous le même `FOR SHARE` que la déclaration, puis copiée dans les trois colonnes de la migration : question, valeur « non », copie figée (instrument, énoncé, options), construite par `copieDesignationSuicide`.
+  - **Désignation absente ou incohérente** : rien n'est copié, l'envoi part, la trace `ASSIGNATION.DESIGNATION_SUICIDE.INCONNUE` est posée. La désignation est inconnue (§7), jamais inventée.
+  - **Banc** : la copie n'a qu'un constructeur dans le code de production.
+  - **Allumage non fait** : [[D-515]] §6 le place après le code (PR 2 : règle `SAF-QUEST-02` non signée et ses lecteurs ; PR 3 : courriel, message et banc navigateur↔serveur ; PR 4 : signature) et après le recomptage.

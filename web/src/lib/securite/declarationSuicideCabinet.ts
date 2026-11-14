@@ -129,6 +129,67 @@ export function lireDeclarationSuicide(
   };
 }
 
+// ── [[D-515]] §4 : la désignation COPIÉE sur l'assignation à l'envoi ────────
+//
+// À l'envoi d'un `CAB_` déclaré « oui », trois colonnes de l'assignation
+// reçoivent la désignation EN VIGUEUR : l'identifiant de la question, la valeur
+// de son option « non », et une copie figée (nom de l'instrument, énoncé,
+// options). Ce qui lira ensuite la désignation (lot de code de [[D-515]] §6.2)
+// lit CETTE copie, jamais l'instrument, qui reste modifiable.
+//
+// La copie reprend la question telle que `questionsDesignables` la présente au
+// praticien quand il désigne : ce qu'il a vu est ce qui est figé. Une option
+// que cette lecture écarte (valeur hors int4) n'est pas copiée ; une réponse
+// qui la porterait sera « hors options », donc un constat (fail-closed).
+//
+// AUCUNE COPIE PLUTÔT QU'UNE COPIE INVENTÉE (`DC-24`, [[D-515]] §7) : une
+// désignation absente ou incohérente avec la définition rend `null`, et les
+// trois colonnes restent vides — la désignation est alors inconnue, jamais
+// « non », jamais reconstituée.
+
+export type CopieDesignationSuicide = {
+  /** Nom de l'instrument (`cabinet_instruments.titre`), verbatim. */
+  instrument: string;
+  /** Énoncé de la question désignée, verbatim. */
+  enonce: string;
+  /** Options de la question désignée, valeurs et libellés, dans l'ordre. */
+  options: { v: number; l: string }[];
+};
+
+export type DesignationSuicideCopiee = {
+  questionSuicideId: string;
+  questionSuicideOptionNon: number;
+  questionSuicideCopie: CopieDesignationSuicide;
+};
+
+/**
+ * La désignation à copier sur l'assignation, ou `null` quand elle n'existe pas
+ * ou ne concorde plus avec la définition. N'est appelée que pour un instrument
+ * déclaré « oui » : « non » ou non déclaré ne portent aucune désignation.
+ */
+export function copieDesignationSuicide(instrument: {
+  titre: string;
+  definitionJson: unknown;
+  questionSuicideId: string | null;
+  questionSuicideOptionNon: number | null;
+}): DesignationSuicideCopiee | null {
+  const { questionSuicideId, questionSuicideOptionNon } = instrument;
+  if (typeof questionSuicideId !== 'string' || questionSuicideId.length === 0) return null;
+  if (!estEntierInt4(questionSuicideOptionNon)) return null;
+  const question = questionsDesignables(instrument.definitionJson).find(q => q.id === questionSuicideId);
+  if (!question) return null;
+  if (!question.options.some(o => o.v === questionSuicideOptionNon)) return null;
+  return {
+    questionSuicideId,
+    questionSuicideOptionNon,
+    questionSuicideCopie: {
+      instrument: instrument.titre,
+      enonce: question.texte,
+      options: question.options.map(o => ({ v: o.v, l: o.l })),
+    },
+  };
+}
+
 // ── P2-1 (arbitrage du 2026-11-12) : la déclaration conditionne l'envoi ─────
 //
 // Drapeau allumé, un instrument `valide` sans déclaration (NULL, publié

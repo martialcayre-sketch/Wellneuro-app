@@ -8,6 +8,7 @@
 // la journalise. Deux gardes pour une même question finissent par diverger.
 
 import { prisma } from '@/lib/prisma';
+import { annulationsActives, etatLecture, type ActeLectureRow } from '@/lib/biology-library/publie';
 import { AGENDA_ALI_ID, resolveJoursActifs } from '@/lib/agenda-alimentaire';
 import { listJours } from '@/lib/agenda-alimentaire/persistence';
 import { AGENDA_SOMMEIL_ID, listNuits, resolveNuitsActives } from '@/lib/agenda-sommeil/persistence';
@@ -32,8 +33,10 @@ import {
   scoresSansMesure,
 } from '@/lib/scoring/passationsNonInterpretables';
 import { statutExcluDuRaisonnement } from '@/lib/scoring/validite';
+import { selectionnerBiologie, type LigneBiologieLue } from './biologieExport';
 import {
   creerMasqueur,
+  masquerBiologie,
   masquerConsultation,
   masquerDonneesDatees,
   masquerPassation,
@@ -44,6 +47,7 @@ import {
   dateFr,
   dateHeureFr,
   type AssignationSansReponseExport,
+  type BiologieExport,
   type ConsultationExport,
   type DocumentExport,
   type DonneesDateesExport,
@@ -54,6 +58,7 @@ import {
 } from './modele';
 import { avertissementInstrumentCabinetModifie } from './reponsesExport';
 import { sectionAdministrative } from './sectionAdministrative';
+import { sectionBiologie } from './sectionBiologie';
 import { sectionPerimetre } from './sectionPerimetre';
 import { sectionQuestionnaires } from './sectionQuestionnaires';
 import { sectionRenseignements } from './sectionRenseignements';
@@ -307,6 +312,90 @@ function donneesDateesExport(donnees: DonneesDuDossier): DonneesDateesExport | n
 }
 
 /**
+ * La biologie du dossier ([[D-519]]) : TOUTES ses lignes — corrections et fils
+ * annulés compris, l'élection des mesures qui font foi se fait sur la série
+ * entière —, les annulations actives et les actes de lecture. Lue quel que
+ * soit le drapeau, comme les lignes datées : le drapeau garde la saisie. Une
+ * lecture qui échoue lève : jamais un « aucun résultat » de repli.
+ */
+async function lireBiologie(idPatient: string): Promise<BiologieExport> {
+  const [lignes, actives, actes] = await Promise.all([
+    prisma.resultatBiologique.findMany({
+      where: { idPatient },
+      orderBy: [{ analyteCode: 'asc' }, { preleveLe: 'asc' }, { saisiLe: 'asc' }],
+      select: {
+        id: true,
+        analyteCode: true,
+        valeur: true,
+        unite: true,
+        preleveLe: true,
+        saisiLe: true,
+        supersedesResultatId: true,
+        source: true,
+        analyte: { select: { libelle: true } },
+        ligneCandidate: {
+          select: {
+            idImport: true,
+            intervalleLu: true,
+            intervalleNonTranscrit: true,
+            uniteLue: true,
+            valeurLue: true,
+            import: { select: { laboratoireLu: true } },
+          },
+        },
+      },
+    }),
+    annulationsActives(prisma, idPatient),
+    prisma.lectureImportBiologique.findMany({
+      where: { idPatient },
+      select: {
+        id: true,
+        ordre: true,
+        idImport: true,
+        acte: true,
+        idLectureRevoquee: true,
+        codeRevocation: true,
+        praticienEmail: true,
+        acteLe: true,
+      },
+    }),
+  ]);
+  const actesParImport = new Map<string, ActeLectureRow[]>();
+  for (const a of actes) {
+    const liste = actesParImport.get(a.idImport);
+    if (liste) liste.push(a);
+    else actesParImport.set(a.idImport, [a]);
+  }
+  // Une lecture active, quel qu'en soit l'auteur ([[D-268]], précision du 2026-10-06).
+  const importsLus = new Set(
+    [...actesParImport].filter(([, liste]) => etatLecture(liste).active !== null).map(([idImport]) => idImport),
+  );
+  const lues: LigneBiologieLue[] = lignes.map(l => ({
+    id: l.id,
+    analyteCode: l.analyteCode,
+    analyteLibelle: l.analyte.libelle,
+    // `toFixed()` sans argument : la notation normale EXACTE du décimal.
+    valeur: l.valeur.toFixed(),
+    unite: l.unite,
+    preleveLe: l.preleveLe,
+    saisiLe: l.saisiLe,
+    supersedesResultatId: l.supersedesResultatId,
+    source: l.source,
+    lue: l.ligneCandidate
+      ? {
+          idImport: l.ligneCandidate.idImport,
+          intervalleLu: l.ligneCandidate.intervalleLu,
+          intervalleNonTranscrit: l.ligneCandidate.intervalleNonTranscrit,
+          uniteLue: l.ligneCandidate.uniteLue,
+          valeurLue: l.ligneCandidate.valeurLue,
+          laboratoireLu: l.ligneCandidate.import.laboratoireLu,
+        }
+      : null,
+  }));
+  return selectionnerBiologie(lues, actives, importsLus);
+}
+
+/**
  * `identifiant` : `PATnnn` pour la version complète, le pseudonyme d'export
  * pour la version « IA externe » ([[D-512]] §1) — c'est l'appelant qui choisit.
  */
@@ -357,7 +446,7 @@ export async function assemblerDossierExport(params: {
   });
   if (!patient) return null;
 
-  const [consultationsDb, porteuse, passationsDb, assignationsDb, validee, lignesDuDossier] = await Promise.all([
+  const [consultationsDb, porteuse, passationsDb, assignationsDb, validee, lignesDuDossier, biologie] = await Promise.all([
     prisma.consultation.findMany({
       where: { idPatient },
       orderBy: { createdAt: 'desc' },
@@ -423,6 +512,7 @@ export async function assemblerDossierExport(params: {
     }),
     // Une lecture qui échoue lève : jamais un « non renseigné » de repli.
     lireDonneesDuDossier(prisma, idPatient),
+    lireBiologie(idPatient),
   ]);
 
   const brouillonPlusRecent = await prisma.syntheseIA.findFirst({
@@ -448,7 +538,8 @@ export async function assemblerDossierExport(params: {
   // Il se cherche sur TOUT ce qui a été enregistré, pas sur ce que l'export
   // affiche : une ligne corrigée ou retirée, une synthèse jamais validée
   // gardent leur date, et J0 ne bouge pas d'un export à l'autre (contre-revue
-  // Codex, P1-1).
+  // Codex, P1-1). La biologie n'y entre pas ([[D-519]] §4) : le prélèvement
+  // est une date de vie, et la compter déplacerait le J0 des exports passés.
   const premiereSynthese = version === 'ia-externe' && consultationsDb.length === 0
     ? await prisma.syntheseIA.findFirst({
         where: { idPatient },
@@ -524,6 +615,7 @@ export async function assemblerDossierExport(params: {
         ),
         ...sectionQuestionnaires(passations.map(p => masquerPassation(p, masquer)), sansReponse, dateur),
         ...sectionSynthese(synthese ? masquerSynthese(synthese, masquer) : null, brouillonPlusRecent, dateur),
+        ...sectionBiologie(masquerBiologie(biologie, masquer), dateur),
       ],
     };
   }
@@ -540,6 +632,7 @@ export async function assemblerDossierExport(params: {
       ...sectionRenseignements(consultations, porteuse?.idConsultation ?? null, donneesDatees),
       ...sectionQuestionnaires(passations, sansReponse),
       ...sectionSynthese(synthese, brouillonPlusRecent),
+      ...sectionBiologie(biologie),
     ],
   };
 }

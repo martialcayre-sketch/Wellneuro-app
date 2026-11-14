@@ -113,7 +113,7 @@ function chronologique(a: LigneDeSerie, b: LigneDeSerie): number {
  * cible absente arrête la remontée là où elle se casse ; un cycle (base
  * abîmée) aussi — on ne boucle pas.
  */
-function racineDe<T extends LigneDeSerie>(tete: T, parId: ReadonlyMap<string, T>): T {
+export function racineDe<T extends LigneDeSerie>(tete: T, parId: ReadonlyMap<string, T>): T {
   const vues = new Set<string>([tete.id]);
   let courante = tete;
   for (;;) {
