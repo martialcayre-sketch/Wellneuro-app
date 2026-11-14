@@ -2307,11 +2307,11 @@ BEGIN
 
   -- ── N16 — LA LIGNE `bibliotheque_options_dose` EXIGE LE PRESCRIPTIF ───────
   -- Trois paires ([[D-480]] §5.2, [[D-521]]) : la seule table neuve qui exige
-  -- `prescriptif` ([[D-044]]). Le claim muté, `WN-CL-0239-010`, est épinglé
-  -- deux fois par la bibliothèque, en `bibliotheque_options` (non exigé) et en
-  -- `bibliotheque_options_dose` (exigé). Rendu non prescriptif, il doit lever
-  -- sous la table de dose, et sous elle SEULE : l'exemption de [[D-046]] reste
-  -- bornée à la table qui ne prescrit pas (`wn-reviewer` sur la PR 7 de BP-17).
+  -- `prescriptif` ([[D-044]]). Le claim muté est épinglé dans les deux tables
+  -- de la bibliothèque, l'une qui exige le prescriptif et l'autre non. Rendu
+  -- non prescriptif, il doit lever sous la table qui l'exige, et sous elle
+  -- SEULE : l'exemption de [[D-046]] reste bornée à la table qui ne prescrit
+  -- pas (`wn-reviewer` sur la PR 7 de BP-17).
   a_leve := false; msg := '';
   BEGIN
     UPDATE public.rag_corpus_claims SET prescriptif = false WHERE claim_id = 'WN-CL-0239-010';
