@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { transmissionAppelleAlerteSecurite } from './alerteSecuritePraticien';
 import {
   declarationSuicideCabinetActive,
+  copieDesignationSuicide,
   ERREURS_DECLARATION_SUICIDE,
   lireDeclarationSuicide,
   questionsDesignables,
@@ -197,5 +198,75 @@ describe('NF-7 — la désignation, vérifiée contre la définition', () => {
 describe('NF-7 — ni constat ni courriel sur un CAB_ ([[D-493]])', () => {
   it('une transmission CAB_ n’appelle jamais l’alerte de sécurité', () => {
     expect(transmissionAppelleAlerteSecurite('CAB_TEST', { Q1: 3, Q2: 3, B7: 3 })).toBe(false);
+  });
+});
+
+// [[D-515]] §4 : la copie de la désignation est FIGÉE à l'envoi. Ce qui lit la
+// désignation lit cette copie, jamais l'instrument, et rien ne doit la
+// réécrire ensuite (P2-3 du lot de migration : l'immutabilité tient par le
+// code, pas par un trigger). Le banc liste les fichiers de production qui
+// NOMMENT la copie : le constructeur, et lui seul aujourd'hui. Un lecteur qui
+// s'ajoute (lot de code de [[D-515]] §6.2) s'inscrit ici en connaissance de
+// cause ; un écrivain de plus serait une copie qui bouge après l'envoi.
+describe('D-515 §4 — la copie de la désignation n’a qu’un écrivain', () => {
+  const NOMME_LA_COPIE = /questionSuicideCopie|question_suicide_copie/;
+
+  it('seul le constructeur de la copie la nomme dans le code de production', () => {
+    const nomment = sources(RACINE_SRC)
+      .filter(fichier => NOMME_LA_COPIE.test(sansCommentaires(readFileSync(fichier, 'utf8'))))
+      .map(fichier => path.relative(RACINE_SRC, fichier))
+      .sort();
+    expect(nomment).toEqual(['lib/securite/declarationSuicideCabinet.ts']);
+  });
+
+  // L'identifiant ENTIER, pas l'appel `nom(` : la ligne d'import attrape
+  // aussi un alias, un passage par référence ou une réexportation (revue
+  // wn-reviewer de 8805bce1, P3-1).
+  const NOMME_LE_CONSTRUCTEUR = /\bcopieDesignationSuicide\b/;
+  const CONSTRUCTEUR = 'lib/securite/declarationSuicideCabinet.ts';
+
+  it('le constructeur n’a qu’un appelant de production : l’envoi (revue wn-reviewer de #2103)', () => {
+    const appelants = sources(RACINE_SRC)
+      .filter(fichier => NOMME_LE_CONSTRUCTEUR.test(sansCommentaires(readFileSync(fichier, 'utf8'))))
+      .map(fichier => path.relative(RACINE_SRC, fichier))
+      .filter(fichier => fichier !== CONSTRUCTEUR)
+      .sort();
+    expect(appelants).toEqual(['app/api/praticien/file-envoi/envoyer/route.ts']);
+  });
+
+  it('et son propre fichier ne le nomme qu’une fois : sa déclaration', () => {
+    const texte = sansCommentaires(readFileSync(path.join(RACINE_SRC, CONSTRUCTEUR), 'utf8'));
+    expect(texte.match(new RegExp(NOMME_LE_CONSTRUCTEUR.source, 'g'))).toHaveLength(1);
+    expect(texte).toMatch(/export function copieDesignationSuicide\(/);
+  });
+
+  it('et l’envoi, qui l’écrit, ne la nomme pas : il la reçoit entière du constructeur', () => {
+    const envoi = readFileSync(path.join(RACINE_SRC, 'app/api/praticien/file-envoi/envoyer/route.ts'), 'utf8');
+    expect(sansCommentaires(envoi)).toMatch(/copieDesignationSuicide\(/);
+    expect(sansCommentaires(envoi)).toMatch(/\.\.\.designations\.get\(item\.idQuestionnaire\)/);
+  });
+});
+
+describe('D-515 §4 et §7 — la copie se construit sur la désignation, ou pas du tout', () => {
+  const DEFINITION = {
+    sections: [{ questions: [{ id: 'Q1', texte: 'Idées de mort ?', options: [{ v: 0, l: 'Non' }, { v: 2, l: 'Oui' }] }] }],
+  };
+  const INSTRUMENT = { titre: 'Humeur cabinet', definitionJson: DEFINITION, questionSuicideId: 'Q1', questionSuicideOptionNon: 0 };
+
+  it('désignation cohérente : copie verbatim de la question désignée', () => {
+    expect(copieDesignationSuicide(INSTRUMENT)).toEqual({
+      questionSuicideId: 'Q1',
+      questionSuicideOptionNon: 0,
+      questionSuicideCopie: { instrument: 'Humeur cabinet', enonce: 'Idées de mort ?', options: [{ v: 0, l: 'Non' }, { v: 2, l: 'Oui' }] },
+    });
+  });
+
+  it('absente ou incohérente : null, jamais une copie inventée', () => {
+    expect(copieDesignationSuicide({ ...INSTRUMENT, questionSuicideId: null })).toBeNull();
+    expect(copieDesignationSuicide({ ...INSTRUMENT, questionSuicideId: '' })).toBeNull();
+    expect(copieDesignationSuicide({ ...INSTRUMENT, questionSuicideOptionNon: null })).toBeNull();
+    expect(copieDesignationSuicide({ ...INSTRUMENT, questionSuicideOptionNon: 1 })).toBeNull();
+    expect(copieDesignationSuicide({ ...INSTRUMENT, questionSuicideId: 'Q9' })).toBeNull();
+    expect(copieDesignationSuicide({ ...INSTRUMENT, definitionJson: null })).toBeNull();
   });
 });

@@ -6,7 +6,12 @@ import { createPublicId } from '@/lib/ids';
 import { creerTransportSmtp } from '@/lib/email/transportSmtp';
 import { getGabarit, rendreGabarit, rendreSegment } from '@/lib/correspondance/registreGabarits';
 import { estInstrumentCabinet, idsAssignablesPour, resolveDefinition } from '@/lib/instruments';
-import { cabinetEnvoyable, declarationSuicideCabinetActive } from '@/lib/securite/declarationSuicideCabinet';
+import {
+  cabinetEnvoyable,
+  copieDesignationSuicide,
+  declarationSuicideCabinetActive,
+  type DesignationSuicideCopiee,
+} from '@/lib/securite/declarationSuicideCabinet';
 import { buildGoogleConnexionUrl } from '@/lib/consultation/email';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
 import {
@@ -204,16 +209,33 @@ export async function POST(request: Request) {
         // Ordre fixe (`ORDER BY`) : deux envois ne s'interbloquent pas. Un
         // instrument devenu inéligible depuis la lecture d'`idsAssignablesPour`
         // est écarté avec sa trace ; si rien ne reste, tout est annulé.
+        //
+        // [[D-515]] §4 : sous « oui », la DÉSIGNATION en vigueur est copiée
+        // avec la déclaration, lue sous le même verrou — une modification du
+        // contenu, qui l'efface, attend donc la fin de cet envoi. Introuvable
+        // ou incohérente, elle n'est pas copiée : les trois colonnes restent
+        // vides, et la désignation est inconnue ([[D-515]] §7).
         const copierDeclaration = declarationSuicideCabinetActive();
         const declarations = new Map<string, boolean>();
+        const designations = new Map<string, DesignationSuicideCopiee>();
         let retenusEnvoi = aInserer;
         const idsCabinet = copierDeclaration
           ? aInserer.map(i => i.idQuestionnaire).filter(estInstrumentCabinet).sort()
           : [];
         if (idsCabinet.length > 0) {
           const lignes = await tx.$queryRaw<
-            { id_instrument: string; actif: boolean; statut_relecture: string; pose_question_suicide: boolean | null }[]
-          >`SELECT id_instrument, actif, statut_relecture, pose_question_suicide
+            {
+              id_instrument: string;
+              actif: boolean;
+              statut_relecture: string;
+              pose_question_suicide: boolean | null;
+              titre: string;
+              definition_json: unknown;
+              question_suicide_id: string | null;
+              question_suicide_option_non: number | null;
+            }[]
+          >`SELECT id_instrument, actif, statut_relecture, pose_question_suicide,
+                   titre, definition_json, question_suicide_id, question_suicide_option_non
               FROM cabinet_instruments
              WHERE id_instrument = ANY(${idsCabinet}::text[])
                AND lower(praticien_email) = lower(${emailSession})
@@ -227,6 +249,24 @@ export async function POST(request: Request) {
             };
             if (cabinetEnvoyable(etat) && etat.poseQuestionSuicide !== null) {
               declarations.set(ligne.id_instrument, etat.poseQuestionSuicide);
+              if (etat.poseQuestionSuicide === true) {
+                const designation = copieDesignationSuicide({
+                  titre: ligne.titre,
+                  definitionJson: ligne.definition_json,
+                  questionSuicideId: ligne.question_suicide_id,
+                  questionSuicideOptionNon: ligne.question_suicide_option_non,
+                });
+                if (designation) {
+                  designations.set(ligne.id_instrument, designation);
+                } else {
+                  logger.warn({
+                    event: EVENT_CODES.ASSIGNATION_DESIGNATION_SUICIDE_INCONNUE,
+                    domain: 'ASSIGNATION',
+                    message: `Instrument du cabinet déclaré « oui » sans désignation lisible : copie vide (${ligne.id_instrument})`,
+                    context: finalizeLogContext(requestContext, { retryable: false }),
+                  });
+                }
+              }
             }
           }
           const ecartes = idsCabinet.filter(id => !declarations.has(id));
@@ -244,9 +284,14 @@ export async function POST(request: Request) {
           }
         }
         for (const item of retenusEnvoi) {
+          // Désignation absente : les trois colonnes ne sont pas écrites, donc
+          // NULL en base (jamais `Prisma.JsonNull`, que le CHECK refuserait).
           const declaration =
             copierDeclaration && estInstrumentCabinet(item.idQuestionnaire)
-              ? { poseQuestionSuicide: declarations.get(item.idQuestionnaire) }
+              ? {
+                poseQuestionSuicide: declarations.get(item.idQuestionnaire),
+                ...designations.get(item.idQuestionnaire),
+              }
               : {};
           await tx.assignation.create({
             data: {

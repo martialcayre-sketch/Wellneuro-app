@@ -134,6 +134,10 @@ export const EVENT_CODES = {
   // désactivé ou non déclaré) entre la lecture et la transaction d'envoi,
   // constaté sous verrou et écarté. Code distinct, pour la même raison.
   ASSIGNATION_INSTRUMENT_INELIGIBLE_ECARTE: 'ASSIGNATION.INSTRUMENT_INELIGIBLE.ECARTE',
+  // D-515 §4 et §7 : un instrument du cabinet déclaré « oui » part sans
+  // désignation lisible (absente ou incohérente avec sa définition). L'envoi
+  // n'est pas refusé : la copie reste vide, et la désignation est inconnue.
+  ASSIGNATION_DESIGNATION_SUICIDE_INCONNUE: 'ASSIGNATION.DESIGNATION_SUICIDE.INCONNUE',
 
   METRICS_UNAUTHORIZED: 'PRATICIEN.METRICS.UNAUTHORIZED',
   METRICS_QUERY_FAILED: 'PRATICIEN.METRICS.QUERY_FAILED',
