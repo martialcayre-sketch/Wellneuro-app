@@ -1290,6 +1290,20 @@ describe('DossierDeuxVoixView — PAT-5', () => {
     ).toBe('Dormir d’une traite.');
   });
 
+  it('après un 401, ouvrir une saisie efface le message ET le lien, jamais le lien seul', async () => {
+    fetchMock.mockResolvedValueOnce(json(assemblage()));
+    render(<DossierDeuxVoixView token="TOK" />);
+    await waitFor(() => expect(texteRendu()).toContain('C’est bien ça'));
+
+    fetchMock.mockResolvedValueOnce(refus(401, 'Session expirée. Reconnectez-vous.'));
+    fireEvent.click(screen.getByText('C’est bien ça'));
+    await screen.findByRole('link', { name: 'Me reconnecter' });
+
+    fireEvent.click(screen.getByText('Le dire autrement'));
+    expect(screen.queryByText('Session expirée. Reconnectez-vous.')).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Me reconnecter' })).toBeNull();
+  });
+
   it('un autre refus ne propose pas de reconnexion', async () => {
     fetchMock.mockResolvedValueOnce(json(assemblage()));
     render(<DossierDeuxVoixView token="TOK" />);

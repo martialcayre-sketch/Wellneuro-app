@@ -1092,8 +1092,10 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
                 <PatientInlineMessage tone="error">{erreurEnvoi}</PatientInlineMessage>
               )}
               {/* Nouvel onglet : le texte saisi n'existe que dans cette page
-                  ([[D-488]], DOC-9 ; question `20261113-1856-d`). */}
-              {sessionExpiree && (
+                  ([[D-488]], DOC-9 ; question `20261113-1856-d`). Le lien ne
+                  vit qu'avec le message qu'il complète : ouvrir ou refermer
+                  une saisie efface le message, et le lien avec lui. */}
+              {erreurEnvoi && sessionExpiree && (
                 <div className="print:hidden">
                   <LienReconnexion nouvelOnglet />
                 </div>

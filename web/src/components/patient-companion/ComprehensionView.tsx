@@ -234,7 +234,7 @@ export function ComprehensionView() {
                 )}
                 {/* Nouvel onglet : le texte saisi n'existe que dans cette page
                     ([[D-488]], DOC-9 ; question `20261113-1856-d`). */}
-                {sessionExpiree && (
+                {erreurEnvoi && sessionExpiree && (
                   <div className="print:hidden">
                     <LienReconnexion nouvelOnglet />
                   </div>

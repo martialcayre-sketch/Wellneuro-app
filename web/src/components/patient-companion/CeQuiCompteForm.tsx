@@ -297,7 +297,7 @@ function FormulaireCeQuiCompte({ idPatient, onDepose }: { idPatient: string | nu
       {erreur && <PatientInlineMessage tone="error">{erreur}</PatientInlineMessage>}
       {/* Même onglet : le brouillon vit sur l'appareil et revient après la
           reconnexion ([[D-488]], DOC-9). */}
-      {sessionExpiree && (
+      {erreur && sessionExpiree && (
         <div className="print:hidden">
           <LienReconnexion />
         </div>

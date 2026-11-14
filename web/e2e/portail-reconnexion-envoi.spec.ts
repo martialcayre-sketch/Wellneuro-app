@@ -67,6 +67,9 @@ async function seReconnecterDansUnNouvelOnglet(
 
 test.describe.serial('Portail — reconnexion à l’envoi, dans un nouvel onglet', () => {
   test.beforeEach(async ({ context }) => {
+    // Chaque cas part d'un dossier vierge : `provisionnerDossierDeuxVoix`
+    // appelle d'abord `nettoyerDossierDeuxVoix`, qui purge désaccords et
+    // ratifications. Les « 0 ligne » de Sophie ne dépendent donc pas de l'ordre.
     await provisionnerDossierDeuxVoix(SOPHIE.idPatient);
     await provisionnerAccusesPorteTrust(SOPHIE.idPatient);
     await context.addCookies([patientPortailSessionCookie(SOPHIE.idPatient, SOPHIE.email)]);
