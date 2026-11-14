@@ -217,6 +217,12 @@ for (const [motif, sql] of [
   ["ALTER POLICY", 'ALTER POLICY "p" ON "patients" USING (true);'],
   ["GRANT à un rôle ouvert", 'GRANT SELECT, UPDATE ON "Patient" TO "anon";'],
   ["GRANT à un rôle ouvert", 'GRANT SELECT ON "public"."Patient" TO "authenticated";'],
+  // Revue de tête de #2137 : beaucoup de blancs entre DO/AS et le littéral.
+  ["TRUNCATE dans un corps", `DO${" ".repeat(300)}'BEGIN TRUNCATE "Patient"; END';`],
+  ["TRUNCATE dans un corps", `DO${"\n".repeat(300)}'BEGIN TRUNCATE "Patient"; END';`],
+  ["TRUNCATE dans un corps", `DO LANGUAGE plpgsql${" ".repeat(300)}'BEGIN TRUNCATE "Patient"; END';`],
+  ["dans un corps", `CREATE FUNCTION f() RETURNS void LANGUAGE plpgsql AS${" ".repeat(300)}'BEGIN DELETE FROM "Patient"; END';`],
+  ["dans un corps", `CREATE FUNCTION f() RETURNS void LANGUAGE plpgsql AS${" ".repeat(300)}E'BEGIN DELETE FROM "Patient"; END';`],
   // Quatrième passe de wn-reviewer.
   ["non lu avec certitude", `DO E'BEGIN \\x54RUNCATE "Patient"; END';`],
   ["non lu avec certitude", `DO E'BEGIN \\124RUNCATE "Patient"; END';`],

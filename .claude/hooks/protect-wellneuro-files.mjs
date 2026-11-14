@@ -146,7 +146,16 @@ function lexer(source) {
   // à chaque littéral, le coût devenait quadratique (PR-Agent, #2137).
   const morceaux = [];
   let fin = "";
-  const ajouter = (x) => { morceaux.push(x); fin = (fin + x).slice(-256); };
+  // Les blancs s'écrasent dans `fin` : 300 espaces entre `DO` et son
+  // littéral ne font plus sortir `DO` de la fenêtre (wn-reviewer, #2137).
+  // Seul le morceau ajouté s'écrase, et la fenêtre ne se coupe qu'au-delà de
+  // 512 caractères : le coût reste linéaire, à petite constante.
+  const ajouter = (x) => {
+    morceaux.push(x);
+    const y = x.length === 1 ? (/\s/.test(x) ? " " : x) : x.replace(/\s+/g, " ");
+    fin += fin.endsWith(" ") && y.startsWith(" ") ? y.slice(1) : y;
+    if (fin.length > 512) fin = fin.slice(-256);
+  };
   const corps = [];
   const identifiants = [];
   let incomplet = /\bu&['"]|\buescape\b/.test(texte);

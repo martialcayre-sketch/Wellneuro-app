@@ -23,7 +23,8 @@ Trois verdicts, rendus par les hooks PreToolUse de `.claude/settings.json` :
 - **demande** — migration **destructive** sous `prisma/migrations/` ou
   `supabase/migrations/` (DROP, TRUNCATE, DELETE ou UPDATE sans WHERE,
   RENAME, ALTER … TYPE, MERGE, `EXECUTE` dynamique, DISABLE TRIGGER,
-  RLS désarmée, CREATE RULE, `session_replication_role` — mots cherchés
+  RLS désarmée, CREATE RULE, ALTER POLICY, GRANT à `public`/`anon`/
+  `authenticated`, `session_replication_role` — mots cherchés
   sur le contenu résultant d'un Edit/Write, lexé comme PostgreSQL ; WHERE
   propre au DELETE/UPDATE, non tautologique ; écriture ou EXECUTE dans un
   corps `$…$`, CTE, U&/UESCAPE ou construction non fermée : demande — ce
