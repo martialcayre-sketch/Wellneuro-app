@@ -1,0 +1,4 @@
+- **Mise à jour (2026-11-14, lot D-277, [[D-522]], amende [[D-515]] §5 et §6)** : décision de doc, sans code. Elle remet le texte d'accord avec #2114 et avec l'option C de `20261114-1335-a`.
+  - **Courriel d'un `CAB_`** : il suit la copie de l'envoi (copie « oui » lisible, réponse autre que la valeur « non » copiée, table signée) et ne relit pas le drapeau courant. Drapeau allumé, il part exactement quand un constat naît.
+  - **Après une extinction** : ni copie, ni constat, ni carte, ni message ; le courriel continue pour les assignations déjà envoyées. Une extinction complète passe par un lot dédié, préparé avant l'`env-set`.
+  - **Reste** : lot `h59-d515-garde-publication` (`20261114-1217-a`), puis PR 4 (surface de relecture, signature par le responsable), recomptage des `CAB_` à copie NULL, allumage par le responsable.
