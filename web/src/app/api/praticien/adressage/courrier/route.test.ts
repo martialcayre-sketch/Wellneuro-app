@@ -17,6 +17,7 @@ const {
   tx: {
     consultation: { findFirst: vi.fn() },
     questionnaireReponse: { findMany: vi.fn() },
+    assignation: { findMany: vi.fn() },
     correspondanceMedecin: { create: vi.fn() },
     adressageSignalAlerte: { create: vi.fn() },
   },
@@ -61,6 +62,10 @@ import {
   SAFETY_QUESTIONNAIRE_METADATA,
   SAFETY_QUESTIONNAIRE_SHA256,
 } from '@/lib/clinical/safetyQuestionnaireV1';
+import {
+  SAFETY_QUESTIONNAIRE_CABINET_METADATA,
+  SAFETY_QUESTIONNAIRE_CABINET_SHA256,
+} from '@/lib/clinical/safetyQuestionnaireCabinetV1';
 
 const URL_BASE = 'http://localhost/api/praticien/adressage/courrier';
 const PRATICIEN = 'praticien@wellneuro.fr';
@@ -526,6 +531,100 @@ describe('réponses de questionnaire — D-275 §2, LOT-3', () => {
     await POST(postRequest({ idPatient: 'PAT1', medecinLibelle: 'Dr Nicola' }));
     expect(tx.questionnaireReponse.findMany).not.toHaveBeenCalled();
     expect(genererCourrierAdressage).toHaveBeenCalledWith(expect.objectContaining({ reponses: [] }));
+  });
+
+  describe('instruments du cabinet — D-515 §5, SAF-QUEST-02', () => {
+    const ETAT_CABINET = { ...SAFETY_QUESTIONNAIRE_CABINET_METADATA };
+    const CAB = {
+      idReponse: 'REP-CAB',
+      idQuestionnaire: 'CAB_HUMEUR',
+      dateReponse: new Date('2026-11-10T09:00:00.000Z'),
+      scoresJson: { rawAnswers: { Q2: 3 } },
+      statutValidite: 'VALID',
+      idAssignation: 'ASG-CAB',
+    };
+    const ASSIGNATION = {
+      idAssignation: 'ASG-CAB',
+      titre: 'Humeur du cabinet',
+      poseQuestionSuicide: true,
+      questionSuicideId: 'Q2',
+      questionSuicideOptionNon: 0,
+      questionSuicideCopie: { instrument: 'Humeur du cabinet', enonce: 'Idées de mort ?', options: [{ v: 0, l: 'Jamais' }, { v: 3, l: 'Souvent' }] },
+    };
+    function signerCabinet(): void {
+      SAFETY_QUESTIONNAIRE_CABINET_METADATA.validationExterne = true;
+      SAFETY_QUESTIONNAIRE_CABINET_METADATA.dateValidation = '2026-11-14T00:00:00.000Z';
+      SAFETY_QUESTIONNAIRE_CABINET_METADATA.sourceReference = 'Signature simulée par le banc.';
+      SAFETY_QUESTIONNAIRE_CABINET_METADATA.shaPerimetre = SAFETY_QUESTIONNAIRE_CABINET_SHA256;
+    }
+    afterEach(() => {
+      Object.assign(SAFETY_QUESTIONNAIRE_CABINET_METADATA, ETAT_CABINET);
+      delete process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB;
+    });
+
+    it('signée, drapeau allumé : les CAB_ sont lus, joints dans la transaction, et le constat couvert', async () => {
+      simulerSignature();
+      signerCabinet();
+      process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB = 'true';
+      tx.questionnaireReponse.findMany.mockResolvedValue([CAB]);
+      tx.assignation.findMany.mockResolvedValue([ASSIGNATION]);
+      tx.consultation.findFirst.mockResolvedValue({ id: 'cons_porteuse', anamnese: {} });
+      const res = await POST(postRequest({ idPatient: 'PAT1', medecinLibelle: 'Dr Nicola' }));
+      expect(res.status).toBe(201);
+      expect(tx.questionnaireReponse.findMany).toHaveBeenCalledWith(expect.objectContaining({
+        where: {
+          idPatient: 'PAT1',
+          OR: [
+            { idQuestionnaire: { in: ['Q_NEU_01', 'Q_NEU_02', 'Q_NEU_03', 'Q_NEU_12'] } },
+            { idQuestionnaire: { startsWith: 'CAB_' } },
+          ],
+        },
+      }));
+      expect(tx.assignation.findMany).toHaveBeenCalledTimes(1);
+      const { findingIds } = tx.adressageSignalAlerte.create.mock.calls[0][0].data;
+      expect(findingIds).toHaveLength(1);
+      expect(findingIds[0]).toMatch(/^safety:questionnaire:[0-9a-f]{16}$/);
+      const { reponses } = genererCourrierAdressage.mock.calls[0][0];
+      expect(reponses).toEqual([expect.objectContaining({ idReponse: 'REP-CAB', cabinet: { enonce: 'Idées de mort ?' } })]);
+    });
+
+    it('drapeau allumé mais cabinet NON signé : catalogue seul, aucune jointure, aucun CAB_ cité', async () => {
+      simulerSignature();
+      process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB = 'true';
+      tx.questionnaireReponse.findMany.mockResolvedValue([PASSATION]);
+      tx.consultation.findFirst.mockResolvedValue({ id: 'cons_porteuse', anamnese: {} });
+      await POST(postRequest({ idPatient: 'PAT1', medecinLibelle: 'Dr Nicola' }));
+      expect(tx.questionnaireReponse.findMany).toHaveBeenCalledWith(expect.objectContaining({
+        where: { idPatient: 'PAT1', idQuestionnaire: { in: ['Q_NEU_01', 'Q_NEU_02', 'Q_NEU_03', 'Q_NEU_12'] } },
+      }));
+      expect(tx.assignation.findMany).not.toHaveBeenCalled();
+      const { reponses } = genererCourrierAdressage.mock.calls[0][0];
+      expect(reponses.some((reponse: { cabinet?: unknown }) => reponse.cabinet)).toBe(false);
+    });
+
+    it('signée mais drapeau éteint : la requête est celle d’avant, aucune jointure', async () => {
+      simulerSignature();
+      signerCabinet();
+      tx.questionnaireReponse.findMany.mockResolvedValue([PASSATION]);
+      tx.consultation.findFirst.mockResolvedValue({ id: 'cons_porteuse', anamnese: {} });
+      await POST(postRequest({ idPatient: 'PAT1', medecinLibelle: 'Dr Nicola' }));
+      expect(tx.questionnaireReponse.findMany).toHaveBeenCalledWith(expect.objectContaining({
+        where: { idPatient: 'PAT1', idQuestionnaire: { in: ['Q_NEU_01', 'Q_NEU_02', 'Q_NEU_03', 'Q_NEU_12'] } },
+      }));
+      expect(tx.assignation.findMany).not.toHaveBeenCalled();
+    });
+
+    it('catalogue non signé, cabinet signé : seuls les CAB_ sont lus', async () => {
+      SAFETY_QUESTIONNAIRE_METADATA.validationExterne = false;
+      signerCabinet();
+      process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB = 'true';
+      tx.questionnaireReponse.findMany.mockResolvedValue([]);
+      tx.consultation.findFirst.mockResolvedValue({ id: 'cons_porteuse', anamnese: {} });
+      await POST(postRequest({ idPatient: 'PAT1', medecinLibelle: 'Dr Nicola' }));
+      expect(tx.questionnaireReponse.findMany).toHaveBeenCalledWith(expect.objectContaining({
+        where: { idPatient: 'PAT1', idQuestionnaire: { startsWith: 'CAB_' } },
+      }));
+    });
   });
 
   it('sans consultation porteuse, une réponse positive ne fait pas de lettre (aucune levée possible)', async () => {

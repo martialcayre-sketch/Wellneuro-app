@@ -45,7 +45,16 @@ function sources(repertoire: string): string[] {
   return trouves;
 }
 
-/** Le code d'un fichier sans ses lignes de commentaire, lignes rejointes. */
+/**
+ * Le code d'un fichier sans ses lignes de commentaire, lignes rejointes.
+ *
+ * VOLONTAIREMENT GROSSIER, ET DANS LE SENS PRUDENT : un commentaire en fin
+ * de ligne de code, ou l'intérieur d'un bloc qui ne commence pas par `*`,
+ * reste compté — une fausse alarme, jamais un appelant manqué. Un filtre plus
+ * fin (blocs `/* … *\/`, `//` en fin de ligne) ignore les chaînes, et
+ * effacerait du code entre un `'/api/*'` et la fin d'un JSDoc : il laisserait
+ * passer un écrivain (revue `wn-reviewer` de la PR 2, P3, sur P3-a de #2103).
+ */
 function sansCommentaires(texte: string): string {
   return texte
     .split('\n')
@@ -205,18 +214,43 @@ describe('NF-7 — ni constat ni courriel sur un CAB_ ([[D-493]])', () => {
 // désignation lit cette copie, jamais l'instrument, et rien ne doit la
 // réécrire ensuite (P2-3 du lot de migration : l'immutabilité tient par le
 // code, pas par un trigger). Le banc liste les fichiers de production qui
-// NOMMENT la copie : le constructeur, et lui seul aujourd'hui. Un lecteur qui
-// s'ajoute (lot de code de [[D-515]] §6.2) s'inscrit ici en connaissance de
-// cause ; un écrivain de plus serait une copie qui bouge après l'envoi.
+// NOMMENT la copie, chacun pour son motif (lot de code de [[D-515]] §6.2, PR 2) :
+//   — le constructeur, à l'envoi (`declarationSuicideCabinet.ts`) ;
+//   — la jointure, SEULE à la lire en base (`designationsCabinetPrisma.ts`),
+//     par laquelle passent le Fil, le moteur et la lettre ;
+//   — le producteur `SAF-QUEST-02`, qui la VÉRIFIE sans la compléter
+//     (`safetyFindings.ts`, `lireCopieDesignation`) ;
+//   — la table `SAF-QUEST-02`, qui nomme sa source en code dans son SHA
+//     (`safetyQuestionnaireCabinetV1.ts`).
+// Un fichier de plus s'inscrit ici en connaissance de cause ; un écrivain de
+// plus serait une copie qui bouge après l'envoi.
 describe('D-515 §4 — la copie de la désignation n’a qu’un écrivain', () => {
   const NOMME_LA_COPIE = /questionSuicideCopie|question_suicide_copie/;
 
-  it('seul le constructeur de la copie la nomme dans le code de production', () => {
+  it('seuls le constructeur, la jointure, le producteur et la table nomment la copie en production', () => {
     const nomment = sources(RACINE_SRC)
       .filter(fichier => NOMME_LA_COPIE.test(sansCommentaires(readFileSync(fichier, 'utf8'))))
       .map(fichier => path.relative(RACINE_SRC, fichier))
       .sort();
-    expect(nomment).toEqual(['lib/securite/declarationSuicideCabinet.ts']);
+    expect(nomment).toEqual([
+      'lib/clinical-engine/designationsCabinetPrisma.ts',
+      'lib/clinical-engine/safetyFindings.ts',
+      'lib/clinical/safetyQuestionnaireCabinetV1.ts',
+      'lib/securite/declarationSuicideCabinet.ts',
+    ]);
+  });
+
+  it('le lecteur ne fait que lire : aucune écriture d’assignation dans son fichier', () => {
+    const lecteur = sansCommentaires(readFileSync(path.join(RACINE_SRC, 'lib/clinical-engine/designationsCabinetPrisma.ts'), 'utf8'));
+    expect(lecteur).toMatch(/assignation\.findMany\(/);
+    expect(lecteur).not.toMatch(/\.(create|createMany|upsert|update|updateMany|delete|deleteMany)\(|\$executeRaw|\$queryRaw/);
+  });
+
+  it('le filtre pèche dans le sens prudent : un commentaire en fin de ligne compte encore', () => {
+    expect(sansCommentaires('// questionSuicideCopie')).not.toMatch(NOMME_LA_COPIE);
+    expect(sansCommentaires(' * questionSuicideCopie')).not.toMatch(NOMME_LA_COPIE);
+    expect(sansCommentaires('x(); // questionSuicideCopie')).toMatch(NOMME_LA_COPIE);
+    expect(sansCommentaires("z('/api/*'); questionSuicideCopie; /** fin */")).toMatch(NOMME_LA_COPIE);
   });
 
   // L'identifiant ENTIER, pas l'appel `nom(` : la ligne d'import attrape

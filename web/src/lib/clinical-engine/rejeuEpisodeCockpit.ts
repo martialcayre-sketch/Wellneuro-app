@@ -12,6 +12,7 @@ import {
   type AncrePosee,
 } from './runtimeFromPrisma';
 import { lireCouverturesAdressage } from './adressagesSignalAlertePrisma';
+import { joindreDesignationsCabinet } from './designationsCabinetPrisma';
 import { lireAdmissibilitePriorites } from '@/lib/clinical/prioritesAdmissibles';
 import type { CouvertureAdressage } from './safetyFindingSource';
 import { construireChaineC1Tolerante, lireSelectionPriorite } from './selectionPrioritePrisma';
@@ -52,7 +53,7 @@ export async function loadRuntimeInputs(idPatient: string, emailPraticien: strin
   const [responses, consultation] = await Promise.all([
     prisma.questionnaireReponse.findMany({
       where: { idPatient },
-      select: { idReponse: true, idQuestionnaire: true, dateReponse: true, scoresJson: true, statutValidite: true },
+      select: { idReponse: true, idQuestionnaire: true, dateReponse: true, scoresJson: true, statutValidite: true, idAssignation: true },
       orderBy: [{ dateReponse: 'asc' }, { idReponse: 'asc' }],
     }),
     prisma.consultation.findFirst({
@@ -74,6 +75,9 @@ export async function loadRuntimeInputs(idPatient: string, emailPraticien: strin
   if (resolution.mode === 'refus') return { refus: resolution.raison } as const;
 
   const asOf = resolution.mode === 'passe' ? resolution.date : null;
+  // [[D-515]] §4 : la désignation copiée des passations du cabinet, jointe
+  // drapeau allumé seulement — la même lecture que le vérificateur.
+  const passationsSecurite = await joindreDesignationsCabinet(responses);
   // Le passé est RECALCULÉ depuis les données brutes tronquées, jamais relu
   // depuis un snapshot : aucune donnée postérieure ne peut fuir dans la lecture.
   //
@@ -83,7 +87,7 @@ export async function loadRuntimeInputs(idPatient: string, emailPraticien: strin
   return {
     // Les réponses de sécurité, elles, ne se tronquent pas ([[D-275]] §2) :
     // toutes les passations, comme le vérificateur et le Fil.
-    ...adaptRuntimeInputs(patient, filtrerPassationsExploitables(tronquerA(responses, asOf)), consultation, responses),
+    ...adaptRuntimeInputs(patient, filtrerPassationsExploitables(tronquerA(responses, asOf)), consultation, passationsSecurite),
     idConsultationPorteuse: consultation?.id ?? null,
     asOf: asOf ? asOf.toISOString() : null,
   };

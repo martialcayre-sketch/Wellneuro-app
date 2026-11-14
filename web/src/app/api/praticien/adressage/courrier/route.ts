@@ -32,6 +32,8 @@ import {
   QUESTIONNAIRES_SECURITE,
   tableSecuriteQuestionnaireSignee,
 } from '@/lib/clinical/safetyQuestionnaireV1';
+import { tableSecuriteQuestionnaireCabinetSignee } from '@/lib/clinical/safetyQuestionnaireCabinetV1';
+import { joindreDesignationsCabinet, wherePassationsCabinet } from '@/lib/clinical-engine/designationsCabinetPrisma';
 
 // Lettre d'adressage sur signal d'alerte ([[D-218]], LOT-04) — la seule raison
 // cliniquement obligatoire d'écrire à un médecin, et elle n'avait aucun chemin.
@@ -259,17 +261,27 @@ export async function POST(req: Request) {
         // fonction que la chaîne, sur toutes les passations non invalidées
         // (A1). Table non signée ⇒ aucune : le moteur ne bloque rien sur
         // elles, et la lettre ne doit pas affirmer le contraire.
-        const reponses = tableSecuriteQuestionnaireSignee()
-          ? reponsesSecuriteDeclarees(await tx.questionnaireReponse.findMany({
-            where: { idPatient, idQuestionnaire: { in: [...QUESTIONNAIRES_SECURITE] } },
+        //
+        // [[D-515]] §5 : les réponses aux instruments du cabinet, sous la même
+        // condition pour leur propre table (`SAF-QUEST-02`), drapeau allumé.
+        // Catalogue seul, la requête est celle d'avant ce lot.
+        const catalogue = tableSecuriteQuestionnaireSignee();
+        const cabinet = tableSecuriteQuestionnaireCabinetSignee() ? wherePassationsCabinet() : null;
+        const familles = cabinet
+          ? (catalogue ? { OR: [{ idQuestionnaire: { in: [...QUESTIONNAIRES_SECURITE] } }, cabinet] } : cabinet)
+          : { idQuestionnaire: { in: [...QUESTIONNAIRES_SECURITE] } };
+        const reponses = catalogue || cabinet
+          ? reponsesSecuriteDeclarees(await joindreDesignationsCabinet(await tx.questionnaireReponse.findMany({
+            where: { idPatient, ...familles },
             select: {
               idReponse: true,
               idQuestionnaire: true,
               dateReponse: true,
               scoresJson: true,
               statutValidite: true,
+              idAssignation: true,
             },
-          }))
+          }), tx))
           : [];
 
         const genere = genererCourrierAdressage({

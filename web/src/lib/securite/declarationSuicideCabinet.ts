@@ -8,10 +8,10 @@
 // vérifiée ICI contre la définition : un CHECK de base ne lit pas le JSON, et
 // une désignation vide passerait le sien.
 //
-// CE QUE LA DÉSIGNATION NE FAIT PAS ([[D-493]] §3) : rien ne la lit pour
-// calculer un message, un constat ou un courriel. Le message de [[D-277]] et
-// le courriel au praticien relèvent d'un lot à part, sous sa propre décision
-// clinique. NF-7 ne sert que l'encart de [[D-275]], lu sur la COPIE de la
+// CE QUE LA DÉSIGNATION NE FAISAIT PAS ([[D-493]] §3) : rien ne la lisait
+// pour calculer un message, un constat ou un courriel. Le lot à part est
+// [[D-515]] : sa copie sur l'assignation (§4) est lue par `SAF-QUEST-02`, via
+// `designationsCabinetPrisma.ts` — jamais l'instrument lui-même. NF-7 ne sert que l'encart de [[D-275]], lu sur la COPIE de la
 // déclaration prise à l'envoi (`assignations.pose_question_suicide`), sans
 // repli sur l'instrument (20261111-0027-a).
 //

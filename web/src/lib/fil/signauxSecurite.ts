@@ -16,6 +16,7 @@ import { estFindingAnamnese, estFindingQuestionnaire } from '@/lib/clinical-engi
 import type { SafetyFinding } from '@/lib/clinical-engine/types';
 import { QUESTIONNAIRES_SECURITE } from '@/lib/clinical/safetyQuestionnaireV1';
 import { lireCouverturesAdressageGroupees } from '@/lib/clinical-engine/adressagesSignalAlertePrisma';
+import { joindreDesignationsCabinet, wherePassationsCabinet } from '@/lib/clinical-engine/designationsCabinetPrisma';
 import type { SignalSecuriteRow } from './cartes';
 
 // SIGNAUX DE SÉCURITÉ OUVERTS DE LA PATIENTÈLE — [[D-275]] §3.
@@ -51,14 +52,20 @@ export async function lireSignauxSecuriteOuverts(email: string): Promise<SignalS
     if (!porteuses.has(consultation.idPatient)) porteuses.set(consultation.idPatient, consultation);
   }
 
-  const [couvertures, passations] = await Promise.all([
+  // [[D-515]] §5 : les instruments du cabinet en plus, drapeau allumé
+  // seulement — `SAF-QUEST-02` lit leur désignation copiée. Éteint, la
+  // requête est celle d'avant ce lot.
+  const cabinet = wherePassationsCabinet();
+  const [couvertures, passationsLues] = await Promise.all([
     lireCouverturesAdressageGroupees(
       new Map([...porteuses].map(([idPatient, porteuse]) => [idPatient, porteuse.id])),
     ),
     // Les seuls questionnaires que la table lit : la sélection est celle de la
     // chaîne, et `reponsesSecuriteDeclarees` applique le même filtre de validité.
     prisma.questionnaireReponse.findMany({
-      where: { idQuestionnaire: { in: [...QUESTIONNAIRES_SECURITE] }, patient: dossiers },
+      where: cabinet
+        ? { OR: [{ idQuestionnaire: { in: [...QUESTIONNAIRES_SECURITE] } }, cabinet], patient: dossiers }
+        : { idQuestionnaire: { in: [...QUESTIONNAIRES_SECURITE] }, patient: dossiers },
       select: {
         idPatient: true,
         idReponse: true,
@@ -66,9 +73,11 @@ export async function lireSignauxSecuriteOuverts(email: string): Promise<SignalS
         dateReponse: true,
         scoresJson: true,
         statutValidite: true,
+        idAssignation: true,
       },
     }),
   ]);
+  const passations = await joindreDesignationsCabinet(passationsLues);
   const passationsParDossier = new Map<string, PassationSecuriteRow[]>();
   for (const passation of passations) {
     const liste = passationsParDossier.get(passation.idPatient);
