@@ -160,8 +160,16 @@ test.describe('Praticien Dashboard', () => {
         page.locator('li', { hasText: titre }).filter({ hasText: 'Cabinet — scoring non vérifié' }),
       ).toBeVisible({ timeout: 10000 });
 
-      // Désactivation par l'UI : le bouton fait partie du parcours testé.
+      // Désactivation par l'UI : le bouton fait partie du parcours testé. Il
+      // ouvre la confirmation (Q4 de D-481, T-70 de D-488) ; seule
+      // « Confirmer la désactivation » désactive.
       await ligne.getByRole('button', { name: 'Désactiver' }).click();
+      await expect(
+        ligne.getByRole('alertdialog', {
+          name: `Désactiver « ${titre} » ? Il sera retiré du catalogue du cabinet.`,
+        }),
+      ).toBeVisible();
+      await ligne.getByRole('button', { name: 'Confirmer la désactivation' }).click();
       await expect(ligne).toBeHidden({ timeout: 10000 });
     } finally {
       // Filet : si une assertion a échoué en route, désactive par l'API tout

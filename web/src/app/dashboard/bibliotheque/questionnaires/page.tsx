@@ -29,12 +29,12 @@ export default function QuestionnairesPage() {
           <p className="text-xs font-semibold uppercase tracking-[.06em] text-solar-ink">
             Assignations et packs · ce qui est envoyé, et à qui
           </p>
-          <h3
+          <h2
             id="rayon-assignations-titre"
             className="font-display text-2xl font-bold tracking-[-0.02em] text-foreground"
           >
             Assignations et packs
-          </h3>
+          </h2>
           <p className="mt-1 max-w-2xl text-base text-muted-foreground">
             Assigner un questionnaire à un dossier, composer les packs, et relire les assignations
             récentes. Ce rayon a quitté la page d’héritage « Questionnaires &amp; packs » le
