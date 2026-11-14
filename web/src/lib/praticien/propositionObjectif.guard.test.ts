@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { PropositionExposee } from '@/app/api/praticien/propositions-objectif/route';
 import { CLES_INTERDITES, clesInterdites, depuisAnamnese } from './propositionObjectif';
+import { contexteResolution, importsResolus, type ContexteResolution } from '../bio-parcours/resolutionImports';
 
 // Gardes structurelles du moteur de proposition (Alliance 6.0-B, LOT-02) — G7.
 //
@@ -97,12 +98,28 @@ describe('G7-1 — ni moteur clinique, ni chaîne C1, nulle part dans le lot', (
    */
   const REPERTOIRES_INTERDITS = /(^|\/)(clinical|clinical-engine|scoring|instruments|equilibre)(\/|$)/;
 
-  function specificateursImportes(chemin: string): string[] {
-    const source = sourceSansCommentaires(chemin);
-    return [
-      ...source.matchAll(/(?:from|import|require)\s*\(?\s*['"]([^'"]+)['"]/g),
-    ].map((m) => m[1]);
+  /**
+   * LE PARSEUR ET LA RÉSOLUTION (lot `bp17-extension-bancs-garde`) : chaque
+   * import — `import type` compris, comme avant — est lu par le parseur
+   * (commentaire glissé, échappement, concaténation constante) et RÉSOLU
+   * comme le fait TypeScript. Est fautif l'import dont le spécificateur
+   * nomme un répertoire interdit, dont le FICHIER atteint est sous l'un
+   * d'eux (alias, lien symbolique), ou qui est INDÉTERMINÉ (non constant,
+   * nom nu inconnu) : il pourrait charger le moteur.
+   */
+  let contexte: ContexteResolution | undefined;
+  const SOUS_INTERDIT = /^web\/src\/lib\/(clinical|clinical-engine|scoring|instruments|equilibre)\//;
+  const INDETERMINE = '<import indéterminé>';
+  function specificateursImportes(chemin: string, source?: string): string[] {
+    return importsResolus(`web/${chemin}`, (contexte ??= contexteResolution()), source).map((i) => {
+      if (i.indetermine) return INDETERMINE;
+      // Le fichier atteint sous un répertoire interdit se rapporte par son chemin : le motif le reconnaît.
+      if (i.atteint !== null && SOUS_INTERDIT.test(i.atteint)) return i.atteint.slice('web/src/'.length);
+      return i.specificateur;
+    });
   }
+  const estFautif = (specificateur: string) =>
+    specificateur === INDETERMINE || REPERTOIRES_INTERDITS.test(specificateur);
 
   it.each([MODULE, ROUTE, EMPREINTE])('%s n’importe aucun moteur clinique', (chemin) => {
     const source = sourceSansCommentaires(chemin);
@@ -133,9 +150,7 @@ describe('G7-1 — ni moteur clinique, ni chaîne C1, nulle part dans le lot', (
     } else {
       expect(specificateurs.length).toBeGreaterThan(0);
     }
-    const fautifs = specificateurs.filter((specificateur) =>
-      REPERTOIRES_INTERDITS.test(specificateur),
-    );
+    const fautifs = specificateurs.filter(estFautif);
     expect(fautifs).toEqual([]);
   });
 
@@ -147,10 +162,17 @@ describe('G7-1 — ni moteur clinique, ni chaîne C1, nulle part dans le lot', (
     // second pourrait mourir seul, en silence.
     const temoin = sourceSansCommentaires(TEMOIN_MOTEUR);
     expect(temoin).toContain('@/lib/clinical');
-    const fautifs = specificateursImportes(TEMOIN_MOTEUR).filter((specificateur) =>
-      REPERTOIRES_INTERDITS.test(specificateur),
-    );
+    const fautifs = specificateursImportes(TEMOIN_MOTEUR).filter(estFautif);
     expect(fautifs.length).toBeGreaterThan(0);
+    // Et les formes que l'ancien motif ne voyait pas : commentaire glissé,
+    // concaténation constante, import indéterminé.
+    for (const source of [
+      'import { x } from/**/"../clinical-engine/chaineC1";',
+      'const s = require("@/lib/" + "scoring/validite");',
+      'const m = await import(chemin);',
+    ]) {
+      expect(specificateursImportes(MODULE, source).filter(estFautif), source).toHaveLength(1);
+    }
   });
 
   it('SEUL LE BANC importe la sérialisation canonique originale (arbitrage 2)', () => {

@@ -101,12 +101,17 @@ for (const cmd of [
   "cd web && npx prisma format --schema prisma/schema.prisma",
   "prisma format",
   "npx prisma validate && npx prisma format",
+  // P2 de wn-reviewer sur #2074 : version épinglée, et `--check` en commentaire.
+  "npx prisma@7 format",
+  "npx prisma@7.2.0 format --schema prisma/schema.prisma",
+  "npx prisma format # --check",
 ]) {
   test(`prisma format est refusé : ${cmd}`, () => assert.equal(verdict(cmd), "refus"));
 }
 
 for (const cmd of [
   "npx prisma format --check",
+  "npx prisma@7 format --check",
   "cd web && npx prisma format --schema prisma/schema.prisma --check",
   "npx prisma validate",
   'gh pr comment 12 --body "ne jamais lancer prisma format"',

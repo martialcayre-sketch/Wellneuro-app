@@ -1,6 +1,7 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { specificateursSyntaxiques } from '../bio-parcours/balayageSources';
 
 import {
   MENTION_NATURE_INDICE_GLOBAL,
@@ -463,9 +464,17 @@ describe('nature du total — la doctrine tient à un seul endroit', () => {
   // Un import de valeur suffirait à y faire entrer `node:crypto` par un
   // voisin — le défaut que `bundleClient.guard.test.ts` ferme pour
   // `lib/clinical`. Ici la condition est vérifiée, pas déclarée.
+  // LU PAR LE PARSEUR (lot `bp17-extension-bancs-garde`) : le motif `^import`
+  // ne voyait ni `require`, ni `import()`, ni `export … from`. `import type`
+  // compte aussi, comme avant : aucun import d'aucune sorte.
   it('le module reste une feuille, donc embarquable côté client', () => {
     const source = lire(MODULE);
-    expect(source).not.toMatch(/^\s*import\s/m);
+    expect(source.length).toBeGreaterThan(200); // anti-vacuité
+    expect(specificateursSyntaxiques(source, MODULE)).toEqual([]);
+    // CONTRE-ÉPREUVE du lecteur.
+    for (const forme of ["const c = require('node:crypto');", "export * from './voisin';", "const a = 1; import('z');"]) {
+      expect(specificateursSyntaxiques(forme, MODULE), forme).toHaveLength(1);
+    }
   });
 
   // LE PIÈGE QUE CE LOT A FAILLI POSER. Les libellés patient ont quitté
