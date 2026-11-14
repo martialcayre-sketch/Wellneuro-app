@@ -17,7 +17,13 @@ Composée seulement des désignations approuvées (usage décisionnel,
 population d'usage, hypothèses rattachées, analyte) et de la réserve
 qu'impose le statut d'usage, elle est FIDÈLE même si aucun claim n'établit
 l'usage décisionnel : cet usage vient du cadre signé. Tout autre élément
-qu'elle contient est un fait, jugé comme tel.
+qu'elle contient est un fait, jugé comme tel. La réserve est celle du
+statut de la fiche : sous « preuves_limitees », que l'usage n'est pas
+établi ; sous « non_valide », qu'il n'est pas validé ; sous
+« etaye_valide », aucune. Une réserve absente quand le statut l'impose, ou
+celle d'un autre statut, est un défaut. Quand la fiche n'a aucun analyte,
+les mots « cet examen » désignent la mesure de la fiche : ils sont FIDÈLES
+et n'ajoutent rien.
 
 L'objet de chaque rubrique, pour juger un débordement : question : la
 question d'usage ; population : la population en clair ;
@@ -26,7 +32,14 @@ resultats_consequences : les résultats possibles et les conséquences
 autorisées ; interpretations : les interprétations permises et interdites ;
 options : les options ; precautions : les précautions ; surveillance_arret :
 la surveillance et le critère d'arrêt ; limites : les limites ;
-argument_preference : l'argument de préférence.
+argument_preference : l'argument de préférence. Quand le marqueur sécurité
+/ admissibilité est « oui », une condition de sécurité ou d'admissibilité
+portée par un claim, que l'objet d'aucune rubrique demandée ne couvre, et
+restituée dans la rubrique demandée la plus proche de son objet, n'est pas
+un débordement, sauf dans « question » ou « population », où elle reste un
+fait, jugé comme tel. Une rubrique « question » ou « population » composée selon
+sa règle n'énonce aucun fait : elle ne tait aucune condition de sécurité ou
+d'admissibilité.
 
 Le libellé d'une hypothèse nomme un état, il n'affirme pas un fait. Le
 cadre signé lui impose sa forme : un état fonctionnel, portant sur un seul
@@ -63,7 +76,8 @@ Il est INFIDÈLE s'il contient au moins un des défauts suivants :
   usage présenté comme établi, validé, recommandé ou systématique alors que
   le statut d'usage est « preuves_limitees » ; un usage qui n'est pas dit
   non validé, ou qui déclenche un examen ou une décision, alors que le
-  statut est « non_valide » ; une « information_contributive » présentée
+  statut est « non_valide » (une rubrique qui ne présente aucun usage n'a
+  pas à le dire) ; une « information_contributive » présentée
   comme une mesure directe ; une « exploration_fonctionnelle » ou un
   « marqueur_experimental » présenté comme une mesure standard ; une
   décision prêtée à la mesure autre que son usage décisionnel ; une
@@ -77,8 +91,8 @@ Il est INFIDÈLE s'il contient au moins un des défauts suivants :
   nutriment dans le sens bas.
 
 La phrase « Les sources retenues ne documentent pas ce point. » est FIDÈLE si
-les claims ne documentent effectivement pas la rubrique ; INFIDÈLE s'ils la
-documentent.
+aucun claim ne porte sur l'objet de la rubrique ; INFIDÈLE si un claim y
+porte.
 
 Le CONTEXTE, quand il est fourni, sert à situer le texte : ne le juge pas.
 

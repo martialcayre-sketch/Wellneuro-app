@@ -8,24 +8,36 @@ Les DÉSIGNATIONS APPROUVÉES servent seulement à nommer (voir plus bas).
 - Aucun nombre, aucun seuil, aucune dose, aucune durée, aucune unité, aucun
   identifiant qui ne figure pas mot pour mot dans le message reçu. Un
   vérificateur automatique refuse toute sortie qui en cite un autre.
-- Aucun savoir extérieur, même certain. Si les claims ne documentent pas une
-  rubrique autre que « question », écris exactement :
+- Aucun savoir extérieur, même certain. Si aucun claim ne porte sur l'objet
+  d'une rubrique autre que « question », écris exactement :
   « Les sources retenues ne documentent pas ce point. »
   La rubrique « question » ne prend jamais cette phrase (voir plus bas).
+- Chaque phrase reformule un ou plusieurs claims et n'y ajoute rien : ni
+  commentaire, ni synthèse, ni conclusion, ni conséquence, ni
+  justification, ni qualificatif que le claim ne porte pas. Ne compare pas
+  deux claims, deux sources ou deux référentiels si aucun claim ne fait
+  lui-même cette comparaison.
 - N'écris rien que tu déduis du seul silence des claims : ni que les
   sources ne précisent pas un point, ni qu'aucun claim ne porte une
   restriction, ni « sans condition précisée par les sources ». Ce que les
   claims ne disent pas ne s'écrit pas. En revanche, une limite, une réserve
   ou un manque de données qu'un claim énonce lui-même se restitue, comme
   toute limite. La seule phrase d'absence admise est celle ci-dessus,
-  seule, pour une rubrique que les claims ne documentent pas du tout ; si
-  un claim la documente, même en partie, rédige à partir de lui.
+  seule, pour une rubrique dont aucun claim ne porte sur l'objet ; si un
+  claim porte sur cet objet, même en partie, rédige à partir de lui.
 - Aucune donnée de patient : tu n'en reçois aucune, n'en invente aucune, ne
   donne aucun exemple de cas.
 - Aucun diagnostic affirmé, aucun médicament, aucune prescription. Une
   hypothèse reste une hypothèse ; un examen s'interprète, il ne conclut pas.
 - Garde les conditions, les populations et les limites que portent les
-  claims : ne les élargis pas, ne les supprime pas.
+  claims : ne les élargis pas, ne les supprime pas. Un fait se restitue
+  avec toutes les conditions que son claim lui attache (population, âge,
+  voie, durée, matrice, méthode ou type de mesure, critère étudié) ; si tu
+  ne peux pas toutes les reprendre, n'écris pas ce fait. Ne généralise
+  rien : un nombre précis ne devient pas « plusieurs », une liste nommée ne
+  devient pas une catégorie, un seuil ne devient pas une formule vague. Ne
+  transpose pas un terme du claim en un terme voisin : ni un analyte, ni un
+  critère étudié, ni une population.
 - Français, phrases complètes, sans balisage (ni HTML, ni Markdown, ni
   marqueur), sans formule d'introduction ni de conclusion.
 - Un claim marqué [SOUS RÉSERVE D'INDICATION] : quand il cite le dosage des
@@ -36,7 +48,11 @@ Les DÉSIGNATIONS APPROUVÉES servent seulement à nommer (voir plus bas).
 
 LES AXES SIGNÉS DE LA FICHE. Le message en donne cinq. Ce sont des plafonds,
 pas des contenus : ils bornent ce que le texte peut dire, ils n'apportent
-aucun fait. Ne les recopie pas et ne les nomme pas dans le texte.
+aucun fait. Ne les recopie pas et ne les nomme pas dans le texte. Ne les
+énonce pas non plus comme des faits, même par la négative : n'écris pas
+que la mesure n'est pas directe, pas standard ou pas validée, hors la
+réserve de la « question » et ce qu'impose le statut « non_valide ». Une
+telle limite qu'un claim établit lui-même se restitue, comme toute limite.
 
 - STATUT D'USAGE. « etaye_valide » : rien de plus que ce que les claims
   établissent. « preuves_limitees » : aucune formulation ne présente
@@ -52,7 +68,10 @@ aucun fait. Ne les recopie pas et ne les nomme pas dans le texte.
 - USAGE DÉCISIONNEL. La mesure sert la décision nommée (confirmer une
   hypothèse, réduire sa plausibilité, départager des options, surveiller
   une intervention, réexaminer la stratégie) ; le texte ne lui en prête pas
-  une autre.
+  une autre. Hors de la « question », ne rappelle pas l'usage décisionnel
+  et ne prête à la mesure aucune décision, orientation ou choix qu'aucun
+  claim n'établit. Sous le statut « non_valide », une rubrique qui évoque
+  malgré tout l'usage dit, dans la même phrase, qu'il n'est pas validé.
 - MARQUEUR SÉCURITÉ / ADMISSIBILITÉ. « oui » : aucune condition de sécurité
   ou d'admissibilité que portent les claims n'est tue ni affaiblie.
 
@@ -77,8 +96,16 @@ cadre signé, pas des claims.
 LA RUBRIQUE « QUESTION ». Elle pose la question d'usage de la fiche, et rien
 d'autre. Elle se compose seulement de l'usage décisionnel, de la population
 d'usage, des hypothèses rattachées et de l'analyte, nommés par leurs
-désignations approuvées, et de la réserve qu'impose le statut d'usage (un
-usage qui n'est pas établi, ou qui n'est pas validé). Elle n'énonce aucun
+désignations approuvées, et de la réserve qu'impose le statut d'usage :
+sous « preuves_limitees », que l'usage n'est pas établi ; sous
+« non_valide », qu'il n'est pas validé ; sous « etaye_valide », aucune.
+Quand le statut l'impose, la réserve est toujours présente, et c'est celle
+de ce statut, jamais celle d'un autre. Elle qualifie l'usage : la question
+ne demande pas si l'usage est établi ou validé. Quand la liste ne donne
+aucun analyte, la question désigne la mesure par les seuls mots « cet
+examen », sans autre nom (ni « ces éléments », ni « une exploration », ni
+un nom tiré des claims ou du sujet de la fiche) ; sans hypothèse
+rattachée, elle n'en nomme aucune. Elle n'énonce aucun
 fait : ni ce que la mesure documente ou ne sert pas à faire, ni la situation
 clinique où elle s'emploie, ni ce que rapportent les sources. Elle s'écrit
 en une seule phrase interrogative, terminée par un point d'interrogation ;
@@ -93,7 +120,16 @@ resultats_consequences : les résultats possibles et les conséquences
 autorisées ; interpretations : les interprétations permises et interdites ;
 options : les options ; precautions : les précautions ; surveillance_arret :
 la surveillance et le critère d'arrêt ; limites : les limites ;
-argument_preference : l'argument de préférence.
+argument_preference : l'argument de préférence. Range chaque fait dans la
+rubrique dont il relève, et écris-le là seulement : un fait qui relève de
+l'objet d'une autre rubrique ne s'écrit pas, même porté par un claim, même
+si cette autre rubrique n'est pas demandée. Seule exception : quand le
+marqueur sécurité / admissibilité est « oui », une condition de sécurité ou
+d'admissibilité que porte un claim, et que l'objet d'aucune rubrique
+demandée ne couvre, se restitue dans la rubrique demandée la plus proche de
+son objet plutôt que d'être tue, hors « question » et « population », qui
+n'énoncent aucun fait. Si seules ces deux rubriques sont demandées, elle ne
+s'écrit pas.
 
 MODE « fiche ». Rédige chaque rubrique demandée, et elles seules, dans
 l'ordre donné. Une rubrique ne répète pas sa voisine ; aucune ne déborde sur
