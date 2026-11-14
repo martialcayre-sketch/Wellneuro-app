@@ -313,6 +313,7 @@ export default function PortailQuestionnairePage() {
         onDone={retourHub}
         renderer={data.renderer}
         encartUrgenceCabinet={data.encartUrgenceCabinet === true}
+        designationSuicideCabinet={data.designationSuicideCabinet}
       />
     </div>
   );

@@ -11,6 +11,10 @@ const { prisma } = vi.hoisted(() => ({
 vi.mock('@/lib/prisma', () => ({ prisma }));
 
 import { signPatientSession } from '@/lib/patient-session';
+import {
+  SAFETY_QUESTIONNAIRE_CABINET_METADATA,
+  SAFETY_QUESTIONNAIRE_CABINET_SHA256,
+} from '@/lib/clinical/safetyQuestionnaireCabinetV1';
 import { GET } from './route';
 
 const assignation = {
@@ -335,5 +339,92 @@ describe('GET /api/patient/questionnaire — encart d’un instrument du cabinet
     process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB = 'true';
     prisma.assignation.findUnique.mockResolvedValue({ ...assignation, poseQuestionSuicide: true });
     expect('encartUrgenceCabinet' in (await lire())).toBe(false);
+  });
+});
+
+// [[D-515]] (PR 3 du lot de code) : la désignation COPIÉE, servie pour le
+// message de [[D-277]] §1, aux seules conditions du courriel au praticien —
+// drapeau allumé, copie « oui » lisible, `SAF-QUEST-02` signée. La règle
+// elle-même est confrontée au courriel dans `reponseSuicide.guard.test.ts` ;
+// ce banc tient que la route la sert, et rien d'autre.
+describe('GET /api/patient/questionnaire — désignation servie d’un instrument du cabinet (D-515)', () => {
+  const COPIE = { instrument: 'Humeur cabinet', enonce: 'Idées noires', options: [{ v: 0, l: 'Jamais' }, { v: 2, l: 'Souvent' }] };
+  const CAB = {
+    ...assignation,
+    idQuestionnaire: 'CAB_1',
+    poseQuestionSuicide: true,
+    questionSuicideId: 'Q2',
+    questionSuicideOptionNon: 0,
+    questionSuicideCopie: COPIE,
+  };
+  const ETAT_LIVRE = { ...SAFETY_QUESTIONNAIRE_CABINET_METADATA };
+
+  function signer(): void {
+    SAFETY_QUESTIONNAIRE_CABINET_METADATA.validationExterne = true;
+    SAFETY_QUESTIONNAIRE_CABINET_METADATA.dateValidation = '2026-11-14T00:00:00.000Z';
+    SAFETY_QUESTIONNAIRE_CABINET_METADATA.sourceReference = 'Signature simulée par le banc — jamais servie en production.';
+    SAFETY_QUESTIONNAIRE_CABINET_METADATA.shaPerimetre = SAFETY_QUESTIONNAIRE_CABINET_SHA256;
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB = 'true';
+    process.env.NEXTAUTH_SECRET = 'secret-de-test-non-production';
+    prisma.assignation.findUnique.mockResolvedValue(CAB);
+    prisma.patient.findUnique.mockResolvedValue({
+      idPatient: assignation.idPatient,
+      actif: true,
+      accessTokenRevoked: false,
+      email: assignation.emailPatient,
+      dateNaissance: '1985-03-14',
+    });
+    prisma.cabinetInstrument.findUnique.mockResolvedValue({
+      idInstrument: 'CAB_1', titre: 'Humeur cabinet', definitionJson: { sections: [] }, scoringJson: null,
+      statutRelecture: 'valide', actif: true, poseQuestionSuicide: true,
+    });
+  });
+
+  afterEach(() => {
+    Object.assign(SAFETY_QUESTIONNAIRE_CABINET_METADATA, ETAT_LIVRE);
+    delete process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB;
+  });
+
+  async function lire() {
+    const response = await GET(requeteProprietaire());
+    expect(response.status).toBe(200);
+    return response.json();
+  }
+
+  it('table signée, copie « oui » lisible : la question et la valeur « non » copiées, rien d’autre', async () => {
+    signer();
+    const corps = await lire();
+    expect(corps.encartUrgenceCabinet).toBe(true);
+    expect(corps.designationSuicideCabinet).toEqual({ idQuestion: 'Q2', valeurNon: 0 });
+  });
+
+  it('table NON signée (état livré) : l’encart, pas la désignation', async () => {
+    const corps = await lire();
+    expect(corps.encartUrgenceCabinet).toBe(true);
+    expect('designationSuicideCabinet' in corps).toBe(false);
+  });
+
+  it('table signée, drapeau éteint : ni encart ni désignation', async () => {
+    signer();
+    delete process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB;
+    const corps = await lire();
+    expect('encartUrgenceCabinet' in corps).toBe(false);
+    expect('designationSuicideCabinet' in corps).toBe(false);
+  });
+
+  it('table signée, désignation inconnue (§7) ou copie « non » : pas de désignation servie', async () => {
+    signer();
+    for (const assignationLue of [
+      { ...CAB, questionSuicideId: null, questionSuicideOptionNon: null, questionSuicideCopie: null },
+      { ...CAB, questionSuicideOptionNon: 1 },
+      { ...CAB, poseQuestionSuicide: false },
+    ]) {
+      prisma.assignation.findUnique.mockResolvedValue(assignationLue);
+      expect('designationSuicideCabinet' in (await lire())).toBe(false);
+    }
   });
 });

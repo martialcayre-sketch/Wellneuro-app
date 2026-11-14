@@ -139,6 +139,13 @@ test.describe('Praticien Dashboard', () => {
       const relecture = page.getByRole('dialog', { name: 'Relire la grille' });
       await expect(relecture).toBeVisible();
       await expect(relecture.getByText(/Bandes d.interprétation/)).toBeVisible();
+      // NF-7 ([[D-303]] §3) : `WN_ENABLE_DECLARATION_SUICIDE_CAB` est allumé
+      // dans le serveur des E2E ([[D-515]], PR 3) ; la publication exige alors
+      // la déclaration. Les deux questions portent sur le sommeil : « Non ».
+      await relecture
+        .getByRole('group', { name: 'Ce questionnaire pose-t-il une question sur le suicide ou les idées de mort ?' })
+        .getByLabel('Non', { exact: true })
+        .check();
       await relecture.getByRole('button', { name: 'Grille relue — publier' }).click();
       await expect(relecture).toBeHidden({ timeout: 10000 });
       await expect(ligne.getByText('Publié')).toBeVisible({ timeout: 10000 });

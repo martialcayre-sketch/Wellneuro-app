@@ -59,6 +59,10 @@ import { notifierPraticienSignalSecurite } from '@/lib/securite/alerteSecuritePr
 import { logger } from '@/lib/observability/logger';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
 import { questionSecuriteDe } from '@/lib/clinical/safetyQuestionnaireV1';
+import {
+  SAFETY_QUESTIONNAIRE_CABINET_METADATA,
+  SAFETY_QUESTIONNAIRE_CABINET_SHA256,
+} from '@/lib/clinical/safetyQuestionnaireCabinetV1';
 import { POST as postSubmit } from './route';
 
 const assignation = {
@@ -361,6 +365,74 @@ describe('POST /api/patient/submit — instruments du cabinet', () => {
     expect(((await res.json()) as { error: string }).error).toContain("n'est plus disponible");
     expect(prisma.questionnaireReponse.create).not.toHaveBeenCalled();
     expect(prisma.assignation.update).not.toHaveBeenCalled();
+  });
+
+  // [[D-515]] (PR 3 du lot de code) : la route passe la désignation COPIÉE sur
+  // SON assignation à `transmissionAppelleAlerteSecurite`. La règle elle-même
+  // est confrontée au message du patient dans `reponseSuicide.guard.test.ts` ;
+  // ce bloc tient que la route la lit sur l'assignation de la transmission.
+  describe('désignation copiée : le courriel de [[D-277]] §2 ([[D-515]])', () => {
+    const DESIGNEE = {
+      ...assignationCabinet,
+      poseQuestionSuicide: true,
+      questionSuicideId: 'Q2',
+      questionSuicideOptionNon: 0,
+      questionSuicideCopie: { instrument: 'Instrument cabinet test', enonce: 'Je me réveille reposé(e).', options: [{ v: 0, l: 'Non' }, { v: 1, l: 'Oui' }] },
+    };
+    const ETAT_LIVRE = { ...SAFETY_QUESTIONNAIRE_CABINET_METADATA };
+
+    function signer(): void {
+      SAFETY_QUESTIONNAIRE_CABINET_METADATA.validationExterne = true;
+      SAFETY_QUESTIONNAIRE_CABINET_METADATA.dateValidation = '2026-11-14T00:00:00.000Z';
+      SAFETY_QUESTIONNAIRE_CABINET_METADATA.sourceReference = 'Signature simulée par le banc — jamais servie en production.';
+      SAFETY_QUESTIONNAIRE_CABINET_METADATA.shaPerimetre = SAFETY_QUESTIONNAIRE_CABINET_SHA256;
+    }
+
+    beforeEach(() => {
+      process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB = 'true';
+      prisma.assignation.findUnique.mockResolvedValue(DESIGNEE);
+      vi.mocked(notifierPraticienSignalSecurite).mockResolvedValue({ statut: 'Envoye' });
+      sendMailAck.mockResolvedValue({});
+    });
+
+    afterEach(() => {
+      Object.assign(SAFETY_QUESTIONNAIRE_CABINET_METADATA, ETAT_LIVRE);
+      delete process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB;
+    });
+
+    it('table signée : une valeur autre que la valeur « non » copiée prévient le praticien', async () => {
+      signer();
+      const res = await postSubmit(requeteCabinet({ Q1: 0, Q2: 1 }));
+      expect(res.status).toBe(200);
+      expect(notifierPraticienSignalSecurite).toHaveBeenCalledWith(expect.objectContaining({
+        idPatient: assignationCabinet.idPatient,
+        source: { type: 'reponse_questionnaire', id: expect.any(String) },
+      }));
+    });
+
+    it('table signée : la valeur « non » copiée, ou une autre question, ne prévient personne', async () => {
+      signer();
+      const res = await postSubmit(requeteCabinet({ Q1: 1, Q2: 0 }));
+      expect(res.status).toBe(200);
+      expect(notifierPraticienSignalSecurite).not.toHaveBeenCalled();
+    });
+
+    it('table NON signée (état livré) : aucun courriel, même sur une réponse positive', async () => {
+      const res = await postSubmit(requeteCabinet({ Q1: 0, Q2: 1 }));
+      expect(res.status).toBe(200);
+      expect(notifierPraticienSignalSecurite).not.toHaveBeenCalled();
+    });
+
+    // Contre-revue Codex de la PR 3, P1 : la copie « oui » n'est écrite que
+    // drapeau allumé, et le patient a pu lire le message avant l'extinction.
+    // Le courriel part donc quand même.
+    it('table signée, drapeau éteint après l’envoi : le courriel part quand même', async () => {
+      signer();
+      delete process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB;
+      const res = await postSubmit(requeteCabinet({ Q1: 0, Q2: 1 }));
+      expect(res.status).toBe(200);
+      expect(notifierPraticienSignalSecurite).toHaveBeenCalledTimes(1);
+    });
   });
 });
 
