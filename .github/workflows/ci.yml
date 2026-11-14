@@ -476,6 +476,12 @@ jobs:
       - name: Migrations — btrim à un argument refusé (banc)
         run: node --test scripts/migrations-btrim.test.mjs
 
+      # Piège converti en contrôle : doublons « * 2.* » ou « * 2 » du client
+      # Prisma (deux `prisma generate` concurrents). Le contrôle tourne dans
+      # `wn-test-worktree.sh` ; son banc tourne ici. Ni npm ni base.
+      - name: Doublons du client Prisma (banc)
+        run: node --test scripts/wn-doublons-prisma.test.mjs
+
       # Le classement d'un échec E2E (blocage navigateur vs défaut applicatif)
       # ne sert qu'en local — `wn-test-worktree.sh` ne tourne pas ici. Son BANC,
       # lui, a sa place dans les deux passes : le banc de parité ne contrôle que

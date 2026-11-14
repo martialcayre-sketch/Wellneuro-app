@@ -411,14 +411,16 @@ step "Client Prisma (generate)"
 npx prisma generate
 
 # Piège converti en contrôle (lot `autonomie-frictions`, 2026-11-13) : deux
-# `prisma generate` concurrents (deux worktrees, ou un generate manuel pendant
-# ce script) laissent des doublons « index.d 2.ts », « edge 2.js »… Le
-# répertoire est ignoré par Git : rien ne se voit, et le build casse plus loin
-# sur « Constructor implementation is missing », qui ne ressemble pas à sa
-# cause. Sans `head` : sous `pipefail`, un SIGPIPE ferait sortir le script.
-doublons_prisma="$(find src/generated/prisma -name '* 2.*' 2>/dev/null || true)"
-[[ -z "$doublons_prisma" ]] \
-  || die "doublons « * 2.* » dans web/src/generated/prisma (deux \`prisma generate\` concurrents) — remède sans risque, le répertoire est régénérable : \`find web/src/generated/prisma -name '* 2.*' -delete\`, puis relancer."
+# `prisma generate` concurrents laissent des doublons « * 2.* » ou « * 2 ».
+# Détail et banc : scripts/wn-doublons-prisma.sh. Code 1 = doublons, 2 =
+# répertoire absent ou lecture impossible.
+code_doublons=0
+bash "$ROOT/scripts/wn-doublons-prisma.sh" src/generated/prisma || code_doublons=$?
+if [[ "$code_doublons" -eq 1 ]]; then
+  die "doublons « * 2.* » ou « * 2 » dans web/src/generated/prisma (deux \`prisma generate\` concurrents) — remède sans risque, le répertoire est régénérable : le supprimer (\`rm -rf web/src/generated/prisma\`), puis relancer."
+elif [[ "$code_doublons" -ne 0 ]]; then
+  die "contrôle des doublons Prisma non concluant (code $code_doublons) : web/src/generated/prisma absent après \`prisma generate\` ?"
+fi
 
 if [[ "$FAST" == 0 ]]; then
   step "Certification scoring (63 questionnaires)"
