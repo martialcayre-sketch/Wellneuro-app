@@ -14,7 +14,7 @@ Valider à l'écran, sur délégation D-509, les quinze rubriques déposées en 
 
 - Délégation D-509 du responsable, en session le 2026-11-14 : « valide pour moi ». Le périmètre a été nommé par question à options : les quinze rubriques des quatre fiches, versions n° 1.
 - Huit actes posés, sept rubriques laissées sans acte, avec leur motif (journal F05, rang 06).
-- Le huitième acte a été posé après la fermeture de l'onglet, sur confirmation du responsable.
+- Le huitième acte a été posé après une interruption de l'onglet, sur confirmation du responsable donnée dans la même session.
 
 ## Fichiers modifiés
 
@@ -25,13 +25,13 @@ Valider à l'écran, sur délégation D-509, les quinze rubriques déposées en 
 
 - Relecture de chaque rubrique contre le message exact du rédacteur, reconstruit hors dépôt (claims, axes, désignations), et contre la consigne v7.
 - Actes posés à l'écran sur `app.wellneuro.fr` : relecture intégrale déclarée, puis confirmation de la validation.
-- Constat par conteneur (lecture seule, `one-off-707`) : huit actes « validee », relecture intégrale vraie, empreintes égales à celles des textes déposés.
+- Constat par conteneur (lecture seule, `one-off-707`, sortie lue le 2026-11-14 vers 20 h 30, heure de Paris) : huit actes « validee », relecture intégrale vraie, empreintes égales à celles des textes déposés.
 - Banc `scripts/lib/plan-journal.test.mjs` et `check_no_secrets.sh --staged` (voir la PR).
 
 ## Problèmes ouverts
 
 - Sept rubriques sans acte, à la relecture du responsable : la population de POLY P5 et de MG P8 (phrase d'absence), les précautions de POLY P5, les interprétations et les précautions de MG P1, les options et l'argument de préférence de MG P8. Ces deux dernières dépendent des questions cliniques ouvertes sur les doses et les médicaments.
-- La consigne v7 laisse la rubrique « population » prendre la phrase d'absence alors qu'elle doit nommer la population signée. La contre-lecture l'a acceptée sur deux fiches. C'est à arbitrer si cela se répète.
+- Pour la rubrique « population », deux règles de la consigne v7 se chevauchent. L'une lui fait nommer la seule population d'usage par sa désignation. L'autre impose la phrase d'absence à une rubrique dont aucun claim ne porte sur l'objet. Ce n'est pas une permission. Le rédacteur a appliqué la seconde sur deux fiches, et la contre-lecture l'a acceptée. C'est à arbitrer si cela se répète.
 - Toujours en attente : les neuf fiches refusées, les deux P6 (`SyntaxError`), le fer, et la « question » de `FU_MG_P2` n° 1.
 
 ## Prochaine action exacte
