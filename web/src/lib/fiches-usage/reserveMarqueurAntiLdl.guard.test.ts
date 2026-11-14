@@ -5,6 +5,14 @@ import { FICHES_USAGE_BESOIN2_V1 } from '@/lib/fiches-usage/ficheUsageBesoin2V1'
 import { CLAIMS_SOUS_RESERVE_INDICATION } from '@/lib/fiches-usage/reserveIndication';
 import { INDICATIONS_BIOLOGIE_V1 } from '@/lib/biology-library/indicationsBiologieV1';
 import { CORPUS_CLINIQUE_SYNTHESE_V1 } from '@/lib/clinical/corpusSyntheseV1';
+import {
+  atteintLePaquet,
+  contexteResolution,
+  designe,
+  hoteEnMemoire,
+  importsResolus,
+  type ContexteResolution,
+} from '@/lib/bio-parcours/resolutionImports';
 
 // LA RÉSERVE DE [[D-465]] §3, GARDÉE PAR UN BANC — [[D-498]].
 //
@@ -90,53 +98,74 @@ function sansCommentaires(source: string): string {
     .join('\n');
 }
 
-/** Les spécifieurs des imports de VALEUR : import statique (pas `import type`),
- * import latéral, ré-export, import dynamique. */
-function specifieursDeValeur(source: string): string[] {
-  const s: string[] = [];
-  const motifs = [
-    /^\s*import\s+(?!type\b)[^;]*?\bfrom\s+(['"])([^'"]+)\1/gm,
-    /^\s*import\s+(['"])([^'"]+)\1/gm,
-    /^\s*export\s+(?!type\b)[^;]*?\bfrom\s+(['"])([^'"]+)\1/gm,
-    /\bimport\(\s*(['"])([^'"]+)\1\s*\)/g,
-  ];
-  for (const motif of motifs) for (const m of source.matchAll(motif)) s.push(m[2]);
-  return s;
+/**
+ * LE PARSEUR ET LA RÉSOLUTION (lot `bp17-extension-bancs-garde`) : les
+ * imports de VALEUR (tout sauf `import type`, `export type`, `typeof
+ * import`) sont lus par le parseur — `require`, gabarit, commentaire glissé,
+ * ré-export compris — et RÉSOLUS comme le fait TypeScript (alias, liens
+ * symboliques, `.js`, `index`), contre les sources du balayage. Un import
+ * INDÉTERMINÉ (non constant, nom nu inconnu) peut charger n'importe quel
+ * module : il fait du module qui le porte un lecteur possible.
+ */
+function contexteDe(sources: ReadonlyMap<string, string>, memoire: boolean): ContexteResolution {
+  const contexte = contexteResolution();
+  return memoire ? { ...contexte, cache: undefined, hote: hoteEnMemoire(sources) } : contexte;
 }
 
-/** Résout un spécifieur du dépôt vers une clé `lib/…/x.ts` ; `null` pour un paquet. */
-function resoudre(depuis: string, specifieur: string, existe: (cle: string) => boolean): string | null {
-  let base: string;
-  if (specifieur.startsWith('@/')) base = specifieur.slice(2);
-  else if (specifieur.startsWith('.')) base = path.posix.normalize(path.posix.join(path.posix.dirname(depuis), specifieur));
-  else return null;
-  for (const cle of [base, `${base}.ts`, `${base}.tsx`, `${base}/index.ts`, `${base}/index.tsx`]) {
-    if (/\.(ts|tsx)$/.test(cle) && existe(cle)) return cle;
-  }
-  return null;
-}
-
-/** Les modules atteints par imports de valeur depuis `entree`, `entree` comprise. */
-function modulesAtteints(entree: string, sources: ReadonlyMap<string, string>): Set<string> {
+/** Les modules atteints par imports de valeur depuis `entree`, `entree` comprise, et ceux qui portent un import indéterminé. */
+function parcours(entree: string, sources: ReadonlyMap<string, string>, contexte: ContexteResolution) {
   const vus = new Set<string>();
+  const indetermines = new Set<string>();
   const pile = [entree];
   while (pile.length > 0) {
     const cle = pile.pop() as string;
     if (vus.has(cle)) continue;
     vus.add(cle);
-    for (const spec of specifieursDeValeur(sources.get(cle) ?? '')) {
-      const cible = resoudre(cle, spec, (c) => sources.has(c));
-      if (cible) pile.push(cible);
+    for (const i of importsResolus(`web/src/${cle}`, contexte, sources.get(cle) ?? '')) {
+      if (i.typeSeul) continue;
+      if (i.indetermine) indetermines.add(cle);
+      const cible = i.atteint?.startsWith('web/src/') ? i.atteint.slice('web/src/'.length) : null;
+      if (cible && sources.has(cible)) pile.push(cible);
     }
   }
-  return vus;
+  return { vus, indetermines };
 }
 
-/** Les modules atteints depuis `entree` qui lisent le texte des claims. */
-function lecteursAtteints(entree: string, sources: ReadonlyMap<string, string>): string[] {
-  return [...modulesAtteints(entree, sources)]
-    .filter((cle) => LECTURE_TEXTE_CLAIMS.test(sansCommentaires(sources.get(cle) ?? '')))
+/** Les modules atteints par imports de valeur depuis `entree`, `entree` comprise. */
+function modulesAtteints(
+  entree: string,
+  sources: ReadonlyMap<string, string>,
+  contexte: ContexteResolution = contexteDe(sources, false),
+): Set<string> {
+  return parcours(entree, sources, contexte).vus;
+}
+
+/** Les modules atteints depuis `entree` qui lisent le texte des claims, ou qui portent un import indéterminé. */
+function lecteursAtteints(
+  entree: string,
+  sources: ReadonlyMap<string, string>,
+  contexte: ContexteResolution = contexteDe(sources, false),
+): string[] {
+  const { vus, indetermines } = parcours(entree, sources, contexte);
+  return [...vus]
+    .filter((cle) => indetermines.has(cle) || LECTURE_TEXTE_CLAIMS.test(sansCommentaires(sources.get(cle) ?? '')))
     .sort();
+}
+
+/** Un module qui appelle le modèle : l'adresse ou un spécificateur cité dans le
+ * texte (motif historique), OU un import qui NOMME ou ATTEINT le client du dépôt
+ * ou le SDK, lu par le parseur et résolu (commentaire glissé, concaténation,
+ * alias, lien symbolique). */
+const CIBLES_MODELE = ['web/src/lib/anthropic.ts'];
+function appelleLeModele(cle: string, source: string, contexte: ContexteResolution): boolean {
+  return (
+    APPEL_MODELE.test(source) ||
+    importsResolus(`web/src/${cle}`, contexte, source).some(
+      (i) =>
+        !i.indetermine &&
+        (designe(i, /^@\/lib\/anthropic$|(^|\/)anthropic$|^@anthropic-ai\//, CIBLES_MODELE) || atteintLePaquet(i, '@anthropic-ai')),
+    )
+  );
 }
 
 /** La clause du contrat du catalogue qui refuse le marqueur dans un panel,
@@ -250,7 +279,8 @@ describe('Réserve de D-465 §3 : le marqueur anti-LDL oxydé ne vaut pas indica
     });
 
     const sources = sourcesDuDepot();
-    const appelants = [...sources.keys()].filter((cle) => APPEL_MODELE.test(sources.get(cle) as string)).sort();
+    const contexte = contexteDe(sources, false);
+    const appelants = [...sources.keys()].filter((cle) => appelleLeModele(cle, sources.get(cle) as string, contexte)).sort();
 
     it('le balayage trouve les modules qui appellent le modèle, dont la synthèse et les outils de l’atelier', () => {
       expect(appelants).toContain('lib/synthese/generation.ts');
@@ -262,15 +292,15 @@ describe('Réserve de D-465 §3 : le marqueur anti-LDL oxydé ne vaut pas indica
 
     it('le graphe des imports est suivi : la synthèse atteint des dizaines de modules', () => {
       // Un résolveur cassé rendrait la porte transitive vide, donc verte.
-      expect(modulesAtteints('lib/synthese/generation.ts', sources).size).toBeGreaterThan(30);
+      expect(modulesAtteints('lib/synthese/generation.ts', sources, contexte).size).toBeGreaterThan(30);
     });
 
     it('hors des outils de l’atelier, aucun module qui appelle le modèle ne lit le texte des claims, même indirectement', () => {
       const fautifs = appelants
         .filter((cle) => !OUTILS_ATELIER.has(cle))
-        .flatMap((cle) => lecteursAtteints(cle, sources).map((lecteur) => `${cle} → ${lecteur}`));
+        .flatMap((cle) => lecteursAtteints(cle, sources, contexte).map((lecteur) => `${cle} → ${lecteur}`));
       expect(fautifs).toEqual([]);
-    });
+    }, 120_000);
 
     it('hors des outils de l’atelier, aucun module qui appelle le modèle ne nomme le marqueur ni un claim sous réserve', () => {
       const fautifs: string[] = [];
@@ -293,10 +323,27 @@ describe('Réserve de D-465 §3 : le marqueur anti-LDL oxydé ne vaut pas indica
         ['lib/ia/commente.ts', "import Anthropic from '@anthropic-ai/sdk';\n// texte_normalise n'est cité qu'en commentaire\nexport { Anthropic };"],
         ['lib/ia/relatif.ts', "import { anthropic } from '../anthropic';\nexport const y = anthropic;"],
       ]);
-      expect(lecteursAtteints('lib/ia/appelant.ts', graphe)).toEqual(['lib/rag/relais.ts']);
-      expect(lecteursAtteints('lib/ia/direct.ts', graphe)).toEqual(['lib/ia/direct.ts']);
-      expect(lecteursAtteints('lib/ia/commente.ts', graphe)).toEqual([]);
-      expect(APPEL_MODELE.test(graphe.get('lib/ia/relatif.ts') as string)).toBe(true);
+      const memoire = contexteDe(graphe, true);
+      expect(lecteursAtteints('lib/ia/appelant.ts', graphe, memoire)).toEqual(['lib/rag/relais.ts']);
+      expect(lecteursAtteints('lib/ia/direct.ts', graphe, memoire)).toEqual(['lib/ia/direct.ts']);
+      expect(lecteursAtteints('lib/ia/commente.ts', graphe, memoire)).toEqual([]);
+      expect(appelleLeModele('lib/ia/relatif.ts', graphe.get('lib/ia/relatif.ts') as string, memoire)).toBe(true);
+      // Formes que les motifs sur le texte ne voyaient pas (lot `bp17-extension-bancs-garde`) :
+      // `require` d'un relais, client du dépôt par concaténation, import indéterminé ;
+      // et un `import type` du relais, qui ne charge rien.
+      const masques = new Map<string, string>([
+        ...graphe,
+        ['lib/ia/requis.ts', "import { anthropic } from '@/lib/anthropic';\nconst r = require('../rag/' + 'relais');\nexport { anthropic, r };"],
+        ['lib/ia/glisse.ts', 'const a = require("@/lib/" + "anthropic");\nexport const z = a;'],
+        ['lib/ia/indetermine.ts', "import { anthropic } from '@/lib/anthropic';\nexport const m = import(chemin);"],
+        ['lib/ia/type.ts', "import { anthropic } from '@/lib/anthropic';\nimport type { lire } from '../rag/relais';\nexport { anthropic };"],
+      ]);
+      const contexteMasques = contexteDe(masques, true);
+      expect(lecteursAtteints('lib/ia/requis.ts', masques, contexteMasques)).toEqual(['lib/rag/relais.ts']);
+      expect(appelleLeModele('lib/ia/glisse.ts', masques.get('lib/ia/glisse.ts') as string, contexteMasques)).toBe(true);
+      expect(APPEL_MODELE.test(masques.get('lib/ia/glisse.ts') as string)).toBe(false);
+      expect(lecteursAtteints('lib/ia/indetermine.ts', masques, contexteMasques)).toEqual(['lib/ia/indetermine.ts']);
+      expect(lecteursAtteints('lib/ia/type.ts', masques, contexteMasques)).toEqual([]);
     });
   });
 });

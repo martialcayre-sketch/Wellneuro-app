@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { contexteResolution, importsResolus, type ContexteResolution } from '../bio-parcours/resolutionImports';
 
 // J1-cockpit-b — [[D-333]] §2 règle 5 et §6 : « Aucun chiffre ne traverse au
 // portail. Chaque module de calcul et chaque composant déclare sa surface ; un
@@ -76,16 +77,37 @@ function surfacesPatient(): string[] {
   return trouves;
 }
 
-/** Chaque import, statique ou dynamique, rendu relatif à `src` sans extension. */
-function importsDe(fichier: string): string[] {
-  const source = readFileSync(fichier, 'utf8');
-  const specs = [...source.matchAll(/(?:from\s+|import\s*\(\s*|import\s+)['"]([^'"]+)['"]/g)].map(m => m[1]);
-  return specs.map(spec => {
+/** Un import indéterminé (argument non constant, nom nu inconnu) : il peut charger n'importe quel module. */
+const INDETERMINE = '<import indéterminé>';
+
+/**
+ * Chaque import, rendu relatif à `src` sans extension. LE PARSEUR ET LA
+ * RÉSOLUTION (lot `bp17-extension-bancs-garde`) : statique, dynamique,
+ * `require`, ré-export, commentaire glissé ou échappement sont lus par le
+ * parseur ; le FICHIER atteint est résolu comme le fait TypeScript (alias,
+ * liens symboliques) — un import qui ne se résout pas sous `src` garde la
+ * lecture de son spécificateur. Un import indéterminé rend `INDETERMINE`,
+ * fautif dans les deux volets.
+ */
+function importsDe(fichier: string, contexte: ContexteResolution, source?: string): string[] {
+  const chemin = `web/src/${relatif(fichier).split(path.sep).join('/')}`;
+  return importsResolus(chemin, contexte, source ?? readFileSync(fichier, 'utf8')).map(i => {
+    if (i.indetermine) return INDETERMINE;
+    if (i.atteint?.startsWith('web/src/')) return i.atteint.slice('web/src/'.length).replace(/\.(?:[cm]?[jt]s|[jt]sx)$/, '');
+    const spec = i.specificateur;
     if (spec.startsWith('@/')) return spec.slice(2);
-    if (spec.startsWith('.')) return path.relative(SRC, path.resolve(path.dirname(fichier), spec));
+    if (spec.startsWith('.')) return path.relative(SRC, path.resolve(path.dirname(fichier), spec)).split(path.sep).join('/');
     return spec;
   });
 }
+
+const estUnModuleEquilibreInterdit = (i: string) =>
+  i === INDETERMINE ||
+  ((i === 'lib/equilibre' || i.startsWith('lib/equilibre/')) && !EQUILIBRE_PERMIS.has(i.slice('lib/equilibre/'.length)));
+
+const estUnModuleDuCockpit = (i: string) =>
+  i === INDETERMINE ||
+  i.startsWith('app/api/praticien/') || MODULES_COCKPIT.includes(i) || i.startsWith(PREFIXE_COMPOSANTS_COCKPIT);
 
 function relatif(fichier: string): string {
   return path.relative(SRC, fichier);
@@ -93,6 +115,7 @@ function relatif(fichier: string): string {
 
 describe('frontière du portail — imports', () => {
   const surfaces = surfacesPatient();
+  const contexte = contexteResolution();
 
   it('tout répertoire components/patient* est rangé : surface patient ou hors portail motivé', () => {
     const nonRanges = readdirSync(path.join(SRC, 'components'), { withFileTypes: true })
@@ -110,27 +133,33 @@ describe('frontière du portail — imports', () => {
 
   it('aucune surface patient n’importe un module de lib/equilibre hors de la composition patient', () => {
     const fautes = surfaces.flatMap(f =>
-      importsDe(f)
-        .filter(
-          i =>
-            (i === 'lib/equilibre' || i.startsWith('lib/equilibre/')) &&
-            !EQUILIBRE_PERMIS.has(i.slice('lib/equilibre/'.length)),
-        )
+      importsDe(f, contexte)
+        .filter(estUnModuleEquilibreInterdit)
         .map(i => `${relatif(f)} → ${i}`),
     );
     expect(fautes).toEqual([]);
-  });
+  }, 60_000);
 
   it('aucune surface patient n’importe une route praticien ni un module d’indice du cockpit', () => {
     const fautes = surfaces.flatMap(f =>
-      importsDe(f)
-        .filter(
-          i =>
-            i.startsWith('app/api/praticien/') || MODULES_COCKPIT.includes(i) || i.startsWith(PREFIXE_COMPOSANTS_COCKPIT)
-        )
+      importsDe(f, contexte)
+        .filter(estUnModuleDuCockpit)
         .map(i => `${relatif(f)} → ${i}`),
     );
     expect(fautes).toEqual([]);
+  }, 60_000);
+
+  // CONTRE-ÉPREUVE du lecteur d'imports (absente avant le lot) : les formes
+  // que l'ancien motif ne voyait pas — `require`, ré-export, commentaire
+  // glissé, import indéterminé — et un import permis, qui ne rougit pas.
+  it('le lecteur voit chaque forme d’import, et laisse passer la composition patient', () => {
+    const f = path.join(SRC, 'components/portail/Neuf.tsx');
+    const lus = (source: string) => importsDe(f, contexte, source);
+    expect(lus("const m = require('@/lib/equilibre/momentumParBesoin');").filter(estUnModuleEquilibreInterdit)).toHaveLength(1);
+    expect(lus("export { x } from '../../lib/equilibre/momentumParBesoin';").filter(estUnModuleEquilibreInterdit)).toHaveLength(1);
+    expect(lus('import { m } from/**/"@/lib/praticien/provenanceChiffre";').filter(estUnModuleDuCockpit)).toHaveLength(1);
+    expect(lus('const r = await import(chemin);').filter(estUnModuleDuCockpit)).toHaveLength(1);
+    expect(lus("import { l } from '@/lib/equilibre/lecturePatient';").filter(estUnModuleEquilibreInterdit)).toEqual([]);
   });
 });
 

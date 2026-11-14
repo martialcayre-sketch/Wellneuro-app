@@ -143,10 +143,12 @@ for (const motif of refus) {
 // `prisma format` réaligne une centaine de lignes de `schema.prisma` étrangères
 // au diff et noie la revue d'une migration (mémoire prisma-format, constaté
 // deux fois). `prisma validate` vérifie sans écrire ; `prisma format --check`
-// n'écrit rien non plus et reste permis.
+// n'écrit rien non plus et reste permis. Une version épinglée
+// (`npx prisma@7 format`) est le même geste ; un `--check` placé après un `#`
+// est un commentaire du shell, pas une option.
 const refusStructure = [
   {
-    motif: /\bprisma\s+format\b(?![^\n;&|]*--check\b)/,
+    motif: /\bprisma(?:@\S*)?\s+format\b(?![^\n;&|#]*--check\b)/,
     raison:
       "`prisma format` réaligne une centaine de lignes de schema.prisma " +
       "étrangères au diff. Aligner à la main le bloc touché, puis " +

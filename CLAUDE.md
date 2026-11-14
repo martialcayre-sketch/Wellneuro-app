@@ -259,8 +259,10 @@ node scripts/wn-etat-reel.mjs      # état réel du dépôt — rapporte, ne ré
   (cache chaud) ou handoff puis `/clear` — jamais `/compact` au retour.
 - Le hook de fraîcheur Git impose une branche contenant `origin/main` au
   démarrage et rejuge à chaque tentative d'édition. Jamais de
-  pull/merge/rebase automatique (l'avance `--ff-only` n'en est pas une) ;
-  un historique divergent se réconcilie par arbitrage humain.
+  pull/merge/rebase automatique. Sa branche, dans son worktree, sans
+  commit propre (`origin/main..HEAD` vide) : la session l'avance seule par
+  `--ff-only`. Commit propre, ou avance en échec : arbitrage humain — ni
+  stash ni commit pour la forcer (`D-518`).
 
 ## Fin de session
 

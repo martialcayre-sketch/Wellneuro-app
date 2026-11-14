@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
+import { estFichierSource, importsSyntaxiques, RACINE as RACINE_DEPOT } from '../bio-parcours/balayageSources';
+import { contexteResolution, importsResolus, type ContexteResolution } from '../bio-parcours/resolutionImports';
 
 // AUCUN COMPOSANT CLIENT N'ATTEINT `lib/clinical` PAR UN IMPORT DE VALEUR —
 // directement OU PAR UN VOISIN.
@@ -48,58 +50,50 @@ const CLINIQUE = path.join(WEB, 'src', 'lib', 'clinical');
 /**
  * Les spécifieurs des imports de VALEUR d'un fichier.
  *
- * `[^;]*?` BORNE LA RECHERCHE À UN SEUL ÉNONCÉ. Avec `[\s\S]*?`, un import
- * ordinaire pouvait ouvrir la correspondance et courir jusqu'au `from` d'un
- * import de TYPE situé plus bas — le banc accusait alors une ligne qui
- * disparaît à la compilation.
+ * LUS PAR LE PARSEUR (lot `bp17-extension-bancs-garde`), et non plus par trois
+ * motifs ancrés en début de ligne : `import type`, `export type`, les noms
+ * tous en `type` et `typeof import(…)` sont libres ; tout le reste est une
+ * arête de valeur — import, `export … from` (la ré-export rouvrirait le trou),
+ * import LATÉRAL (`import './module'`), et désormais `import()` et `require`,
+ * qui embarquent aussi le module dans un chunk du navigateur. Un commentaire
+ * glissé, un échappement ou une concaténation constante ne cachent plus rien.
  *
- * `export … from` EST UNE ARÊTE DE VALEUR, et l'oublier rouvrirait le trou par
- * la ré-export : un module feuille ré-exporté par un module lourd ne protège
- * personne si l'on ne suit que les `import`.
- *
- * L'import LATÉRAL (`import './module'`) est aussi une arête de valeur. Et pour
- * la règle des FEUILLES, un import de PAQUET compte également : un fichier qui
- * importe `crypto` n'est pas une feuille, même si aucun chemin du dépôt n'est à
- * résoudre.
+ * Pour la règle des FEUILLES, un import de PAQUET compte également : un fichier
+ * qui importe `crypto` n'est pas une feuille, même si aucun chemin du dépôt
+ * n'est à résoudre.
  */
 function specifieursDeValeur(fichier: string): string[] {
-  const source = readFileSync(fichier, 'utf8');
-  const specifieurs: string[] = [];
-  for (const trouve of source.matchAll(/^\s*import\s+(?!type\b)[^;]*?\bfrom\s+(['"])([^'"]+)\1/gm)) {
-    specifieurs.push(trouve[2]);
-  }
-  for (const trouve of source.matchAll(/^\s*import\s+(?!type\b)(['"])([^'"]+)\1/gm)) {
-    specifieurs.push(trouve[2]);
-  }
-  for (const trouve of source.matchAll(/^\s*export\s+(?!type\b)[^;]*?\bfrom\s+(['"])([^'"]+)\1/gm)) {
-    specifieurs.push(trouve[2]);
-  }
-  return specifieurs;
+  return importsSyntaxiques(readFileSync(fichier, 'utf8'), fichier)
+    .filter(i => !i.typeSeul)
+    .map(i => i.specificateur);
 }
 
-/** Les imports de VALEUR d'un fichier, résolus en chemins du dépôt. */
+/** Un import de valeur INDÉTERMINÉ (non constant, nom nu inconnu) : il peut charger n'importe quel module. */
+const INDETERMINE = '<import indéterminé>';
+
+let contexte: ContexteResolution | undefined;
+/** Les imports de chaque fichier, lus une fois : les parcours partagent leurs voisins. */
+const dejaLus = new Map<string, string[]>();
+
+/**
+ * Les imports de VALEUR d'un fichier, RÉSOLUS comme le fait TypeScript (alias,
+ * liens symboliques, `.js`, `.mts`, `index`) en chemins absolus du dépôt, hors
+ * `node_modules` ; `INDETERMINE` pour un import qui peut charger n'importe quoi.
+ */
 function importsDeValeur(fichier: string): string[] {
-  const specifieurs = specifieursDeValeur(fichier);
-  return specifieurs
-    .map(specifieur => resoudre(specifieur, fichier))
-    .filter((cible): cible is string => cible !== null);
-}
-
-/** Un spécifieur du dépôt → un fichier ; un paquet npm → `null`. */
-function resoudre(specifieur: string, depuis: string): string | null {
-  let base: string;
-  if (specifieur.startsWith('@/')) base = path.join(RACINE, specifieur.slice(2));
-  else if (specifieur.startsWith('.')) base = path.resolve(path.dirname(depuis), specifieur);
-  else return null;
-  for (const suffixe of ['.ts', '.tsx', '/index.ts', '/index.tsx']) {
-    const candidat = base + suffixe;
-    try {
-      if (statSync(candidat).isFile()) return candidat;
-    } catch {
-      // suffixe suivant
-    }
-  }
-  return null;
+  const lu = dejaLus.get(fichier);
+  if (lu) return lu;
+  const relatifAuDepot = path.relative(RACINE_DEPOT, fichier).split(path.sep).join('/');
+  const imports = importsResolus(relatifAuDepot, (contexte ??= contexteResolution()))
+    .filter(i => !i.typeSeul)
+    .flatMap(i => {
+      if (i.indetermine) return [INDETERMINE];
+      const cible = i.atteint;
+      if (cible === null || cible.startsWith('../') || /(^|\/)node_modules\//.test(cible) || !estFichierSource(cible)) return [];
+      return [path.join(RACINE_DEPOT, cible)];
+    });
+  dejaLus.set(fichier, imports);
+  return imports;
 }
 
 /**
@@ -145,6 +139,7 @@ function cheminVersLaCliniqueLourde(depart: string, feuilles: Set<string>): stri
   while (file.length > 0) {
     const [courant, chemin] = file.shift() as [string, string[]];
     for (const suivant of importsDeValeur(courant)) {
+      if (suivant === INDETERMINE) return [...chemin, suivant];
       if (vus.has(suivant)) continue;
       vus.add(suivant);
       const prolonge = [...chemin, suivant];
@@ -182,13 +177,14 @@ describe('bundle client — la couche clinique ne part pas au navigateur', () =>
       // du 2026-09-21 tenait à UN import au MILIEU de la chaîne, et un message
       // qui n'aurait nommé que le composant et le module clinique aurait envoyé
       // la session corriger le mauvais fichier.
-      if (chemin) fautifs.push(chemin.map(p => path.relative(WEB, p)).join('\n    → '));
+      if (chemin) fautifs.push(chemin.map(p => (p === INDETERMINE ? p : path.relative(WEB, p))).join('\n    → '));
     }
     expect(
       fautifs,
       'un composant client atteint une valeur de lib/clinical : la table de règles, ses seuils et crypto partiraient dans le bundle navigateur',
     ).toEqual([]);
-  });
+    // Le parseur et le résolveur lisent chaque composant client et ses voisins : délai élargi.
+  }, 120_000);
 
   it('le parcours VOIT une chaîne indirecte — anti-vacuité du parcours lui-même', () => {
     // SANS CE CAS, LE BANC POURRAIT ÊTRE VERT PARCE QU'IL NE CHERCHE PAS.
@@ -221,5 +217,21 @@ describe('bundle client — la couche clinique ne part pas au navigateur', () =>
     expect(importsDeValeur(corpus)).toEqual([]);
     expect(specifieursDeValeur(corpus)).toContain('crypto');
     expect(feuilles.has(corpus)).toBe(false);
+  });
+
+  // CONTRE-ÉPREUVE DU LECTEUR (lot `bp17-extension-bancs-garde`) : les arêtes
+  // que les trois motifs ne voyaient pas sont des arêtes de valeur ; les
+  // formes de type seul n'en sont pas.
+  it('le lecteur voit import(), require et le commentaire glissé ; il laisse libres les types', () => {
+    const source = [
+      "const a = await import('@/lib/clinical/stopRulesV1');",
+      "const b = require('../clinical/orientationEngine');",
+      'import/**/"@/lib/clinical/corpusSyntheseV1";',
+      "import { type T } from '@/lib/clinical/grillesSignees';",
+      "export type { U } from '@/lib/clinical/stopRulesV1';",
+      "type V = typeof import('@/lib/clinical/orientationEngine');",
+    ].join('\n');
+    const lus = importsSyntaxiques(source, 'x.tsx').filter(i => !i.typeSeul).map(i => i.specificateur);
+    expect(lus).toEqual(['@/lib/clinical/stopRulesV1', '../clinical/orientationEngine', '@/lib/clinical/corpusSyntheseV1']);
   });
 });
