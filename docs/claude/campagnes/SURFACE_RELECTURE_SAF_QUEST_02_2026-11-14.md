@@ -136,9 +136,19 @@ Ce qui change dans le texte :
 
 - **le pied** : « (§) » suivi de la mention de la section 3.1.
 
+Une valeur hors options s'écrit, sur la même ligne, « … question « … » :
+valeur hors des options de la question (‡) ». Le paragraphe que signale le
+signe (‡) est celui de la lettre de `SAF-QUEST-01`, repris sans changement et
+sans variante pour les `CAB_` :
+
+> Pour une ou plusieurs des réponses ci-dessus (‡), la valeur enregistrée ne
+> correspond à aucune option de la question : faute de savoir ce qu'elle dit,
+> elle est traitée comme un adressage plutôt qu'ignorée.
+
 Les autres paragraphes sont ceux de la lettre de `SAF-QUEST-01`, déjà relus le
-2026-10-10 : ouverture, conduite, provenance, hors options, abstention,
-information et signature.
+2026-10-10 : ouverture, conduite, provenance, abstention, information et
+signature. Si la question `20261114-2146-a` reçoit la réponse B, une variante
+de ce paragraphe propre aux `CAB_` le remplace pour leurs seules réponses.
 
 La garde non prescriptive de la lettre (`terme_prescriptif`) **reste active**.
 Depuis #2130 (réponse `20261114-1217-a`), le même jugement s'applique en amont :
@@ -207,8 +217,8 @@ correspond à aucune option de la question ». **C'est inexact dans ce
 cas** : le patient a vu cette option, puisque la définition servie est celle
 de l'instrument (point 5.5). Le constat est juste, seule l'explication est
 fausse. Le même écart se produit dans le résidu du point 5.5, quand une
-option ajoutée après l'envoi est choisie. La phrase « hors options » de la
-lettre (‡), hors SHA, dit la même chose. Retoucher ce texte changerait aussi le SHA de `SAF-QUEST-01`, ce qui
+option ajoutée après l'envoi est choisie. Le paragraphe (‡) de la lettre
+(section 4), hors SHA, dit la même chose. Retoucher ce texte changerait aussi le SHA de `SAF-QUEST-01`, ce qui
 est interdit. Le cas n'existe pas en production : 0 instrument du cabinet
 actif (point 6). La question est posée au responsable (section 7).
 
