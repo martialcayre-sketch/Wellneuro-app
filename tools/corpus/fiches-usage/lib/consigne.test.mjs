@@ -122,5 +122,6 @@ test('v7 : conditions entières, rien d’ajouté, un fait dans sa rubrique, ré
   // reçoivent jamais la condition de sécurité.
   assert.match(redaction, /hors « question » et « population », qui\s+n'énoncent aucun fait/);
   assert.match(contreLecture, /elle ne tait aucune condition de sécurité ou\s+d'admissibilité/);
+  assert.match(contreLecture, /sauf dans « question » ou « population », où elle reste un\s+fait, jugé comme tel/);
   assert.match(contreLecture, /FIDÈLE si\s+aucun claim ne porte sur l'objet de la rubrique/);
 });

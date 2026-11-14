@@ -36,7 +36,8 @@ argument_preference : l'argument de préférence. Quand le marqueur sécurité
 / admissibilité est « oui », une condition de sécurité ou d'admissibilité
 portée par un claim, que l'objet d'aucune rubrique demandée ne couvre, et
 restituée dans la rubrique demandée la plus proche de son objet, n'est pas
-un débordement. Une rubrique « question » ou « population » composée selon
+un débordement, sauf dans « question » ou « population », où elle reste un
+fait, jugé comme tel. Une rubrique « question » ou « population » composée selon
 sa règle n'énonce aucun fait : elle ne tait aucune condition de sécurité ou
 d'admissibilité.
 
