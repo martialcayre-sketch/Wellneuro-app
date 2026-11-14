@@ -14334,9 +14334,9 @@
     "practitionerReviewRequired": true,
     "lifecycleStatus": "raw",
     "vigilance": "Modérée",
-    "requiredAction": "Extraits ciblés ingérés (J3-12e, besoin 7, lot LOT_035_2026-10-20) ; claims en attente de signature",
+    "requiredAction": "Extraits ciblés ingérés (J3-12e, besoin 7, lot LOT_035_2026-10-20 ; besoin 4, un passage ajouté, lot LOT_061_2026-11-14) ; claims en attente de signature",
     "comment": "Source externe de mesure (décision 6 du 2026-10-18), accès libre. Droits : CC BY (Creative Commons Attribution License ; © 2022 Da Costa Silva et al. ; correctif 10.3389/fpsyg.2026.1989051 du 2026-10-05 lu : il ne porte que sur la liste des items inversés de la MAIA-2, déjà corrigée dans le texte ingéré). Extraits mot pour mot, sans adaptation ; aucun item d'échelle reproduit.",
-    "auditDate": "2026-10-20"
+    "auditDate": "2026-11-14"
   },
   {
     "sourceId": "WN-SRC-0554",
@@ -16938,6 +16938,32 @@
     "vigilance": "Élevée",
     "requiredAction": "Extraits ciblés ingérés (besoin 4, perception et sensations corporelles, lot LOT_060_2026-11-14) ; claims en attente de signature",
     "comment": "Source externe, lettre en libre accès (PMC8355880). Droits : licence CC BY-NC 4.0, clause non commerciale ; extraits courts mot pour mot, usage interne, autorisation à vérifier.",
+    "auditDate": "2026-11-14"
+  },
+  {
+    "sourceId": "WN-SRC-0665",
+    "title": "Mehling WE, Acree M, Stewart A, Silas J, Jones A (2018). The Multidimensional Assessment of Interoceptive Awareness, Version 2 (MAIA-2). PLoS One 13(12):e0208034 (doi:10.1371/journal.pone.0208034)",
+    "corpus": "SOURCES_EXTERNES",
+    "documentType": "Article scientifique",
+    "format": "HTML",
+    "mimeType": "text/html",
+    "language": "en",
+    "jurisdiction": "EU_INTERNATIONAL",
+    "authorityClass": "EXTERNAL_INSTRUMENT_DOCUMENTATION",
+    "audienceOriginal": "Praticien",
+    "importance": "secondary",
+    "prescriptive": false,
+    "primaryNotebook": "13 — Instruments du cabinet",
+    "secondaryNotebooks": [],
+    "sourceVersion": null,
+    "contentHash": null,
+    "rightsStatus": "verified",
+    "clinicalReviewStatus": "not_reviewed",
+    "practitionerReviewRequired": true,
+    "lifecycleStatus": "raw",
+    "vigilance": "Modérée",
+    "requiredAction": "Extraits ciblés ingérés (besoin 4, perception et sensations corporelles, lot LOT_061_2026-11-14) ; claims en attente de signature",
+    "comment": "Source externe, article de développement de l'instrument en libre accès (PMC6279042). Droits : licence CC BY 4.0 (© 2018 Mehling et al.) ; l'article déclare la MAIA-2 dans le domaine public ; conditions du site officiel lues par le responsable le 2026-11-14 (usage gratuit, sans autorisation écrite ; usage commercial ou logiciel non traité). Extraits mot pour mot ; aucun item ni cotation reproduits ; aucune borne d'interprétation.",
     "auditDate": "2026-11-14"
   }
 ]
