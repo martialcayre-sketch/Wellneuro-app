@@ -16963,7 +16963,7 @@
     "lifecycleStatus": "raw",
     "vigilance": "Modérée",
     "requiredAction": "Extraits ciblés ingérés (besoin 4, perception et sensations corporelles, lot LOT_061_2026-11-14) ; claims en attente de signature",
-    "comment": "Source externe, article de développement de l'instrument en libre accès (PMC6279042). Droits : licence CC BY 4.0 (© 2018 Mehling et al.) ; l'article déclare la MAIA-2 dans le domaine public ; conditions du site officiel lues par le responsable le 2026-11-14 (usage gratuit, sans autorisation écrite ; usage commercial ou logiciel non traité). Extraits mot pour mot ; aucun item ni cotation reproduits ; aucune borne d'interprétation.",
+    "comment": "Source externe, article de développement de l'instrument en libre accès (PMC6279042). Droits : licence CC BY 4.0 (© 2018 Mehling et al.) ; l'article déclare la MAIA-2 dans le domaine public ; « verified » vaut pour les extraits ingérés, couverts par la CC BY 4.0, usage commercial compris, sous réserve d'attribution. Les conditions du site officiel ont été lues par le responsable le 2026-11-14 : usage gratuit, sans autorisation écrite ; elles ne traitent pas l'usage commercial ou logiciel. L'intégration de l'instrument au produit (items, cotation) reste donc à vérifier avant toute décision. Extraits mot pour mot ; aucun item ni cotation reproduits ; aucune borne d'interprétation.",
     "auditDate": "2026-11-14"
   }
 ]

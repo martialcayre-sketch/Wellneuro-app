@@ -126,7 +126,8 @@ corpus runtime.
   tous droits réservés), le manuscrit d'auteur de Camilleri (`0661`, droits de
   l'éditeur) et la lettre de Massier et al. (`0664`, CC BY-NC, clause non
   commerciale) restent à vérifier ; `0665` est sous licence CC BY 4.0,
-  instrument déclaré dans le domaine public. La recommandation de l'OMS
+  instrument déclaré dans le domaine public ; ce statut vaut pour les extraits,
+  l'intégration de l'instrument au produit restant à vérifier. La recommandation de l'OMS
   (`WN-SRC-0555`, tous droits réservés), dont un extrait court est ingéré pour
   usage interne sur arbitrage du responsable, reste à vérifier.
 - Quarantaine sanitaire (`lifecycleStatus: quarantined`) : relue au registre
