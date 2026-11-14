@@ -247,7 +247,16 @@ describe('file-envoi/envoyer — copie de la déclaration NF-7', () => {
     lignesVerrouillees([{ id_instrument: 'CAB_1', actif: true, statut_relecture: 'valide', pose_question_suicide: true }]);
   });
 
-  type LigneVerrou = { id_instrument: string; actif: boolean; statut_relecture: string; pose_question_suicide: boolean | null };
+  type LigneVerrou = {
+    id_instrument: string;
+    actif: boolean;
+    statut_relecture: string;
+    pose_question_suicide: boolean | null;
+    titre?: string;
+    definition_json?: unknown;
+    question_suicide_id?: string | null;
+    question_suicide_option_non?: number | null;
+  };
 
   /** `$queryRaw` sert deux verrous : la ligne patient, puis (drapeau allumé) celles des instruments. */
   function lignesVerrouillees(lignes: LigneVerrou[]) {
@@ -351,5 +360,91 @@ describe('file-envoi/envoyer — copie de la déclaration NF-7', () => {
     await POST(postRequest({ idBrouillon: 'ENV_1' }));
     expect('poseQuestionSuicide' in donneesCreees('CAB_1')).toBe(false);
     delete process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB;
+  });
+
+  // [[D-515]] §4 : sous « oui », la désignation en vigueur est copiée avec la
+  // déclaration, sous le même verrou. Absente ou incohérente, rien n'est
+  // copié : la désignation est inconnue (§7), jamais inventée.
+  describe('copie de la désignation (D-515 §4)', () => {
+    const DEFINITION = {
+      sections: [{
+        questions: [
+          { id: 'q1', texte: 'Humeur du jour', options: [{ v: 0, l: 'Bonne' }, { v: 1, l: 'Basse' }] },
+          { id: 'q2', texte: 'Avez-vous eu des idées de mort ?', options: [{ v: 0, l: 'Non' }, { v: 1, l: 'Parfois' }, { v: 2, l: 'Souvent' }] },
+        ],
+      }],
+    };
+    const DESIGNE: LigneVerrou = {
+      id_instrument: 'CAB_1',
+      actif: true,
+      statut_relecture: 'valide',
+      pose_question_suicide: true,
+      titre: 'Humeur cabinet',
+      definition_json: DEFINITION,
+      question_suicide_id: 'q2',
+      question_suicide_option_non: 0,
+    };
+    const COLONNES = ['questionSuicideId', 'questionSuicideOptionNon', 'questionSuicideCopie'];
+
+    beforeEach(() => {
+      process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB = 'true';
+    });
+
+    it('« oui » désigné : les trois colonnes reçoivent la désignation, copie verbatim de la seule question désignée', async () => {
+      lignesVerrouillees([DESIGNE]);
+      const res = await POST(postRequest({ idBrouillon: 'ENV_1' }));
+      expect(res.status).toBe(200);
+      expect(donneesCreees('CAB_1')).toMatchObject({
+        poseQuestionSuicide: true,
+        questionSuicideId: 'q2',
+        questionSuicideOptionNon: 0,
+        questionSuicideCopie: {
+          instrument: 'Humeur cabinet',
+          enonce: 'Avez-vous eu des idées de mort ?',
+          options: [{ v: 0, l: 'Non' }, { v: 1, l: 'Parfois' }, { v: 2, l: 'Souvent' }],
+        },
+      });
+      for (const colonne of COLONNES) expect(colonne in donneesCreees('Q_STR_02'), colonne).toBe(false);
+      // La désignation est lue sous le même verrou que la déclaration.
+      const [sql] = requetesInstruments();
+      expect(sql).toMatch(/question_suicide_id, question_suicide_option_non[\s\S]*FOR SHARE/);
+    });
+
+    it('« non » : aucune désignation copiée, même si l’instrument en portait une', async () => {
+      lignesVerrouillees([{ ...DESIGNE, pose_question_suicide: false }]);
+      await POST(postRequest({ idBrouillon: 'ENV_1' }));
+      const data = donneesCreees('CAB_1');
+      expect(data.poseQuestionSuicide).toBe(false);
+      for (const colonne of COLONNES) expect(colonne in data, colonne).toBe(false);
+    });
+
+    for (const [cas, ligne] of [
+      ['sans désignation', { question_suicide_id: null, question_suicide_option_non: null }],
+      ['question désignée absente de la définition', { question_suicide_id: 'q9' }],
+      ['valeur « non » absente des options', { question_suicide_option_non: 7 }],
+      ['question désignée sans options', { definition_json: { sections: [{ questions: [{ id: 'q2', texte: 'Idées de mort ?' }] }] } }],
+    ] as const) {
+      it(`« oui », ${cas} : l’envoi part, rien n’est copié (jamais de JsonNull), avec sa trace`, async () => {
+        lignesVerrouillees([{ ...DESIGNE, ...ligne }]);
+        const warn = vi.spyOn(logger, 'warn');
+        const res = await POST(postRequest({ idBrouillon: 'ENV_1' }));
+        expect(await res.json()).toMatchObject({ success: true, count: 2 });
+        const data = donneesCreees('CAB_1');
+        expect(data.poseQuestionSuicide).toBe(true);
+        for (const colonne of COLONNES) expect(colonne in data, colonne).toBe(false);
+        expect(warn).toHaveBeenCalledWith(
+          expect.objectContaining({ event: 'ASSIGNATION.DESIGNATION_SUICIDE.INCONNUE', message: expect.stringContaining('CAB_1') }),
+        );
+        warn.mockRestore();
+      });
+    }
+
+    it('drapeau éteint : la désignation n’est ni lue ni copiée', async () => {
+      delete process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB;
+      lignesVerrouillees([DESIGNE]);
+      await POST(postRequest({ idBrouillon: 'ENV_1' }));
+      for (const colonne of COLONNES) expect(colonne in donneesCreees('CAB_1'), colonne).toBe(false);
+      expect(requetesInstruments()).toEqual([]);
+    });
   });
 });
