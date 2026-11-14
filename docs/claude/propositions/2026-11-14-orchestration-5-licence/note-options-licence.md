@@ -123,8 +123,9 @@ contributions, données de santé et dépendances.
   - la MPL-2.0 (développement) est compatible ;
   - l'EPL-2.0 d'`elkjs` ne l'est qu'avec une « licence secondaire » déclarée,
     mais elle n'est ni distribuée ni liée au code applicatif.
-- **Label** : approuvée par l'OSI, c'est la seule des cinq options qui soit
-  « open source » au sens strict.
+- **Label** : la licence est approuvée par l'OSI. C'est la seule des cinq
+  options qui soit entièrement « open source » au sens strict. L'option E l'est
+  aussi, mais seulement pour sa part publique sous AGPL.
 
 ### C. BSL 1.1 (Business Source License, à source disponible)
 
