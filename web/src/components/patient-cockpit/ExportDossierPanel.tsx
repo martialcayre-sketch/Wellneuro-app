@@ -22,6 +22,8 @@ const OPTIONS_VERSION: readonly { valeur: VersionExport; libelle: string; aide: 
       + 'L’identifiant du dossier est remplacé par un pseudonyme d’export (EXT-…), l’âge est donné en '
       + 'tranche de cinq ans et les dates en jours relatifs (J+n). La profession et les lieux ne sont pas '
       + 'masqués : relisez le PDF avant de l’envoyer. '
+      // [[D-519]] §4 : la biologie y entre, sans le nom du laboratoire.
+      + 'Les résultats de biologie y figurent sans le nom du laboratoire. '
       // [[D-449]] §3 : la suspension est un geste du responsable ; ce texte la dit, il ne la tient pas.
       + 'L’envoi à un service d’IA externe est suspendu depuis le 5 novembre 2026.',
   },
@@ -126,7 +128,7 @@ export function ExportDossierPanel({ idPatient }: { idPatient: string }) {
     <PanneauSuperpose
       largeur="standard"
       titre="Exporter le dossier en PDF"
-      description="Renseignements administratifs, fiche signalétique et anamnèse, réponses à tous les questionnaires et dernière synthèse validée — axes prioritaires, questions pour la consultation, vigilance."
+      description="Renseignements administratifs, fiche signalétique et anamnèse, réponses à tous les questionnaires, dernière synthèse validée — axes prioritaires, questions pour la consultation, vigilance — et résultats de biologie validés (ceux d’un compte rendu importé, une fois sa lecture consignée)."
       open={ouvert}
       onOpenChange={changerOuverture}
       declencheur={

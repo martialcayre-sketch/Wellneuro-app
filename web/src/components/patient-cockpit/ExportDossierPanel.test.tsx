@@ -88,6 +88,8 @@ describe('ExportDossierPanel — ouverture', () => {
     const dialogue = ouvrir();
     expect(within(dialogue).getByText('Exporter le dossier en PDF')).toBeTruthy();
     expect(within(dialogue).getByText(/dernière synthèse validée/)).toBeTruthy();
+    // [[D-519]] : la biologie est annoncée avant le choix.
+    expect(within(dialogue).getByText(/résultats de biologie validés \(ceux d’un compte rendu importé, une fois sa lecture consignée\)/)).toBeTruthy();
     expect(within(dialogue).getByRole('group', { name: 'Version' })).toBeTruthy();
     expect(within(dialogue).getByRole('button', { name: 'Télécharger le PDF' })).toBeTruthy();
   });
@@ -110,6 +112,7 @@ describe('ExportDossierPanel — ouverture', () => {
       /pseudonyme d’export \(EXT-…\), l’âge est donné en tranche de cinq ans et les dates en jours relatifs/,
     );
     expect(document.getElementById(idAide)?.textContent).toMatch(/La profession et les lieux ne sont pas masqués/);
+    expect(document.getElementById(idAide)?.textContent).toMatch(/Les résultats de biologie y figurent sans le nom du laboratoire\./);
     // Revue de sécurité du 2026-11-12, P0-1 : la suspension de [[D-449]] §3 est dite au moment du choix.
     expect(document.getElementById(idAide)?.textContent).toMatch(
       /L’envoi à un service d’IA externe est suspendu depuis le 5 novembre 2026\./,

@@ -22,6 +22,10 @@ const { prisma } = vi.hoisted(() => ({
     // Lues par `lireDonneesDuDossier` ([[D-391]] §2) — voir « lignes datées ».
     donneePhysiologique: { findMany: vi.fn() },
     traitementEnCours: { findMany: vi.fn() },
+    // Lues par `lireBiologie` ([[D-519]]) — voir « biologie ».
+    resultatBiologique: { findMany: vi.fn() },
+    annulationResultatBiologique: { findMany: vi.fn() },
+    lectureImportBiologique: { findMany: vi.fn() },
   },
 }));
 
@@ -331,6 +335,9 @@ function brancherBase(options: { validee?: typeof SYNTHESE_VALIDEE | null; broui
   // Aucune ligne datée : l'état de la production au 2026-10-28.
   prisma.donneePhysiologique.findMany.mockResolvedValue([]);
   prisma.traitementEnCours.findMany.mockResolvedValue([]);
+  prisma.resultatBiologique.findMany.mockResolvedValue([]);
+  prisma.annulationResultatBiologique.findMany.mockResolvedValue([]);
+  prisma.lectureImportBiologique.findMany.mockResolvedValue([]);
 }
 
 // Pseudonyme d'export de fixture ([[D-512]] §1) : la route le calcule, l'assembleur le reçoit.
@@ -905,7 +912,7 @@ describe('assemblerDossierExport — document', () => {
     brancherBase();
   });
 
-  it('les quatre sections suivent le préambule, dans l’ordre', async () => {
+  it('les cinq sections suivent le préambule, dans l’ordre', async () => {
     const doc = await assemblerOuEchouer('complete');
     const titres1 = doc.blocs.flatMap(b => (b.type === 'titre' && b.niveau === 1 ? [b.texte] : []));
     expect(titres1).toEqual([
@@ -914,6 +921,7 @@ describe('assemblerDossierExport — document', () => {
       '2. Fiche signalétique et anamnèse',
       '3. Réponses aux questionnaires',
       '4. Dernière synthèse validée',
+      '5. Résultats de biologie',
     ]);
   });
 
@@ -1310,7 +1318,7 @@ describe('assemblerDossierExport — lignes datées du dossier (D-391 §2)', () 
         texte:
           'Contenu : 1. renseignements administratifs ; 2. fiche signalétique et anamnèse déposées par le '
           + 'patient ; 3. réponses à tous les questionnaires soumis, avec les scores calculés à la soumission ; '
-          + '4. dernière synthèse validée par le praticien.',
+          + '4. dernière synthèse validée par le praticien ; 5. résultats de biologie validés par le praticien.',
       });
       expect(joindre(doc.blocs)).not.toMatch(/Données physiologiques|en cours et arrêtés/);
     }
@@ -1431,6 +1439,162 @@ describe('assemblerDossierExport — lignes datées du dossier (D-391 §2)', () 
     const lignes = (await planifierPages(doc)).flat().map(l => l.texte).join('\n');
     expect(lignes).toContain('Traitement A');
     for (const mot of ['Sophie', 'Nicola', 'Martin']) expect(contientMot(lignes, mot), mot).toBe(false);
+  });
+});
+
+describe('assemblerDossierExport — biologie ([[D-519]])', () => {
+  const decimal = (texte: string) => ({ toFixed: () => texte });
+  const LUE = {
+    idImport: 'IMP_LU',
+    intervalleLu: '3,5 - 5,0 Nicola',
+    intervalleNonTranscrit: false,
+    uniteLue: 'mmol/L',
+    valeurLue: '4.2',
+    import: { laboratoireLu: 'Laboratoire des Lilas' },
+  };
+  const LIGNES = [
+    {
+      id: 'R_LU', analyteCode: 'K', valeur: decimal('4.2'), unite: 'mmol/L',
+      preleveLe: new Date('2026-09-10T08:00:00.000Z'), saisiLe: new Date('2026-09-12T08:00:00.000Z'),
+      supersedesResultatId: null, source: 'saisie_praticien', analyte: { libelle: 'Potassium' }, ligneCandidate: LUE,
+    },
+    {
+      id: 'R_NON_LU', analyteCode: 'NA', valeur: decimal('140'), unite: 'mmol/L',
+      preleveLe: new Date('2026-09-10T08:00:00.000Z'), saisiLe: new Date('2026-09-12T08:00:00.000Z'),
+      supersedesResultatId: null, source: 'saisie_praticien', analyte: { libelle: 'Sodium' },
+      ligneCandidate: { ...LUE, idImport: 'IMP_NON_LU', intervalleLu: null, valeurLue: '140' },
+    },
+    {
+      id: 'R_SAISIE', analyteCode: 'FER', valeur: decimal('12'), unite: 'µmol/L',
+      preleveLe: new Date('2026-09-01T08:00:00.000Z'), saisiLe: new Date('2026-09-02T08:00:00.000Z'),
+      supersedesResultatId: null, source: 'saisie_praticien', analyte: { libelle: 'Fer sérique' }, ligneCandidate: null,
+    },
+  ];
+  const LECTURE = {
+    id: 'L1', ordre: BigInt(1), idImport: 'IMP_LU', acte: 'lecture', idLectureRevoquee: null, codeRevocation: null,
+    praticienEmail: PRATICIEN, acteLe: new Date('2026-09-13T08:00:00.000Z'),
+  };
+
+  function brancherBiologie() {
+    brancherBase();
+    prisma.resultatBiologique.findMany.mockResolvedValue(LIGNES);
+    prisma.lectureImportBiologique.findMany.mockResolvedValue([LECTURE]);
+  }
+
+  function section5(doc: DocumentExport): string {
+    const debut = doc.blocs.findIndex(b => b.type === 'titre' && b.texte === '5. Résultats de biologie');
+    expect(debut).toBeGreaterThan(-1);
+    return joindre(doc.blocs.slice(debut));
+  }
+
+  it('lit résultats, annulations et lectures par idPatient seul', async () => {
+    brancherBiologie();
+    await assemblerOuEchouer('complete');
+    expect(prisma.resultatBiologique.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { idPatient: 'PAT030' } }));
+    expect(prisma.lectureImportBiologique.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { idPatient: 'PAT030' } }));
+    expect(prisma.annulationResultatBiologique.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ idPatient: 'PAT030' }) }),
+    );
+  });
+
+  it('version complète : import lu et saisie du praticien inclus, import non lu compté et absent', async () => {
+    brancherBiologie();
+    const texte = section5(await assemblerOuEchouer('complete'));
+    expect(texte).toContain('Potassium');
+    expect(texte).toContain('10/09/2026 : 4.2 mmol/L — intervalle imprimé par le laboratoire : « 3,5 - 5,0 Nicola » — laboratoire : « Laboratoire des Lilas »');
+    expect(texte).toContain('01/09/2026 : 12 µmol/L — intervalle du laboratoire : non relevé (saisie du praticien) — laboratoire non identifié');
+    expect(texte).not.toContain('Sodium');
+    expect(texte).toContain("1 résultat validé depuis un compte rendu dont la lecture n'est pas consignée ne figure pas dans ce document.");
+  });
+
+  it('lecture révoquée : l’import redevient non lu', async () => {
+    brancherBiologie();
+    prisma.lectureImportBiologique.findMany.mockResolvedValue([
+      LECTURE,
+      { ...LECTURE, id: 'L2', ordre: BigInt(2), acte: 'revocation', idLectureRevoquee: 'L1', codeRevocation: 'lecture_a_refaire' },
+    ]);
+    const texte = section5(await assemblerOuEchouer('complete'));
+    expect(texte).not.toContain('Potassium');
+    expect(texte).toContain('2 résultats validés depuis un compte rendu');
+  });
+
+  it('version ia-externe : dates relatives, laboratoire retiré, intervalle masqué', async () => {
+    brancherBiologie();
+    const texte = section5(await assemblerOuEchouer('ia-externe'));
+    expect(texte).toMatch(/J[+-]\d+ : 4\.2 mmol\/L — intervalle imprimé par le laboratoire : « 3,5 - 5,0 \[/);
+    expect(texte).not.toContain('Nicola');
+    expect(texte).not.toContain('Lilas');
+    expect(texte).not.toContain('laboratoire non identifié');
+    expect(texte).not.toMatch(/\d{2}\/\d{2}\/\d{4}/);
+  });
+
+  it('annulation active : la mesure sort, sans compter parmi les non lues', async () => {
+    brancherBiologie();
+    prisma.annulationResultatBiologique.findMany.mockResolvedValue([{
+      id: 'A1', idResultat: 'R_SAISIE', motifAnnulation: 'mauvais_dossier', praticienEmail: PRATICIEN,
+      acteLe: new Date('2026-09-14T08:00:00.000Z'),
+    }]);
+    const texte = section5(await assemblerOuEchouer('complete'));
+    expect(texte).not.toContain('Fer sérique');
+    expect(texte).toContain('Potassium');
+    expect(texte).toContain("1 résultat validé depuis un compte rendu dont la lecture n'est pas consignée");
+  });
+
+  it('une lecture de biologie qui échoue fait échouer l’export, jamais « aucun résultat »', async () => {
+    for (const table of ['resultatBiologique', 'annulationResultatBiologique', 'lectureImportBiologique'] as const) {
+      vi.clearAllMocks();
+      brancherBiologie();
+      prisma[table].findMany.mockRejectedValue(new Error('base indisponible'));
+      await expect(assembler('complete'), table).rejects.toThrow('base indisponible');
+    }
+  });
+
+  it('version ia-externe : un intervalle qui cite un laboratoire du dossier ou une date les perd (Codex, #2105)', async () => {
+    brancherBiologie();
+    prisma.resultatBiologique.findMany.mockResolvedValue([
+      { ...LIGNES[0], ligneCandidate: { ...LUE, intervalleLu: '1.5-10 (réf. laboratoire des lilas, 10/09/2026, 2026-09-10)' } },
+    ]);
+    const texte = section5(await assemblerOuEchouer('ia-externe'));
+    expect(texte).toContain('« 1.5-10 (réf. [masqué], date retirée, date retirée) »');
+    expect(texte).not.toMatch(/Lilas|2026/i);
+  });
+
+  it('version complète : l’intervalle reste tel qu’imprimé', async () => {
+    brancherBiologie();
+    prisma.resultatBiologique.findMany.mockResolvedValue([
+      { ...LIGNES[0], ligneCandidate: { ...LUE, intervalleLu: '1.5-10 (réf. 10/09/2026)' } },
+    ]);
+    expect(section5(await assemblerOuEchouer('complete'))).toContain('« 1.5-10 (réf. 10/09/2026) »');
+  });
+
+  it('version ia-externe : l’unité relevée passe par le masqueur', async () => {
+    brancherBiologie();
+    prisma.resultatBiologique.findMany.mockResolvedValue([{
+      ...LIGNES[2], unite: 'µmol/L Nicola',
+    }]);
+    const texte = section5(await assemblerOuEchouer('ia-externe'));
+    expect(texte).toContain('12 µmol/L [masqué]');
+    expect(texte).not.toContain('Nicola');
+  });
+
+  it('J0 sans consultation : la biologie, même plus ancienne que tout, ne le déplace pas', async () => {
+    brancherBiologie();
+    prisma.consultation.findMany.mockResolvedValue([]);
+    prisma.consultation.findFirst.mockResolvedValue(null);
+    prisma.questionnaireReponse.findMany.mockResolvedValue([]);
+    prisma.assignation.findMany.mockResolvedValue([]);
+    prisma.syntheseIA.findFirst.mockImplementation(async (args: WhereSynthese) =>
+      args.where.statut ? null : { dateGeneration: new Date('2026-09-20T09:00:00.000Z') },
+    );
+    // Saisie du 02/09, prélèvement du 01/09 : avant la synthèse du 20/09, qui fait J0.
+    const texte = section5(await assemblerOuEchouer('ia-externe'));
+    expect(texte).toContain('J-19 : 12 µmol/L');
+  });
+
+  it('dossier sans biologie : la section le dit, sans valeur', async () => {
+    brancherBase();
+    const texte = section5(await assemblerOuEchouer('complete'));
+    expect(texte).toContain('Aucun résultat de biologie du dossier ne remplit ces conditions.');
   });
 });
 

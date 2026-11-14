@@ -33,6 +33,8 @@ const RACINES = ['src', 'scripts', 'prisma', 'e2e', path.join('..', 'scripts')]
 const EFFACEMENT = path.join('src', 'lib', 'patient', 'effacement.ts');
 const ACTE = path.join('src', 'lib', 'biology-library', 'import', 'acteLecture.ts');
 const FIL = path.join('src', 'app', 'api', 'praticien', 'fil', 'route.ts');
+// L'export PDF du dossier ([[D-519]] §1) : une mesure d'import n'y entre qu'avec une lecture active.
+const EXPORT = path.join('src', 'lib', 'export-dossier', 'assembler.ts');
 
 function fichiersSources(depart: string): string[] {
   const trouves: string[] = [];
@@ -81,10 +83,10 @@ describe('Actes de lecture d’un import biologique — qui écrit, qui lit (D-2
     expect(occurrences(SQL_BRUT)).toEqual([]);
   });
 
-  it('un seul écrivain, deux lecteurs nommés, aucune écriture imbriquée', () => {
+  it('un seul écrivain, trois lecteurs nommés, aucune écriture imbriquée', () => {
     expect(occurrences(CREER)).toEqual([{ fichier: ACTE, n: 1 }]);
     expect(occurrences(LIRE).sort((a, b) => a.fichier.localeCompare(b.fichier))).toEqual(
-      [{ fichier: FIL, n: 1 }, { fichier: ACTE, n: 2 }].sort((a, b) => a.fichier.localeCompare(b.fichier)),
+      [{ fichier: FIL, n: 1 }, { fichier: ACTE, n: 2 }, { fichier: EXPORT, n: 1 }].sort((a, b) => a.fichier.localeCompare(b.fichier)),
     );
     expect(occurrences(IMBRIQUEE)).toEqual([]);
   });
