@@ -21,8 +21,10 @@ conteneur, inventorier hors dépôt, poser chaque manque en question, puis s'arr
 - Lecture en production, en lecture seule (transaction annulée), par deux conteneurs : one-off-7064 et one-off-5085.
   Requêtes jouées d'abord à blanc sur une base locale. Inventaire au dossier privé (section de lecture, deux tables),
   hors dépôt ; faits de l'état initial corrigés au dossier (zonuline : libellé non repris, pas de matrice absente).
-- Cinq manques posés en questions cliniques (liste commune, file B, `ouverte`) : `20261114-1030-b` à `1034-b`
-  (M1 à M5), une option recommandée chacune : M1 A, M2 A, M3 A, M4 A, M5 B.
+- Cinq manques posés en questions cliniques (liste commune, file B) : `20261114-1030-b` à `1034-b` (M1 à M5),
+  recommandés A, A, A, A, B. Tranchés par le responsable dans la session (`repondue`, à passer à `close` au merge) :
+  M1 A, M2 A, M3 A ; **M4 C** (chercher une source de la séquence, aucune règle entre-temps) et **M5 C** (un
+  instrument d'intéroception publié à choisir et sourcer), tous deux contre la recommandation. Reportés au dossier.
 
 ## Fichiers modifiés
 
@@ -33,16 +35,19 @@ conteneur, inventorier hors dépôt, poser chaque manque en question, puis s'arr
 
 ## Validations exécutées
 
-- `node scripts/wn-plan-journal-rubriques.mjs` et `node --test scripts/lib/plan-journal.test.mjs` : résultats dans la PR.
-- `bash scripts/check_no_secrets.sh` : résultat dans la PR. Pas de T2 : documentation seule.
+- `node scripts/wn-plan-journal-rubriques.mjs` : `0` ; `node --test scripts/lib/plan-journal.test.mjs` : `0`.
+- `bash scripts/check_no_secrets.sh` : `0` ; T1 complet (`npm run check`) : `0`. Pas de T2 : documentation seule.
+- Première tête cd7d11da : CI `0`.
 
 ## Problèmes ouverts
 
-- M1 à M5 attendent l'arbitrage du responsable ; toutes sont cliniques.
 - Le registre des instruments décrit le TFD sans bande servie : à corriger dans un lot de registre, sans changement
   clinique.
-- La grille servie de `Q_INF_01` n'a pas de provenance (M2) : si A est retenue, une décision distincte et un lot de
-  catalogue (sous instantané) suivent, hors de J3-12f.
+- M2 = A : une décision distincte et un lot de catalogue (`questions.ts` sous instantané) aligneront la grille servie
+  de `Q_INF_01`, hors de J3-12f, après signature de la grille au dossier.
+- M5 = C : le choix de l'instrument d'intéroception (licence, version française, validation) est à proposer au
+  dossier ; son entrée au catalogue et au score demandera une décision et du code, avec relèvement de version.
+- M4 = C : aucune source connue au corpus ; si la recherche n'aboutit pas, la question revient au responsable.
 - Toujours ouverts hors de ce lot : les parts 60/20/20 (responsable, `DC-21`) ; la confirmation de la phrase ajoutée à
   `D-516` après validation.
 
@@ -50,9 +55,10 @@ conteneur, inventorier hors dépôt, poser chaque manque en question, puis s'arr
 
 1. CI de la tête (`wn-attendre-ci.mjs`, seul `0` vaut) ; revue PR-Agent prouvée, sinon `wn-reviewer` (`D-448`) ; un
    verdict par remarque.
-2. Relire la boîte B, puis déclarer « prête @<sha> » ; l'intégrateur merge.
-3. Après l'arbitrage de M1 à M5 : réunir les sources manquantes (ingestion sur accord, envoi par envoi, collision
-   WN-SRC vérifiée sur `main` et les PR ouvertes), puis étiquetage et positions.
+2. Relire la boîte B, puis déclarer « prête @<sha> » ; l'intégrateur merge. Au merge, passer M1 à M5 à `close`.
+3. Étape 3 : réunir les sources (claims des quatre pièces, source externe de LBP et de zonuline, source de la
+   séquence, instrument d'intéroception), ingestion sur accord, envoi par envoi, collision WN-SRC vérifiée sur `main`
+   et les PR ouvertes ; puis étiquetage et positions.
 
 ## Interdits encore actifs
 
