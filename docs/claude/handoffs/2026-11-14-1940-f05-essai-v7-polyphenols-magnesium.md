@@ -1,4 +1,4 @@
-# Handoff — F05 (BP-12a) : essai unique v7, polyphénols et magnésium, quatre fiches déposées
+# Handoff — 2026-11-14 — F05 (BP-12a) : essai unique v7, polyphénols et magnésium, quatre fiches déposées
 
 ## Branche et état Git
 
@@ -23,8 +23,9 @@ Un seul essai, sous la consigne `fiche-usage-v7+c24e537bf91e3c4d`, des quinze fi
 
 - Essai unique v7 des quinze fiches. L'outil annonce la consigne v7, et `--designations` ne signale aucune désignation manquante.
 - Quatre fiches acceptées en entier : `FU_POLY_AOX_P1`, `FU_POLY_AOX_P5`, `FU_MG_P1` et `FU_MG_P8`. `--validate` est conforme sur les quatre, déposées en brouillon n° 1 par la route interne.
-- Constat par conteneur (lecture seule, `one-off-8858`) : version n° 1, structure `e59d35c3`, consigne v7, modèles `claude-sonnet-5` et `gpt-5.4`, 0 acte. Les quinze empreintes de rubrique sont égales à celles des brouillons locaux.
+- Constat par conteneur (lecture seule, `one-off-8858`) : quatre versions n° 1, structure `e59d35c3`, consigne v7, modèles `claude-sonnet-5` et `gpt-5.4`, 0 acte. Les quinze empreintes de rubrique sont égales à celles des brouillons locaux.
 - Neuf fiches refusées, sur 14 rubriques. `FU_POLY_AOX_P6` et `FU_MG_P6` échouent sur une `SyntaxError`. Les rapports sont hors dépôt, sous `~/.wellneuro/corpus/fiches-usage/*/2026-11-14T18-*-revue.json`.
+- Banc `scripts/lib/plan-journal.test.mjs` : 27/27. `check_no_secrets.sh --staged` : OK. CI de #2123 : 0. PR-Agent n'a pas tourné ; recours D-448 : `wn-reviewer` GO.
 
 ## Problèmes ouverts
 
