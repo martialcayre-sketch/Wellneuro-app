@@ -2,11 +2,11 @@ import type { ValidatedClinicalRuleRef } from '@/lib/clinical-engine/types';
 import { sha256 } from './corpusSyntheseV1';
 import {
   CONDUITE_SECURITE_QUESTIONNAIRE,
-  LIMITATION_QUESTIONNAIRE_HORS_OPTIONS,
   LIMITATION_QUESTIONNAIRE_PROVENANCE,
 } from './safetyQuestionnaireTextes';
 import {
   LIMITATION_QUESTIONNAIRE_CABINET_DESIGNATION_INCONNUE,
+  LIMITATION_QUESTIONNAIRE_CABINET_HORS_OPTIONS,
   LIMITATION_QUESTIONNAIRE_CABINET_ILLISIBLE,
   MENTION_QUESTIONNAIRE_CABINET,
 } from './safetyQuestionnaireCabinetTextes';
@@ -67,10 +67,10 @@ export type SafetyQuestionnaireCabinetMetadata = {
 // À LIRE AVANT DE SIGNER
 //
 // CE QUE LE SHA COUVRE : le mécanisme ci-dessus, la conduite recopiée, la
-// mention « écrit par le praticien », les deux limitations propres (réponse
-// illisible, désignation inconnue) et les deux limitations reprises de
-// `SAF-QUEST-01` (provenance, hors options). Retoucher l'un d'eux referme le
-// verrou.
+// mention « écrit par le praticien », les trois limitations propres (hors
+// options copiées, [[D-524]] ; réponse illisible ; désignation inconnue) et
+// la limitation de provenance reprise de `SAF-QUEST-01`. Retoucher l'un
+// d'eux referme le verrou.
 //
 // CE QUE LA SIGNATURE NE COUVRE PAS ([[D-515]] §3) : le nom de l'instrument,
 // l'énoncé de la question et les libellés des options, écrits par le
@@ -100,7 +100,7 @@ export const SAFETY_QUESTIONNAIRE_CABINET_SHA256 = sha256(
     mention: MENTION_QUESTIONNAIRE_CABINET,
     limitations: [
       LIMITATION_QUESTIONNAIRE_PROVENANCE,
-      LIMITATION_QUESTIONNAIRE_HORS_OPTIONS,
+      LIMITATION_QUESTIONNAIRE_CABINET_HORS_OPTIONS,
       LIMITATION_QUESTIONNAIRE_CABINET_ILLISIBLE,
       LIMITATION_QUESTIONNAIRE_CABINET_DESIGNATION_INCONNUE,
     ],
@@ -138,6 +138,7 @@ export function regleSecuriteQuestionnaireCabinetValidee(): ValidatedClinicalRul
 
 export {
   LIMITATION_QUESTIONNAIRE_CABINET_DESIGNATION_INCONNUE,
+  LIMITATION_QUESTIONNAIRE_CABINET_HORS_OPTIONS,
   LIMITATION_QUESTIONNAIRE_CABINET_ILLISIBLE,
   MENTION_QUESTIONNAIRE_CABINET,
 };
