@@ -3,7 +3,10 @@
 ## Branche et état Git
 
 - Branche `docs/besoin4-dossier-ouvert`, créée sur `origin/main` d9c4f769 (#2084), dans le worktree
-  `.claude/worktrees/b-bp17-cadre`, sans fusion ni rebase. #2079 est mergée (2938b1bb).
+  `.claude/worktrees/b-bp17-cadre`. #2079 est mergée (2938b1bb).
+- Le 2026-11-14, `origin/main` avait avancé (481c2450, #2094, sans toucher les quatre fichiers) et le hook de
+  fraîcheur refusait les corrections de revue (`D-518`) : commit rejoué sur 481c2450 par cherry-pick, sans conflit,
+  sur arbitrage du responsable (question `20261114-0937-b`, A), puis poussé en `--force-with-lease`.
 - Session concurrente de la file B : `git` et `gh` en direct, sans `/wn-*`.
 
 ## Objectif
@@ -35,6 +38,11 @@
 
 - `node scripts/wn-plan-journal-rubriques.mjs` : `exit=0`.
 - Anti-secrets et T1 complet : résultats donnés dans la PR. Pas de T2 : documentation seule.
+- Tête 0c5160b1 : CI `0`, PR-Agent `0` avec une remarque (mot d'état de la ligne du plan), corrigée.
+  `wn-reviewer` : GO, sans P0 ni P1 ; P2-1 (« à appliquer » avec J3-12f), P2-2 (libellé muet sur la matrice, non
+  repris par le résolveur), P2-3 (sha de lecture) et P2-4 (mot d'état) sont corrigés. Ses deux questions sont
+  écartées : le message `20261113-2235-d-3` existe au registre et répond bien à `2312-b` ; l'horodatage du handoff
+  est sans effet, puisque `D-372` §2 juge le dernier handoff par branche.
 
 ## Problèmes ouverts
 
