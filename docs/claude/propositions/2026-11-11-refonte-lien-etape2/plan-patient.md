@@ -233,8 +233,12 @@ confirmé et relu annoncé par une région `status`, sans texte neuf ni faux
 succès (Q6a). Mentions datées de U35 en lettres (Q7a). **Réception
 ajoutée** : E2E de non-perte (saisie gardée au 401, renvoi manuel après
 reconnexion dans un second onglet, changement de compte patient sans
-écriture dans un autre dossier), aucun envoi automatique. Le code attend la
-validation visuelle du prototype et le feu vert du responsable.
+écriture dans un autre dossier), aucun envoi automatique. **Préalable de
+Q2a et Q3a** : les routes d'écriture prennent le dossier dans la seule
+session ; une garde doit refuser, sans écrire, l'envoi d'une page ouverte
+pour un autre dossier (constat de PR-Agent sur #2104, question
+`20261114-1105-d`). Le code attend la validation visuelle du prototype et le
+feu vert du responsable.
 
 ### PAT-7 — Vérification et stabilisation
 

@@ -26,10 +26,11 @@ Inscrire les réponses du responsable aux sept questions du prototype PAT-6 (htt
 ## Validations exécutées
 
 - Rendu du prototype contrôlé à l'écran le 2026-11-14 dans le navigateur intégré, sur une copie locale des sept cartes (styles et chrome du prototype) : bureau 1 280 px et téléphone 390 px, sans débordement ni texte tronqué. Le clavier et le confort de lecture ne se prouvent pas sur ce prototype en pixels fixes : ils sont des critères de réception du code (PAT-6, puis PAT-7).
-- T1 (`npm run check:rapide`) : voir la PR.
+- `check_no_secrets.sh` : 0 ; T1 rapide (`npm run check:rapide`) : 16 étapes vertes, 3 sautées ; T1 complet (`npm run check`) : 0.
 
 ## Problèmes ouverts
 
+- **Constat de PR-Agent sur #2104, vérifié au code** : les cinq routes d'écriture (`documents`, `comptes-rendus`, `physio-traitements`, `trust/choix`, `trust/signalement`) prennent le dossier dans la seule session. Un envoi depuis une page restée ouverte pour un patient A, après la reconnexion d'un patient B dans le même navigateur, s'écrirait chez B. D-481 et D-488 en font un préalable de Q2a et Q3a ; la forme de la garde est soumise au responsable (`20261114-1105-d`). Le même risque existe déjà aujourd'hui, sans 401, pour toute page restée ouverte quand un autre patient se connecte dans le même navigateur (démontré par le code, non observé).
 - Le feu vert du code n'est pas donné : il suit la validation visuelle du prototype par le responsable et le constat de conformité.
 - Hors lot : séparateur des deux voix et ornements des vides après COM-1 ; 1050-d, 1302-d, lot Q5b, valeur 5 des plaintes, ligne de prises au zoom 200 %.
 
