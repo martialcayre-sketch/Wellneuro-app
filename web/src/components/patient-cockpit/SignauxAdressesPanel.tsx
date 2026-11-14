@@ -110,7 +110,7 @@ export function SignauxAdressesPanel({
                       maxLength={MOTIF_MAX}
                       rows={3}
                       onChange={event => setMotif(event.target.value)}
-                      className="mt-1 w-full rounded-lg border border-border bg-background p-2 text-sm text-foreground"
+                      className="mt-1 w-full rounded-lg border border-border bg-background p-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                     />
                     <div className="mt-2 flex flex-wrap gap-2">
                       <button

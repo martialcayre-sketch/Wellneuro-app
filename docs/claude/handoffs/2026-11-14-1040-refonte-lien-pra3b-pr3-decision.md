@@ -2,7 +2,7 @@
 
 ## Branche et état du dépôt
 
-- Branche `worktree-refonte-lien-pra3b-pr3-decision`, créée depuis `origin/main@fd53c7b9`, puis avancée seule en `--ff-only` sur `origin/main@9bb7c5af` (PR 1 #2097 et PAT-5 #2095 mergées), sans commit propre (D-518) : le crochet de fraîcheur bloquait l'édition.
+- Branche `worktree-refonte-lien-pra3b-pr3-decision`, créée depuis `origin/main@fd53c7b9`, puis avancée seule en `--ff-only` sur `origin/main@9bb7c5af` (PR 1 #2097 et PAT-5 #2095 mergées), sans commit propre (D-518) : le crochet de fraîcheur bloquait l'édition. Après le premier commit, `origin/main` fusionné (#2096) sur arbitrage du responsable.
 - Worktree `.claude/worktrees/refonte-lien-pra3b-pr3-decision`. La session ne merge pas : l'intégrateur merge sur « prête @<sha> ».
 
 ## Objectif
@@ -15,6 +15,9 @@ PR 3 de PRA-3b (matrice des huit PR, groupe Décision : P12 à P14), selon les r
 - Les panneaux touchés ne sont montés que dans `ClinicalRuntimeSection` (et `OrientationPanel` dans `TrajectoirePanel`) : aucun autre niveau de titre n'est affecté.
 - Q3 a : une seule action pleine par panneau, déjà tenue ; rien n'est rendu bordé.
 - Q11 a : `OrientationPanel` reste dans l'onglet Trajectoire (h3 de panneau d'onglet, inchangé) ; ses sept boutons passent à `min-h-11` avec anneau de focus, taille de texte inchangée.
+- Revue PR-Agent (« Focus manquant ») : les quatre zones de texte de la phase n'avaient pas l'anneau de focus ; il est posé, avec un banc sur le motif de révocation. Ces zones sont le motif de révocation, le motif d'une condition souple contournée, la note de constat de critère et le motif de priorité. Cases et boutons radio gardent leur contour natif.
+  - La correction a été appliquée par script après le déplacement de `origin/main`, hors du regard du crochet de fraîcheur (un script opaque reste en silence).
+  - Signalé au responsable, qui a arbitré : fusion de `origin/main` (#2096, aucun fichier commun) dans la branche, sans rebase ni force-push.
 - Les `ui/Button` de la phase (« Ouvrir un nouveau cycle », « Annuler l'ouverture ») sont à 44 px par la PR 1, désormais sur la branche.
 
 ## Fichiers modifiés
