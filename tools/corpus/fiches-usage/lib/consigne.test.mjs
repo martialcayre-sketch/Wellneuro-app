@@ -1,4 +1,4 @@
-// La consigne « fiche-usage-v5 » est épinglée : un octet changé sans bump de
+// La consigne « fiche-usage-v6 » est épinglée : un octet changé sans bump de
 // version rougit ici, et l'outil refuse de tourner ([[D-314]] §4).
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
@@ -75,4 +75,22 @@ test('v5 : le libellé d’une hypothèse porte la forme signée sans claim qui 
   assert.match(contreLecture, /Tout autre élément qu'il\s+contient \(une cause, un mécanisme, une population, une gravité, une\s+conséquence\) est un fait, jugé comme tel/);
   // La règle des défauts ne bouge pas : marqueur, dosage, seuil, diagnostic restent infidèles.
   assert.match(contreLecture, /plutôt qu'un état fonctionnel d'un seul\s+nutriment dans le sens bas/);
+});
+
+// [[D-501]] §9 : la « question » est interrogative ; rien ne s'écrit sur ce que
+// les sources taisent ; « population » ne nomme que la population ; l'objet de
+// chaque rubrique (cadrage v3 §3.2) est donné des deux côtés.
+test('v6 : question interrogative, aucun commentaire sur les sources, objet des rubriques', () => {
+  const { redaction, contreLecture } = lireConsignes();
+  assert.match(redaction, /une seule phrase interrogative, terminée par un point d'interrogation/);
+  assert.match(redaction, /N'écris rien que tu déduis du seul silence des claims/);
+  assert.match(redaction, /un manque de données qu'un claim énonce lui-même se restitue/);
+  assert.match(redaction, /la phrase\s+d'absence ne s'y emploie jamais/);
+  assert.match(redaction, /rubrique autre que « question », écris exactement/);
+  assert.match(contreLecture, /une rubrique « question » composée comme dit plus haut\s+n'omet rien/);
+  assert.match(redaction, /la\s+rubrique « population » désigne la seule population d'usage/);
+  for (const c of [redaction, contreLecture]) {
+    assert.match(c, /surveillance_arret :\s+la surveillance et le critère d'arrêt/);
+    assert.match(c, /population : la population en clair/);
+  }
 });
