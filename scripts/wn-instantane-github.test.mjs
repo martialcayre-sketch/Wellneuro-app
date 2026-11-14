@@ -122,7 +122,8 @@ test('arguments et sortie : --sortie requis, refusé sous le dépôt', () => {
   }
   assert.ok(sousLeDepot(join(RACINE, 'instantane.json')));
   assert.ok(sousLeDepot(RACINE));
-  assert.ok(sousLeDepot(join(RACINE, '..', 'ailleurs.json')), 'au-dessus du worktree : la copie principale est un dépôt aussi');
+  // La copie principale voisine se prouve en dossier temporaire (test
+  // suivant) : au-dessus de RACINE, il y a un dépôt sur ce Mac, pas sur le runner.
   assert.ok(!sousLeDepot(join(tmpdir(), 'ailleurs.json')));
   assert.equal(principal(['--sortie', join(RACINE, 'web', 'instantane.json')], {}).code, SORTIE_USAGE);
 });

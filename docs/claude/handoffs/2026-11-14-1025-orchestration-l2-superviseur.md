@@ -47,8 +47,11 @@ confrontées à l'état réel avant tout usage. Rien n'est écrit, aucun agent n
 
 ## Validations exécutées
 
-- Les bancs : superviseur 28, instantané 15, registres 19, soit 61 tests et code 0. La parité CI et les invariants
+- Les bancs : superviseur 28, instantané 14, registres 19, soit 61 tests et code 0. La parité CI et les invariants
   passent aussi.
+- Premier CI de #2100 (0ecc12fb) rouge : une assertion supposait que la copie principale entoure le worktree, ce qui
+  est vrai sur ce Mac et faux sur le runner. Elle est retirée, et le cas de la copie voisine reste prouvé en dossier
+  temporaire.
 - T1 complet (`npm run check`) avant la relecture : code 0. Relancé avant le push : voir la PR.
 - Relecture adverse `wn-reviewer` sur dd30a970, avant le push : GO conditionnel, aucun bloquant, douze constats.
   Corrigés :
