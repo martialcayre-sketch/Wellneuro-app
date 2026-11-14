@@ -1,0 +1,7 @@
+- **Mise à jour (2026-11-14, constat de la migration de [[D-515]] §4)** : #2080 mergée (squash `dc7e6874`), release-db approuvée par le responsable, run `43577445794`, sentinelle `WN_RELEASE_DB_OK` reçue. Constat en production le même jour, par conteneur `scalingo run -d`, en lecture seule (`BEGIN TRANSACTION READ ONLY … ROLLBACK`) et en agrégats.
+  - **Migration** `20261113180000_d515_designation_suicide_assignation_v1` enregistrée et terminée dans `_prisma_migrations`.
+  - **Colonnes** : `question_suicide_id` (text), `question_suicide_option_non` (integer), `question_suicide_copie` (jsonb) existent sur `assignations`, nullables, sans défaut.
+  - **CHECK** `assignations_designation_suicide_coherente` présent et validé.
+  - **Assignations `CAB_`** : 0 (donc 0 sous « oui », 0 sous « non », 0 non déclarée). Aucune désignation posée sur l'ensemble de la table.
+  - **Merge** : le contrôle sur l'arbre fusionné rendait 2, à cause de l'artefact du client Prisma prêté par lien symbolique, inscrit en dette au plan §8 par #2084. Sur l'arbre fusionné avec un client copié, la garde passait 10/10. Le responsable a accepté ce 2 par écrit.
+  - **Reste** : le lot de code, derrière `WN_ENABLE_DECLARATION_SUICIDE_CAB`, avec l'écriture de NULL par `Prisma.DbNull`. L'allumage reste un geste du responsable.
