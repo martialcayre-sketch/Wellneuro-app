@@ -127,7 +127,9 @@ si cette autre rubrique n'est pas demandée. Seule exception : quand le
 marqueur sécurité / admissibilité est « oui », une condition de sécurité ou
 d'admissibilité que porte un claim, et que l'objet d'aucune rubrique
 demandée ne couvre, se restitue dans la rubrique demandée la plus proche de
-son objet plutôt que d'être tue.
+son objet plutôt que d'être tue, hors « question » et « population », qui
+n'énoncent aucun fait. Si seules ces deux rubriques sont demandées, elle ne
+s'écrit pas.
 
 MODE « fiche ». Rédige chaque rubrique demandée, et elles seules, dans
 l'ordre donné. Une rubrique ne répète pas sa voisine ; aucune ne déborde sur

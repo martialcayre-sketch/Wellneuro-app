@@ -118,5 +118,9 @@ test('v7 : conditions entières, rien d’ajouté, un fait dans sa rubrique, ré
   assert.match(redaction, /telle limite qu'un claim établit lui-même se restitue/);
   assert.match(redaction, /se restitue dans la rubrique demandée la plus proche de\s+son objet plutôt que d'être tue/);
   assert.match(contreLecture, /restituée dans la rubrique demandée la plus proche de son objet, n'est pas\s+un débordement/);
+  // Contre-passe : « question » et « population » n'énoncent aucun fait et ne
+  // reçoivent jamais la condition de sécurité.
+  assert.match(redaction, /hors « question » et « population », qui\s+n'énoncent aucun fait/);
+  assert.match(contreLecture, /elle ne tait aucune condition de sécurité ou\s+d'admissibilité/);
   assert.match(contreLecture, /FIDÈLE si\s+aucun claim ne porte sur l'objet de la rubrique/);
 });

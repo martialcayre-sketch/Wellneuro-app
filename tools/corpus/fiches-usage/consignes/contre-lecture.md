@@ -36,7 +36,9 @@ argument_preference : l'argument de préférence. Quand le marqueur sécurité
 / admissibilité est « oui », une condition de sécurité ou d'admissibilité
 portée par un claim, que l'objet d'aucune rubrique demandée ne couvre, et
 restituée dans la rubrique demandée la plus proche de son objet, n'est pas
-un débordement.
+un débordement. Une rubrique « question » ou « population » composée selon
+sa règle n'énonce aucun fait : elle ne tait aucune condition de sécurité ou
+d'admissibilité.
 
 Le libellé d'une hypothèse nomme un état, il n'affirme pas un fait. Le
 cadre signé lui impose sa forme : un état fonctionnel, portant sur un seul
