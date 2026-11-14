@@ -934,7 +934,7 @@ function echapperMotif(texte: string): string {
  */
 export function masquerBiologie(b: BiologieExport, masquer: Masqueur): BiologieExport {
   const laboratoires = [...new Set(
-    b.analytes.flatMap(a => a.mesures.flatMap(m => (m.laboratoire && m.laboratoire.trim().length >= 3 ? [m.laboratoire.trim()] : []))),
+    b.analytes.flatMap(a => a.mesures.flatMap(m => (m.laboratoire?.trim() ? [m.laboratoire.trim()] : []))),
   )].sort((x, y) => y.length - x.length);
   const motifLaboratoires = laboratoires.length > 0
     ? new RegExp(laboratoires.map(echapperMotif).join('|'), 'giu')
