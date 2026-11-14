@@ -352,7 +352,11 @@ describe('CorrespondanceMedecinPanel (C3 LOT-06)', () => {
     // validerait sans être lue.
     expect(champ.value).toBe('');
 
-    fireEvent.click(screen.getByRole('button', { name: /Reprendre « Dr Martin, médecin traitant »/ }));
+    // PRA-3b, PR 7 : la reprise est un geste de 44 px, au texte des autres gestes (revue PR-Agent).
+    const reprendre = screen.getByRole('button', { name: /Reprendre « Dr Martin, médecin traitant »/ });
+    expect(reprendre.className).toContain('min-h-11');
+    expect(reprendre.className).toContain('text-sm');
+    fireEvent.click(reprendre);
     expect(champ.value).toBe('Dr Martin, médecin traitant');
     // La reprise faite, l'offre s'efface : elle ne peut plus écraser une saisie.
     expect(screen.queryByRole('button', { name: /Reprendre/ })).toBeNull();
@@ -442,5 +446,36 @@ describe('la garde de consentement ferme la consignation — D-219 §3 amendé',
     fetchMock.mockImplementation(router({ fil: { ...FIL_VIDE, partageMedecinTraitant: 'accorde' } }));
     await attendreLeFil();
     expect(await screen.findByLabelText(/Médecin \(désignation libre/i)).toBeTruthy();
+  });
+});
+
+describe('CorrespondanceMedecinPanel — PRA-3b, PR 7 (P30)', () => {
+  it('les deux « Réessayer » font 44 px au moins', async () => {
+    fetchMock.mockImplementation(router({ fil: { ok: false, reason: 'exception', error: 'Erreur technique.' }, filOk: false }));
+    render(<CorrespondanceMedecinPanel idPatient="PAT_SEED_03" />);
+
+    const boutons = await screen.findAllByRole('button', { name: 'Réessayer' });
+    expect(boutons).toHaveLength(2);
+    for (const bouton of boutons) expect(bouton.className).toContain('min-h-11');
+  });
+
+  it('le médecin, la date et la synthèse concernée font 44 px au moins, avec focus', async () => {
+    fetchMock.mockImplementation(
+      router({
+        syntheses: {
+          syntheses: [{ idSynthese: 'SYN_1', dateGeneration: '2026-09-12T09:00:00.000Z', statut: 'validee' }],
+        },
+      }),
+    );
+    await attendreLeFil();
+    const synthese = await screen.findByLabelText(/Synthèse concernée/);
+    for (const champ of [
+      screen.getByLabelText(/Médecin \(désignation libre/),
+      screen.getByLabelText(/Date de l’échange/),
+      synthese,
+    ]) {
+      expect(champ.className).toContain('min-h-11');
+      expect(champ.className).toContain('focus-visible:ring-2');
+    }
   });
 });

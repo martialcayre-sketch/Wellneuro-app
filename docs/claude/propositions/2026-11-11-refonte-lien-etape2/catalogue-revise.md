@@ -82,7 +82,7 @@ révisée. Les gabarits G1–G8 sont ceux de la v2 (l.149-158), inchangés.
 | P29 | Constats et portes du parcours | fiche → Biologie → Constats | G7 | v2 | PRA-3 |
 | P30 | Correspondance d'un dossier | fiche → Correspondance | G2/G6 | v2 | PRA-3 |
 | P31 | Documents du dossier | depuis la fiche | G2/G7 | v2 | PRA-3 |
-| P32 | Composition et export | depuis Documents ou la fiche | G6/G7 | v2 | PRA-3 |
+| P32 | Composition et export | depuis Documents ou la fiche | G6/G7 | v2 ; composition (`DocumentComposer`, page Documents) à PRA-5 avec P52, export en PDF de la fiche à PRA-3 (PRA-3b Q10 a, 2026-11-13) | PRA-3 (export) ; PRA-5 (composition) |
 | P33 | Agenda et consultations | `/dashboard/agenda` | G2/G6 | v2 ; groupe Travail | PRA-2 |
 | P34 | Consultation copilote | `/dashboard/copilote` | G3/G7 | v2 ; panneau contextuel escamotable (AM-5) | PRA-5 |
 | P35 | Liste des fiches-trajectoires | `/dashboard/trajectoires` | G2 | v2 ; « Fiches » actif jusqu'au dossier (C4, livré) | PRA-2 |

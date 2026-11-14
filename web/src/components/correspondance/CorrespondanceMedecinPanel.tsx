@@ -193,7 +193,7 @@ export function CorrespondanceMedecinPanel({ idPatient }: { idPatient: string })
           <button
             type="button"
             onClick={() => void chargerFil()}
-            className="min-h-9 self-start rounded-lg border border-accent px-3 py-1 text-xs font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+            className="min-h-11 self-start rounded-lg border border-accent px-3 py-1 text-sm font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
           >
             Réessayer
           </button>
@@ -287,7 +287,7 @@ export function CorrespondanceMedecinPanel({ idPatient }: { idPatient: string })
           <button
             type="button"
             onClick={() => void chargerFil()}
-            className="min-h-9 self-start rounded-lg border border-accent px-3 py-1 text-xs font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+            className="min-h-11 self-start rounded-lg border border-accent px-3 py-1 text-sm font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
           >
             Réessayer
           </button>
@@ -419,7 +419,7 @@ export function CorrespondanceMedecinPanel({ idPatient }: { idPatient: string })
                 onChange={(evenement) => setMedecinLibelle(evenement.target.value)}
                 maxLength={LONGUEUR_MAX_MEDECIN_LIBELLE}
                 placeholder="Dr Martin, médecin traitant"
-                className="mt-1 w-full rounded-lg border border-border bg-surface p-2 text-base text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                className="mt-1 min-h-11 w-full rounded-lg border border-border bg-surface p-2 text-base text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
               />
 
               {/*
@@ -449,7 +449,7 @@ export function CorrespondanceMedecinPanel({ idPatient }: { idPatient: string })
                 <button
                   type="button"
                   onClick={() => setMedecinLibelle(dernierMedecin)}
-                  className="mt-1 min-h-9 rounded-lg border border-border px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                  className="mt-1 min-h-11 rounded-lg border border-border px-3 py-1 text-sm font-medium text-muted-foreground hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                 >
                   Reprendre « {dernierMedecin} »
                 </button>
@@ -500,7 +500,7 @@ export function CorrespondanceMedecinPanel({ idPatient }: { idPatient: string })
                 type="date"
                 value={echangeLe}
                 onChange={(evenement) => setEchangeLe(evenement.target.value)}
-                className="mt-1 rounded-lg border border-border bg-surface p-2 text-base text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                className="mt-1 min-h-11 rounded-lg border border-border bg-surface p-2 text-base text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
               />
 
               {syntheses.length > 0 && (
@@ -512,7 +512,7 @@ export function CorrespondanceMedecinPanel({ idPatient }: { idPatient: string })
                     id="correspondance-synthese"
                     value={idSynthese}
                     onChange={(evenement) => setIdSynthese(evenement.target.value)}
-                    className="mt-1 rounded-lg border border-border bg-surface p-2 text-base text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                    className="mt-1 min-h-11 rounded-lg border border-border bg-surface p-2 text-base text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                   >
                     <option value="">Aucune</option>
                     {syntheses.map((synthese) => (
