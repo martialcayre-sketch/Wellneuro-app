@@ -45,7 +45,7 @@ const prOuverte = (extra = {}) => ({
   fichiers: ['scripts/a.mjs', 'docs/x.md'],
   checks: { total: 3, succes: 3, echecs: [], en_cours: [], requis: { verify: 'success' } },
   declarations: [declaration()],
-  revue_pr_agent: { code: 0 },
+  revue_pr_agent: { code: 0, tete: TETE },
   sonde_release_db: { code: 0 },
   ...extra,
 });
@@ -106,6 +106,8 @@ test('conditions observées : les six, une à une', () => {
   assert.deepEqual(ko({ checks: { total: 3, echecs: [], en_cours: ['verify'] } }), ['ci']);
   assert.deepEqual(ko({ revue_pr_agent: { code: 2 } }), ['revue'], 'lecture impossible : jamais un 0');
   assert.deepEqual(ko({ revue_pr_agent: null }), ['revue']);
+  assert.deepEqual(ko({ revue_pr_agent: { code: 0, tete: AUTRE } }), ['revue'], 'L2 bis 5 : la garde a jugé une autre tête (push entre deux lectures)');
+  assert.deepEqual(ko({ revue_pr_agent: { code: 0 } }), ['revue'], 'tête jugée inconnue : pas un 0');
   assert.deepEqual(ko({ sonde_release_db: { code: 1 } }), ['release-db']);
 });
 
@@ -136,7 +138,7 @@ test('scénario 4 : la tête avance après la déclaration → prête périmée,
 });
 
 test('PR déclarée mais pas examinable : les conditions manquantes sont dites', () => {
-  const r = superviser(lu({ messages: [message()] }), instantane([prOuverte({ revue_pr_agent: { code: 1 }, checks: { total: 2, echecs: [], en_cours: ['verify'] } })]), T0 + 60000);
+  const r = superviser(lu({ messages: [message()] }), instantane([prOuverte({ revue_pr_agent: { code: 1, tete: TETE }, checks: { total: 2, echecs: [], en_cours: ['verify'] } })]), T0 + 60000);
   const a = r.actions.find((x) => x.type === 'prete_en_attente');
   assert.match(a.detail, /ci \(1 check\(s\) en cours\)/);
   assert.match(a.detail, /revue \(wn-revue-pr-agent → 1\)/);
@@ -254,7 +256,7 @@ test('cas c : la déclaration d\'un tiers sur la tête ne vaut rien', () => {
 });
 
 test('cas d : ligne traitée puis déclaration neuve sans ligne — signalée', () => {
-  const traitee = message({ etat: 'traite', lu_le: iso(T0), traite_le: iso(T0), emis_le: iso(T0 - 2 * 60000) });
+  const traitee = message({ etat: 'traite', lu_le: iso(T0 - 60000), traite_le: iso(T0 - 60000), emis_le: iso(T0 - 2 * 60000) });
   const pr = prOuverte({ declarations: [declaration({ cree_le: iso(T0) })] });
   assert.ok(types(superviser(lu({ messages: [traitee] }), instantane([pr]), T0 + 60000)).includes('declaration_sans_message'));
   const apres = message({ etat: 'traite', lu_le: iso(T0), traite_le: iso(T0), emis_le: iso(T0) });
@@ -266,6 +268,50 @@ test('constat 7 : ligne prête émise après la prise de l\'instantané — en a
   const a = r.actions.find((x) => x.type === 'prete_en_attente');
   assert.match(a.detail, /émise après la prise/);
   assert.ok(!types(r).includes('merge_a_examiner'));
+});
+
+// ── L2 bis : les neuf constats de la revue sur la tête de #2100 ────────────
+
+test('L2 bis 1 : instantané périmé — conditions au vert, mais en attente, jamais à examiner', () => {
+  const r = superviser(lu({ messages: [message()] }), instantane([prOuverte()]), T0 + (INSTANTANE_PERIME_MIN + 1) * 60000);
+  assert.ok(!types(r).includes('merge_a_examiner'));
+  assert.match(r.actions.find((x) => x.type === 'prete_en_attente').detail, /instantané périmé/);
+  assert.ok(types(superviser(lu({ messages: [message()] }), instantane([prOuverte()]), T0 + INSTANTANE_PERIME_MIN * 60000)).includes('merge_a_examiner'), 'à trente minutes pile : encore frais');
+});
+
+test('L2 bis 2 : fichiers illisibles ou tronqués — chevauchement dit non établi', () => {
+  const nonEtabli = (prs) => superviser(lu({ messages: [message()] }), instantane(prs), T0 + 60000).actions.find((x) => x.type === 'chevauchement_non_etabli');
+  assert.match(nonEtabli([prOuverte({ fichiers: null })]).detail, /#101 — chevauchement non établi/, 'la PR elle-même illisible');
+  assert.match(nonEtabli([prOuverte({ fichiers_tronques: true })]).detail, /#101/, 'la PR elle-même tronquée');
+  const voisine = prOuverte({ numero: 102, declarations: [], fichiers: ['scripts/b.mjs'], fichiers_tronques: true });
+  assert.match(nonEtabli([prOuverte(), voisine, prOuverte({ numero: 103, declarations: [], fichiers: null })]).detail, /#102, #103/);
+  assert.equal(nonEtabli([prOuverte(), prOuverte({ numero: 102, declarations: [], fichiers: ['scripts/b.mjs'] })]), undefined, 'listes complètes : rien à dire');
+  assert.equal(nonEtabli([prOuverte({ fichiers: ['docs/x.md'] }), voisine]), undefined, 'que des documents : aucun chevauchement de code possible');
+});
+
+test('L2 bis 3 : état hors énumération sans ligne prête — anomalie quand même, une seule', () => {
+  const seule = superviser(lu(), instantane([prOuverte({ etat: 'OPEN', declarations: [] })]), T0 + 60000);
+  assert.deepEqual(seule.anomalies.filter((a) => a.regle === 'etat').map((a) => a.id), ['#101']);
+  const nommee = superviser(lu({ messages: [message()] }), instantane([prOuverte({ etat: 'OPEN' })]), T0 + 60000);
+  assert.equal(nommee.anomalies.filter((a) => a.regle === 'etat').length, 1, 'pas de doublon par la ligne prête');
+});
+
+test('L2 bis 7 : une PR de fork que nul registre ne porte n\'est pas une anomalie permanente', () => {
+  const fork = (extra = {}) => prOuverte({ numero: 102, meme_depot: false, declarations: [], ...extra });
+  const origine = (r) => r.anomalies.filter((a) => a.regle === 'origine');
+  assert.deepEqual(origine(superviser(lu(), instantane([fork()]), T0 + 60000)), [], 'fork anonyme : bruit écarté');
+  assert.equal(origine(superviser(lu({ lots: [lot({ pr: '#102' })] }), instantane([fork()]), T0 + 60000)).length, 1, 'nommée au carnet');
+  assert.equal(origine(superviser(lu({ messages: [message({ ref: '#102' })] }), instantane([fork()]), T0 + 60000)).length, 1, 'nommée par une ligne prête');
+  assert.equal(origine(superviser(lu(), instantane([fork({ declarations: [declaration()] })]), T0 + 60000)).length, 1, 'déclarée');
+});
+
+test('L2 bis 9 : la ligne précède le commentaire — couverte dans la tolérance, pas au-delà', () => {
+  const pr = prOuverte({ declarations: [declaration({ cree_le: iso(T0) })] });
+  const ligne = (emis, traite) => message({ etat: 'traite', lu_le: iso(traite), traite_le: iso(traite), emis_le: iso(emis) });
+  const sansMessage = (m) => types(superviser(lu({ messages: [m] }), instantane([pr]), T0 + 60000)).includes('declaration_sans_message');
+  assert.ok(!sansMessage(ligne(T0 - 38000, T0 + 30000)), 'ligne 38 s avant le commentaire, traitée après : elle l\'annonçait');
+  assert.ok(sansMessage(ligne(T0 - 20 * 60000, T0 + 30000)), 'vingt minutes avant : une autre déclaration');
+  assert.ok(sansMessage(ligne(T0 - 38000, T0 - 10000)), 'traitée avant le commentaire : la déclaration est neuve');
 });
 
 // ── Manifeste d'export (wn-registres) ───────────────────────────────────────
