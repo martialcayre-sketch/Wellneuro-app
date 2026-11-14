@@ -2,7 +2,7 @@
 
 ## Branche et état Git
 
-- Branche `docs/besoin4-dossier-etape2`, créée sur `origin/main` a66b8e06 (après le merge de #2088 en 52250953),
+- Branche `docs/besoin4-dossier-etape2`, créée sur `origin/main` cac390bb (#2096, après le merge de #2088 en 52250953),
   dans le worktree `.claude/worktrees/b-bp17-cadre`.
 - Session concurrente (file B) : `git` et `gh` en direct, pas de `/wn-*`.
 
