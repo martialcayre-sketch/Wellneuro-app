@@ -219,6 +219,15 @@ describe('D-515 §4 — la copie de la désignation n’a qu’un écrivain', ()
     expect(nomment).toEqual(['lib/securite/declarationSuicideCabinet.ts']);
   });
 
+  it('le constructeur n’a qu’un appelant de production : l’envoi (revue wn-reviewer de #2103)', () => {
+    const appelants = sources(RACINE_SRC)
+      .filter(fichier => /copieDesignationSuicide\(/.test(sansCommentaires(readFileSync(fichier, 'utf8'))))
+      .map(fichier => path.relative(RACINE_SRC, fichier))
+      .filter(fichier => fichier !== 'lib/securite/declarationSuicideCabinet.ts')
+      .sort();
+    expect(appelants).toEqual(['app/api/praticien/file-envoi/envoyer/route.ts']);
+  });
+
   it('et l’envoi, qui l’écrit, ne la nomme pas : il la reçoit entière du constructeur', () => {
     const envoi = readFileSync(path.join(RACINE_SRC, 'app/api/praticien/file-envoi/envoyer/route.ts'), 'utf8');
     expect(sansCommentaires(envoi)).toMatch(/copieDesignationSuicide\(/);
