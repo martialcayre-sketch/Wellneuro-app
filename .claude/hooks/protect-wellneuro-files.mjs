@@ -118,6 +118,9 @@ const SUPPRIME = /\bdelete\s+from\b/g;
 // passe).
 const MODIFIE = /(?<!\b(before|after|or|for|of|instead\s+of)\s+|,\s*)\bupdate\b(?=[^;]*\bset\b)/g;
 
+// Identifiants cités qui gardent leur nom dans le texte lexé.
+const IDENTIFIANTS_SENSIBLES = new Set(["public", "anon", "authenticated", "session_replication_role"]);
+
 // Étiquette d'un corps dollar : `$$` ou `$tag$`, tag aux règles d'un
 // identifiant (lettres Unicode comprises : `$é$` est valide).
 // Lue en place (drapeau `y`), sans fenêtre : une étiquette n'a pas de
@@ -169,8 +172,12 @@ function lexer(source) {
         break;
       }
       if (!ferme) incomplet = true;
-      identifiants.push(texte.slice(debut, i).replace(/""/g, '"'));
-      sortie += " ident ";
+      const nom = texte.slice(debut, i).replace(/""/g, '"');
+      identifiants.push(nom);
+      // Un rôle ou un paramètre sensible garde son nom (`TO "anon"`, la
+      // forme qu'écrit Prisma) : sinon le motif GRANT ne le verrait pas
+      // (PR-Agent, #2137).
+      sortie += IDENTIFIANTS_SENSIBLES.has(nom) ? ` ${nom} ` : " ident ";
     } else if (c === "'") {
       // Chaîne E (`E'…'`) : la barre oblique échappe le caractère suivant.
       const chaineE = texte[i - 1] === "e" && !/[\p{L}\p{N}_$]/u.test(texte[i - 2] ?? " ");

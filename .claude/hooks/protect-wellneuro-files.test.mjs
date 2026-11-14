@@ -205,6 +205,8 @@ for (const [motif, sql] of [
   ["GRANT à un rôle ouvert", 'GRANT SELECT, UPDATE ON "patients" TO anon;'],
   ["GRANT à un rôle ouvert", 'GRANT ALL ON ALL TABLES IN SCHEMA public TO PUBLIC;'],
   ["ALTER POLICY", 'ALTER POLICY "p" ON "patients" USING (true);'],
+  ["GRANT à un rôle ouvert", 'GRANT SELECT, UPDATE ON "Patient" TO "anon";'],
+  ["GRANT à un rôle ouvert", 'GRANT SELECT ON "public"."Patient" TO "authenticated";'],
   // Quatrième passe de wn-reviewer.
   ["non lu avec certitude", `DO E'BEGIN \\x54RUNCATE "Patient"; END';`],
   ["non lu avec certitude", `DO E'BEGIN \\124RUNCATE "Patient"; END';`],
