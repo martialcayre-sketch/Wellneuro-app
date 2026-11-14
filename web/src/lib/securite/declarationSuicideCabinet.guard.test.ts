@@ -199,11 +199,12 @@ describe('NF-7 — la désignation, vérifiée contre la définition', () => {
   });
 });
 
-// [[D-493]] §2 et §4 : rien de [[D-277]] sur un instrument du cabinet. Aucun
-// constat `SAF-QUEST-01` ne naît d'une réponse à un `CAB_`, même la plus
-// grave à la question désignée — donc aucun courriel au praticien. Le jour
-// où le lot à part (question 20261111-2148-a) l'ouvrira, ce banc rougira et
-// devra changer avec sa décision clinique.
+// [[D-493]] §2 et §4 : rien de [[D-277]] sur un instrument du cabinet par la
+// table du catalogue. Aucun constat `SAF-QUEST-01` ne naît d'une réponse à un
+// `CAB_`, même la plus grave — donc aucun courriel par elle. [[D-515]] ouvre
+// le volet par `SAF-QUEST-02`, qui ne lit QUE la désignation copiée sur
+// l'assignation, passée par la route : sans elle, rien ne part, et ce banc le
+// tient toujours. Avec elle : `reponseSuicide.guard.test.ts` (PR 3).
 describe('NF-7 — ni constat ni courriel sur un CAB_ ([[D-493]])', () => {
   it('une transmission CAB_ n’appelle jamais l’alerte de sécurité', () => {
     expect(transmissionAppelleAlerteSecurite('CAB_TEST', { Q1: 3, Q2: 3, B7: 3 })).toBe(false);
@@ -217,7 +218,10 @@ describe('NF-7 — ni constat ni courriel sur un CAB_ ([[D-493]])', () => {
 // NOMMENT la copie, chacun pour son motif (lot de code de [[D-515]] §6.2, PR 2) :
 //   — le constructeur, à l'envoi (`declarationSuicideCabinet.ts`) ;
 //   — la jointure, SEULE à la lire en base (`designationsCabinetPrisma.ts`),
-//     par laquelle passent le Fil, le moteur et la lettre ;
+//     par laquelle passent le Fil, le moteur et la lettre ; les deux routes du
+//     patient, qui lisent leur assignation entière pour d'autres raisons, la
+//     convertissent par `designationDeLAssignation` du même fichier, sans
+//     nommer la copie (PR 3) ;
 //   — le producteur `SAF-QUEST-02`, qui la VÉRIFIE sans la compléter
 //     (`safetyFindings.ts`, `lireCopieDesignation`) ;
 //   — la table `SAF-QUEST-02`, qui nomme sa source en code dans son SHA
@@ -238,6 +242,14 @@ describe('D-515 §4 — la copie de la désignation n’a qu’un écrivain', ()
       'lib/clinical/safetyQuestionnaireCabinetV1.ts',
       'lib/securite/declarationSuicideCabinet.ts',
     ]);
+  });
+
+  it('les deux routes du patient passent leur assignation par `designationDeLAssignation`, sans nommer la copie', () => {
+    for (const route of ['app/api/patient/questionnaire/route.ts', 'app/api/patient/submit/route.ts']) {
+      const code = sansCommentaires(readFileSync(path.join(RACINE_SRC, route), 'utf8'));
+      expect(code, route).toMatch(/designationDeLAssignation\(ass\)/);
+      expect(code, route).not.toMatch(NOMME_LA_COPIE);
+    }
   });
 
   it('le lecteur ne fait que lire : aucune écriture d’assignation dans son fichier', () => {
