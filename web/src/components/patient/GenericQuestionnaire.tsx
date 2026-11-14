@@ -17,8 +17,11 @@ import { EncartUrgenceSuicide } from './EncartUrgenceSuicide';
 import { MessageReponseSuicide } from './MessageReponseSuicide';
 import {
   afficheEncartUrgence,
+  estReponseSuicideCabinetPositive,
   estReponseSuicidePositive,
+  questionnaireCabinetPorteReponseSuicidePositive,
   questionnairePorteReponseSuicidePositive,
+  type DesignationSuicideServie,
 } from '@/lib/securite/urgenceSuicide';
 import { PatientCard } from '@/components/patient/ui/PatientCard';
 import { PatientButton } from '@/components/patient/ui/PatientButton';
@@ -37,6 +40,7 @@ export function GenericQuestionnaire({
   onDone,
   renderer: rendererServeur,
   encartUrgenceCabinet = false,
+  designationSuicideCabinet,
 }: {
   assignation: AssignationInfo;
   questionnaire: QuestionnaireDef;
@@ -53,11 +57,23 @@ export function GenericQuestionnaire({
   /**
    * NF-7 ([[D-303]] §3) : instrument du cabinet déclaré « oui », verdict du
    * serveur (`api/patient/questionnaire`). Il ouvre l'encart de [[D-275]],
-   * et lui seul : le message de [[D-277]] ne suit pas ([[D-493]]).
+   * et lui seul.
    */
   encartUrgenceCabinet?: boolean;
+  /**
+   * [[D-515]] : la question désignée et sa valeur « non », servies par
+   * `api/patient/questionnaire` aux seules conditions du courriel au
+   * praticien. Elles ouvrent le message de [[D-277]] §1 sous cette question
+   * et au résumé, comme pour le catalogue. Absentes : aucun message.
+   */
+  designationSuicideCabinet?: DesignationSuicideServie;
 }) {
   const avecEncartUrgence = afficheEncartUrgence(assignation.idQuestionnaire) || encartUrgenceCabinet;
+  // Le message de [[D-277]] §1 : la question du catalogue, ou celle que le
+  // praticien a désignée et que le serveur a servie ([[D-515]]).
+  const reponseSuicidePositive = (idQuestion: string, valeur: unknown, options: readonly { v: unknown }[] | undefined) =>
+    estReponseSuicidePositive(assignation.idQuestionnaire, idQuestion, valeur, options)
+    || estReponseSuicideCabinetPositive(designationSuicideCabinet, idQuestion, valeur);
   const sections = questionnaire.sections ?? [];
   const renderer = rendererServeur ?? getEnabledRenderer(questionnaire.id);
   const microBatches = getMicroBatches(questionnaire.id);
@@ -249,11 +265,12 @@ export function GenericQuestionnaire({
           {/* Le résumé est un écran à part : l'encart doit y être aussi ([[D-275]]). */}
           {avecEncartUrgence && <EncartUrgenceSuicide className="mt-3" />}
           {/* [[D-277]] §1 : le message revient sur le résumé avant transmission. */}
-          {questionnairePorteReponseSuicidePositive(
+          {(questionnairePorteReponseSuicidePositive(
             assignation.idQuestionnaire,
             answers,
             idQuestion => questionsById.get(idQuestion)?.options,
-          ) && <MessageReponseSuicide className="mt-3" defiler /* [[D-506]] : à chaque arrivée au résumé */ />}
+          ) || questionnaireCabinetPorteReponseSuicidePositive(designationSuicideCabinet, answers))
+            && <MessageReponseSuicide className="mt-3" defiler /* [[D-506]] : à chaque arrivée au résumé */ />}
         </div>
 
         <ol className="space-y-3" aria-label="Parties du questionnaire">
@@ -372,8 +389,7 @@ export function GenericQuestionnaire({
             question={q}
             value={answers[q.id] ?? ''}
             onChange={val => {
-              const positive = (valeur: string | undefined) =>
-                estReponseSuicidePositive(assignation.idQuestionnaire, q.id, valeur, q.options);
+              const positive = (valeur: string | undefined) => reponseSuicidePositive(q.id, valeur, q.options);
               // Le CHOIX d'une réponse positive, depuis une réponse qui ne
               // l'était pas : seul geste, hors du résumé, qui amène le message.
               if (positive(val) && !positive(answers[q.id])) setMessageAAmener(q.id);
@@ -383,7 +399,7 @@ export function GenericQuestionnaire({
             optionLayout={estGrille ? 'grille' : 'cartes'}
           />
           {/* [[D-277]] §1 : dès qu'une réponse positive est choisie, tant qu'elle le reste. */}
-          {estReponseSuicidePositive(assignation.idQuestionnaire, q.id, answers[q.id], q.options) && (
+          {reponseSuicidePositive(q.id, answers[q.id], q.options) && (
             <MessageReponseSuicide
               defiler={messageAAmener === q.id}
               onVenu={() => setMessageAAmener(courant => (courant === q.id ? null : courant))}

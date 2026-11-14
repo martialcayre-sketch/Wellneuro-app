@@ -149,6 +149,14 @@ export default defineConfig({
       // et le panneau ne rend aucune recommandation — le spec n'a rien à
       // cliquer.
       WN_ENABLE_ORIENTATION_NNPP2: '1',
+      // [[D-515]] (lot de code §6.2, PR 3) : la déclaration et la désignation
+      // copiées des instruments du cabinet. ÉTEINT EN PRODUCTION — son
+      // allumage est un geste du responsable, après la signature de
+      // `SAF-QUEST-02` et le recomptage des `CAB_` à copie NULL. Le banc
+      // l'arme pour `portail-cabinet-designation-suicide.spec.ts`. Il change
+      // aussi la publication d'un instrument du cabinet, qui exige alors la
+      // déclaration : `dashboard-praticien.spec.ts` y répond « Non ».
+      WN_ENABLE_DECLARATION_SUICIDE_CAB: 'true',
       // Rayon biologie — les DEUX drapeaux, `isCbPropositionEnabled` les exige
       // ensemble (`web/src/lib/biology-library/featureFlag.ts`). Posés en
       // production depuis le 2026-08-18 ([[D-071]]) : le banc s'aligne, il ne

@@ -14,6 +14,7 @@ import { withSupabaseSslMode, supabasePoolSsl } from '../../src/lib/postgres';
 import { getDocumentCourant } from '../../src/lib/trust/contenus/registre';
 import { documentsRequerantAccuse } from '../../src/lib/trust/avantDeCommencer';
 import { orienterEffetIndesirable } from '../../src/lib/trust/securite';
+import { copieDesignationSuicide } from '../../src/lib/securite/declarationSuicideCabinet';
 import { PRATICIEN_EMAIL } from './auth';
 import { createHash } from 'node:crypto';
 import { canonicalSha256 } from '../../src/lib/clinical-engine/canonical';
@@ -441,6 +442,72 @@ export async function creerAssignationQuestionnaire(
     },
   });
   return idAssignation;
+}
+
+/** L'instrument du cabinet de `portail-cabinet-designation-suicide.spec.ts` ([[D-515]]). */
+export const INSTRUMENT_CABINET_DESIGNE_E2E = 'CAB_E2E_DESIGNATION';
+
+/**
+ * [[D-515]] : un instrument du cabinet déclaré « oui », et une assignation qui
+ * porte la déclaration et la désignation COPIÉES par le constructeur même de
+ * l'envoi (`copieDesignationSuicide`) : question `Q2`, valeur « non » 0. Une
+ * seule section, pour que la question désignée et le résumé tiennent en deux
+ * écrans.
+ */
+export async function creerAssignationCabinetDesignee(idPatient: string, emailPatient: string): Promise<string> {
+  const options = [{ v: 0, l: 'Jamais' }, { v: 1, l: 'Parfois' }, { v: 2, l: 'Souvent' }];
+  const titre = 'Humeur du cabinet (E2E)';
+  const enonce = 'Il m’arrive de penser à la mort.';
+  const definitionJson = {
+    sections: [{
+      id: 'S1',
+      titre: 'Humeur',
+      questions: [
+        { id: 'Q1', texte: 'Je me sens triste.', type: 'likert', options },
+        { id: 'Q2', texte: enonce, type: 'likert', options },
+      ],
+    }],
+  };
+  const declaration = { poseQuestionSuicide: true, questionSuicideId: 'Q2', questionSuicideOptionNon: 0 };
+  // Le constructeur de l'envoi, pas une copie écrite à la main : une forme qui
+  // changerait chez l'écrivain changerait ici aussi (revue `wn-reviewer` de la
+  // PR 3, P3-3).
+  const designation = copieDesignationSuicide({ titre, definitionJson, ...declaration });
+  if (!designation) throw new Error('désignation E2E incohérente avec sa définition');
+  await prisma.cabinetInstrument.upsert({
+    where: { idInstrument: INSTRUMENT_CABINET_DESIGNE_E2E },
+    update: { definitionJson, statutRelecture: 'valide', actif: true, ...declaration },
+    create: {
+      idInstrument: INSTRUMENT_CABINET_DESIGNE_E2E,
+      praticienEmail: 'praticien.e2e@wellneuro.fr',
+      titre,
+      definitionJson,
+      scoringJson: { type: 'sum', maxTotal: 4, interpretation: [{ min: 0, max: 4, label: 'Repère', color: 'warning' }] },
+      statutRelecture: 'valide',
+      actif: true,
+      ...declaration,
+    },
+  });
+  const idAssignation = `ASS_E2E_${INSTRUMENT_CABINET_DESIGNE_E2E}_${Date.now()}`;
+  await prisma.assignation.create({
+    data: {
+      idAssignation,
+      idPatient,
+      emailPatient,
+      idQuestionnaire: INSTRUMENT_CABINET_DESIGNE_E2E,
+      titre,
+      dateAssignation: new Date(),
+      statut: 'En attente',
+      poseQuestionSuicide: true,
+      ...designation,
+    },
+  });
+  return idAssignation;
+}
+
+/** Après `resetPortailState`, qui a retiré l'assignation. */
+export async function nettoyerInstrumentCabinetDesigneE2E(): Promise<void> {
+  await prisma.cabinetInstrument.deleteMany({ where: { idInstrument: INSTRUMENT_CABINET_DESIGNE_E2E } });
 }
 
 export async function closePrisma(): Promise<void> {

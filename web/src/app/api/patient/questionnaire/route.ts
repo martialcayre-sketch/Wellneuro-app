@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { estInstrumentCabinet, resolveDefinition } from '@/lib/instruments';
 import { declarationSuicideCabinetActive } from '@/lib/securite/declarationSuicideCabinet';
+import { designationDeLAssignation } from '@/lib/clinical-engine/designationsCabinetPrisma';
+import { designationSuicideCabinetServie } from '@/lib/clinical-engine/safetyFindings';
+import type { DesignationSuicideServie } from '@/lib/securite/urgenceSuicide';
 import { isDeadlineExpired } from '@/lib/patient-access';
 import { isSessionAuthorizedForAssignment, readPatientSession } from '@/lib/patient-session';
 import { notePraticienAffichable } from '@/lib/consultation/notePraticien';
@@ -39,6 +42,14 @@ export type PatientQuestionnaireResponse =
        * catalogue n'en dépendent pas (`afficheEncartUrgence`).
        */
       encartUrgenceCabinet?: true;
+      /**
+       * [[D-515]] (PR 3 du lot de code) : la question désignée et sa valeur
+       * « non », COPIÉES à l'envoi, pour le message de [[D-277]] §1 sur un
+       * instrument du cabinet. Présente seulement quand une réponse positive
+       * appellerait le courriel au praticien : drapeau allumé, copie « oui »
+       * lisible, `SAF-QUEST-02` signée (`designationSuicideCabinetServie`).
+       */
+      designationSuicideCabinet?: DesignationSuicideServie;
     }
   | {
       ok: false;
@@ -199,6 +210,13 @@ export async function GET(req: Request): Promise<NextResponse<PatientQuestionnai
       && estInstrumentCabinet(ass.idQuestionnaire)
       && ass.poseQuestionSuicide === true;
 
+    // [[D-515]] : la désignation copiée, servie aux mêmes conditions que le
+    // courriel. Absente, aucun message ne peut dire « votre praticien sera
+    // prévenu » — l'encart, lui, reste.
+    const designationSuicideCabinet = encartUrgenceCabinet
+      ? designationSuicideCabinetServie(ass.idQuestionnaire, designationDeLAssignation(ass))
+      : null;
+
     return NextResponse.json({
       ok: true,
       assignation: assignationInfo,
@@ -206,6 +224,7 @@ export async function GET(req: Request): Promise<NextResponse<PatientQuestionnai
       renderer,
       consentementPossible,
       ...(encartUrgenceCabinet ? { encartUrgenceCabinet: true as const } : {}),
+      ...(designationSuicideCabinet ? { designationSuicideCabinet } : {}),
     });
   } catch (err) {
     console.error('[patient/questionnaire GET]', err instanceof Error ? err.message : String(err));

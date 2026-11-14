@@ -107,10 +107,11 @@ describe('GenericQuestionnaire — l’encart reste présent jusqu’au résumé
 
 
 // NF-7 ([[D-303]] §3, [[D-493]]) : UN INSTRUMENT DU CABINET DÉCLARÉ « OUI » PORTE
-// L'ENCART SUR CHAQUE ÉCRAN DE SAISIE ET AU RÉSUMÉ — et rien de [[D-277]] : ni
-// le message sur réponse positive, quelle que soit la réponse choisie, ni le
-// constat qui ferait partir le courriel au praticien. Ce volet est cadré à part
-// (question 20261111-2148-a) ; tant qu'il ne l'est pas, servir le message ferait
+// L'ENCART SUR CHAQUE ÉCRAN DE SAISIE ET AU RÉSUMÉ — et, SANS DÉSIGNATION
+// SERVIE, rien de [[D-277]] : ni le message sur réponse positive, quelle que
+// soit la réponse choisie, ni le constat qui ferait partir le courriel au
+// praticien. Le message ne suit que la désignation que le serveur sert aux
+// seules conditions du courriel ([[D-515]], bloc suivant) ; sans elle, il ferait
 // lire au patient une promesse (« votre praticien sera prévenu ») non tenue.
 describe('GenericQuestionnaire — instrument du cabinet déclaré « oui » (NF-7)', () => {
   const OPTIONS = [{ v: 0, l: 'Non' }, { v: 1, l: 'Un peu' }, { v: 2, l: 'Souvent' }];
@@ -170,5 +171,89 @@ describe('GenericQuestionnaire — instrument du cabinet déclaré « oui » (NF
   // (environnement Node — le module du courriel charge le client Anthropic).
   it('la règle du message ne reconnaît aucune réponse positive sur un CAB_', () => {
     expect(estReponseSuicidePositive('CAB_TEST', 'Q2', 2, OPTIONS)).toBe(false);
+  });
+});
+
+// [[D-515]] (PR 3 du lot de code) : la désignation SERVIE par
+// `api/patient/questionnaire` — question et valeur « non » copiées — ouvre le
+// message signé de [[D-277]] §1 sous la question désignée et au résumé, comme
+// pour le catalogue. Le serveur ne la sert qu'aux conditions du courriel
+// (`reponseSuicide.guard.test.ts`).
+describe('GenericQuestionnaire — instrument du cabinet, désignation servie ([[D-515]])', () => {
+  const OPTIONS = [{ v: 0, l: 'Non' }, { v: 1, l: 'Un peu' }, { v: 2, l: 'Souvent' }];
+  const DEFINITION_CAB = {
+    id: 'CAB_TEST',
+    titre: 'Humeur cabinet',
+    sections: [
+      { id: 'S1', questions: [{ id: 'Q1', texte: 'Je me sens triste.', type: 'likert', options: OPTIONS }] },
+      { id: 'S2', questions: [{ id: 'Q2', texte: 'Il m’arrive de penser à la mort.', type: 'likert', options: OPTIONS }] },
+    ],
+  } as unknown as QuestionnaireDef;
+  const DEBUT_DU_MESSAGE = 'Vous venez d’indiquer des idées de mort ou de suicide.';
+
+  function messages(): number {
+    return screen.queryAllByRole('alert').filter(el => el.textContent?.includes(DEBUT_DU_MESSAGE)).length;
+  }
+
+  function choisir(libelle: string): void {
+    const radios = [...document.querySelectorAll<HTMLInputElement>('input[type="radio"]')];
+    const radio = radios.find(r => r.closest('label')?.textContent?.includes(libelle));
+    if (!radio) throw new Error(`option absente : ${libelle}`);
+    fireEvent.click(radio);
+  }
+
+  function suivant(): void {
+    fireEvent.click(screen.queryByRole('button', { name: 'Voir le résumé' }) ?? screen.getByRole('button', { name: /Suivant/ }));
+  }
+
+  it('le message paraît sous la seule question désignée, disparaît sur la valeur « non », et revient au résumé', () => {
+    localStorage.clear();
+    vi.stubGlobal('scrollTo', vi.fn());
+    const a = assignation('CAB_TEST');
+    render(
+      <GenericQuestionnaire
+        assignation={a}
+        questionnaire={DEFINITION_CAB}
+        email={a.emailPatient}
+        onDone={vi.fn()}
+        encartUrgenceCabinet
+        designationSuicideCabinet={{ idQuestion: 'Q2', valeurNon: 0 }}
+      />,
+    );
+    // Q1 n'est pas désignée : même « Souvent », aucun message.
+    choisir('Souvent');
+    expect(messages()).toBe(0);
+    suivant();
+    choisir('Souvent');
+    expect(messages()).toBe(1);
+    choisir('Non');
+    expect(messages()).toBe(0);
+    choisir('Un peu');
+    expect(messages()).toBe(1);
+    suivant();
+    expect(screen.getByRole('heading', { name: 'Vérifiez votre questionnaire' })).not.toBeNull();
+    expect(messages()).toBe(1);
+  });
+
+  it('une valeur « non » copiée qui n’est pas la première option : c’est elle qui se tait', () => {
+    localStorage.clear();
+    vi.stubGlobal('scrollTo', vi.fn());
+    const a = assignation('CAB_TEST');
+    render(
+      <GenericQuestionnaire
+        assignation={a}
+        questionnaire={DEFINITION_CAB}
+        email={a.emailPatient}
+        onDone={vi.fn()}
+        encartUrgenceCabinet
+        designationSuicideCabinet={{ idQuestion: 'Q2', valeurNon: 2 }}
+      />,
+    );
+    choisir('Non');
+    suivant();
+    choisir('Souvent');
+    expect(messages()).toBe(0);
+    choisir('Non');
+    expect(messages()).toBe(1);
   });
 });

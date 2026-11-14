@@ -36,6 +36,31 @@ export function wherePassationsCabinet(): Prisma.QuestionnaireReponseWhereInput 
 
 type Client = Pick<Prisma.TransactionClient, 'assignation'>;
 
+/** Les colonnes d'une assignation que lit `SAF-QUEST-02`, telles que Prisma les rend. */
+export type AssignationDesignation = {
+  titre: string;
+  poseQuestionSuicide: boolean | null;
+  questionSuicideId: string | null;
+  questionSuicideOptionNon: number | null;
+  questionSuicideCopie: unknown;
+};
+
+/**
+ * Une assignation DÉJÀ LUE en désignation pour `SAF-QUEST-02`. Les routes du
+ * patient (`api/patient/questionnaire`, `api/patient/submit`) lisent leur
+ * assignation entière pour d'autres raisons ; elles passent ici au lieu de
+ * nommer la copie (PR 3) — la copie reste nommée par ce fichier seul.
+ */
+export function designationDeLAssignation(assignation: AssignationDesignation): DesignationCabinetLue {
+  return {
+    poseQuestionSuicide: assignation.poseQuestionSuicide,
+    titreAssignation: assignation.titre,
+    questionSuicideId: assignation.questionSuicideId,
+    questionSuicideOptionNon: assignation.questionSuicideOptionNon,
+    questionSuicideCopie: assignation.questionSuicideCopie,
+  };
+}
+
 /**
  * Joint à chaque passation du cabinet la déclaration et la désignation copiées
  * sur son assignation. Une passation sans assignation retrouvée n'en reçoit
@@ -68,13 +93,9 @@ export async function joindreDesignationsCabinet<T extends PassationSecuriteRow 
       questionSuicideCopie: true,
     },
   });
-  const parId = new Map<string, DesignationCabinetLue>(assignations.map(assignation => [assignation.idAssignation, {
-    poseQuestionSuicide: assignation.poseQuestionSuicide,
-    titreAssignation: assignation.titre,
-    questionSuicideId: assignation.questionSuicideId,
-    questionSuicideOptionNon: assignation.questionSuicideOptionNon,
-    questionSuicideCopie: assignation.questionSuicideCopie,
-  }]));
+  const parId = new Map<string, DesignationCabinetLue>(
+    assignations.map(assignation => [assignation.idAssignation, designationDeLAssignation(assignation)]),
+  );
   return rows.map(row => {
     if (!row.idQuestionnaire.startsWith(PREFIXE_INSTRUMENT_CABINET) || !row.idAssignation) return row;
     const designationCabinet = parId.get(row.idAssignation);

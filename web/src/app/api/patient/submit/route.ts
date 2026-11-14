@@ -18,6 +18,7 @@ import {
   notifierPraticienSignalSecurite,
   transmissionAppelleAlerteSecurite,
 } from '@/lib/securite/alerteSecuritePraticien';
+import { designationDeLAssignation } from '@/lib/clinical-engine/designationsCabinetPrisma';
 import { getGabarit, rendreGabarit, rendreSegment } from '@/lib/correspondance/registreGabarits';
 import { logger } from '@/lib/observability/logger';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
@@ -439,12 +440,15 @@ export async function POST(req: Request): Promise<NextResponse> {
       })
     );
     // [[D-277]] §2 : une réponse suicidaire prévient le praticien, exactement
-    // quand elle produit un constat `SAF-QUEST-01`. La réponse est déjà
+    // quand elle produit un constat `SAF-QUEST-01` — ou, pour un instrument du
+    // cabinet, quand `SAF-QUEST-02` en produirait un drapeau allumé, lu sur la
+    // désignation COPIÉE à l'envoi sur cette assignation ([[D-515]], PR 3 du
+    // lot de code ; le drapeau courant n'est pas relu). La réponse est déjà
     // enregistrée : rien ici ne peut la faire échouer. EN PARALLÈLE de
     // l'accusé, pas à sa suite : deux envois SMTP bornés chacun à ~20 s
     // dépasseraient les 30 s du routeur, et le patient lirait « Erreur
     // réseau » sur une transmission réussie — précisément sur cette réponse.
-    const alerte = transmissionAppelleAlerteSecurite(idQuestionnaire, answers)
+    const alerte = transmissionAppelleAlerteSecurite(idQuestionnaire, answers, designationDeLAssignation(ass))
       ? alerterPraticien(idPatient, idReponse).then(resultat => {
         if (resultat.statut === 'Erreur') {
           logger.error({

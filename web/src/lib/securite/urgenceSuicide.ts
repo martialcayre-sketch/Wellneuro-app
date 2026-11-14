@@ -114,6 +114,46 @@ export function questionnairePorteReponseSuicidePositive(
   return estReponseSuicidePositive(idQuestionnaire, idQuestion, reponses[idQuestion], optionsDe(idQuestion));
 }
 
+// ─── [[D-515]] — LE MESSAGE SUR UN INSTRUMENT DU CABINET ────────────────────
+//
+// La question n'est pas au catalogue : c'est le praticien qui l'a désignée, et
+// le serveur la SERT avec la valeur « non » copiée à l'envoi
+// (`designationSuicideCabinetServie`), seulement quand une réponse positive
+// appellerait le courriel — drapeau allumé, copie lisible, `SAF-QUEST-02`
+// signée. Sans désignation servie, rien n'est positif : l'encart reste.
+//
+// LA RÈGLE LIT CE QUE LE FORMULAIRE TRANSMET, pas ce qu'il affiche :
+// `GenericQuestionnaire` envoie `parseFloat` de la chaîne choisie et ne
+// transmet pas une valeur qui n'est pas un nombre fini. Le serveur compare la
+// valeur reçue à la valeur « non » copiée ; toute autre, option ou non, est
+// positive (fail-closed, réponse 20261114-1112-a). Le banc
+// `reponseSuicide.guard.test.ts` confronte les deux règles option par option.
+
+/** La désignation servie par `api/patient/questionnaire` pour un instrument du cabinet. */
+export type DesignationSuicideServie = { idQuestion: string; valeurNon: number };
+
+export function estReponseSuicideCabinetPositive(
+  designation: DesignationSuicideServie | null | undefined,
+  idQuestion: string,
+  valeur: unknown,
+): boolean {
+  if (!designation || designation.idQuestion !== idQuestion) return false;
+  if (valeur === undefined || valeur === null) return false;
+  const transmise = typeof valeur === 'number' ? valeur : parseFloat(String(valeur));
+  if (!Number.isFinite(transmise)) return false;
+  return transmise !== designation.valeurNon;
+}
+
+/** Une réponse positive à la question désignée, parmi toutes celles d'un questionnaire du cabinet. */
+export function questionnaireCabinetPorteReponseSuicidePositive(
+  designation: DesignationSuicideServie | null | undefined,
+  reponses: Readonly<Record<string, unknown>>,
+): boolean {
+  if (!designation) return false;
+  const valeur = Object.hasOwn(reponses, designation.idQuestion) ? reponses[designation.idQuestion] : undefined;
+  return estReponseSuicideCabinetPositive(designation, designation.idQuestion, valeur);
+}
+
 export function anamneseSignaleIdeesSuicidaires(valeur: unknown): boolean {
   return Array.isArray(valeur) && valeur.includes(CASE_ANAMNESE_IDEES_SUICIDAIRES);
 }

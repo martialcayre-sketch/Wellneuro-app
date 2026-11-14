@@ -28,9 +28,11 @@ import {
   REGLE_SECURITE_QUESTIONNAIRE_CABINET,
   SAFETY_QUESTIONNAIRE_CABINET_METADATA,
   regleSecuriteQuestionnaireCabinetValidee,
+  tableSecuriteQuestionnaireCabinetSignee,
 } from '@/lib/clinical/safetyQuestionnaireCabinetV1';
 import { sha256 } from '@/lib/clinical/corpusSyntheseV1';
 import { declarationSuicideCabinetActive } from '@/lib/securite/declarationSuicideCabinet';
+import type { DesignationSuicideServie } from '@/lib/securite/urgenceSuicide';
 import {
   PREFIXE_FINDING_ANAMNESE,
   PREFIXE_FINDING_QUESTIONNAIRE,
@@ -304,11 +306,12 @@ function lireCopieDesignation(designation: DesignationCabinetLue): CopieLue | nu
  * aussi le sort d'une option que la copie a écartée hors int4 (réponse
  * 20261114-1112-a).
  */
-function lireReponseCabinet(row: PassationSecuriteRow): ReponseSecurite | null {
+function lireReponseCabinet(row: PassationSecuriteRow, options: LectureSecuriteOptions = {}): ReponseSecurite | null {
   // Drapeau éteint, rien n'est lu, même si une désignation a été jointe :
   // la jointure le vérifie déjà, et ce second contrôle tient si un appelant
-  // la contournait (contre-revue Codex de la PR 2, P2).
-  if (!declarationSuicideCabinetActive()) return null;
+  // la contournait (contre-revue Codex de la PR 2, P2). Seule exception,
+  // nommée : le courriel au praticien (`courrielMalgreDrapeau`, ci-dessous).
+  if (!declarationSuicideCabinetActive() && options.courrielMalgreDrapeau !== true) return null;
   const designation = row.designationCabinet;
   if (!designation || designation.poseQuestionSuicide !== true) return null;
   if (!row.idQuestionnaire.startsWith('CAB_')) return null;
@@ -353,6 +356,39 @@ function lireReponseCabinet(row: PassationSecuriteRow): ReponseSecurite | null {
 }
 
 /**
+ * La désignation que le portail SERT au patient pour le message de [[D-277]]
+ * §1 sur un instrument du cabinet (lot de code de [[D-515]] §6.2, PR 3), ou
+ * `null` quand le message ne doit pas pouvoir paraître.
+ *
+ * LES CONDITIONS DU COURRIEL (`transmissionAppelleAlerteSecurite`), PLUS LE
+ * DRAPEAU : instrument du cabinet, copie « oui », copie LISIBLE (la
+ * vérification même du producteur, `lireCopieDesignation`), `SAF-QUEST-02`
+ * SIGNÉE — et drapeau allumé à l'ouverture de la page, que le courriel, lui,
+ * ne relit pas (`courrielMalgreDrapeau`). Le patient ne lit « votre praticien sera prévenu »
+ * que lorsqu'une réponse positive à cette question appellerait le courriel
+ * (`reponseSuicide.guard.test.ts`). Une désignation inconnue (§7) ne sert
+ * rien : ni message, ni courriel — l'encart de [[D-275]] reste.
+ *
+ * Seuls l'identifiant de la question et la valeur « non » copiés sont servis :
+ * la règle cliente n'a besoin de rien d'autre (toute autre valeur transmise
+ * est positive, option ou non).
+ */
+export function designationSuicideCabinetServie(
+  idQuestionnaire: string,
+  designation: DesignationCabinetLue | null | undefined,
+): DesignationSuicideServie | null {
+  if (!declarationSuicideCabinetActive()) return null;
+  if (!idQuestionnaire.startsWith('CAB_')) return null;
+  if (!designation || designation.poseQuestionSuicide !== true) return null;
+  if (!tableSecuriteQuestionnaireCabinetSignee()) return null;
+  if (!lireCopieDesignation(designation)) return null;
+  return {
+    idQuestion: designation.questionSuicideId as string,
+    valeurNon: designation.questionSuicideOptionNon as number,
+  };
+}
+
+/**
  * Les réponses aux questions sur le suicide, sur TOUTES les passations non
  * invalidées du dossier (A1 de [[D-275]] §2) — pas seulement celles de
  * l'épisode, pas seulement la dernière.
@@ -372,14 +408,34 @@ function lireReponseCabinet(row: PassationSecuriteRow): ReponseSecurite | null {
  * Trié par identifiant de passation : l'ordre de la base n'est pas stable, et
  * deux ordres feraient deux empreintes de carte pour un même dossier.
  */
-export function reponsesSecuriteDeclarees(rows: readonly PassationSecuriteRow[]): ReponseSecurite[] {
+export type LectureSecuriteOptions = {
+  /**
+   * Le SEUL appelant qui le passe est le courriel au praticien
+   * (`transmissionAppelleAlerteSecurite`, [[D-277]] §2). Il lit la désignation
+   * copiée MÊME DRAPEAU ÉTEINT, et c'est voulu (contre-revue Codex de la PR 3,
+   * P1). Le message au patient a été décidé à l'ouverture de la page
+   * (`designationSuicideCabinetServie`, drapeau allumé). Si le drapeau
+   * s'éteignait avant la transmission, le patient aurait lu « votre praticien
+   * sera prévenu » sans qu'aucun courriel parte. Une copie « oui » n'est
+   * écrite que drapeau allumé, à l'envoi : la lire ensuite n'ouvre rien que le
+   * drapeau n'ait ouvert. Un courriel de trop vaut mieux qu'un signal tu
+   * ([[D-277]], limite connue). Le constat, la carte et la lettre restent
+   * soumis au drapeau courant.
+   */
+  courrielMalgreDrapeau?: boolean;
+};
+
+export function reponsesSecuriteDeclarees(
+  rows: readonly PassationSecuriteRow[],
+  options: LectureSecuriteOptions = {},
+): ReponseSecurite[] {
   const reponses: ReponseSecurite[] = [];
   for (const row of rows.filter(passation => passation.statutValidite !== 'INVALID')) {
     const question = questionSecuriteDe(row.idQuestionnaire);
     if (!question) {
       // [[D-515]] §1 : un instrument du cabinet n'est lu que si son
       // assignation a été chargée ET porte la déclaration « oui ».
-      const cabinet = lireReponseCabinet(row);
+      const cabinet = lireReponseCabinet(row, options);
       if (cabinet) reponses.push(cabinet);
       continue;
     }

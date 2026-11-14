@@ -1,6 +1,7 @@
 import { creerTransportSmtp } from '@/lib/email/transportSmtp';
 import { sanitizeAuditError } from '@/lib/anthropic';
-import { reponsesSecuriteDeclarees } from '@/lib/clinical-engine/safetyFindings';
+import { reponsesSecuriteDeclarees, type DesignationCabinetLue } from '@/lib/clinical-engine/safetyFindings';
+import { tableSecuriteQuestionnaireCabinetSignee } from '@/lib/clinical/safetyQuestionnaireCabinetV1';
 import {
   TYPES_CORRESPONDANCE_PATIENT,
   journaliserCorrespondancePatient,
@@ -32,6 +33,27 @@ import { baseLiensCourriel } from '@/lib/portail/urlPublique';
 // catalogue refermait le verrou de `SAF-QUEST-01`, le constat et sa carte se
 // tairaient ; le courriel, lui, partirait encore. Un courriel de trop vaut
 // mieux qu'un signal tu ([[D-277]], limite connue).
+//
+// SAUF POUR UN INSTRUMENT DU CABINET ([[D-515]], lot de code §6.2, PR 3). La
+// règle `SAF-QUEST-02` lit la désignation COPIÉE sur l'assignation, et le
+// courriel part quand elle produirait un constat : copie « oui » lisible,
+// valeur autre que la valeur « non » copiée — ET table signée. Tant qu'elle
+// ne l'est pas, aucune carte ne naît au Fil, et le courriel, qui y renvoie,
+// ne part pas ; le message au patient non plus
+// (`designationSuicideCabinetServie`).
+//
+// LE DRAPEAU COURANT N'EST PAS LU (contre-revue Codex de la PR 3, P1). Le
+// message est décidé à l'ouverture de la page, drapeau allumé ; un drapeau
+// éteint avant la transmission ne doit pas laisser le patient sur une
+// promesse non tenue. La copie « oui » n'existe que si le drapeau était
+// allumé à l'envoi.
+//
+// CONSÉQUENCE DURABLE, À SAVOIR (revue `wn-reviewer` de l'écart, P2-1) :
+// après une extinction, toute assignation `CAB_` envoyée drapeau allumé
+// continue de faire partir le courriel sur une réponse positive, alors que le
+// Fil, qui suit le drapeau courant, n'en montre plus la carte. Il reste la
+// ligne de journal du dossier. Question 20261114-1335-a, à trancher avant la
+// signature de `SAF-QUEST-02`.
 
 /**
  * Texte SIGNÉ par le responsable le 2026-10-10 ([[D-277]] §2). Ne pas
@@ -56,18 +78,29 @@ export function lienFilDuJour(): string {
 
 /**
  * Cette transmission de questionnaire appelle-t-elle le courriel ? Exactement
- * quand elle produit un constat `SAF-QUEST-01`.
+ * quand elle produit un constat `SAF-QUEST-01` — ou, pour un instrument du
+ * cabinet dont la désignation copiée est passée, quand `SAF-QUEST-02`
+ * produirait un constat drapeau allumé (table signée seulement, drapeau
+ * courant non relu : voir plus haut).
  */
-export function transmissionAppelleAlerteSecurite(idQuestionnaire: string, reponses: unknown): boolean {
+export function transmissionAppelleAlerteSecurite(
+  idQuestionnaire: string,
+  reponses: unknown,
+  designationCabinet?: DesignationCabinetLue,
+): boolean {
   return reponsesSecuriteDeclarees([{
     idReponse: 'transmission',
     idQuestionnaire,
     dateReponse: new Date(0),
     scoresJson: { rawAnswers: reponses },
     statutValidite: null,
-  }]).some(reponse => (
-    reponse.lecture.kind === 'hors_options'
-    || (reponse.lecture.kind === 'option' && !reponse.lecture.non)
+    ...(designationCabinet ? { designationCabinet } : {}),
+  }], { courrielMalgreDrapeau: true }).some(reponse => (
+    (!reponse.cabinet || tableSecuriteQuestionnaireCabinetSignee())
+    && (
+      reponse.lecture.kind === 'hors_options'
+      || (reponse.lecture.kind === 'option' && !reponse.lecture.non)
+    )
   ));
 }
 

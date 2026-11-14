@@ -1,0 +1,5 @@
+- **Mise à jour (2026-11-14, lot D-277, code de [[D-515]] §6.2, PR 3 sur 4)** : le courriel et le message au patient sur un instrument du cabinet, derrière `WN_ENABLE_DECLARATION_SUICIDE_CAB`, éteint, et sous `SAF-QUEST-02` signée. Chemin clinique, sans migration ; textes signés de [[D-277]] inchangés.
+  - **Courriel** : `api/patient/submit` passe la désignation copiée de son assignation ; il part exactement quand `SAF-QUEST-02` produirait un constat, table signée seulement.
+  - **Message** : `api/patient/questionnaire` sert la question et la valeur « non » copiées aux mêmes conditions ; message signé sous la question désignée et au résumé ([[D-506]]).
+  - **Bancs** : parité navigateur ↔ serveur sur toutes les combinaisons (`reponseSuicide.guard.test.ts`), parité Fil ↔ cockpit avec un `CAB_` (demande routée de la PR 2), E2E de l'état livré (drapeau allumé dans le seul serveur des E2E).
+  - **Reste** : PR 4 (surface de relecture, signature par le responsable), recomptage des `CAB_` à copie NULL, puis allumage par le responsable.
