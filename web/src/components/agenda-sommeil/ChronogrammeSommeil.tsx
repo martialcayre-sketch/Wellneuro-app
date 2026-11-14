@@ -303,7 +303,14 @@ function ListeNuits({ points }: { points: Point[] }) {
           className={`shrink-0 motion-safe:transition-transform ${ouverte ? 'rotate-180' : ''}`}
         />
       </button>
-      <ul id={id} hidden={!ouverte} className="flex flex-col rounded-lg border border-border">
+      {/* `hidden` seul ne suffit pas : sous Tailwind 3, la classe `flex`
+          l'emporte sur la règle `[hidden]` du preflight. La classe `hidden`
+          porte donc aussi le repli. */}
+      <ul
+        id={id}
+        hidden={!ouverte}
+        className={`${ouverte ? 'flex' : 'hidden'} flex-col rounded-lg border border-border`}
+      >
         {points.map((p) => (
           <li
             key={p.label}

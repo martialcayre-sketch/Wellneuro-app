@@ -23,6 +23,8 @@ PR 8 de PRA-3b (matrice, ligne 8 : agendas et journal, P58 à P60), selon Q6 b (
   - le panneau du sommeil efface désormais son message au rechargement, comme le panneau alimentaire, sans quoi « Chargement impossible. » survivait à une relecture réussie.
 - P60 : « Révision » et « Choix du patient et mise en œuvre » passent de h4 à h3. Boutons, champs, sommaires et « Réessayer » reçoivent l'anneau de focus ; leur 44 px était déjà en place.
 - E2E `agenda-sommeil-praticien` : l'infobulle se cherche dans `.recharts-tooltip-wrapper`, ses textes existant aussi dans la liste ; ajout du parcours de la liste, au clavier et au doigt.
+- Revue PR-Agent sur `91c0c4b3` (« Repli possiblement toujours ouvert ») : constat fondé. Sous Tailwind 3, la classe `flex` l'emporte sur la règle `[hidden]` du preflight, et la liste restait donc affichée. Correction : la classe `hidden` porte aussi le repli. Le banc lit la classe, l'E2E vérifie que la liste n'est pas affichée avant le clic et après la fermeture.
+- CodeRabbit : revue non lancée (dépôt sous dix étoiles), plus demandée ([[D-499]]).
 - Éditions par Edit et Write seulement.
 
 ## Fichiers modifiés

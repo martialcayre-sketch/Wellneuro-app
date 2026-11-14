@@ -209,15 +209,21 @@ describe('liste des nuits, équivalente à l’infobulle', () => {
     render(<ChronogrammeSommeil nuits={NUITS} />);
     const bouton = screen.getByRole('button', { name: 'Voir les nuits une par une' });
     const liste = document.getElementById(bouton.getAttribute('aria-controls')!);
+    // L'attribut et la classe : sous Tailwind 3, `flex` l'emporterait sur
+    // `[hidden]` (constat PR-Agent sur #2118).
     expect(bouton.getAttribute('aria-expanded')).toBe('false');
     expect(liste?.hidden).toBe(true);
+    expect(liste?.classList.contains('hidden')).toBe(true);
+    expect(liste?.classList.contains('flex')).toBe(false);
     bouton.focus();
     fireEvent.click(bouton);
     expect(bouton.getAttribute('aria-expanded')).toBe('true');
     expect(liste?.hidden).toBe(false);
+    expect(liste?.classList.contains('hidden')).toBe(false);
     expect(document.activeElement).toBe(bouton);
     fireEvent.click(bouton);
     expect(liste?.hidden).toBe(true);
+    expect(liste?.classList.contains('hidden')).toBe(true);
     expect(bouton.className).toContain('min-h-11');
     expect(bouton.className).toContain('focus-visible:ring-focus-ring');
   });
