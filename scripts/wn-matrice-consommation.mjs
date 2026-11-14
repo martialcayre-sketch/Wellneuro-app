@@ -136,7 +136,7 @@ export const SOURCES_DE_SAVOIR = [
   },
   {
     id: 'bibliotheque-options-besoin2',
-    libelle: 'Bibliothèque des options du besoin 2 (structure de références, vide et non signée)',
+    libelle: 'Bibliothèque des options du besoin 2 (structure de références, transcrite et non signée)',
     module: 'web/src/lib/bibliotheque-options/bibliothequeBesoin2V1.ts',
     symboles: ['BIBLIOTHEQUE_BESOIN2_V1', 'BIBLIOTHEQUE_BESOIN2_METADATA'],
     // ENTRÉE AVANT SA SURFACE ([[D-480]] §5.5, BP-17 PR 4), CONSOMMÉE DEPUIS

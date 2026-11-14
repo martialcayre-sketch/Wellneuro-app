@@ -29,9 +29,10 @@ import {
 // Le texte de chaque rubrique vit en base, saisi à l'atelier par acte daté du
 // responsable (seconde couche, tables de la PR 2, atelier de la PR 5).
 //
-// LIVRÉE VIDE ET NON SIGNÉE. Les contenus sont ceux du responsable, transcrits
-// en identifiants et renvois par la file B, puis signés par lui (PR 7, porte
-// 23). Une signature ne se pose jamais par l'outil : la déclaration du
+// LIVRÉE VIDE ET NON SIGNÉE (PR 3), PUIS TRANSCRITE ET TOUJOURS NON SIGNÉE
+// (PR 7, [[D-521]]). Les contenus sont ceux du responsable, transcrits en
+// identifiants et renvois (par la file C pour la PR 7, `20261114-1425-c`),
+// puis signés par lui (porte 23). Une signature ne se pose jamais par l'outil : la déclaration du
 // responsable, après lecture du périmètre, précède la recopie de la date et
 // des empreintes ([[D-195]] §1-3).
 //
@@ -83,9 +84,270 @@ export type StructureBibliotheque = {
   optionsRetirees: readonly string[];
 };
 
+// LES SEIZE OPTIONS DE LA LISTE ADOPTÉE ([[D-521]], 2026-11-14) : proposition v1
+// adoptée par le responsable pour transcription, recopiée identifiants et renvois
+// seuls, sans rien ajouter ni corriger. NON SIGNÉE : les réserves de [[D-521]] §3
+// se lèvent avant la signature, qui reste le geste du responsable.
 export const BIBLIOTHEQUE_BESOIN2_V1: StructureBibliotheque = {
   besoin: 2,
-  options: [],
+  options: [
+    {
+      id: 'OPT_B2_001',
+      hypothese: 'HYP_VITD_1',
+      populations: ['POP_ADULTE'],
+      renvois: {
+        produit_statut_reglementaire: ['WN-CL-0239-008@v1.0'],
+        dose: ['information_manquante'],
+        duree: ['information_manquante'],
+        precautions: ['WN-CL-0513-009@v1.0'],
+        contre_indications: ['information_manquante'],
+        interactions: ['information_manquante'],
+        surveillance: ['WN-CL-0239-013@v1.0'],
+        critere_arret: ['information_manquante'],
+        role_praticien: ['WN-CL-0239-006@v1.0'],
+      },
+    },
+    {
+      id: 'OPT_B2_002',
+      hypothese: 'HYP_VITD_1',
+      populations: ['POP_ADULTE'],
+      renvois: {
+        produit_statut_reglementaire: ['WN-CL-0239-010@v1.0'],
+        dose: ['WN-CL-0239-010@v1.0'],
+        duree: ['information_manquante'],
+        precautions: ['WN-CL-0513-009@v1.0'],
+        contre_indications: ['information_manquante'],
+        interactions: ['WN-CL-0057-023@v1.0'],
+        surveillance: ['WN-CL-0239-010@v1.0', 'WN-CL-0239-013@v1.0'],
+        critere_arret: ['information_manquante'],
+        role_praticien: ['WN-CL-0239-010@v1.0'],
+      },
+    },
+    {
+      id: 'OPT_B2_003',
+      hypothese: 'HYP_VITD_1',
+      populations: ['POP_ADULTE'],
+      renvois: {
+        produit_statut_reglementaire: ['WN-CL-0239-011@v1.0'],
+        dose: ['WN-CL-0239-011@v1.0'],
+        duree: ['WN-CL-0239-011@v1.0'],
+        precautions: ['WN-CL-0513-009@v1.0'],
+        contre_indications: ['information_manquante'],
+        interactions: ['WN-CL-0057-023@v1.0'],
+        surveillance: ['WN-CL-0239-011@v1.0', 'WN-CL-0239-013@v1.0'],
+        critere_arret: ['information_manquante'],
+        role_praticien: ['WN-CL-0239-011@v1.0'],
+      },
+    },
+    {
+      id: 'OPT_B2_004',
+      hypothese: 'HYP_VITD_1',
+      populations: ['POP_ADULTE'],
+      renvois: {
+        produit_statut_reglementaire: ['WN-CL-0517-001@v1.0'],
+        dose: ['information_manquante'],
+        duree: ['information_manquante'],
+        precautions: ['WN-CL-0517-003@v1.0', 'WN-CL-0517-005@v1.0', 'WN-CL-0517-009@v1.0', 'WN-CL-0517-010@v1.0'],
+        contre_indications: ['WN-CL-0517-002@v1.0'],
+        interactions: ['WN-CL-0517-006@v1.0', 'WN-CL-0517-007@v1.0', 'WN-CL-0517-008@v1.0'],
+        surveillance: ['WN-CL-0517-005@v1.0', 'WN-CL-0517-007@v1.0'],
+        critere_arret: ['information_manquante'],
+        role_praticien: ['WN-CL-0517-005@v1.0', 'WN-CL-0517-009@v1.0', 'WN-CL-0517-010@v1.0'],
+      },
+    },
+    {
+      id: 'OPT_B2_005',
+      hypothese: 'HYP_ZINC_1',
+      populations: ['POP_ADULTE'],
+      renvois: {
+        produit_statut_reglementaire: ['WN-CL-0240-008@v1.0'],
+        dose: ['information_manquante'],
+        duree: ['information_manquante'],
+        precautions: ['WN-CL-0240-005@v1.0', 'WN-CL-0512-024@v1.0', 'WN-CL-0519-004@v1.0'],
+        contre_indications: ['information_manquante'],
+        interactions: ['WN-CL-0240-005@v1.0'],
+        surveillance: ['WN-CL-0523-002@v1.0'],
+        critere_arret: ['information_manquante'],
+        role_praticien: ['WN-CL-0240-003@v1.0'],
+      },
+    },
+    {
+      id: 'OPT_B2_006',
+      hypothese: 'HYP_ZINC_1',
+      populations: ['POP_ADULTE'],
+      renvois: {
+        produit_statut_reglementaire: ['WN-CL-0240-010@v1.0', 'WN-CL-0521-002@v1.0'],
+        dose: ['WN-CL-0240-013@v1.0'],
+        duree: ['WN-CL-0240-013@v1.0'],
+        precautions: ['WN-CL-0521-002@v1.0', 'WN-CL-0519-004@v1.0', 'WN-CL-0240-015@v1.0'],
+        contre_indications: ['information_manquante'],
+        interactions: ['WN-CL-0523-003@v1.0', 'WN-CL-0523-004@v1.0', 'WN-CL-0523-005@v1.0'],
+        surveillance: ['WN-CL-0240-015@v1.0', 'WN-CL-0523-002@v1.0'],
+        critere_arret: ['information_manquante'],
+        role_praticien: ['WN-CL-0240-003@v1.0', 'WN-CL-0240-015@v1.0'],
+      },
+    },
+    {
+      id: 'OPT_B2_007',
+      hypothese: 'HYP_MG_1',
+      populations: ['POP_ADULTE'],
+      renvois: {
+        produit_statut_reglementaire: ['WN-CL-0245-005@v1.0'],
+        dose: ['information_manquante'],
+        duree: ['information_manquante'],
+        precautions: ['WN-CL-0571-006@v1.0', 'WN-CL-0512-024@v1.0'],
+        contre_indications: ['information_manquante'],
+        interactions: ['information_manquante'],
+        surveillance: ['WN-CL-0573-001@v1.0'],
+        critere_arret: ['information_manquante'],
+        role_praticien: ['WN-CL-0242-009@v1.0'],
+      },
+    },
+    {
+      id: 'OPT_B2_008',
+      hypothese: 'HYP_MG_1',
+      populations: ['POP_ADULTE'],
+      renvois: {
+        produit_statut_reglementaire: ['WN-CL-0242-011@v1.0', 'WN-CL-0521-007@v1.0'],
+        dose: ['information_manquante'],
+        duree: ['information_manquante'],
+        precautions: ['WN-CL-0571-001@v1.0', 'WN-CL-0571-002@v1.0', 'WN-CL-0571-004@v1.0', 'WN-CL-0571-007@v1.0', 'WN-CL-0521-010@v1.0'],
+        contre_indications: ['WN-CL-0061-027@v1.0'],
+        interactions: ['WN-CL-0573-002@v1.0', 'WN-CL-0573-003@v1.0', 'WN-CL-0573-004@v1.0', 'WN-CL-0573-005@v1.0'],
+        surveillance: ['WN-CL-0573-001@v1.0'],
+        critere_arret: ['information_manquante'],
+        role_praticien: ['WN-CL-0242-009@v1.0', 'WN-CL-0521-007@v1.0'],
+      },
+    },
+    {
+      id: 'OPT_B2_009',
+      hypothese: 'HYP_MG_1',
+      populations: ['POP_ADULTE'],
+      renvois: {
+        produit_statut_reglementaire: ['WN-CL-0572-001@v1.0'],
+        dose: ['information_manquante'],
+        duree: ['WN-CL-0572-002@v1.0'],
+        precautions: ['WN-CL-0572-003@v1.0', 'WN-CL-0572-004@v1.0', 'WN-CL-0572-005@v1.0'],
+        contre_indications: ['WN-CL-0572-003@v1.0'],
+        interactions: ['WN-CL-0572-003@v1.0'],
+        surveillance: ['WN-CL-0572-002@v1.0', 'WN-CL-0572-005@v1.0'],
+        critere_arret: ['information_manquante'],
+        role_praticien: ['WN-CL-0572-002@v1.0'],
+      },
+    },
+    {
+      id: 'OPT_B2_010',
+      hypothese: 'HYP_B9_1',
+      populations: ['POP_ADULTE'],
+      renvois: {
+        produit_statut_reglementaire: ['WN-CL-0059-001@v1.0', 'WN-CL-0058-004@v1.0'],
+        dose: ['information_manquante'],
+        duree: ['information_manquante'],
+        precautions: ['WN-CL-0512-024@v1.0'],
+        contre_indications: ['information_manquante'],
+        interactions: ['information_manquante'],
+        surveillance: ['WN-CL-0577-001@v1.0'],
+        critere_arret: ['information_manquante'],
+        role_praticien: ['information_manquante'],
+      },
+    },
+    {
+      id: 'OPT_B2_011',
+      hypothese: 'HYP_B9_1',
+      populations: ['POP_ADULTE'],
+      renvois: {
+        produit_statut_reglementaire: ['WN-CL-0521-011@v1.0', 'WN-CL-0577-006@v1.0'],
+        dose: ['information_manquante'],
+        duree: ['information_manquante'],
+        precautions: ['WN-CL-0577-003@v1.0', 'WN-CL-0577-005@v1.0', 'WN-CL-0513-007@v1.0'],
+        contre_indications: ['information_manquante'],
+        interactions: ['WN-CL-0577-005@v1.0'],
+        surveillance: ['WN-CL-0058-028@v1.0', 'WN-CL-0153-010@v1.0'],
+        critere_arret: ['information_manquante'],
+        role_praticien: ['WN-CL-0577-005@v1.0', 'WN-CL-0521-011@v1.0'],
+      },
+    },
+    {
+      id: 'OPT_B2_012',
+      hypothese: 'HYP_B12_1',
+      populations: ['POP_ADULTE'],
+      renvois: {
+        produit_statut_reglementaire: ['WN-CL-0059-011@v1.0', 'WN-CL-0578-008@v1.0'],
+        dose: ['information_manquante'],
+        duree: ['information_manquante'],
+        precautions: ['WN-CL-0580-003@v1.0', 'WN-CL-0580-007@v1.0'],
+        contre_indications: ['information_manquante'],
+        interactions: ['WN-CL-0578-005@v1.0'],
+        surveillance: ['WN-CL-0579-002@v1.0'],
+        critere_arret: ['information_manquante'],
+        role_praticien: ['information_manquante'],
+      },
+    },
+    {
+      id: 'OPT_B2_013',
+      hypothese: 'HYP_B12_1',
+      populations: ['POP_ADULTE'],
+      renvois: {
+        produit_statut_reglementaire: ['WN-CL-0580-008@v1.0', 'WN-CL-0521-013@v1.0'],
+        dose: ['information_manquante'],
+        duree: ['information_manquante'],
+        precautions: ['WN-CL-0580-001@v1.0', 'WN-CL-0580-002@v1.0', 'WN-CL-0580-003@v1.0', 'WN-CL-0580-007@v1.0'],
+        contre_indications: ['information_manquante'],
+        interactions: ['WN-CL-0578-005@v1.0'],
+        surveillance: ['WN-CL-0580-009@v1.0', 'WN-CL-0580-011@v1.0'],
+        critere_arret: ['information_manquante'],
+        role_praticien: ['WN-CL-0580-008@v1.0', 'WN-CL-0580-009@v1.0', 'WN-CL-0580-011@v1.0'],
+      },
+    },
+    {
+      id: 'OPT_B2_014',
+      hypothese: 'HYP_B12_1',
+      populations: ['POP_ADULTE'],
+      renvois: {
+        produit_statut_reglementaire: ['information_manquante'],
+        dose: ['information_manquante'],
+        duree: ['WN-CL-0580-007@v1.0'],
+        precautions: ['WN-CL-0580-001@v1.0', 'WN-CL-0580-003@v1.0', 'WN-CL-0580-007@v1.0'],
+        contre_indications: ['information_manquante'],
+        interactions: ['information_manquante'],
+        surveillance: ['WN-CL-0580-009@v1.0', 'WN-CL-0580-011@v1.0'],
+        critere_arret: ['information_manquante'],
+        role_praticien: ['WN-CL-0580-007@v1.0', 'WN-CL-0580-009@v1.0', 'WN-CL-0580-011@v1.0'],
+      },
+    },
+    {
+      id: 'OPT_B2_015',
+      hypothese: 'HYP_SE_1',
+      populations: ['POP_ADULTE'],
+      renvois: {
+        produit_statut_reglementaire: ['WN-CL-0637-004@v1.0', 'WN-CL-0634-003@v1.0'],
+        dose: ['information_manquante'],
+        duree: ['information_manquante'],
+        precautions: ['WN-CL-0634-003@v1.0', 'WN-CL-0513-005@v1.0', 'WN-CL-0634-004@v1.0'],
+        contre_indications: ['information_manquante'],
+        interactions: ['information_manquante'],
+        surveillance: ['WN-CL-0634-001@v1.0', 'WN-CL-0634-002@v1.0'],
+        critere_arret: ['information_manquante'],
+        role_praticien: ['information_manquante'],
+      },
+    },
+    {
+      id: 'OPT_B2_016',
+      hypothese: 'HYP_SE_1',
+      populations: ['POP_ADULTE'],
+      renvois: {
+        produit_statut_reglementaire: ['WN-CL-0521-019@v1.0'],
+        dose: ['information_manquante'],
+        duree: ['information_manquante'],
+        precautions: ['WN-CL-0020-020@v1.0', 'WN-CL-0062-041@v1.0', 'WN-CL-0308-006@v1.0', 'WN-CL-0513-005@v1.0', 'WN-CL-0634-004@v1.0'],
+        contre_indications: ['information_manquante'],
+        interactions: ['WN-CL-0634-005@v1.0'],
+        surveillance: ['WN-CL-0020-020@v1.0', 'WN-CL-0062-041@v1.0', 'WN-CL-0634-001@v1.0', 'WN-CL-0634-002@v1.0'],
+        critere_arret: ['information_manquante'],
+        role_praticien: ['WN-CL-0308-006@v1.0', 'WN-CL-0634-005@v1.0', 'WN-CL-0521-020@v1.0'],
+      },
+    },
+  ],
   optionsRetirees: [],
 };
 
@@ -117,8 +379,8 @@ export type BibliothequeMetadata = {
 
 export const BIBLIOTHEQUE_BESOIN2_METADATA: BibliothequeMetadata = {
   version: 'bibliotheque-options-besoin2-v1',
-  // Non signée : la structure est vide (PR 3). La signature est le geste du
-  // responsable, à la PR 7.
+  // Non signée : la structure est transcrite ([[D-521]]) mais ses réserves ne
+  // sont pas levées. La signature est le geste du responsable.
   validationExterne: false,
   dateValidation: null,
   claimsSource: [],
