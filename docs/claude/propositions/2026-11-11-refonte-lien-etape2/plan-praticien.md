@@ -169,6 +169,14 @@ Rayons questionnaires, analyses biologiques, compléments, fiches conseils,
 connaissances ; atelier corpus ; règles et positions d'expert sans entrée
 tant que leur garde est fermée. Signature NABM sans « tout valider ».
 Titre de « Fiches conseils » ramené au niveau des autres rayons (h2).
+Prototype validé par écrit le 2026-11-14 (Q1 à Q13 en a ; Q1 a met les
+rayons en h1, Fiches conseils au même niveau qu'eux), complément DOC-13 de
+[[D-481]] ; textes T-67 à T-73 acceptés et inscrits dans [[D-488]] par
+DOC-13. Quatre PR, chacune reçue séparément : PR 1 questionnaires et envoi
+(P37-P39, confirmation de l'envoi aussi sur le Fil du jour) ; PR 2 biologie
+(P40-P43, [[D-326]] §2 strict) ; PR 3 compléments, fiches conseils,
+connaissances (P44-P46) ; PR 4 ateliers (P47-P50, revue `wn-reviewer` en
+plus).
 **Réception** : groupes et entrées conformes à PRA-1 ; aucun geste de lot
 implicite.
 

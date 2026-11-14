@@ -13,8 +13,9 @@ refusé laisse l'existant en place ; le lot qui le portait livre sans lui.
 
 Numérotation par famille, avec des trous voulus : praticien T-01 à T-19
 (T-16, « Aller au contenu », ajouté par DOC-1 dans [[D-488]] ; T-17 à T-19,
-textes du prototype PRA-2, ajoutés par DOC-6, §1.4) et T-60 à T-66
-(textes du prototype PRA-3b, ajoutés par DOC-8, §1.5),
+textes du prototype PRA-2, ajoutés par DOC-6, §1.4), T-60 à T-66
+(textes du prototype PRA-3b, ajoutés par DOC-8, §1.5) et T-67 à T-73
+(textes du prototype PRA-4, ajoutés par DOC-13, §1.6),
 rail patient T-21 à T-23, textes patient T-30 à T-34 ; T-35 est ajouté
 le 2026-11-12 comme proposition non acceptée pour U02. DOC-5 ajoute
 T-36 à T-39 ; DOC-7 inscrit T-40 à T-44 et T-48 (PAT-4), puis T-49/T-50
@@ -115,6 +116,33 @@ rétablies (Q9 a) ; emplacements neufs de T-17, du texte de relecture
 existant sous P28 et du message serveur de double arbitrage sous P19
 (Q17 a). Aucun texte de consentement, de droits ni de sécurité n'est
 touché ; chaque texte est posé par la PR de PRA-3b indiquée.
+
+### 1.6 Textes du prototype PRA-4 — acceptés (D-488)
+
+Le responsable accepte mot pour mot le 2026-11-14 (« Oui, tout accepté »)
+les textes du prototype PRA-4 (itération 2, version 4), variantes
+comprises, avec la validation du prototype (Q1 à Q13 en a). Inscription par
+DOC-13 dans [[D-488]], amendement du 2026-11-14 ; arbitrages en complément
+DOC-13 de [[D-481]]. Existant lu au commit `af70261c`, inchangé à
+`eb454046` (lignes recalées après #2130). Les accolades marquent une valeur insérée ; les apostrophes
+restent droites, comme au texte accepté.
+
+| Id | Proposé | Où | Sens | Existant | Lot | Statut |
+|---|---|---|---|---|---|---|
+| T-67 | La file d'envoi n'a pas pu être lue. | Bibliothèque, Questionnaires, « File d'envoi » (`components/BibliothequePanel.tsx:750`), suivi de T-17 | dit l'échec de lecture ; le vide reste réservé à une réponse saine | « La file est vide — ajoutez des questionnaires depuis l'aperçu. » sur un échec | PRA-4, PR 1 | **Accepté (D-488)** |
+| T-68 | Envoyer {N} questionnaires à {prénom} {nom} en un seul mail ? (N = 1 : « Envoyer le questionnaire « {titre} » à {prénom} {nom} ? ») | confirmation de « Envoyer (N) — un seul mail » : Bibliothèque (`components/BibliothequePanel.tsx:804`) et Fil du jour (`components/fil/FileEnvoiAside.tsx:148`), titres de la file dessous | ouvre la confirmation, n'envoie rien | aucun : envoi au premier clic | PRA-4, PR 1 | **Accepté (D-488)** |
+| T-69 | Confirmer l'envoi | bouton plein de la confirmation de T-68 | envoie en un seul mail ([[D-030]] inchangée) | aucun | PRA-4, PR 1 | **Accepté (D-488)** |
+| T-70 | Désactiver « {titre} » ? Il sera retiré du catalogue du cabinet. | confirmation de « Désactiver » un instrument (`components/BibliothequePanel.tsx:612`) | conséquence du message de succès en service ; ni irréversibilité ni réactivation suggérées | aucun : désactivation au premier clic | PRA-4, PR 1 | **Accepté (D-488)** |
+| T-71 | Soumettre {N} décisions ({X} validations, {Y} rejets) ? Chaque décision est enregistrée séparément. (terme à zéro omis ; N = 1 : « Soumettre 1 décision (1 validation) ? » ou « (1 rejet) ? », sans la seconde phrase ; un terme égal à 1 au singulier : « Soumettre 2 décisions (1 validation, 1 rejet) ? … ») | confirmation de « Soumettre les décisions (N) » (`components/corpus/AtelierCorpusPanel.tsx:1089`) | soumission non atomique, au contraire de la signature NABM | aucun : soumission au premier clic | PRA-4, PR 4 | **Accepté (D-488)** |
+| T-72 | Confirmer les décisions (N = 1 : « Confirmer la décision ») | bouton plein de la confirmation de T-71 | soumet une à une ; le résumé existant dit le résultat réel | aucun | PRA-4, PR 4 | **Accepté (D-488)** |
+| T-73 | Bibliothèque · claims validés du corpus | surtitre de Connaissances (`app/dashboard/bibliotheque/connaissances/page.tsx:19`) | statut interne de validation, pas une preuve définitive | « Bibliothèque · cognition, douleurs chroniques, axe intestin-cerveau » | PRA-4, PR 3 | **Accepté (D-488)** |
+
+Inscrits par le même amendement de [[D-488]] : emplacements neufs de T-17
+(sous T-67), de « Confirmer la désactivation » (confirmation de T-70) et de
+« Annuler » (confirmations de T-68, T-70, T-71) ; le résumé de la revue en
+lot reste inchangé après T-72. Aucun texte de consentement, de droits ni de
+sécurité n'est touché ; les textes de la signature NABM en lot restent mot
+pour mot ; chaque texte est posé par la PR de PRA-4 indiquée.
 
 ## 2. Patient
 
@@ -339,5 +367,5 @@ la session (Q9 a) se fait sans texte.
 
 | Plan | Textes à accepter avant le lot |
 |---|---|
-| Praticien | T-01 à T-05, T-07, T-10, T-12, T-13 (PRA-1) ; T-14, T-15 (PRA-3) ; T-16 (PRA-2a, inscrit par DOC-1) ; T-17 (PRA-2a), T-18, T-19 (PRA-2b), acceptés et inscrits dans D-488 par DOC-6 ; T-60 à T-66 (PRA-3b), acceptés et inscrits dans D-488 par DOC-8 |
+| Praticien | T-01 à T-05, T-07, T-10, T-12, T-13 (PRA-1) ; T-14, T-15 (PRA-3) ; T-16 (PRA-2a, inscrit par DOC-1) ; T-17 (PRA-2a), T-18, T-19 (PRA-2b), acceptés et inscrits dans D-488 par DOC-6 ; T-60 à T-66 (PRA-3b), acceptés et inscrits dans D-488 par DOC-8 ; T-67 à T-73 (PRA-4), acceptés et inscrits dans D-488 par DOC-13 |
 | Patient | T-21 à T-23, T-32 (PAT-1) ; T-31 (PAT-2) ; T-30 (PAT-3) ; T-33, T-34 (PAT-5), avec l'emplacement neuf de T-36 inscrit par DOC-9 (celui de la phrase vide de U28 retiré par DOC-10) ; T-36 à T-39 inscrits par DOC-5 ; emplacements neufs de T-36 et du message de session expirée inscrits par DOC-11 (PAT-6) ; T-40 à T-44, T-48 et nouvel emplacement T-36 inscrits par DOC-7 (PAT-4), T-49/T-50 inscrits pour Q5b ; T-51 et l'emplacement neuf de la mention de sécurité de U40 inscrits par DOC-12 (garde serveur, préalable de Q2a et Q3a) ; T-34 refusé, T-35 reste proposé, T-45 sans objet |
