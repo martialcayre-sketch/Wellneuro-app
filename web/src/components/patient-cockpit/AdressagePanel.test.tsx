@@ -160,3 +160,15 @@ describe('levée ouverte (D-257, LOT-04b) : la mention dit l’état réel', () 
     expect(screen.getByText(/ne lève pas encore/i)).toBeTruthy();
   });
 });
+
+describe('PRA-3b, PR 3 (Q2 a)', () => {
+  it('« Lettre d’adressage au médecin » est un h5, même texte, sous « Ce qui suspend la décision » (h4)', () => {
+    rendre();
+    expect(screen.getByRole('heading', { level: 5, name: 'Lettre d’adressage au médecin' })).toBeTruthy();
+  });
+
+  it('le paragraphe-intitulé devient titre aussi sans consultation porteuse', () => {
+    rendre({ sansConsultationPorteuse: true });
+    expect(screen.getByRole('heading', { level: 5, name: 'Lettre d’adressage au médecin' })).toBeTruthy();
+  });
+});

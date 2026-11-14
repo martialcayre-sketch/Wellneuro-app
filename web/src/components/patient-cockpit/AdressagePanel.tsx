@@ -76,7 +76,7 @@ export function AdressagePanel({
   if (sansConsultationPorteuse) {
     return (
       <div className="mt-4 rounded-lg border border-border bg-surface p-3">
-        <p className="text-sm font-medium text-foreground">Lettre d’adressage au médecin</p>
+        <h5 className="text-sm font-medium text-foreground">Lettre d’adressage au médecin</h5>
         <p className="mt-1 text-sm text-muted-foreground">
           Validez d’abord une consultation pour rédiger la lettre : elle ne couvre ces constats
           qu’une fois l’anamnèse validée.
@@ -87,7 +87,7 @@ export function AdressagePanel({
 
   return (
     <div className="mt-4 rounded-lg border border-border bg-surface p-3">
-      <p className="text-sm font-medium text-foreground">Lettre d’adressage au médecin</p>
+      <h5 className="text-sm font-medium text-foreground">Lettre d’adressage au médecin</h5>
       <p className="mt-1 text-xs text-muted-foreground">
         Établie à partir des signaux <strong>déclarés par le patient</strong> ci-dessus, dans un
         registre non prescriptif : l’appréciation de ces éléments, comme la conduite à tenir,
@@ -122,7 +122,7 @@ export function AdressagePanel({
         value={medecin}
         onChange={event => setMedecin(event.target.value)}
         placeholder="Dr Nicola"
-        className="min-h-11 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+        className="min-h-11 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
       />
       <button
         type="button"
@@ -132,7 +132,7 @@ export function AdressagePanel({
           setConsigneSans(medecin.trim());
           onEtablir(medecin.trim());
         }}
-        className="mt-2 min-h-11 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+        className="mt-2 min-h-11 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
       >
         Établir et consigner la lettre
       </button>
@@ -166,7 +166,7 @@ export function AdressagePanel({
               <button
                 type="button"
                 onClick={() => apercuRef.current?.contentWindow?.print()}
-                className="mt-2 min-h-11 rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground"
+                className="mt-2 min-h-11 rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
               >
                 Imprimer la lettre
               </button>
@@ -177,7 +177,7 @@ export function AdressagePanel({
             value={lettre.texte}
             rows={10}
             aria-label="Texte de la lettre à transcrire"
-            className="mt-2 w-full rounded-lg border border-border bg-background p-3 text-xs text-foreground"
+            className="mt-2 w-full rounded-lg border border-border bg-background p-3 text-xs text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
           />
         </div>
       )}

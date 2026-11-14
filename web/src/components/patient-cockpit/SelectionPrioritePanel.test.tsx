@@ -353,3 +353,15 @@ describe('SelectionPrioritePanel', () => {
     });
   });
 });
+
+describe('PRA-3b, PR 3 (Q2 a)', () => {
+  it('« Priorité retenue » est un h4 lisible : plus de petites capitales en text-xs', () => {
+    const { ecran } = rendre();
+    const titre = ecran.getByRole('heading', { level: 4, name: 'Priorité retenue' });
+    expect(titre.className).not.toContain('uppercase');
+    expect(titre.className).not.toContain('text-xs');
+    for (const bouton of ecran.getAllByRole('button')) {
+      expect(bouton.className).toContain('focus-visible:ring-2');
+    }
+  });
+});

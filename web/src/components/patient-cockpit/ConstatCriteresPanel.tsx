@@ -58,7 +58,7 @@ function FormulaireConstat({
         type="button"
         onClick={() => setOuvert(true)}
         disabled={disabled}
-        className="mt-2 min-h-11 rounded-lg border border-border px-3 py-2 text-sm text-foreground disabled:opacity-50"
+        className="mt-2 min-h-11 rounded-lg border border-border px-3 py-2 text-sm text-foreground disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
       >
         Revenir sur ce constat
       </button>
@@ -97,7 +97,7 @@ function FormulaireConstat({
           maxLength={2000}
           rows={2}
           disabled={disabled}
-          className="mt-1 w-full rounded-lg border border-border bg-surface p-2 text-sm text-foreground"
+          className="mt-1 w-full rounded-lg border border-border bg-surface p-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
         />
       </label>
       {/* Le bouton reste DÉSACTIVÉ tant qu'aucun des deux états n'est choisi :
@@ -107,7 +107,7 @@ function FormulaireConstat({
         type="button"
         onClick={() => present !== null && onConstater(critere.critereId, present, note)}
         disabled={disabled || present === null}
-        className="min-h-11 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+        className="min-h-11 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
       >
         Consigner le constat
       </button>
@@ -138,9 +138,10 @@ export function ConstatCriteresPanel({
       aria-labelledby="constat-criteres-title"
       className="rounded-xl border border-border bg-surface p-4"
     >
-      <h3 id="constat-criteres-title" className="text-sm font-semibold text-foreground">
+      {/* h4 sous la phase « Décision » (h3), PRA-3b Q2 a. */}
+      <h4 id="constat-criteres-title" className="text-sm font-semibold text-foreground">
         Critères cliniques du dossier
-      </h3>
+      </h4>
       <p className="mt-2 text-sm text-muted-foreground">
         Une règle peut être conditionnée à un critère. Tant qu’un critère n’est pas renseigné, la
         règle qui en dépend est refusée — non parce que le critère est absent, mais parce que
