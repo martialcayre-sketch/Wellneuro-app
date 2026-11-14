@@ -1,0 +1,4 @@
+### Documentation : dossier de preuve du besoin 5, étape 2 — lecture du corpus (D-312, H15, 2026-11-14)
+
+- Fragment de journal H15 `2026-11-14-07` : corpus lu en production, en lecture seule, sur neuf axes et la règle du guide. Aucun claim n'est étiqueté au besoin 5, les pièces des instruments n'ont aucun claim et les sources sont toutes internes. Onze sources externes du registre n'ont aucun passage en base. Aucun claim ne donne de seuil du repos ni ne fonde la règle du guide. Sans code.
+- Cinq manques posés en questions cliniques à la liste commune (file B, `20261114-2305-b` à `2309-b`), avec l'avis de Codex joint. Ils ont été tranchés le jour même : A, puis B contre la recommandation (publication primaire de l'Epworth), puis A, B, et B contre la recommandation (instrument de mobilité à chercher).
