@@ -25,3 +25,5 @@
 - **Dossier RGPD** : la sortie est déclarée en rubrique 6, avec l'écart
   d'information du patient, daté et choisi par le responsable (D-519 §6).
 - Aucune migration, aucun drapeau, aucune règle clinique ni aucun seuil.
+- Revue P0 : `wn-reviewer` (GO) et contre-revue Codex (D-505). Le P1 de
+  Codex est corrigé.

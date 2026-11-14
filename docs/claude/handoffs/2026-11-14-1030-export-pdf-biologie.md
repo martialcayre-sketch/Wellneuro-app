@@ -115,6 +115,10 @@ Quatre réponses du responsable, toutes en session.
   dépassé par D-512 : il parle encore de « votre âge » et d'« un numéro de
   dossier propre à l'application ». Hors lot.
 - Écart RGPD daté (D-519 §6), à lever avant toute reprise des envois.
+- Préexistant, relevé par `wn-reviewer` : `api/praticien/export-dossier/route.ts:120`
+  journalise `err.message`. La route des résultats l'interdit, car un message
+  Prisma peut porter des valeurs. Le passer à `signature(err)` au prochain
+  lot de l'export.
 
 ## Prochaine action exacte
 
