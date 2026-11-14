@@ -1404,7 +1404,8 @@ jobs:
       # Contrat des positions d'expert citées par les tables signées (D-480
       # §5.3, BP-17 PR 4) : le prédicat du préflight de production, joué sur
       # des fixtures neutres — position absente, sans acte, retirée, révisée ;
-      # une position courante et signée passe. Le contrat positif ne tourne
+      # claim d'appui absent, rejeté, en attente, désactivé, remplacé (D-525) ;
+      # une position courante et signée, à l'appui descriptif, passe. Le contrat positif ne tourne
       # pas ici (base vide). Transaction annulée.
       - name: Positions citees negative tests
         if: steps.scope.outputs.docs_only != 'true'
