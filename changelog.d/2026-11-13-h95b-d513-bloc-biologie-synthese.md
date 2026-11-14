@@ -11,7 +11,7 @@ cockpit praticien et exclus, par liste blanche, du document au médecin, du
 téléchargement au portail, des deux exports et de l'appel de priorité. Un
 contrôle de contamination bloque une synthèse dont un champ ordinaire
 recopie une forme biologique. Le texte patient ne dira que la réception d'un
-bilan daté. Consigne `synthese-v35` ; amende D-266 §4 (R5) et D-331 §6. Le
+bilan daté. Consigne `synthese-v36` (v35 étant prise par D-517) ; amende D-266 §4 (R5) et D-331 §6. Le
 flux vers l'IA sera déclaré au dossier RGPD, dans « Vos données
 personnelles » et dans les conditions d'utilisation avant son ouverture.
 Un drapeau propre au flux, créé éteint, ne garde que le bloc. Sa pose est
