@@ -173,7 +173,7 @@ describe('lecture au cockpit', () => {
     journal.mockRestore();
   });
 
-  it('dépôt réel : structure vide et non signée, drapeau éteint par défaut', async () => {
+  it('dépôt réel : structure non signée, drapeau éteint par défaut', async () => {
     const avant = process.env.WN_BIBLIOTHEQUE_OPTIONS_COCKPIT;
     delete process.env.WN_BIBLIOTHEQUE_OPTIONS_COCKPIT;
     try {

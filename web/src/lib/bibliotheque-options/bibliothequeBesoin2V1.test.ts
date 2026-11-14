@@ -81,13 +81,36 @@ const signeeSur = (structure: StructureBibliotheque): BibliothequeMetadata => {
 const signee = (metadata: BibliothequeMetadata, structure: StructureBibliotheque) =>
   bibliothequeSignee(metadata, structure, FU_SYNTH);
 
-describe('bibliothèque des options du besoin 2 — livrée vide et non signée (D-480 §3, §6)', () => {
-  it('épingle l’empreinte de la structure vide', () => {
-    expect(BIBLIOTHEQUE_BESOIN2_SHA256).toBe('c3113e329c2549d211dfceb0887a25e9c72c214952b3e348d6fc0cafd62375f4');
+describe('bibliothèque des options du besoin 2 — transcrite et non signée (D-480 §3, §6 ; D-521)', () => {
+  // L'empreinte de la liste adoptée, transcrite telle quelle (D-521 §2). Une
+  // retouche de la structure la change et se relit ; l'empreinte de la
+  // structure vide (PR 3) était c3113e32….
+  it('épingle l’empreinte de la structure transcrite', () => {
+    expect(BIBLIOTHEQUE_BESOIN2_SHA256).toBe('a73a9c7ad9248df4cbe03e4444f8515acbe307b152338a1e67eb4b059996094a');
   });
 
-  it('ne porte aucune option ni aucune signature : la signature est le geste du responsable (PR 7)', () => {
-    expect(BIBLIOTHEQUE_BESOIN2_V1).toEqual({ besoin: 2, options: [], optionsRetirees: [] });
+  it('porte les seize options de la liste adoptée, toutes adultes, aucune sur le fer ni aucune position citée', () => {
+    const options = BIBLIOTHEQUE_BESOIN2_V1.options;
+    expect(options.map(o => o.id)).toEqual(Array.from({ length: 16 }, (_, i) => `OPT_B2_${String(i + 1).padStart(3, '0')}`));
+    const parHypothese: Record<string, number> = {};
+    for (const o of options) parHypothese[o.hypothese] = (parHypothese[o.hypothese] ?? 0) + 1;
+    expect(parHypothese).toEqual({ HYP_VITD_1: 4, HYP_ZINC_1: 2, HYP_MG_1: 3, HYP_B9_1: 2, HYP_B12_1: 3, HYP_SE_1: 2 });
+    expect(options.every(o => o.populations.length === 1 && o.populations[0] === 'POP_ADULTE')).toBe(true);
+    expect(BIBLIOTHEQUE_BESOIN2_V1.optionsRetirees).toEqual([]);
+    const cites = sourcesCitees();
+    expect(cites.claims).toHaveLength(84);
+    expect(cites.positions).toEqual([]);
+    // Trois sources de dose, chacune citée aussi par une autre rubrique (D-521 §2) ;
+    // treize options déclarent la dose manquante.
+    const parUsage = claimsCitesParUsage();
+    expect(parUsage.dose).toHaveLength(3);
+    expect(parUsage.autres).toEqual(cites.claims);
+    expect(options.filter(o => o.renvois.dose[0] === 'information_manquante')).toHaveLength(13);
+    // Aucun critère d'arrêt documenté (D-521 §3, réserve 10).
+    expect(options.every(o => o.renvois.critere_arret.length === 1 && o.renvois.critere_arret[0] === 'information_manquante')).toBe(true);
+  });
+
+  it('ne porte aucune signature : la signature est le geste du responsable, après la levée des réserves (D-521 §3)', () => {
     expect(BIBLIOTHEQUE_BESOIN2_METADATA).toMatchObject({
       validationExterne: false,
       dateValidation: null,
@@ -383,7 +406,7 @@ describe('format de la structure (D-480 §1, §2, §4)', () => {
     });
     // Information manquante et position ne sont pas des claims.
     expect(claimsCitesParUsage(avec({}))).toEqual({ dose: [], autres: ['WN-CL-9999-001@v1.0'] });
-    expect(claimsCitesParUsage(BIBLIOTHEQUE_BESOIN2_V1)).toEqual({ dose: [], autres: [] });
+    expect(claimsCitesParUsage({ besoin: 2, options: [], optionsRetirees: [] })).toEqual({ dose: [], autres: [] });
     // Hors typage : jamais d'exception.
     expect(claimsCitesParUsage(null as unknown as StructureBibliotheque)).toEqual({ dose: [], autres: [] });
     expect(claimsCitesParUsage({ besoin: 2, options: [null, { renvois: { dose: 'x' } }], optionsRetirees: [] } as unknown as StructureBibliotheque)).toEqual({ dose: [], autres: [] });

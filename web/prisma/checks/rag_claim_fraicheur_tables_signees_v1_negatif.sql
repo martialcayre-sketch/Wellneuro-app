@@ -20,7 +20,7 @@
 -- version qu'elle n'a jamais relue. C'est la raison d'être de la jointure sur
 -- la paire.
 --
--- `N7` À `N15` GARDENT LES AUTRES LIGNES — contradictions, règles d'arrêt
+-- `N7` À `N17` GARDENT LES AUTRES LIGNES — contradictions, règles d'arrêt
 -- ([[D-053]]), priorités d'intervention ([[D-054]]), catalogue de conduites
 -- ([[D-224]], ajouté le jour où la table entre au contrat : une revue a constaté
 -- que ses deux paires n'étaient exercées qu'à l'état SAIN), registre des
@@ -29,8 +29,9 @@
 -- fiches d'usage ([[D-401]], ajouté sur la contre-revue du lot), puis
 -- portes biologiques et indications d'assiette (`N13`, `N14`, le même jour :
 -- la comparaison qui a fait écrire `N12` a montré qu'elles n'avaient pas le
--- leur), et indications de biologie (`N15`, entrée au contrat avec son cas,
--- [[D-419]]). La liste des tables du contrat et celle des cas `N7+` se
+-- leur), indications de biologie (`N15`, entrée au contrat avec son cas,
+-- [[D-419]]), et les deux tables de la bibliothèque des options (`N16` pour
+-- la table de dose, qui exige le prescriptif, `N17` pour l'autre, [[D-521]]). La liste des tables du contrat et celle des cas `N7+` se
 -- comparent à l'œil, table par table : depuis le 2026-11-01, chaque table a son
 -- cas.
 -- N1 à N6 mutent tous un claim d'ORIENTATION : sans
@@ -924,7 +925,101 @@ BEGIN
     ('WN-CL-0651-002', 'v1.0', 'fiches_usage', false),
     ('WN-CL-0651-003', 'v1.0', 'fiches_usage', false),
     ('WN-CL-0651-004', 'v1.0', 'fiches_usage', false),
-    ('WN-CL-0651-005', 'v1.0', 'fiches_usage', false)
+    ('WN-CL-0651-005', 'v1.0', 'fiches_usage', false),
+    -- Bibliothèque des options du besoin 2 ([[D-480]] §5.2, [[D-521]]) : deux
+    -- tables selon l'USAGE. `bibliotheque_options` reçoit les claims qu'une
+    -- rubrique autre que la dose cite (`exige_prescriptif = false`, D-046) ;
+    -- `bibliotheque_options_dose` ceux que la rubrique `dose` cite comme source
+    -- (`exige_prescriptif = true`, D-044). Un même claim cité des deux façons
+    -- figure dans les deux. Copie de `claimsCitesParUsage()` : le banc refuse
+    -- qu'elles divergent.
+    ('WN-CL-0020-020', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0057-023', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0058-004', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0058-028', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0059-001', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0059-011', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0061-027', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0062-041', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0153-010', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0239-006', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0239-008', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0239-010', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0239-011', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0239-013', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0240-003', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0240-005', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0240-008', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0240-010', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0240-013', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0240-015', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0242-009', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0242-011', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0245-005', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0308-006', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0512-024', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0513-005', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0513-007', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0513-009', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0517-001', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0517-002', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0517-003', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0517-005', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0517-006', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0517-007', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0517-008', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0517-009', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0517-010', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0519-004', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0521-002', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0521-007', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0521-010', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0521-011', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0521-013', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0521-019', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0521-020', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0523-002', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0523-003', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0523-004', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0523-005', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0571-001', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0571-002', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0571-004', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0571-006', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0571-007', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0572-001', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0572-002', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0572-003', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0572-004', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0572-005', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0573-001', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0573-002', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0573-003', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0573-004', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0573-005', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0577-001', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0577-003', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0577-005', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0577-006', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0578-005', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0578-008', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0579-002', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0580-001', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0580-002', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0580-003', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0580-007', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0580-008', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0580-009', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0580-011', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0634-001', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0634-002', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0634-003', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0634-004', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0634-005', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0637-004', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0239-010', 'v1.0', 'bibliotheque_options_dose', true),
+    ('WN-CL-0239-011', 'v1.0', 'bibliotheque_options_dose', true),
+    ('WN-CL-0240-013', 'v1.0', 'bibliotheque_options_dose', true)
   ) AS e(claim_id, version_claim, table_signee, exige_prescriptif)
   -- La jointure porte sur LA PAIRE. Joindre sur `claim_id` seul laisserait une
   -- table signée s'appuyer sur une version du claim qui n'est pas celle qu'elle
@@ -1792,7 +1887,94 @@ BEGIN
     ('WN-CL-0651-002', 'v1.0', 'fiches_usage', false),
     ('WN-CL-0651-003', 'v1.0', 'fiches_usage', false),
     ('WN-CL-0651-004', 'v1.0', 'fiches_usage', false),
-    ('WN-CL-0651-005', 'v1.0', 'fiches_usage', false)
+    ('WN-CL-0651-005', 'v1.0', 'fiches_usage', false),
+    ('WN-CL-0020-020', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0057-023', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0058-004', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0058-028', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0059-001', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0059-011', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0061-027', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0062-041', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0153-010', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0239-006', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0239-008', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0239-010', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0239-011', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0239-013', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0240-003', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0240-005', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0240-008', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0240-010', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0240-013', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0240-015', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0242-009', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0242-011', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0245-005', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0308-006', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0512-024', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0513-005', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0513-007', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0513-009', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0517-001', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0517-002', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0517-003', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0517-005', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0517-006', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0517-007', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0517-008', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0517-009', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0517-010', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0519-004', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0521-002', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0521-007', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0521-010', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0521-011', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0521-013', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0521-019', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0521-020', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0523-002', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0523-003', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0523-004', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0523-005', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0571-001', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0571-002', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0571-004', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0571-006', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0571-007', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0572-001', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0572-002', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0572-003', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0572-004', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0572-005', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0573-001', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0573-002', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0573-003', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0573-004', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0573-005', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0577-001', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0577-003', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0577-005', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0577-006', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0578-005', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0578-008', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0579-002', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0580-001', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0580-002', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0580-003', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0580-007', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0580-008', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0580-009', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0580-011', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0634-001', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0634-002', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0634-003', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0634-004', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0634-005', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0637-004', 'v1.0', 'bibliotheque_options', false),
+    ('WN-CL-0239-010', 'v1.0', 'bibliotheque_options_dose', true),
+    ('WN-CL-0239-011', 'v1.0', 'bibliotheque_options_dose', true),
+    ('WN-CL-0240-013', 'v1.0', 'bibliotheque_options_dose', true)
   ) AS e(claim_id, version_claim, table_signee, exige_prescriptif)
   -- UN CLAIM ÉPINGLÉ PAR DEUX TABLES NE FAIT QU'UNE LIGNE DE DÉCOR. Le décor
   -- n'avait jamais eu à le faire avant [[D-236]] — `WN-CL-0287-009` est le
@@ -2123,7 +2305,39 @@ BEGIN
     RAISE EXCEPTION 'negatif N15: la ligne indications_biologie n''est gardee par rien — %', msg;
   END IF;
 
-  RAISE NOTICE 'fraicheur des claims epingles negatif: 15 formes de rupture detectees, 1 corpus sain (dont un claim de contradiction, cinq claims d''arret, vingt claims de priorites, quatorze claims de conduites, deux claims de conflits de sources, huit claims de portes biologiques, dix-neuf claims d''indications d''assiette, vingt-neuf claims d''indications de biologie et 599 claims de fiches d''usage non exiges prescriptifs) laisse passer.';
+  -- ── N16 — LA LIGNE `bibliotheque_options_dose` EXIGE LE PRESCRIPTIF ───────
+  -- Trois paires ([[D-480]] §5.2, [[D-521]]) : la seule table neuve qui exige
+  -- `prescriptif` ([[D-044]]). Le claim muté est épinglé dans les deux tables
+  -- de la bibliothèque, l'une qui exige le prescriptif et l'autre non. Rendu
+  -- non prescriptif, il doit lever sous la table qui l'exige, et sous elle
+  -- SEULE : l'exemption de [[D-046]] reste bornée à la table qui ne prescrit
+  -- pas (`wn-reviewer` sur la PR 7 de BP-17).
+  a_leve := false; msg := '';
+  BEGIN
+    UPDATE public.rag_corpus_claims SET prescriptif = false WHERE claim_id = 'WN-CL-0239-010';
+    PERFORM pg_temp.predicat_fraicheur_claims();
+  EXCEPTION WHEN SQLSTATE 'WN001' THEN a_leve := true; msg := SQLERRM;
+  END;
+  IF NOT a_leve OR position('WN-CL-0239-010' in msg) = 0 OR position('[bibliotheque_options_dose]' in msg) = 0
+     OR position('non prescriptif' in msg) = 0 OR position('[bibliotheque_options]' in msg) <> 0 THEN
+    RAISE EXCEPTION 'negatif N16: la ligne bibliotheque_options_dose n''exige pas le prescriptif — %', msg;
+  END IF;
+
+  -- ── N17 — LA LIGNE `bibliotheque_options` EST GARDÉE, ELLE AUSSI ──────────
+  -- Quatre-vingt-quatre paires ([[D-521]]). Patron de `N12`, la version ; le
+  -- claim muté, `WN-CL-0239-013`, n'est épinglé par aucune autre table.
+  a_leve := false; msg := '';
+  BEGIN
+    UPDATE public.rag_corpus_claims SET version_claim = 'v2.0' WHERE claim_id = 'WN-CL-0239-013';
+    PERFORM pg_temp.predicat_fraicheur_claims();
+  EXCEPTION WHEN SQLSTATE 'WN001' THEN a_leve := true; msg := SQLERRM;
+  END;
+  IF NOT a_leve OR position('WN-CL-0239-013' in msg) = 0 OR position('[bibliotheque_options]' in msg) = 0
+     OR position('absent du corpus' in msg) = 0 THEN
+    RAISE EXCEPTION 'negatif N17: la ligne bibliotheque_options n''est gardee par rien — %', msg;
+  END IF;
+
+  RAISE NOTICE 'fraicheur des claims epingles negatif: 17 formes de rupture detectees, 1 corpus sain (dont un claim de contradiction, cinq claims d''arret, vingt claims de priorites, quatorze claims de conduites, deux claims de conflits de sources, huit claims de portes biologiques, dix-neuf claims d''indications d''assiette, vingt-neuf claims d''indications de biologie, 599 claims de fiches d''usage et quatre-vingt-quatre claims de la bibliotheque des options non exiges prescriptifs, et trois claims de dose de la bibliotheque exiges prescriptifs) laisse passer.';
 END $$;
 
 ROLLBACK;

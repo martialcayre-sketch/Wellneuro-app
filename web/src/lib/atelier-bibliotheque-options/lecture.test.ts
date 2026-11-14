@@ -68,9 +68,9 @@ describe('assemblage de l’atelier (D-480 §3)', () => {
     expect(atelier.horsStructure[0].rubriques.every(r => r.etat.etat === 'hors_structure')).toBe(true);
   });
 
-  it('le dépôt : structure du besoin 2 encore vide et non signée — l’atelier ne liste aucune option', () => {
+  it('le dépôt : structure du besoin 2 transcrite et non signée (D-521) — l’atelier liste ses seize options', () => {
     const depot = contexteDuDepot();
-    expect(depot.options).toEqual([]);
+    expect(depot.options).toHaveLength(16);
     expect(depot.etatStructure).toBe('non_signee');
     expect(depot.empreinteStructure).toMatch(/^[0-9a-f]{64}$/);
   });
