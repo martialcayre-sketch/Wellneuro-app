@@ -50,6 +50,9 @@ import {
 const PATIENT_ID = 'PAT_SEED_02';
 const PATIENT_EMAIL = 'jennifer.martin@fictif.wellneuro.fr';
 
+/** Le segment de la page qui envoie, comme le portail le joint ([[D-481]] DOC-12). */
+const DOSSIER_DE_LA_PAGE = { 'x-wn-dossier-page': PATIENT_ID };
+
 const MOTIF_SELECTION =
   'Parcours E2E — priorité retenue pour éprouver la désignation, aucune portée clinique.';
 
@@ -227,6 +230,7 @@ test.describe('Signalement d’effet indésirable — la désignation, de la rou
 
     const depot = await page.request.post('/api/portail/trust/signalement', {
       data: signalement({ rattachement: 'element', elementActionId: choisi, versionProgramme }),
+      headers: DOSSIER_DE_LA_PAGE,
     });
     const corps = await depot.text();
     expect(depot.status(), `dépôt refusé — corps : ${corps}`).toBe(200);
@@ -247,6 +251,7 @@ test.describe('Signalement d’effet indésirable — la désignation, de la rou
     // l'erreur technique que la base aurait rendue.
     const depot = await page.request.post('/api/portail/trust/signalement', {
       data: signalement({ rattachement: 'element', elementActionId: ELEMENT_ABSENT, versionProgramme }),
+      headers: DOSSIER_DE_LA_PAGE,
     });
     expect(depot.status()).toBe(400);
     // Le message, pas seulement le motif : `invalid_payload` sert aussi au

@@ -1,6 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { useParams } from 'next/navigation';
+import { enTeteDossierPage, estRefusAutreDossier } from '@/lib/portail/dossierPage';
 import { formaterDatePeriode, valeurDatePeriode } from '@/lib/physio-traitements/dates';
 import {
   BLOCS_PATIENT,
@@ -160,6 +162,8 @@ export function DeclarationsPatient({
    */
   onSessionExpiree?: () => void;
 }) {
+  // Le segment de la page `/portail/[token]` (entrée U07 ou fiche U35).
+  const params = useParams<{ token?: string }>();
   const [donnees, setDonnees] = useState<Ouverte | null>(null);
   const [illisible, setIllisible] = useState(false);
   // L'ancre dit où le message s'affiche : la question, la ligne ou le
@@ -223,12 +227,17 @@ export function DeclarationsPatient({
     try {
       const res = await fetch('/api/portail/physio-traitements', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        // Le segment de la page : la route refuse (409, T-51, affiché à
+        // l'endroit du geste) s'il n'est pas le dossier de la session.
+        headers: { 'Content-Type': 'application/json', ...enTeteDossierPage(params?.token) },
         body: JSON.stringify(corps),
       });
-      const data = (await res.json()) as { ok: boolean; error?: string };
+      const data = (await res.json()) as { ok: boolean; reason?: string; error?: string };
       if (data.ok) setEdition(null);
       else setMessage({ texte: data.error ?? 'Votre demande n’a pas pu être enregistrée.', ancre });
+      // Rien n'est parti : pas de relecture, qui rendrait les lignes de l'autre
+      // compte ; la saisie reste en place ([[D-481]] DOC-12).
+      if (estRefusAutreDossier(res.status, data)) return;
       // Sur la page de la fiche, un enregistrement refusé en 401 ne se relit
       // pas : la relecture échouerait aussi et renverrait à l'entrée (Q4 a),
       // emportant la saisie que l'échec doit garder.

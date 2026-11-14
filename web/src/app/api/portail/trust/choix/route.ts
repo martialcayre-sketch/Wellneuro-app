@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { MESSAGE_CADENCE_PATIENT, cadenceAtteinte } from '@/lib/securite/cadenceEcritures';
-import { authentifierPatientPortail } from '@/lib/trust/portailAuth';
+import { authentifierPatientPortail, refusAutreDossier } from '@/lib/trust/portailAuth';
 import { getDocumentCourant } from '@/lib/trust/contenus/registre';
 import { FORMULATION_CHOIX_VERSION, traceFormulationActive } from '@/lib/trust/finalitesChoix';
 import type { FinaliteChoix, StatutChoix } from '@/lib/trust/types';
@@ -36,6 +36,9 @@ export async function POST(req: Request): Promise<NextResponse<TrustChoixRespons
   const auth = await authentifierPatientPortail(req);
   if (auth.erreur) return auth.erreur as NextResponse<TrustChoixResponse>;
   const { patient } = auth;
+  // Le dossier de la page ([[D-481]], DOC-12) : après 401/403, avant le verrou.
+  const autreDossier = refusAutreDossier(req, patient.idPatient);
+  if (autreDossier) return autreDossier as NextResponse<TrustChoixResponse>;
 
   try {
     const resultat = await prisma.$transaction(async (tx) => {

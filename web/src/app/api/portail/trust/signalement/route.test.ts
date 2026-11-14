@@ -15,6 +15,7 @@ vi.mock('@/lib/trust/notification', () => ({ notifierPraticienSignalement, premi
 
 import { signPatientSession } from '@/lib/patient-session';
 import { POST } from './route';
+import { EN_TETE_DOSSIER_PAGE, MESSAGE_AUTRE_DOSSIER } from '@/lib/portail/dossierPage';
 
 const patient = {
   idPatient: 'PAT_TEST',
@@ -26,14 +27,23 @@ const patient = {
   praticienEmail: 'praticien@wellneuro.fr',
 };
 
-function request(body: object): Request {
+/**
+ * `segment` : celui de la page qui envoie ; `null` : en-tête absent. Défaut : le
+ * dossier de la session. `session: false` : sans cookie.
+ */
+function request(body: object, opts: { segment?: string | null; session?: boolean } = {}): Request {
   const cookie = signPatientSession({
     idPatient: patient.idPatient,
     email: patient.email
   });
+  const segment = opts.segment === undefined ? patient.idPatient : opts.segment;
   return new Request('http://localhost/api/portail/trust/signalement', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', cookie: `wn_portail=${encodeURIComponent(cookie)}` },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(opts.session === false ? {} : { cookie: `wn_portail=${encodeURIComponent(cookie)}` }),
+      ...(segment === null ? {} : { [EN_TETE_DOSSIER_PAGE]: segment }),
+    },
     body: JSON.stringify({ ...body }),
   });
 }
@@ -46,6 +56,53 @@ describe('POST /api/portail/trust/signalement', () => {
     prisma.trustAdverseEffectReport.create.mockResolvedValue({});
     prisma.trustPrivacyIncident.create.mockResolvedValue({});
     prisma.trustRightsRequest.create.mockResolvedValue({});
+  });
+
+  describe('garde du dossier de la page (D-481, DOC-12)', () => {
+    const SEVERE = {
+      categorie: 'effet_indesirable',
+      produitLibelle: 'Complément X',
+      symptomes: 'Palpitations',
+      severiteDeclaree: 'severe',
+    };
+    const rienEcritNiNotifie = () => {
+      expect(prisma.trustAdverseEffectReport.create).not.toHaveBeenCalled();
+      expect(prisma.trustPrivacyIncident.create).not.toHaveBeenCalled();
+      expect(prisma.trustRightsRequest.create).not.toHaveBeenCalled();
+      expect(notifierPraticienSignalement).not.toHaveBeenCalled();
+      expect(premierSignalementDeLHeure).not.toHaveBeenCalled();
+    };
+
+    it('page ouverte sous un autre dossier : 409 (T-51), ni orienté, ni écrit, ni notifié', async () => {
+      const response = await POST(request(SEVERE, { segment: 'PAT_AUTRE' }));
+      expect(response.status).toBe(409);
+      const corps = (await response.json()) as Record<string, unknown>;
+      expect(corps).toEqual({ ok: false, reason: 'autre_dossier', error: MESSAGE_AUTRE_DOSSIER });
+      rienEcritNiNotifie();
+    });
+
+    it('segment absent : 409, rien d’écrit ni notifié, pour chaque catégorie', async () => {
+      for (const corps of [
+        SEVERE,
+        { categorie: 'incident_confidentialite', categorieIncident: 'autre', description: 'x' },
+        { categorie: 'droit', typeDroit: 'acces', description: 'x' },
+      ]) {
+        expect((await POST(request(corps, { segment: null }))).status).toBe(409);
+      }
+      rienEcritNiNotifie();
+    });
+
+    it('401 et 403 passent avant la garde', async () => {
+      expect((await POST(request(SEVERE, { session: false, segment: 'PAT_AUTRE' }))).status).toBe(401);
+      prisma.patient.findUnique.mockResolvedValueOnce({ ...patient, accessTokenRevoked: true });
+      expect((await POST(request(SEVERE, { segment: 'PAT_AUTRE' }))).status).toBe(403);
+      rienEcritNiNotifie();
+    });
+
+    it('segment égal au dossier de la session, même encodé : accepté', async () => {
+      expect((await POST(request(SEVERE, { segment: encodeURIComponent(patient.idPatient) }))).status).toBe(200);
+      expect(prisma.trustAdverseEffectReport.create).toHaveBeenCalledTimes(1);
+    });
   });
 
   it('effet indésirable sévère : orientation urgence tracée avec la règle, message patient renvoyé, praticien notifié', async () => {

@@ -14,6 +14,7 @@ import type { DepotLu } from '@/lib/collecte/documentsDeposesServeur';
 import { PatientCard } from '@/components/patient/ui/PatientCard';
 import { PatientButton } from '@/components/patient/ui/PatientButton';
 import { PatientInlineMessage } from '@/components/patient/ui/PatientInlineMessage';
+import { enTeteDossierPage, estRefusAutreDossier, MESSAGE_AUTRE_DOSSIER } from '@/lib/portail/dossierPage';
 import { PatientErrorState } from '@/components/patient/PatientErrorState';
 import { DateNaissanceEcran } from '@/components/patient/DateNaissanceEcran';
 import { MESSAGE_CIRCUIT_MINEUR } from '@/lib/patient/gardeAge';
@@ -66,6 +67,8 @@ export function DepotDocuments({ token }: { token: string }) {
   const [cleFichier, setCleFichier] = useState(0);
   const [occupe, setOccupe] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
+  // Refus de la garde du dossier de la page ([[D-481]] DOC-12) : T-51 sous le bouton.
+  const [refusDossier, setRefusDossier] = useState(false);
   const [info, setInfo] = useState<string | null>(null);
   const annuleRef = useRef(false);
 
@@ -110,17 +113,24 @@ export function DepotDocuments({ token }: { token: string }) {
     }
     setOccupe(true);
     setErreur(null);
+    setRefusDossier(false);
     setInfo(null);
     try {
       const form = new FormData();
       form.append('categorie', categorie);
       form.append('fichier', fichier, 'document');
-      const res = await fetch('/api/portail/documents', { method: 'POST', body: form });
+      const res = await fetch('/api/portail/documents', { method: 'POST', body: form, headers: enTeteDossierPage(token) });
       if (res.status === 401) {
         router.replace(`/portail/${token}`);
         return;
       }
-      const data = (await res.json().catch(() => null)) as { ok?: boolean; error?: string } | null;
+      const data = (await res.json().catch(() => null)) as { ok?: boolean; reason?: string; error?: string } | null;
+      // Rien n'est parti : la page ne relit pas la liste, qui serait celle de
+      // l'autre compte, et garde le fichier choisi.
+      if (estRefusAutreDossier(res.status, data)) {
+        setRefusDossier(true);
+        return;
+      }
       if (!res.ok || !data?.ok) {
         setErreur(data?.error ?? 'Le document n’a pas pu être déposé. Réessayez.');
       } else {
@@ -212,6 +222,7 @@ export function DepotDocuments({ token }: { token: string }) {
                 <PatientButton onClick={() => void deposer()} disabled={!fichier} loading={occupe} loadingLabel="Envoi…">
                   {BOUTON_DEPOSER}
                 </PatientButton>
+                {refusDossier && <PatientInlineMessage tone="error">{MESSAGE_AUTRE_DOSSIER}</PatientInlineMessage>}
                 {/* L'encart d'urgence a quitté cet écran ([[D-293]] §3,
                     amendement du 2026-10-21) : les numéros sont au pied du
                     portail, le délai de lecture reste dit ici. */}

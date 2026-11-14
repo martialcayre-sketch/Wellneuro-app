@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { associationEffetIndesirableDisponible } from '@/lib/clinical/safetyEffetIndesirableV1';
 import { resolveProtocoleDiffuse } from '@/lib/protocol/portailProtocol';
-import { authentifierPatientPortail } from '@/lib/trust/portailAuth';
+import { authentifierPatientPortail, refusAutreDossier } from '@/lib/trust/portailAuth';
 import { orienterEffetIndesirable } from '@/lib/trust/securite';
 import { notifierPraticienSignalement, premierSignalementDeLHeure } from '@/lib/trust/notification';
 import { RATTACHEMENTS, elementsDesignablesParLePatient, type Rattachement } from '@/lib/trust/pauseEffetIndesirable';
@@ -126,6 +126,12 @@ export async function POST(req: Request): Promise<NextResponse<TrustSignalementR
   const auth = await authentifierPatientPortail(req);
   if (auth.erreur) return auth.erreur as NextResponse<TrustSignalementResponse>;
   const { patient } = auth;
+  // Le dossier de la page ([[D-481]], DOC-12, Q11 a) : après 401/403, avant
+  // toute orientation, écriture ou notification. Un signalement refusé ici
+  // irait dans le dossier d'un autre : il n'est ni orienté, ni enregistré, ni
+  // notifié, et la page redonne les numéros d'urgence sous T-51.
+  const autreDossier = refusAutreDossier(req, patient.idPatient);
+  if (autreDossier) return autreDossier as NextResponse<TrustSignalementResponse>;
 
   try {
     if (payload.categorie === 'effet_indesirable') {

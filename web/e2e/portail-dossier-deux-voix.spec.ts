@@ -41,9 +41,10 @@ const PATIENT = {
 };
 
 // Le segment d'URL n'est PAS un facteur d'authentification depuis le LOT-04 du
-// Socle : le cookie signé est l'unique credential. Une valeur littérale suffit
-// donc à construire le chemin.
-const JETON = 'jeton-de-parcours';
+// Socle : le cookie signé est l'unique credential.
+// Le segment de la page est l'`idPatient` de la session : sous un autre segment,
+// la page renvoie à l'entrée et les envois sont refusés ([[D-481]], DOC-12).
+const JETON = PATIENT.idPatient;
 
 test.describe.serial('Portail — mon dossier à deux voix', () => {
   let idObjectif = '';

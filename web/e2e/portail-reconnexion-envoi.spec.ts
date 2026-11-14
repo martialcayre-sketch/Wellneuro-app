@@ -36,7 +36,9 @@ const JENNIFER = { idPatient: 'PAT_SEED_02', email: 'jennifer.martin@fictif.well
 
 // Le segment d'URL n'est pas un facteur d'authentification : le cookie signé
 // est l'unique credential.
-const JETON = 'jeton-de-parcours';
+// Le segment de la page est l'`idPatient` de la session : sous un autre segment,
+// la page renvoie à l'entrée et les envois sont refusés ([[D-481]], DOC-12).
+const JETON = SOPHIE.idPatient;
 
 const TEXTE_DESACCORD = 'Ce que je voulais dire, c’est plutôt la fatigue du matin.';
 

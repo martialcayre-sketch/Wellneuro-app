@@ -1635,6 +1635,22 @@ export async function lireSignalementsDesignation(idPatient: string) {
 }
 
 /**
+ * Ce que les routes TRUST du portail ont écrit dans un dossier fictif : choix,
+ * effets indésirables, incidents, demandes de droits. Lecture seule — le spec de
+ * la garde du dossier de la page ([[D-481]] DOC-12) compare avant et après un
+ * envoi refusé, dans les deux dossiers.
+ */
+export async function compterEcrituresTrust(idPatient: string) {
+  const [choix, effets, incidents, droits] = await Promise.all([
+    prisma.trustChoiceEvent.count({ where: { idPatient } }),
+    prisma.trustAdverseEffectReport.count({ where: { idPatient } }),
+    prisma.trustPrivacyIncident.count({ where: { idPatient } }),
+    prisma.trustRightsRequest.count({ where: { idPatient } }),
+  ]);
+  return { choix, effets, incidents, droits };
+}
+
+/**
  * Une ligne rattachée à `elementActionId`, écrite EN CONTOURNANT LA ROUTE.
  * Rend le message de l'erreur levée, ou `null` si la base a accepté — et, dans
  * ce cas, efface la ligne aussitôt : le banc ne laisse pas un signalement que

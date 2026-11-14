@@ -5,6 +5,7 @@ import { PatientButton } from '@/components/patient/ui/PatientButton';
 import { PatientField, patientInputClassName } from '@/components/patient/ui/PatientField';
 import { PatientInlineMessage } from '@/components/patient/ui/PatientInlineMessage';
 import { PatientRegionAccuse } from '@/components/patient/ui/PatientRegionAccuse';
+import { enTeteDossierPage, estRefusAutreDossier, MESSAGE_AUTRE_DOSSIER } from '@/lib/portail/dossierPage';
 
 /**
  * « Signaler un problème » (TRUST LOT-03/04) — trois parcours structurés,
@@ -135,6 +136,25 @@ export function SignalerProbleme({
   );
 }
 
+// La mention de sécurité, inchangée : sur l'écran du choix, et sous T-51 quand
+// la garde du dossier de la page refuse un signalement ([[D-488]], DOC-12, Q11 a).
+const MENTION_SURVEILLANCE =
+  'Ces signalements ne sont pas surveillés en continu. En cas de symptôme grave ou inquiétant, contactez le 15 ou le 112 sans attendre.';
+
+/**
+ * Refus de la garde du dossier de la page (409, [[D-481]] DOC-12) : sous le
+ * bouton d'envoi, T-51 puis la mention de sécurité. Le signalement n'a été ni
+ * orienté ni transmis : les numéros d'urgence restent sous les yeux.
+ */
+function RefusAutreDossier() {
+  return (
+    <div className="space-y-2">
+      <PatientInlineMessage tone="error">{MESSAGE_AUTRE_DOSSIER}</PatientInlineMessage>
+      <p className="text-xs text-muted-foreground">{MENTION_SURVEILLANCE}</p>
+    </div>
+  );
+}
+
 function FormulaireSignalement({
   token, onConfirme, onEnvoye, focusAuMontage, associationDisponible, elementsProgramme, versionProgramme,
 }: {
@@ -151,6 +171,7 @@ function FormulaireSignalement({
   const [parcours, setParcours] = useState<Parcours | null>(null);
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState('');
+  const [refusDossier, setRefusDossier] = useState(false);
 
   // Champs effet indésirable.
   const [produit, setProduit] = useState('');
@@ -200,6 +221,7 @@ function FormulaireSignalement({
     setTypeDroit('');
     setDescription('');
     setErreur('');
+    setRefusDossier(false);
   };
 
   const annuler = () => {
@@ -209,14 +231,19 @@ function FormulaireSignalement({
 
   const envoyer = async (corps: Record<string, unknown>) => {
     setErreur('');
+    setRefusDossier(false);
     setEnvoi(true);
     try {
       const res = await fetch('/api/portail/trust/signalement', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...enTeteDossierPage(token) },
         body: JSON.stringify({ token, ...corps }),
       });
-      const data = (await res.json()) as { ok: boolean; error?: string; messagePatient?: string };
+      const data = (await res.json()) as { ok: boolean; reason?: string; error?: string; messagePatient?: string };
+      if (estRefusAutreDossier(res.status, data)) {
+        setRefusDossier(true);
+        return;
+      }
       if (!data.ok) {
         setErreur(data.error ?? 'Erreur. Réessayez.');
         return;
@@ -251,10 +278,7 @@ function FormulaireSignalement({
             {p.libelle} →
           </button>
         ))}
-        <p className="text-xs text-muted-foreground">
-          Ces signalements ne sont pas surveillés en continu. En cas de symptôme grave ou
-          inquiétant, contactez le 15 ou le 112 sans attendre.
-        </p>
+        <p className="text-xs text-muted-foreground">{MENTION_SURVEILLANCE}</p>
       </div>
     );
   }
@@ -375,6 +399,7 @@ function FormulaireSignalement({
           </PatientButton>
           <PatientButton variant="ghost" onClick={annuler}>Annuler</PatientButton>
         </div>
+        {refusDossier && <RefusAutreDossier />}
       </form>
     );
   }
@@ -417,6 +442,7 @@ function FormulaireSignalement({
           </PatientButton>
           <PatientButton variant="ghost" onClick={annuler}>Annuler</PatientButton>
         </div>
+        {refusDossier && <RefusAutreDossier />}
       </form>
     );
   }
@@ -456,6 +482,7 @@ function FormulaireSignalement({
         </PatientButton>
         <PatientButton variant="ghost" onClick={annuler}>Annuler</PatientButton>
       </div>
+      {refusDossier && <RefusAutreDossier />}
     </form>
   );
 }
