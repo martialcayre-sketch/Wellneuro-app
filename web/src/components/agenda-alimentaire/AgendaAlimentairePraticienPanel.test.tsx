@@ -396,6 +396,35 @@ describe('AgendaAlimentairePraticienPanel', () => {
 
   const LIBELLE_CLOTURE = 'Clôturer et verser au dossier';
 
+  // PRA-3b PR 8 (P59) : Q2 a, Q3 a, Q17 a.
+  it('le titre de l’épisode est un h3 ; la clôture est bordée, à 44 px, avec focus', async () => {
+    mockFetch([episode()]);
+    renderPret(<AgendaAlimentairePraticienPanel idPatient="PAT_1" />);
+    const bouton = await screen.findByRole('button', { name: LIBELLE_CLOTURE });
+    expect(screen.getByRole('heading', { level: 3, name: 'Agenda alimentaire — 21 jours' })).toBeTruthy();
+    expect(bouton.className).not.toContain('bg-primary ');
+    expect(bouton.className).toContain('border-primary');
+    expect(bouton.className).toContain('min-h-11');
+    expect(bouton.className).toContain('focus-visible:ring-focus-ring');
+  });
+
+  it('un échec de lecture se dit en alerte, avec « Réessayer » qui relit et rend le focus au panneau', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({ json: async () => ({ ok: false, error: 'Chargement impossible.' }) })
+      .mockResolvedValue({ json: async () => ({ ok: true, episodes: [episode()] }) });
+    vi.stubGlobal('fetch', fetchMock);
+    const { container } = renderPret(<AgendaAlimentairePraticienPanel idPatient="PAT_1" />);
+    const alerte = await screen.findByRole('alert');
+    expect(alerte.textContent).toContain('Chargement impossible.');
+    const reessayer = within(alerte).getByRole('button', { name: 'Réessayer' });
+    expect(reessayer.className).toContain('min-h-11');
+    fireEvent.click(reessayer);
+    await screen.findByRole('button', { name: LIBELLE_CLOTURE });
+    expect(screen.queryByText('Chargement impossible.')).toBeNull();
+    await waitFor(() => expect(document.activeElement).toBe(container.firstElementChild));
+  });
+
   it('le bouton de clôture n’apparaît que pour un épisode en cours avec au moins une journée', async () => {
     mockFetch([episode()]);
     renderPret(<AgendaAlimentairePraticienPanel idPatient="PAT_1" />);

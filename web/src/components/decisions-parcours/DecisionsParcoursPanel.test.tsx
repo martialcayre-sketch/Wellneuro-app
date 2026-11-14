@@ -72,6 +72,31 @@ describe('DecisionsParcoursPanel — un fil retiré', () => {
   });
 });
 
+// PRA-3b PR 8 (P60) : sous le titre du tiroir (h2), les deux parties sont des
+// h3 (h3 sauté jusqu'ici) ; boutons et champs portent l'anneau de focus.
+describe('DecisionsParcoursPanel — titres et focus', () => {
+  it('« Révision » et « Choix du patient et mise en œuvre » sont des h3 ; les boutons ont l’anneau de focus', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => LUES } as Response));
+    render(<DecisionsParcoursPanel idPatient="PAT1" />);
+    expect(await screen.findByRole('heading', { level: 3, name: 'Révision' })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 3, name: 'Choix du patient et mise en œuvre' })).toBeTruthy();
+    expect(screen.queryAllByRole('heading', { level: 4 })).toHaveLength(0);
+    for (const nom of ['Poser une révision', 'Ajouter une décision']) {
+      const bouton = screen.getByRole('button', { name: nom });
+      expect(bouton.className).toContain('min-h-11');
+      expect(bouton.className).toContain('focus-visible:ring-focus-ring');
+    }
+  });
+
+  it('« Réessayer » sous un échec de lecture porte l’anneau de focus', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ ok: false }) } as Response));
+    render(<DecisionsParcoursPanel idPatient="PAT1" />);
+    const bouton = await screen.findByRole('button', { name: 'Réessayer' });
+    expect(bouton.className).toContain('min-h-11');
+    expect(bouton.className).toContain('focus-visible:ring-focus-ring');
+  });
+});
+
 describe('DecisionsParcoursPanel — formulaire', () => {
   it('« Enregistrer » reste grisé tant qu’un champ obligatoire est vide', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => LUES } as Response));

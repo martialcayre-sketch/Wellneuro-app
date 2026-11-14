@@ -1,7 +1,13 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render } from '@testing-library/react';
-import { BarreNuit, ChronogrammeSommeil, portionsBarre } from './ChronogrammeSommeil';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import {
+  BarreNuit,
+  ChronogrammeSommeil,
+  pointsDepuisNuits,
+  portionsBarre,
+  Tooltipilote,
+} from './ChronogrammeSommeil';
 import type { NuitRow } from '@/lib/agenda-sommeil/types';
 
 // Constat B4 de la revue du 2026-07-28 : la barre s'arrêtait au réveil final au
@@ -131,6 +137,89 @@ describe('rendu', () => {
   it('la légende dit pourquoi l’éveil nocturne n’est pas dessiné', () => {
     const { container } = render(<ChronogrammeSommeil nuits={[nuit()]} />);
     expect(container.textContent).toContain('durée cumulée');
+  });
+});
+
+// Q6 b ([[D-481]], PRA-3b PR 8) : le chronogramme n'est masqué aux lecteurs
+// d'écran que parce que la liste « Voir les nuits une par une » (T-66) porte,
+// nuit par nuit, chaque rubrique de l'infobulle. Ce banc garde l'équivalence :
+// si la liste perd une rubrique, il rougit.
+describe('liste des nuits, équivalente à l’infobulle', () => {
+  const ligne = (dateNuit: string, reponses: Partial<NuitRow['reponses']>, contrat?: string): NuitRow => ({
+    ...nuit(reponses),
+    id: `n-${dateNuit}`,
+    dateNuit,
+    contrat,
+  });
+  // Une nuit par branche de chaque rubrique : extinction et essai de dormir,
+  // lever immédiat / réveil final / non renseigné, aide oui / aucune / non
+  // renseignée, éveil avec et sans compte / non renseigné, forme présente ou
+  // non, « rien de particulier », facteurs, commentaire, week-end.
+  const NUITS: NuitRow[] = [
+    ligne('2026-07-06', { forme: 3, facteurs: { rienDeParticulier: true } }),
+    ligne(
+      '2026-07-11', // samedi
+      {
+        heureCoucher: '00:00',
+        heureLever: '08:00',
+        latence: 'inconnu',
+        leverImmediat: false,
+        heureReveilFinal: '07:15',
+        aideSommeil: 'prise',
+        reveils: { dureeTotale: 'e15_30', nombre: 2 },
+        facteurs: { cafeApres14h: true, stress: true },
+        commentaire: 'Réveillée par un orage, rendormie difficilement.',
+      },
+      'agenda-sommeil-v4',
+    ),
+    ligne('2026-07-13', { leverImmediat: undefined, aideSommeil: undefined, reveils: undefined, latence: 'e30_60' }),
+  ];
+
+  const textes = (racine: Element | null) =>
+    Array.from(racine?.querySelectorAll('p') ?? []).map((p) => p.textContent ?? '');
+
+  it('chaque nuit de la liste porte exactement les rubriques de son infobulle, dans le même ordre', () => {
+    const points = pointsDepuisNuits(NUITS);
+    const { container } = render(<ChronogrammeSommeil nuits={NUITS} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Voir les nuits une par une' }));
+    const items = container.querySelectorAll('ul > li');
+    expect(items).toHaveLength(NUITS.length);
+
+    points.forEach((p, i) => {
+      const bulle = render(<Tooltipilote active payload={[{ payload: p }]} />).container;
+      const attendu = textes(bulle.firstElementChild);
+      // Neuf rubriques au plus ; la nuit de week-end les porte toutes.
+      expect(attendu.length).toBeGreaterThanOrEqual(7);
+      expect(textes(items[i])).toEqual(attendu);
+    });
+    expect(textes(items[1])).toHaveLength(9);
+    expect(textes(items[1])[0]).toBe('Nuit 2 · week-end');
+  });
+
+  it('le graphe est masqué aux lecteurs d’écran, la liste ne l’est pas', () => {
+    const { container } = render(<ChronogrammeSommeil nuits={NUITS} />);
+    const masques = container.querySelectorAll('div[aria-hidden="true"]');
+    expect(masques).toHaveLength(1);
+    expect(masques[0].querySelector('.recharts-responsive-container')).not.toBeNull();
+    const liste = container.querySelector('ul');
+    expect(liste?.closest('[aria-hidden="true"]')).toBeNull();
+  });
+
+  it('le repli s’ouvre et se ferme, le focus reste sur le bouton', () => {
+    render(<ChronogrammeSommeil nuits={NUITS} />);
+    const bouton = screen.getByRole('button', { name: 'Voir les nuits une par une' });
+    const liste = document.getElementById(bouton.getAttribute('aria-controls')!);
+    expect(bouton.getAttribute('aria-expanded')).toBe('false');
+    expect(liste?.hidden).toBe(true);
+    bouton.focus();
+    fireEvent.click(bouton);
+    expect(bouton.getAttribute('aria-expanded')).toBe('true');
+    expect(liste?.hidden).toBe(false);
+    expect(document.activeElement).toBe(bouton);
+    fireEvent.click(bouton);
+    expect(liste?.hidden).toBe(true);
+    expect(bouton.className).toContain('min-h-11');
+    expect(bouton.className).toContain('focus-visible:ring-focus-ring');
   });
 });
 

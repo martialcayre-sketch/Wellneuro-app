@@ -95,3 +95,33 @@ describe('AgendaSommeilPraticienPanel — clôture d’un agenda trop court (LOT
     expect(screen.queryByText(/Clôturer quand même/)).toBeNull();
   });
 });
+
+// PRA-3b PR 8 (P58) : Q2 a, Q3 a, Q17 a.
+describe('AgendaSommeilPraticienPanel — titres, action bordée, « Réessayer »', () => {
+  it('le titre de l’épisode est un h3 ; « Clôturer et agréger » est bordé, à 44 px, avec focus', async () => {
+    fetchMock.mockImplementation(() => reponse({ ok: true, episodes: [episode(7)] }));
+    render(<AgendaSommeilPraticienPanel idPatient="PAT_1" />);
+    const bouton = await screen.findByRole('button', { name: 'Clôturer et agréger' });
+    expect(screen.getByRole('heading', { level: 3, name: 'Agenda du sommeil — 21 nuits' })).toBeTruthy();
+    expect(bouton.className).not.toContain('bg-primary ');
+    expect(bouton.className).toContain('border-primary');
+    expect(bouton.className).toContain('min-h-11');
+    expect(bouton.className).toContain('focus-visible:ring-focus-ring');
+  });
+
+  it('un échec de lecture se dit en alerte, avec « Réessayer » qui relit et rend le focus au panneau', async () => {
+    fetchMock
+      .mockImplementationOnce(() => reponse({ ok: false, error: 'Chargement impossible.' }))
+      .mockImplementation(() => reponse({ ok: true, episodes: [episode(7)] }));
+    const { container } = render(<AgendaSommeilPraticienPanel idPatient="PAT_1" />);
+    const alerte = await screen.findByRole('alert');
+    expect(alerte.textContent).toContain('Chargement impossible.');
+    const reessayer = screen.getByRole('button', { name: 'Réessayer' });
+    expect(reessayer.className).toContain('min-h-11');
+    fireEvent.click(reessayer);
+    await screen.findByRole('button', { name: 'Clôturer et agréger' });
+    // Le message d'échec ne survit pas à la relecture réussie.
+    expect(screen.queryByText('Chargement impossible.')).toBeNull();
+    await waitFor(() => expect(document.activeElement).toBe(container.firstElementChild));
+  });
+});

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { EpisodeAgenda } from '@/app/api/praticien/agenda-sommeil/route';
 import type { AgregatsAgenda } from '@/lib/agenda-sommeil/agregats';
 import { MIN_NUITS_AGREGATS, NB_JOURS_AGENDA } from '@/lib/agenda-sommeil/types';
@@ -10,6 +10,14 @@ import { ChronogrammeSommeil } from './ChronogrammeSommeil';
 // (avec chiffres) + clôture manuelle. Le score global et son interprétation
 // restent affichés par le tableau des réponses standard (la clôture y crée une
 // QuestionnaireReponse Q_SOM_09) ; ce panneau montre la matière brute.
+
+// Q3 a : une seule action pleine par zone — « Clôturer et agréger », un par
+// épisode en cours, devient bordé, comme « Clôturer quand même ». 44 px et
+// anneau de focus.
+const CLASSE_BORDE =
+  'inline-flex min-h-11 items-center rounded-lg border border-primary px-3 text-sm font-medium text-primary hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:opacity-50';
+const CLASSE_REESSAYER =
+  'min-h-11 shrink-0 rounded-lg border border-accent px-3 py-1 text-sm font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring';
 
 function minutesEnHeures(min: number): string {
   const h = Math.floor(min / 60);
@@ -185,8 +193,16 @@ export function AgendaSommeilPraticienPanel({ idPatient }: { idPatient: string }
   // dit avant d'être fait, avec ce qu'il ferme : la saisie du patient.
   const [aConfirmer, setAConfirmer] = useState<string | null>(null);
 
+  // « Réessayer » (T-17, Q17 a) : le focus revient au panneau une fois la
+  // relecture lue, réussie ou non — le bouton qui l'avait est démonté.
+  const racine = useRef<HTMLDivElement>(null);
+  const focusApresRelecture = useRef(false);
+
   const charger = useCallback(async () => {
     setEtat('chargement');
+    // Un message d'échec ne survit pas à une relecture réussie (même patron
+    // que le panneau alimentaire).
+    setMessage('');
     try {
       const res = await fetch(`/api/praticien/agenda-sommeil?idPatient=${encodeURIComponent(idPatient)}`);
       const json = (await res.json()) as { ok: boolean; episodes?: EpisodeAgenda[]; error?: string };
@@ -207,6 +223,18 @@ export function AgendaSommeilPraticienPanel({ idPatient }: { idPatient: string }
     void charger();
   }, [charger]);
 
+  useEffect(() => {
+    if (etat !== 'chargement' && focusApresRelecture.current) {
+      focusApresRelecture.current = false;
+      racine.current?.focus();
+    }
+  }, [etat]);
+
+  const relire = () => {
+    focusApresRelecture.current = true;
+    void charger();
+  };
+
   async function cloturer(idAssignation: string) {
     setAConfirmer(null);
     setClotureEnCours(idAssignation);
@@ -226,28 +254,45 @@ export function AgendaSommeilPraticienPanel({ idPatient }: { idPatient: string }
     }
   }
 
+  // Une seule racine pour tous les états : c'est elle qui reçoit le focus
+  // après « Réessayer ».
+  const enveloppe = (contenu: ReactNode) => (
+    <div ref={racine} tabIndex={-1} className="focus-visible:outline-none">
+      {contenu}
+    </div>
+  );
+
   if (etat === 'chargement') {
-    return <p className="text-sm text-muted-foreground">Chargement de l’agenda du sommeil…</p>;
+    return enveloppe(<p className="text-sm text-muted-foreground">Chargement de l’agenda du sommeil…</p>);
   }
   if (etat === 'erreur') {
-    return <p className="text-sm text-status-danger">{message}</p>;
+    return enveloppe(
+      <div role="alert" className="flex flex-wrap items-center gap-3 text-sm text-status-danger">
+        <span className="min-w-0">{message}</span>
+        <button type="button" onClick={relire} className={CLASSE_REESSAYER}>
+          Réessayer
+        </button>
+      </div>,
+    );
   }
   if (episodes.length === 0) {
-    return (
+    return enveloppe(
       <p className="text-sm text-muted-foreground">
         Aucun agenda du sommeil assigné à ce patient. Assignez l’instrument « Agenda du sommeil — 21 nuits ».
-      </p>
+      </p>,
     );
   }
 
-  return (
+  return enveloppe(
     <div className="flex flex-col gap-6">
       {message && <p className="text-sm text-status-danger">{message}</p>}
       {episodes.map((ep) => (
         <section key={ep.idAssignation} className="flex flex-col gap-3 rounded-lg border border-border bg-background p-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <p className="text-sm font-semibold text-foreground">{ep.titre}</p>
+              {/* Q2 a : l'intitulé de l'épisode devient titre, même texte
+                  (tiroir h2, puis h3). */}
+              <h3 className="text-sm font-semibold text-foreground">{ep.titre}</h3>
               <p className="text-xs text-muted-foreground">
                 {ep.statut === 'cloture' ? 'Clôturé' : 'En cours'} ·{' '}
                 {ep.fenetre.nbRenseignees} nuit{ep.fenetre.nbRenseignees > 1 ? 's' : ''} notée
@@ -262,7 +307,7 @@ export function AgendaSommeilPraticienPanel({ idPatient }: { idPatient: string }
                   ep.agregats === null ? setAConfirmer(ep.idAssignation) : cloturer(ep.idAssignation)
                 }
                 disabled={clotureEnCours === ep.idAssignation}
-                className="inline-flex min-h-9 items-center rounded-lg border border-primary bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                className={CLASSE_BORDE}
               >
                 {clotureEnCours === ep.idAssignation ? 'Clôture…' : 'Clôturer et agréger'}
               </button>
@@ -282,14 +327,14 @@ export function AgendaSommeilPraticienPanel({ idPatient }: { idPatient: string }
                 <button
                   type="button"
                   onClick={() => cloturer(ep.idAssignation)}
-                  className="inline-flex min-h-9 items-center rounded-lg border border-primary px-3 text-sm font-medium text-primary hover:bg-primary/10"
+                  className={CLASSE_BORDE}
                 >
                   Clôturer quand même
                 </button>
                 <button
                   type="button"
                   onClick={() => setAConfirmer(null)}
-                  className="inline-flex min-h-9 items-center rounded-lg border border-border px-3 text-sm text-foreground hover:bg-muted"
+                  className="inline-flex min-h-11 items-center rounded-lg border border-border px-3 text-sm text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                 >
                   Laisser l’agenda ouvert
                 </button>
@@ -315,6 +360,6 @@ export function AgendaSommeilPraticienPanel({ idPatient }: { idPatient: string }
           <ChronogrammeSommeil nuits={ep.nuits} />
         </section>
       ))}
-    </div>
+    </div>,
   );
 }
