@@ -190,6 +190,18 @@ const PHRASE_HORS_OPTIONS =
   + 'correspond à aucune option de la question : faute de savoir ce qu’elle dit, '
   + 'elle est traitée comme un adressage plutôt qu’ignorée.';
 
+// [[D-524]] (réponse 20261114-2146-a, option B) : la valeur hors options
+// d'une réponse d'un instrument du cabinet est jugée contre la COPIE prise à
+// l'envoi ; le patient a pu choisir une option réelle que la copie n'a pas.
+// Marque à part (¶), pour qu'une lettre qui cite aussi une réponse du
+// catalogue hors options garde à chacune son explication. Une lettre sans
+// réponse du cabinet ne la porte jamais : son texte est inchangé.
+const PHRASE_HORS_OPTIONS_CABINET =
+  'Pour une ou plusieurs des réponses ci-dessus (¶), la valeur enregistrée ne '
+  + 'correspond à aucune option de la question telle qu’elle a été copiée à '
+  + 'l’envoi : faute de pouvoir la relire dans cette copie, elle est traitée '
+  + 'comme un adressage plutôt qu’ignorée.';
+
 const PHRASE_ABSTENTION =
   'Dans l’attente de votre appréciation, je n’ai formulé aucune proposition '
   + 'de priorité ni d’accompagnement pour ce dossier.';
@@ -210,7 +222,8 @@ export function genererCourrierAdressage(
 
   const dateLisible = entree.dateCourrier.slice(0, 10);
   const horsCotation = retenus.some(signal => !signal.cote);
-  const horsOptions = reponses.some(reponse => reponse.lecture.kind === 'hors_options');
+  const horsOptions = reponses.some(reponse => !reponse.cabinet && reponse.lecture.kind === 'hors_options');
+  const horsOptionsCabinet = reponses.some(reponse => reponse.cabinet && reponse.lecture.kind === 'hors_options');
   const avecQuestionnaire = reponses.length > 0;
   // [[D-515]] §5 : une réponse d'un instrument du cabinet est citée depuis la
   // copie, marquée (§), sous la mention qui la dit écrite par le praticien.
@@ -241,7 +254,7 @@ export function genererCourrierAdressage(
           .map(reponse => {
             const citee = reponse.lecture.kind === 'option'
               ? `« ${reponse.lecture.libelle} »`
-              : 'valeur hors des options de la question (‡)';
+              : `valeur hors des options de la question (${reponse.cabinet ? '¶' : '‡'})`;
             return reponse.cabinet
               ? `— questionnaire « ${reponse.instrument} » (§), passation du ${reponse.date},`
                 + ` question « ${reponse.cabinet.enonce || reponse.idQuestion} » : ${citee}`
@@ -255,6 +268,7 @@ export function genererCourrierAdressage(
     !avecQuestionnaire ? PHRASE_DECLARE : retenus.length === 0 ? PHRASE_DECLARE_QUESTIONNAIRE : PHRASE_DECLARE_MIXTE,
     ...(horsCotation ? [PHRASE_HORS_COTATION] : []),
     ...(horsOptions ? [PHRASE_HORS_OPTIONS] : []),
+    ...(horsOptionsCabinet ? [PHRASE_HORS_OPTIONS_CABINET] : []),
     ...(avecCabinet ? [`(§) ${MENTION_QUESTIONNAIRE_CABINET}`] : []),
     PHRASE_ABSTENTION,
     INFORMATION_MEDECIN,

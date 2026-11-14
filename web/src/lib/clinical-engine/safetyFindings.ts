@@ -23,6 +23,7 @@ import {
 } from '@/lib/clinical/safetyQuestionnaireV1';
 import {
   LIMITATION_QUESTIONNAIRE_CABINET_DESIGNATION_INCONNUE,
+  LIMITATION_QUESTIONNAIRE_CABINET_HORS_OPTIONS,
   LIMITATION_QUESTIONNAIRE_CABINET_ILLISIBLE,
   MENTION_QUESTIONNAIRE_CABINET,
   REGLE_SECURITE_QUESTIONNAIRE_CABINET,
@@ -643,7 +644,10 @@ function construireFindingsQuestionnaireCabinet(reponses: ReponseSecurite[]): {
       ruleId: regle.ruleId,
       provenance: { responseIds: [], needIds: [], clinicalObjectCodes: [] },
       limitations: reponse.lecture.kind === 'hors_options'
-        ? [LIMITATION_QUESTIONNAIRE_PROVENANCE, MENTION_QUESTIONNAIRE_CABINET, LIMITATION_QUESTIONNAIRE_HORS_OPTIONS]
+        // [[D-524]] : le texte « hors options » propre aux copies, pas celui
+        // de `SAF-QUEST-01` — le patient a pu choisir une option réelle que la
+        // copie n'a pas.
+        ? [LIMITATION_QUESTIONNAIRE_PROVENANCE, MENTION_QUESTIONNAIRE_CABINET, LIMITATION_QUESTIONNAIRE_CABINET_HORS_OPTIONS]
         : [LIMITATION_QUESTIONNAIRE_PROVENANCE, MENTION_QUESTIONNAIRE_CABINET],
     };
   });
