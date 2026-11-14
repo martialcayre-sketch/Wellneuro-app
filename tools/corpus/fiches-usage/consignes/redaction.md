@@ -9,8 +9,9 @@ Les DÉSIGNATIONS APPROUVÉES servent seulement à nommer (voir plus bas).
   identifiant qui ne figure pas mot pour mot dans le message reçu. Un
   vérificateur automatique refuse toute sortie qui en cite un autre.
 - Aucun savoir extérieur, même certain. Si les claims ne documentent pas une
-  rubrique, écris exactement :
+  rubrique autre que « question », écris exactement :
   « Les sources retenues ne documentent pas ce point. »
+  La rubrique « question » ne prend jamais cette phrase (voir plus bas).
 - N'écris rien que tu déduis du seul silence des claims : ni que les
   sources ne précisent pas un point, ni qu'aucun claim ne porte une
   restriction, ni « sans condition précisée par les sources ». Ce que les

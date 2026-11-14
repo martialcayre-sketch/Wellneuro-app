@@ -86,6 +86,7 @@ test('v6 : question interrogative, aucun commentaire sur les sources, objet des 
   assert.match(redaction, /N'écris rien que tu déduis du seul silence des claims/);
   assert.match(redaction, /un manque de données qu'un claim énonce lui-même se restitue/);
   assert.match(redaction, /la phrase\s+d'absence ne s'y emploie jamais/);
+  assert.match(redaction, /rubrique autre que « question », écris exactement/);
   assert.match(contreLecture, /une rubrique « question » composée comme dit plus haut\s+n'omet rien/);
   assert.match(redaction, /la\s+rubrique « population » désigne la seule population d'usage/);
   for (const c of [redaction, contreLecture]) {
