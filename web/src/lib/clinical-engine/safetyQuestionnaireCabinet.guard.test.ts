@@ -416,6 +416,25 @@ describe('lettre — sans réponse du cabinet, au caractère près ; avec, sa pr
     expect(provenance.version).not.toBe(VERSION_ANCRAGE_ADRESSAGE_QUESTIONNAIRE);
   });
 
+  it('un énoncé vide se cite par l’identifiant de la question, un nom vide par le titre de l’assignation', () => {
+    const vide = passationCab('REP-V', { Q2: 3 }, {
+      designationCabinet: designation({ questionSuicideCopie: { ...COPIE, instrument: '', enonce: '' } }),
+    });
+    const courrier = lettre([], [vide]);
+    expect(courrier.texte).toContain('— questionnaire « Humeur du cabinet » (§), passation du 2026-11-10, question « Q2 » : « Souvent »');
+  });
+
+  it('un nom du praticien qui porte des motifs de remplacement est cité tel quel', () => {
+    simulerSignature();
+    const piege = designation({ questionSuicideCopie: { ...COPIE, instrument: 'Bilan $& $\' $1' }, titreAssignation: 'Bilan $& $\' $1' });
+    const sortie = construireSafetyFindings([], reponsesSecuriteDeclarees([
+      passationCab('REP-P1', { Q1: 1 }, { designationCabinet: piege }),
+    ]));
+    expect(sortie.limitations).toEqual([
+      LIMITATION_QUESTIONNAIRE_CABINET_ILLISIBLE.split('{n}').join('1').split('{instrument}').join("« Bilan $& $' $1 »"),
+    ]);
+  });
+
   it('la lettre remise d’une version du cabinet se rend avec la source des questionnaires', () => {
     const courrier = lettre([], [CAB_SOUVENT]);
     const html = rendreCourrierAdressageFige({

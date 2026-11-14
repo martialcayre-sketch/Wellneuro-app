@@ -343,7 +343,9 @@ function lireReponseCabinet(row: PassationSecuriteRow): ReponseSecurite | null {
     idReponse: row.idReponse,
     idQuestionnaire: row.idQuestionnaire,
     idQuestion,
-    instrument: copie.instrument,
+    // Un nom copié vide retombe sur le titre de l'assignation, pris au même
+    // envoi : jamais « » dans le constat ni la lettre.
+    instrument: copie.instrument || designation.titreAssignation,
     date,
     lecture,
     cabinet: { enonce: copie.enonce },
@@ -606,7 +608,9 @@ function construireFindingsQuestionnaireCabinet(reponses: ReponseSecurite[]): {
     }
     for (const cle of [...parInstrument.keys()].sort()) {
       const { instrument, n } = parInstrument.get(cle) as { instrument: string; n: number };
-      limitations.push(gabarit.replace('{n}', String(n)).replace('{instrument}', `« ${instrument} »`));
+      // Remplacement PAR FONCTION : le nom vient du praticien, et un `$&` ou un
+      // `$'` dans une chaîne de remplacement déformerait le texte.
+      limitations.push(gabarit.replace('{n}', () => String(n)).replace('{instrument}', () => `« ${instrument} »`));
     }
   }
   return { findings, rules: findings.length > 0 || limitations.length > 0 ? [regle] : [], limitations };

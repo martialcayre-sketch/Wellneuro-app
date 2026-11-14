@@ -588,6 +588,20 @@ describe('réponses de questionnaire — D-275 §2, LOT-3', () => {
       expect(reponses).toEqual([expect.objectContaining({ idReponse: 'REP-CAB', cabinet: { enonce: 'Idées de mort ?' } })]);
     });
 
+    it('drapeau allumé mais cabinet NON signé : catalogue seul, aucune jointure, aucun CAB_ cité', async () => {
+      simulerSignature();
+      process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB = 'true';
+      tx.questionnaireReponse.findMany.mockResolvedValue([PASSATION]);
+      tx.consultation.findFirst.mockResolvedValue({ id: 'cons_porteuse', anamnese: {} });
+      await POST(postRequest({ idPatient: 'PAT1', medecinLibelle: 'Dr Nicola' }));
+      expect(tx.questionnaireReponse.findMany).toHaveBeenCalledWith(expect.objectContaining({
+        where: { idPatient: 'PAT1', idQuestionnaire: { in: ['Q_NEU_01', 'Q_NEU_02', 'Q_NEU_03', 'Q_NEU_12'] } },
+      }));
+      expect(tx.assignation.findMany).not.toHaveBeenCalled();
+      const { reponses } = genererCourrierAdressage.mock.calls[0][0];
+      expect(reponses.some((reponse: { cabinet?: unknown }) => reponse.cabinet)).toBe(false);
+    });
+
     it('signée mais drapeau éteint : la requête est celle d’avant, aucune jointure', async () => {
       simulerSignature();
       signerCabinet();
