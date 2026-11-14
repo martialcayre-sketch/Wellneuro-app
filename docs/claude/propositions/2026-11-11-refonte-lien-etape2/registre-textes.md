@@ -18,7 +18,8 @@ textes du prototype PRA-2, ajoutés par DOC-6, §1.4) et T-60 à T-66
 rail patient T-21 à T-23, textes patient T-30 à T-34 ; T-35 est ajouté
 le 2026-11-12 comme proposition non acceptée pour U02. DOC-5 ajoute
 T-36 à T-39 ; DOC-7 inscrit T-40 à T-44 et T-48 (PAT-4), puis T-49/T-50
-(lot Q5b). T-45 est sans objet ; T-46/T-47 restent libres.
+(lot Q5b). DOC-12 inscrit T-51 (refus de la garde serveur). T-45 est sans
+objet ; T-46/T-47 restent libres.
 Aucun identifiant absent n'est un texte manquant.
 
 Colonnes : **Proposé** (texte exact, sans guillemets de l'interface) ;
@@ -318,9 +319,25 @@ des intitulés de « Mes choix » ; les numéros d'urgence de « Signaler un
 problème ». Un accusé explicite sur U35 et U39 reste à examiner dans un
 micro-lot documentaire distinct (recommandation du responsable, Q6).
 
+## 2.10 Garde serveur du dossier de la page — DOC-12
+
+Réponses du responsable le 2026-11-14 : Q8 (a) garde serveur, Q9 (a)
+segment canonique, Q10 (a) texte du refus, Q11 (a) numéros d'urgence sous le
+refus sur U40. Source canonique : [[D-488]], amendement DOC-12, et
+[[D-481]], complément DOC-12. Lot : `garde-portail-dossier-session` (carnet
+de la file D), hors du plan patient, préalable de Q2a et Q3a.
+
+| Id | Texte | Où | Sens | Existant | Lot | Statut |
+|---|---|---|---|---|---|---|
+| T-51 | Rien n’a été envoyé : cette page a été ouverte sous un autre compte. Rechargez-la pour continuer. | réponse 409 des cinq routes d'écriture du portail ; sous le geste refusé de U33, U34, U35 et U07, U39, U40 | rien n'est parti, et pourquoi, sans nommer l'autre compte | aucun | garde-portail-dossier-session | **Accepté (D-488)** |
+| — | Ces signalements ne sont pas surveillés en continu. En cas de symptôme grave ou inquiétant, contactez le 15 ou le 112 sans attendre. (existant, inchangé) | emplacement neuf : sous T-51 sur U40 seul | le signalement refusé n'est ni orienté ni transmis ; les numéros d'urgence restent sous les yeux | écran du choix de U40 seul (`SignalerProbleme.tsx:255-256`) | garde-portail-dossier-session | **Accepté (D-488)** |
+
+Le renvoi à l'entrée d'une page ouverte sous un autre segment que celui de
+la session (Q9 a) se fait sans texte.
+
 ## 3. Récapitulatif
 
 | Plan | Textes à accepter avant le lot |
 |---|---|
 | Praticien | T-01 à T-05, T-07, T-10, T-12, T-13 (PRA-1) ; T-14, T-15 (PRA-3) ; T-16 (PRA-2a, inscrit par DOC-1) ; T-17 (PRA-2a), T-18, T-19 (PRA-2b), acceptés et inscrits dans D-488 par DOC-6 ; T-60 à T-66 (PRA-3b), acceptés et inscrits dans D-488 par DOC-8 |
-| Patient | T-21 à T-23, T-32 (PAT-1) ; T-31 (PAT-2) ; T-30 (PAT-3) ; T-33, T-34 (PAT-5), avec l'emplacement neuf de T-36 inscrit par DOC-9 (celui de la phrase vide de U28 retiré par DOC-10) ; T-36 à T-39 inscrits par DOC-5 ; emplacements neufs de T-36 et du message de session expirée inscrits par DOC-11 (PAT-6) ; T-40 à T-44, T-48 et nouvel emplacement T-36 inscrits par DOC-7 (PAT-4), T-49/T-50 inscrits pour Q5b ; T-34 refusé, T-35 reste proposé, T-45 sans objet |
+| Patient | T-21 à T-23, T-32 (PAT-1) ; T-31 (PAT-2) ; T-30 (PAT-3) ; T-33, T-34 (PAT-5), avec l'emplacement neuf de T-36 inscrit par DOC-9 (celui de la phrase vide de U28 retiré par DOC-10) ; T-36 à T-39 inscrits par DOC-5 ; emplacements neufs de T-36 et du message de session expirée inscrits par DOC-11 (PAT-6) ; T-40 à T-44, T-48 et nouvel emplacement T-36 inscrits par DOC-7 (PAT-4), T-49/T-50 inscrits pour Q5b ; T-51 et l'emplacement neuf de la mention de sécurité de U40 inscrits par DOC-12 (garde serveur, préalable de Q2a et Q3a) ; T-34 refusé, T-35 reste proposé, T-45 sans objet |
