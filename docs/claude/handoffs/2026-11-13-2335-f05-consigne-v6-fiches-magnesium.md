@@ -13,7 +13,7 @@ Rédiger les fiches d'usage du magnésium (`FU_MG_P1` à `P8`). Sous la v5, tout
 ## Décisions prises
 
 - Responsable, 2026-11-13 : `HYP_MG_1` n° 1 validé par lui-même à l'écran, sans délégation. « v6 de la rédaction », contre un essai identique, la mise en attente du magnésium et une boucle de révision.
-- D-501 §9 (statut **accepté**, approbation du responsable du 2026-11-13). La « question » s'écrit en phrase interrogative. Aucune phrase ne dit ce que les sources taisent, hors la phrase d'absence. La « population » ne nomme que la population. L'objet des rubriques vient du cadrage v3 §3.2, et il est donné aux deux modèles. Consigne `fiche-usage-v6`, empreinte `5097666dc4e683ce`.
+- D-501 §9 (statut **accepté**, approbation du responsable du 2026-11-13). La « question » s'écrit en phrase interrogative. Aucune phrase ne dit ce que les sources taisent, hors la phrase d'absence. La « population » ne nomme que la population. L'objet des rubriques vient du cadrage v3 §3.2, et il est donné aux deux modèles. Consigne `fiche-usage-v6`, empreinte `fd994955a037a754` (approuvée après la correction du constat PR-Agent ; première empreinte approuvée `5097666dc4e683ce`).
 - **À signaler à l'approbation** : l'objet des rubriques entre aussi dans la consigne de contre-lecture. C'est plus que « la rédaction seule » annoncée dans la question d'arbitrage ; c'est motivé par un refus de P7 (surveillance jugée hors de « surveillance_arret »).
 
 ## Fichiers modifiés
@@ -31,7 +31,7 @@ Rédiger les fiches d'usage du magnésium (`FU_MG_P1` à `P8`). Sous la v5, tout
 ## Problèmes ouverts
 
 - La v6 est **approuvée** par le responsable le 2026-11-13, après l'avis Codex (trois P2 corrigés ; dépôt privé `wellneuro-revues`, `f05/2026-11-13-avis-codex-consigne-v6.md`) et l'avertissement sur la contre-lecture. D-501 §9 est « accepté ». Reste le merge par l'intégrateur.
-- Mise à niveau des branches F05 de cette session par merge d'`origin/main` : autorisée pour la suite par le responsable (2026-11-13), quand aucun fichier n'est en commun, avec information à chaque fois. Faite une fois sur #2090 (#2087, #2089).
+- Mise à niveau des branches F05 de cette session par merge d'`origin/main` : autorisée pour la suite par le responsable (2026-11-13), quand aucun fichier n'est en commun, avec information à chaque fois. Faite deux fois sur #2090 (#2087, #2089, puis #2091 à #2094).
 - Quinze refus sur 26 (faits sans claim, débordements) relèvent de la même famille que le fer. La v6 ne prétend pas les supprimer, et un essai sous la v6 peut encore n'en retenir aucune.
 - Le fer reste en attente (#2061).
 
