@@ -56,6 +56,7 @@ Appliquer [[D-403]] §6 (ligne t49 du §8 du plan, fiche H40) : l'enquête SiiN 
   - le mot pour mot de la consigne v35 est réservé au texte validé, parce que le motif technique de `Q_ALI_03` (« apport protéique nul — passation incomplète ») aurait été repris tel quel ; empreintes v35 reportées, D-517 §3 complétée ;
   - les commentaires d'`orientationEngine.ts` et de `plancherOrientation.guard.test.ts` disent désormais que le moteur refuse lui-même le recueil ;
   - D-517 §4 nomme la discordance de rythme, laissée hors du périmètre.
+- Seconde passe Codex, limitée au delta, puisque la consigne a changé après le premier avis : un P1, corrigé. Reprendre « le sens » du motif protéique pouvait encore rendre un apport nul constaté ; la consigne dit désormais qu'un motif de passation incomplète n'établit aucune valeur (`DC-24`).
 - Après ces corrections : 134 fichiers (lot et `src/lib/clinical`) verts dans les deux positions du drapeau ; `bancs-outillage-check` et `tsc` à 0.
 
 ## Problèmes ouverts

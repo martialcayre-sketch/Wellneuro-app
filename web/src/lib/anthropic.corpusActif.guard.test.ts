@@ -27,7 +27,7 @@ const TITRE_CORPUS = 'Référentiel clinique SIIN — Snapshot V1';
 // dans les DEUX états ; texte validé par le responsable.
 // v35 (2026-11-13, D-517, t49) : paragraphe sur `scored: false` à la racine, dans les
 // DEUX états. Retouché avant tout service : mot pour mot réservé au texte validé.
-const EMPREINTE_PROMPT_ALLUME_V35 = '9c14e5b43499c6a9';
+const EMPREINTE_PROMPT_ALLUME_V35 = '7e98cb31b9c91d0b';
 
 async function chargerAnthropicAvecDrapeau(valeur: string | undefined) {
   vi.resetModules();

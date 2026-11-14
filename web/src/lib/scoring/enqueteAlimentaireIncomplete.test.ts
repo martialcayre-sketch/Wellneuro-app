@@ -26,6 +26,8 @@ describe('consigne de synthèse — le refus de calcul à la racine (synthese-v3
     // `apports_ponderes` (« apport protéique nul — passation incomplète ») se
     // reprend en son sens, jamais comme un apport mesuré.
     expect(SYSTEM_PROMPT_GOUVERNANCE).toContain(`Quand il vaut « ${TEXTE_ENQUETE_ALIMENTAIRE_INCOMPLETE} », reprends-le tel qu'il est écrit ; tout autre motif, reprends-en le sens`);
+    // Le sens repris ne doit pas faire d'un zéro technique un apport constaté (DC-24).
+    expect(SYSTEM_PROMPT_GOUVERNANCE).toContain('Un motif qui signale une passation incomplète n\'établit aucune valeur de ce que l\'instrument mesure, pas même un apport nul');
     expect(SYSTEM_PROMPT_GOUVERNANCE).toContain('ne reconstitue aucun total, ni depuis ses dimensions, ni depuis ses réponses');
   });
 });
