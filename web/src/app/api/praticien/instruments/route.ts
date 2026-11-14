@@ -18,6 +18,7 @@ import {
   DECLARATION_SUICIDE_EFFACEE,
   declarationRequiseAvantEnvoi,
   declarationSuicideCabinetActive,
+  libellesCitablesRefuses,
   lireDeclarationSuicide,
 } from '@/lib/securite/declarationSuicideCabinet';
 
@@ -99,6 +100,15 @@ function refusEnvoisEnCours(envois: number) {
       error: `Impossible de modifier : ${envois} envoi(s) en cours pour cet instrument.`,
     },
     { status: 409 },
+  );
+}
+
+// Réponse 20261114-1217-a : un libellé que la lettre d'adressage citerait porte
+// un terme que son rendu médecin refuse. Le refus nomme chaque champ fautif.
+function refusLibellesCitables(erreurs: string[]) {
+  return NextResponse.json<MutateInstrumentResponse>(
+    { success: false, reason: 'invalid_payload', error: erreurs.join(' '), erreurs },
+    { status: 400 },
   );
 }
 
@@ -389,6 +399,16 @@ export async function PATCH(request: Request) {
           );
         }
         declaration = lue.declaration;
+        // Réponse 20261114-1217-a : sous « oui », les libellés que la lettre
+        // citera passent la garde de son rendu médecin, avant d'être publiés.
+        if (lue.declaration.poseQuestionSuicide) {
+          const refuses = libellesCitablesRefuses({
+            titre: instrument.titre,
+            definitionJson: instrument.definitionJson,
+            questionSuicideId: lue.declaration.questionSuicideId,
+          });
+          if (refuses.length > 0) return refusLibellesCitables(refuses);
+        }
       }
       const data = { statutRelecture: 'valide', ...declaration };
       if (declarationExigee) {
@@ -438,6 +458,16 @@ export async function PATCH(request: Request) {
           { success: false, reason: 'invalid_payload', error: lue.erreur, erreurs: [lue.erreur] },
           { status: 400 },
         );
+      }
+      // Réponse 20261114-1217-a : même garde des libellés citables qu'à la
+      // publication.
+      if (lue.declaration.poseQuestionSuicide) {
+        const refuses = libellesCitablesRefuses({
+          titre: instrument.titre,
+          definitionJson: instrument.definitionJson,
+          questionSuicideId: lue.declaration.questionSuicideId,
+        });
+        if (refuses.length > 0) return refusLibellesCitables(refuses);
       }
       // Gardée sur ce qui a été relu : toujours publié, toujours non déclaré,
       // inchangé depuis. Une modification concurrente des questions repasse
@@ -527,6 +557,26 @@ export async function PATCH(request: Request) {
       );
     }
 
+    // Réponse 20261114-1217-a, modification d'un instrument publié : une
+    // édition des seules métadonnées garde la déclaration « oui » et sa
+    // désignation, et le nom modifié sera copié au prochain envoi, puis cité
+    // par la lettre. Même garde qu'à la publication. Une modification des
+    // questions ou de la grille efface la déclaration (ci-dessous) : la
+    // publication suivante repasse par la garde.
+    if (
+      !contenuChange
+      && declarationSuicideCabinetActive()
+      && instrument.poseQuestionSuicide === true
+      && typeof instrument.questionSuicideId === 'string'
+    ) {
+      const refuses = libellesCitablesRefuses({
+        titre,
+        definitionJson: instrument.definitionJson,
+        questionSuicideId: instrument.questionSuicideId,
+      });
+      if (refuses.length > 0) return refusLibellesCitables(refuses);
+    }
+
     const edition = {
       where: { idInstrument },
       data: {
@@ -573,6 +623,26 @@ export async function PATCH(request: Request) {
       });
       if (envoisSousVerrou > 0) {
         return refusEnvoisEnCours(envoisSousVerrou);
+      }
+    } else if (declarationSuicideCabinetActive()) {
+      // Réponse 20261114-1217-a : la garde ci-dessus a jugé le nom contre la
+      // déclaration LUE. L'écriture n'a lieu que si l'instrument n'a pas bougé
+      // depuis : sinon une publication ou une déclaration « oui » concurrente,
+      // jugée sur l'ancien nom, recevrait un nom que personne n'a jugé.
+      // Drapeau éteint : l'écriture d'avant.
+      const ecrit = await prisma.cabinetInstrument.updateMany({
+        where: { idInstrument, updatedAt: instrument.updatedAt },
+        data: edition.data,
+      });
+      if (ecrit.count === 0) {
+        return NextResponse.json<MutateInstrumentResponse>(
+          {
+            success: false,
+            reason: 'conflit_statut',
+            error: 'L’instrument a été modifié entre-temps : rouvrez-le avant de l’enregistrer.',
+          },
+          { status: 409 },
+        );
       }
     } else {
       await prisma.cabinetInstrument.update(edition);

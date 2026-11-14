@@ -365,7 +365,7 @@ describe('BibliothequePanel — déclaration « question sur le suicide » (NF-7
   };
   const LEGENDE = 'Ce questionnaire pose-t-il une question sur le suicide ou les idées de mort ?';
 
-  function stubFetch(detail: Record<string, unknown>) {
+  function stubFetch(detail: Record<string, unknown>, reponsePatch?: Record<string, unknown> | 'reseau') {
     const corps: unknown[] = [];
     const ok = (data: unknown) =>
       Promise.resolve({ ok: true, status: 200, json: async () => data } as Response);
@@ -373,7 +373,8 @@ describe('BibliothequePanel — déclaration « question sur le suicide » (NF-7
       const url = String(input);
       if (init?.method === 'PATCH') {
         corps.push(JSON.parse(String(init.body)));
-        return ok({ success: true, idInstrument: detail.idInstrument });
+        if (reponsePatch === 'reseau') return Promise.reject(new TypeError('Failed to fetch'));
+        return ok(reponsePatch ?? { success: true, idInstrument: detail.idInstrument });
       }
       if (url.includes('/api/praticien/file-envoi')) return ok({ brouillons: [] });
       if (url.includes('/api/praticien/bibliotheque')) return ok({ entrees: [] });
@@ -524,6 +525,59 @@ describe('BibliothequePanel — déclaration « question sur le suicide » (NF-7
       ]);
       const valider = screen.getAllByRole('button', { name: 'Déclarer' }).find(b => b.closest('[role="dialog"]')) as HTMLButtonElement;
       expect(valider.disabled).toBe(true);
+    });
+  });
+
+  // Réponse 20261114-1217-a : le serveur refuse un libellé que la lettre
+  // citerait, et nomme le champ. Le refus se lit DANS le tiroir ouvert, pas
+  // sous son overlay ; le tiroir reste ouvert pour reformuler.
+  describe('refus d’un libellé citable (20261114-1217-a)', () => {
+    const MOTIF =
+      'Le nom de l’instrument contient un terme de prescription, que la lettre d’adressage au médecin refuse : reformulez-le.';
+    const REFUS = { success: false, reason: 'invalid_payload', error: MOTIF, erreurs: [MOTIF] };
+
+    it('publier : le motif s’affiche dans le tiroir « Relire la grille », qui reste ouvert', async () => {
+      stubFetch({ ...DETAIL_LIKERT, declarationSuicideRequise: true }, REFUS);
+      render(<BibliothequePanel entrees={[ENTREE_BASE]} />);
+      fireEvent.click(await screen.findByText('Relire la grille'));
+      fireEvent.click(within(await screen.findByRole('group', { name: LEGENDE })).getByLabelText('Oui'));
+      fireEvent.change(screen.getByLabelText('Question concernée'), { target: { value: 'Q2' } });
+      fireEvent.change(screen.getByLabelText('Réponse qui signifie « non »'), { target: { value: '0' } });
+      await waitFor(() => expect(bouton().disabled).toBe(false));
+      fireEvent.click(bouton());
+      const alerte = await within(screen.getByRole('dialog')).findByRole('alert');
+      expect(alerte.textContent).toBe(MOTIF);
+      expect(screen.getByRole('dialog')).toBeTruthy();
+    });
+
+    it('publier, erreur réseau : le tiroir le dit aussi', async () => {
+      stubFetch(DETAIL_LIKERT, 'reseau');
+      render(<BibliothequePanel entrees={[ENTREE_BASE]} />);
+      fireEvent.click(await screen.findByText('Relire la grille'));
+      await screen.findByText(/— publier$/);
+      fireEvent.click(bouton());
+      const alerte = await within(screen.getByRole('dialog')).findByRole('alert');
+      expect(alerte.textContent).toBe('Publication impossible.');
+    });
+
+    it('« Déclarer » : le motif s’affiche dans son tiroir, puis s’efface à la réouverture', async () => {
+      stubFetch({ ...DETAIL_LIKERT, statutRelecture: 'valide', declarationSuicideRequise: true, declarationRequise: true }, REFUS);
+      render(<BibliothequePanel entrees={[ENTREE_BASE]} />);
+      fireEvent.click(await screen.findByRole('button', { name: 'Déclarer' }));
+      fireEvent.click(within(await screen.findByRole('group', { name: LEGENDE })).getByLabelText('Oui'));
+      fireEvent.change(screen.getByLabelText('Question concernée'), { target: { value: 'Q2' } });
+      fireEvent.change(screen.getByLabelText('Réponse qui signifie « non »'), { target: { value: '0' } });
+      const valider = () =>
+        screen.getAllByRole('button', { name: 'Déclarer' }).find(b => b.closest('[role="dialog"]')) as HTMLButtonElement;
+      await waitFor(() => expect(valider().disabled).toBe(false));
+      fireEvent.click(valider());
+      const alerte = await within(screen.getByRole('dialog')).findByRole('alert');
+      expect(alerte.textContent).toBe(MOTIF);
+      fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+      fireEvent.click(screen.getByRole('button', { name: 'Déclarer' }));
+      await screen.findByRole('group', { name: LEGENDE });
+      expect(within(screen.getByRole('dialog')).queryByRole('alert')).toBeNull();
     });
   });
 });

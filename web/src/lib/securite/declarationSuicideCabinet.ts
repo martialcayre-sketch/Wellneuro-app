@@ -20,6 +20,8 @@
 // Module pur, sans dépendance Node : l'écran de relecture du praticien lit
 // `questionsDesignables` pour proposer la désignation.
 
+import { contientTermePrescriptif } from '@/lib/documents/vocabulaire';
+
 /**
  * `WN_ENABLE_DECLARATION_SUICIDE_CAB` (20261111-0029-a), éteint par défaut.
  * Convention des drapeaux produit (`docs/FEATURE_FLAGS.md`, section A) : seule
@@ -188,6 +190,55 @@ export function copieDesignationSuicide(instrument: {
       options: question.options.map(o => ({ v: o.v, l: o.l })),
     },
   };
+}
+
+// ── Réponse 20261114-1217-a : les libellés que la lettre citera ────────────
+//
+// La lettre d'adressage cite, depuis la copie, le nom de l'instrument,
+// l'énoncé de la question désignée et le libellé de la réponse ([[D-515]] §5),
+// et son rendu médecin les juge par la garde non prescriptive
+// (`assertRenduMedecinNonPrescriptif`, `lib/documents/rendu.ts`). Un terme
+// refusé dans un libellé rendrait la lettre impossible, et le constat
+// impossible à lever autrement que par l'invalidation de la passation. La
+// copie étant figée, corriger l'instrument ensuite ne sert à rien.
+//
+// D'où le refus en amont, à la publication, à la déclaration et à la
+// modification d'un instrument publié déclaré « oui » : MÊME garde
+// (`contientTermePrescriptif`, la fonction même que lève le rendu), MÊMES
+// libellés, ceux que `copieDesignationSuicide` figera. Pas de liste
+// parallèle : une racine ajoutée à `vocabulaire.ts` vaut ici aussi. La garde
+// de la lettre reste active : celle-ci ne fait que l'anticiper.
+
+/** Un libellé citable porte un terme que le rendu médecin refuse : motif par champ. */
+export const ERREURS_LIBELLE_CITABLE = Object.freeze({
+  instrument:
+    'Le nom de l’instrument contient un terme de prescription, que la lettre d’adressage au médecin refuse : reformulez-le.',
+  enonce:
+    'L’énoncé de la question désignée contient un terme de prescription, que la lettre d’adressage au médecin refuse : reformulez-le.',
+  option: (libelle: string) =>
+    `La réponse « ${libelle} » de la question désignée contient un terme de prescription, que la lettre d’adressage au médecin refuse : reformulez-la.`,
+});
+
+/**
+ * Les motifs de refus des libellés que la lettre citerait pour cet instrument
+ * déclaré « oui », un par champ fautif ; `[]` s'il n'y en a aucun. Une
+ * désignation introuvable rend `[]` : son refus est celui de
+ * `lireDeclarationSuicide`, et la copie ne serait pas faite.
+ */
+export function libellesCitablesRefuses(instrument: {
+  titre: string;
+  definitionJson: unknown;
+  questionSuicideId: string;
+}): string[] {
+  const question = questionsDesignables(instrument.definitionJson).find(q => q.id === instrument.questionSuicideId);
+  if (!question) return [];
+  const erreurs: string[] = [];
+  if (contientTermePrescriptif(instrument.titre)) erreurs.push(ERREURS_LIBELLE_CITABLE.instrument);
+  if (contientTermePrescriptif(question.texte)) erreurs.push(ERREURS_LIBELLE_CITABLE.enonce);
+  for (const option of question.options) {
+    if (contientTermePrescriptif(option.l)) erreurs.push(ERREURS_LIBELLE_CITABLE.option(option.l));
+  }
+  return erreurs;
 }
 
 // ── P2-1 (arbitrage du 2026-11-12) : la déclaration conditionne l'envoi ─────

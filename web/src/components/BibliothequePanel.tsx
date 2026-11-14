@@ -50,6 +50,10 @@ export function BibliothequePanel({ entrees }: { entrees: BibliothequeEntree[] }
   const [brouillons, setBrouillons] = useState<FileEnvoiBrouillon[]>([]);
   const [message, setMessage] = useState<string | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
+  // Refus de « publier » ou de « Déclarer », affiché DANS le tiroir ouvert :
+  // le bandeau de la page reste sous l'overlay (réponse 20261114-1217-a, le
+  // refus nomme le champ à reformuler).
+  const [erreursTiroir, setErreursTiroir] = useState<string[]>([]);
   const [occupe, setOccupe] = useState(false);
   // Instruments du cabinet : la liste serveur (prop) ne les connaît pas — le
   // panneau recharge les entrées via l'API, qui les fusionne au catalogue.
@@ -279,6 +283,7 @@ export function BibliothequePanel({ entrees }: { entrees: BibliothequeEntree[] }
       return;
     }
     setRelecture(detail);
+    setErreursTiroir([]);
     setTiroirRelecture(true);
   }
 
@@ -286,6 +291,7 @@ export function BibliothequePanel({ entrees }: { entrees: BibliothequeEntree[] }
     setOccupe(true);
     setMessage(null);
     setErreur(null);
+    setErreursTiroir([]);
     try {
       const res = await fetch('/api/praticien/instruments', {
         method: 'PATCH',
@@ -299,9 +305,11 @@ export function BibliothequePanel({ entrees }: { entrees: BibliothequeEntree[] }
         await rafraichirCabinet();
       } else {
         setErreur(json.error ?? 'Publication impossible.');
+        setErreursTiroir(json.erreurs ?? [json.error ?? 'Publication impossible.']);
       }
     } catch {
       setErreur('Publication impossible.');
+      setErreursTiroir(['Publication impossible.']);
     }
     setOccupe(false);
   }
@@ -314,6 +322,7 @@ export function BibliothequePanel({ entrees }: { entrees: BibliothequeEntree[] }
       return;
     }
     setADeclarer(detail);
+    setErreursTiroir([]);
     setTiroirDeclaration(true);
   }
 
@@ -321,6 +330,7 @@ export function BibliothequePanel({ entrees }: { entrees: BibliothequeEntree[] }
     setOccupe(true);
     setMessage(null);
     setErreur(null);
+    setErreursTiroir([]);
     try {
       const res = await fetch('/api/praticien/instruments', {
         method: 'PATCH',
@@ -335,9 +345,11 @@ export function BibliothequePanel({ entrees }: { entrees: BibliothequeEntree[] }
         await Promise.all([rafraichirCabinet(), chargerFile()]);
       } else {
         setErreur(json.error ?? 'Déclaration impossible.');
+        setErreursTiroir(json.erreurs ?? [json.error ?? 'Déclaration impossible.']);
       }
     } catch {
       setErreur('Déclaration impossible.');
+      setErreursTiroir(['Déclaration impossible.']);
     }
     setOccupe(false);
   }
@@ -417,6 +429,7 @@ export function BibliothequePanel({ entrees }: { entrees: BibliothequeEntree[] }
                 <RelectureGrille
                   detail={relecture}
                   occupe={occupe}
+                  erreurs={erreursTiroir}
                   onPublier={declaration => void publier(relecture.idInstrument, declaration)}
                 />
               )}
@@ -432,6 +445,7 @@ export function BibliothequePanel({ entrees }: { entrees: BibliothequeEntree[] }
                 <DeclarerInstrument
                   detail={aDeclarer}
                   occupe={occupe}
+                  erreurs={erreursTiroir}
                   onDeclarer={declaration => void declarer(aDeclarer.idInstrument, declaration)}
                 />
               )}
@@ -1479,13 +1493,34 @@ function DeclarationSuicide({
 // questions ni le statut ne bougent — et le serveur la vérifie comme à la
 // publication. Sans migration ni reprise en base ; seule la déclaration est
 // enregistrée par l'application.
+// Le refus du serveur, lu dans le tiroir qui l'a provoqué : chaque motif nomme
+// le champ à reformuler (réponse 20261114-1217-a).
+function ErreursTiroir({ erreurs }: { erreurs: string[] }) {
+  if (erreurs.length === 0) return null;
+  return (
+    <div
+      role="alert"
+      className="rounded-lg border border-status-danger/40 bg-status-danger/10 px-3 py-2 text-xs text-status-danger"
+    >
+      <ul className="flex flex-col gap-1">
+        {/* Index en clé : deux options peuvent porter le même libellé fautif. */}
+        {erreurs.map((e, i) => (
+          <li key={i}>{e}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function DeclarerInstrument({
   detail,
   occupe,
+  erreurs,
   onDeclarer,
 }: {
   detail: InstrumentCabinetDetailDto;
   occupe: boolean;
+  erreurs: string[];
   onDeclarer: (declaration: DeclarationSuicideSaisie) => void;
 }) {
   const [declaration, setDeclaration] = useState<DeclarationSuicideSaisie | null>(null);
@@ -1499,6 +1534,7 @@ function DeclarerInstrument({
         </p>
       </div>
       <DeclarationSuicide detail={detail} onChange={setDeclaration} contexte="declaration" />
+      <ErreursTiroir erreurs={erreurs} />
       <div className="border-t border-border pt-4">
         <Button
           type="button"
@@ -1523,10 +1559,12 @@ function DeclarerInstrument({
 function RelectureGrille({
   detail,
   occupe,
+  erreurs,
   onPublier,
 }: {
   detail: InstrumentCabinetDetailDto;
   occupe: boolean;
+  erreurs: string[];
   onPublier: (declaration?: DeclarationSuicideSaisie) => void;
 }) {
   const [declaration, setDeclaration] = useState<DeclarationSuicideSaisie | null>(null);
@@ -1613,6 +1651,7 @@ function RelectureGrille({
       {detail.declarationSuicideRequise === true && (
         <DeclarationSuicide detail={detail} onChange={setDeclaration} />
       )}
+      <ErreursTiroir erreurs={erreurs} />
       <div className="border-t border-border pt-4">
         <Button
           type="button"
