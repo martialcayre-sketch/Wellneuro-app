@@ -125,6 +125,11 @@ const IMPORTEURS_ADMIS = [
   'web/src/app/api/praticien/besoins/constats/route.ts',
   'web/src/lib/constats-besoin/ecriture.ts',
   'web/src/lib/constats-besoin/lecture.ts',
+  // L'export PDF du dossier ([[D-519]]) : les mesures qui font foi, la
+  // lecture de l'import et les faits du laboratoire — par l'entrée publiée,
+  // cinquième lecteur hors biologie (2026-11-14).
+  'web/src/lib/export-dossier/assembler.ts',
+  'web/src/lib/export-dossier/biologieExport.ts',
   'web/src/app/api/praticien/patients/route.ts',
   'web/src/app/api/praticien/protocoles/versions/route.ts',
   // Pages et composants praticien. La page unique de la biologie est le

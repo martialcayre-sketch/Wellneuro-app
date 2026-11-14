@@ -203,6 +203,49 @@ export type DonneesDateesExport = {
 
 export type BrouillonPlusRecentExport = { statut: string; dateGeneration: Date } | null;
 
+/**
+ * Pourquoi l'intervalle du laboratoire n'est pas écrit ([[D-519]] §3) — une
+ * absence se dit, elle ne vaut jamais « dans les normes » (`DC-24`).
+ */
+export type AbsenceIntervalle =
+  | 'saisie_praticien'
+  | 'correction'
+  | 'non_imprime'
+  | 'non_transcrit'
+  | 'ecart_ligne_lue';
+
+/** Une mesure qui fait foi ([[D-519]] §2-§3) : des faits, aucune interprétation. */
+export type MesureBiologieExport = {
+  preleveLe: Date;
+  /** Le décimal tel que la base le porte, en texte — jamais un nombre. */
+  valeur: string;
+  unite: string | null;
+  /** L'intervalle tel qu'imprimé par le laboratoire, ou la raison de son absence. */
+  intervalle: { texte: string } | { absence: AbsenceIntervalle };
+  /** Lu sur l'en-tête de l'import ; `null` : non identifié, ou version « IA externe ». */
+  laboratoire: string | null;
+  /** La tête remplace une ligne : valeur corrigée par le praticien. */
+  corrigee: boolean;
+};
+
+export type AnalyteBiologieExport = {
+  analyteCode: string;
+  /** Libellé du catalogue : un texte fixe, jamais masqué. */
+  libelle: string;
+  /** Dans l'ordre du prélèvement. */
+  mesures: MesureBiologieExport[];
+};
+
+/**
+ * La biologie du dossier ([[D-519]]) : les mesures qui font foi, validées et,
+ * pour un import, dont la lecture est consignée. `nonLues` : les mesures
+ * écartées parce que la lecture de leur import ne l'est pas.
+ */
+export type BiologieExport = {
+  analytes: AnalyteBiologieExport[];
+  nonLues: number;
+};
+
 // ── Petits outils communs ──────────────────────────────────────────────────
 
 export const NON_RENSEIGNE = 'Non renseigné';

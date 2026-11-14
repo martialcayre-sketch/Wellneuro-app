@@ -53,6 +53,14 @@ export { isCbResultsEnabled } from './featureFlag';
 export { annulationParLigne, correctionsParLigne } from './filCorrection';
 export { annulationsActives, verrouillerCleDuResultat } from './annulations';
 
+// Cinquième lecteur hors biologie : l'export PDF du dossier ([[D-519]]), qui
+// restitue les mesures qui font foi — même élection que la fiche, lecture de
+// l'import consignée, faits du laboratoire avec les silences de [[D-267]] §5.
+// Aucune qualification de la valeur, aucune plage.
+export { racineDe, serieParAnalyte } from './serieParAnalyte';
+export { etatLecture, type ActeLectureRow } from './import/lectureImport';
+export { lireValeurQuantitative, unitesConcordent } from './import/valeurLue';
+
 /** Les fichiers de `biology-library` que cette entrée ré-exporte — liste fermée. */
 export const FICHIERS_PUBLIES = [
   'import/lectureDemandee',
@@ -61,6 +69,9 @@ export const FICHIERS_PUBLIES = [
   'import/depot',
   'filCorrection',
   'annulations',
+  'serieParAnalyte',
+  'import/lectureImport',
+  'import/valeurLue',
 ] as const;
 
 /**
