@@ -8,6 +8,9 @@ const VARIANT_CLASSES: Record<ButtonVariant, string> = {
   danger: 'text-status-danger border border-border hover:bg-status-danger/10',
 };
 
+// 44 px de cible et anneau de focus (PRA-3b Q8 a) : tous les écrans
+// praticien qui l'emploient changent de hauteur — c'est voulu.
+//
 // forwardRef requis par les usages Radix `asChild` (Dialog.Trigger du tiroir
 // d'action, SP-TRAJ LOT-05) : sans ref, Radix ne peut ni gérer ni RENDRE le
 // focus au déclencheur à la fermeture — attrapé par l'E2E du tiroir.
@@ -19,7 +22,7 @@ export const Button = forwardRef<
     <button
       ref={ref}
       {...props}
-      className={`px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-60 transition-colors ${VARIANT_CLASSES[variant]} ${className}`}
+      className={`min-h-11 px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring ${VARIANT_CLASSES[variant]} ${className}`}
     />
   );
 });

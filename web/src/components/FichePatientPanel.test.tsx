@@ -3622,3 +3622,73 @@ describe('FichePatientPanel — replis des phases et du contexte (PRA-3a)', () =
     expect(within(poste).queryByText('Sophie Nicola')).toBeNull();
   });
 });
+
+describe('FichePatientPanel — PRA-3b, PR 1 : phase Patient (P05-P07, P31)', () => {
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  it('P06 : « Réessayer » (T-17) relit les seuls renseignements et rend le focus à la ligne', async () => {
+    // Le bouchon par défaut sert `{}` à la route des consultations : une
+    // réponse sans le tableau promis, donc un échec de lecture.
+    const base = stubFetch();
+    let lectures = 0;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((input: unknown) => {
+        const url = String(input);
+        if (url.includes('/api/praticien/consultations')) {
+          lectures += 1;
+          if (lectures > 1) {
+            return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({ consultations: [] }) });
+          }
+        }
+        return base(input);
+      }),
+    );
+    render(
+      <C5FeatureProvider enabled={false}>
+        <FichePatientPanel idPatient="PAT001" phaseDemandee="patient" />
+      </C5FeatureProvider>,
+    );
+
+    const echec = await screen.findByText(/La fiche signalétique et l’anamnèse n’ont pas pu être lues/);
+    const alerte = echec.closest('[role="alert"]') as HTMLElement;
+    const avant = base.mock.calls.length;
+    fireEvent.click(within(alerte).getByRole('button', { name: 'Réessayer' }));
+
+    const ligne = await screen.findByText(/Aucun renseignement déposé : ni fiche signalétique, ni anamnèse/);
+    expect(lectures).toBe(2);
+    // Seule la lecture en échec repart : aucune autre route n'est relue.
+    expect(base.mock.calls.length).toBe(avant);
+    await waitFor(() => expect(document.activeElement?.contains(ligne)).toBe(true));
+  });
+
+  it('P05 : la fiche administrative est un h4 sous la phase h3 (Q2 a), ses boutons à 44 px avec focus (Q8 a)', async () => {
+    await rendreFiche({ phaseDemandee: 'patient' });
+    const titre = await screen.findByRole('heading', { level: 4, name: /Fiche administrative/ });
+    const fiche = titre.closest('section') as HTMLElement;
+    for (const bouton of within(fiche).getAllByRole('button')) {
+      expect(bouton.className).toContain('min-h-11');
+      expect(bouton.className).toContain('focus-visible:ring-2');
+    }
+    for (const champ of within(fiche).getAllByRole('textbox')) {
+      expect(champ.className).toContain('min-h-11');
+    }
+  });
+
+  it('« Débloquer » est bordé (Q3 a), à 44 px, sur une demande de correction comme sur un échu', async () => {
+    await rendreFiche({ assignationsModif: true, assignationEchue: true, phaseDemandee: 'patient' });
+    const corrections = await screen.findByRole('region', { name: /Demandes de correction de questionnaire en attente/i });
+    const echus = screen.getByRole('region', { name: /Questionnaires jamais remplis dont l’échéance est dépassée/i });
+    for (const bouton of [
+      ...within(corrections).getAllByRole('button', { name: 'Débloquer' }),
+      ...within(echus).getAllByRole('button', { name: 'Débloquer' }),
+    ]) {
+      expect(bouton.className).toContain('border-accent');
+      expect(bouton.className).not.toContain('bg-status-warning');
+      expect(bouton.className).toContain('min-h-11');
+    }
+  });
+});

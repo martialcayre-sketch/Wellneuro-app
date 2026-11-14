@@ -81,7 +81,7 @@ function Historique<L extends { id: string; source: 'patient' | 'praticien'; act
   if (lignes.length < 2) return null;
   return (
     <details className="text-xs text-muted-foreground">
-      <summary className="min-h-11 cursor-pointer py-2">Historique ({lignes.length} lignes)</summary>
+      <summary className={`min-h-11 cursor-pointer py-2 ${ANNEAU_FOCUS}`}>Historique ({lignes.length} lignes)</summary>
       <ol className="space-y-1 pl-4">
         {[...lignes].reverse().map(l => (
           <li key={l.id}>
@@ -93,8 +93,12 @@ function Historique<L extends { id: string; source: 'patient' | 'praticien'; act
   );
 }
 
-const classeBouton = 'min-h-11 rounded-lg border border-border px-3 py-2 text-sm text-foreground disabled:opacity-50';
-const classePrincipal = 'min-h-11 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50';
+// Anneau de focus sur chaque geste (PRA-3b, P07) ; 44 px déjà tenus.
+const ANNEAU_FOCUS = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring';
+const classeBouton = `min-h-11 rounded-lg border border-border px-3 py-2 text-sm text-foreground disabled:opacity-50 ${ANNEAU_FOCUS}`;
+const classePrincipal = `min-h-11 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50 ${ANNEAU_FOCUS}`;
+// « Réessayer » : un vrai bouton de 44 px, plus un lien souligné dans la phrase.
+const classeReessayer = 'ml-2 min-h-11 rounded-lg border border-accent px-3 py-1 text-sm font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring';
 
 function FormulairePhysio({
   critere,
@@ -136,7 +140,7 @@ function FormulairePhysio({
               value={mesure}
               disabled={envoi}
               onChange={e => setMesure(e.target.value)}
-              className="mt-1 block min-h-11 w-28 rounded-lg border border-border bg-background px-2 text-sm text-foreground"
+              className={`mt-1 block min-h-11 w-28 rounded-lg border border-border bg-background px-2 text-sm text-foreground ${ANNEAU_FOCUS}`}
             />
           </label>
           <label className="text-xs text-muted-foreground">
@@ -147,7 +151,7 @@ function FormulairePhysio({
               max={aujourdhui}
               disabled={envoi}
               onChange={e => setMesureLe(e.target.value)}
-              className="mt-1 block min-h-11 rounded-lg border border-border bg-background px-2 text-sm text-foreground"
+              className={`mt-1 block min-h-11 rounded-lg border border-border bg-background px-2 text-sm text-foreground ${ANNEAU_FOCUS}`}
             />
           </label>
         </div>
@@ -244,7 +248,7 @@ export function PhysioTraitementsPanel({ idPatient }: { idPatient: string }) {
     return (
       <p role="alert" className="text-sm text-foreground">
         Les données physiologiques et les traitements n’ont pas pu être lus.{' '}
-        <button type="button" onClick={() => void charger()} className="underline">Réessayer</button>
+        <button type="button" onClick={() => void charger()} className={classeReessayer}>Réessayer</button>
       </p>
     );
   }
@@ -345,7 +349,7 @@ export function PhysioTraitementsPanel({ idPatient }: { idPatient: string }) {
       {erreurLecture && (
         <p role="alert" className="text-sm text-foreground">
           La relecture a échoué : ce qui suit peut ne plus être à jour.{' '}
-          <button type="button" onClick={() => void charger()} className="underline">Réessayer</button>
+          <button type="button" onClick={() => void charger()} className={classeReessayer}>Réessayer</button>
         </p>
       )}
       {message && <p role="alert" className="text-sm text-foreground">{message}</p>}

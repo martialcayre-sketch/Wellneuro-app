@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import type { Consultation, ConsultationsApiResponse } from '@/app/api/praticien/consultations/route';
 import { FICHE_SECTIONS } from '@/lib/consultation/fiche';
 import { ANAMNESE_SECTIONS } from '@/lib/consultation/anamnese';
@@ -187,7 +187,8 @@ function Champ({ label, valeur, suffixe }: { label: string; valeur: unknown; suf
 function Section({ titre, children }: { titre: string; children: React.ReactNode }) {
   return (
     <section className="rounded-xl border border-border bg-surface p-4">
-      <h4 className="font-display text-base font-semibold text-foreground">{titre}</h4>
+      {/* h3 sous le titre h2 du tiroir (PRA-3b Q2 a) : aucun niveau sauté. */}
+      <h3 className="font-display text-base font-semibold text-foreground">{titre}</h3>
       <div className="mt-2">{children}</div>
     </section>
   );
@@ -275,7 +276,29 @@ function BlocConsultation({ consultation }: { consultation: Consultation }) {
  * On rend donc ce que la route sert — le plus récent d'abord —, chaque entrée
  * nommant son statut et sa date.
  */
-export function RenseignementsPatientPanel({ etat, consultations, erreur }: EtatRenseignements) {
+export function RenseignementsPatientPanel(props: EtatRenseignements) {
+  // « Réessayer » (T-17, PRA-3b) relit la seule lecture des renseignements,
+  // puis rend le focus au contenu relu : le bouton disparaît, et le focus ne
+  // doit pas retomber sur le corps de la page.
+  const contenuRef = useRef<HTMLDivElement>(null);
+  const { charger } = props;
+  const relire = useCallback(async () => {
+    await charger();
+    contenuRef.current?.focus();
+  }, [charger]);
+  return (
+    <div ref={contenuRef} tabIndex={-1} className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring">
+      <ContenuRenseignements {...props} onReessayer={() => void relire()} />
+    </div>
+  );
+}
+
+function ContenuRenseignements({
+  etat,
+  consultations,
+  erreur,
+  onReessayer,
+}: EtatRenseignements & { onReessayer: () => void }) {
   if (etat === 'repos' || etat === 'chargement') {
     return (
       <p role="status" className="text-base text-muted-foreground">
@@ -288,9 +311,18 @@ export function RenseignementsPatientPanel({ etat, consultations, erreur }: Etat
   // peut porter une anamnèse entière que personne ne verrait.
   if (etat === 'erreur') {
     return (
-      <p role="alert" className="text-base text-status-warning">
-        {erreur} Ce n’est pas une absence de renseignements : le dossier peut en porter.
-      </p>
+      <div role="alert" className="flex flex-wrap items-center gap-3">
+        <p className="min-w-0 text-base text-status-warning">
+          {erreur} Ce n’est pas une absence de renseignements : le dossier peut en porter.
+        </p>
+        <button
+          type="button"
+          onClick={onReessayer}
+          className="ml-auto min-h-11 shrink-0 rounded-lg border border-accent px-3 py-1 text-sm font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+        >
+          Réessayer
+        </button>
+      </div>
     );
   }
 

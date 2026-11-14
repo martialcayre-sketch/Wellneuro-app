@@ -107,6 +107,7 @@ export function FicheAdministrativePanel({
   patient,
   onEnregistre,
   onFermer,
+  niveauTitre = 'h3',
 }: {
   patient: PatientDossier;
   onEnregistre: () => void | Promise<void>;
@@ -120,7 +121,13 @@ export function FicheAdministrativePanel({
    * pouvoir revenir en arrière, sur les deux surfaces.
    */
   onFermer?: () => void;
+  /**
+   * Niveau du titre (PRA-3b Q2 a) : `h4` dans le cockpit, où la phase
+   * « Patient » porte le `h3` ; `h3` dans le rayon Patients.
+   */
+  niveauTitre?: 'h3' | 'h4';
 }) {
+  const Titre = niveauTitre;
   const [form, setForm] = useState<Formulaire>(() => formulaireDepuis(patient));
   const [envoi, setEnvoi] = useState(false);
   const [retour, setRetour] = useState<{ ok: boolean; msg: string } | null>(null);
@@ -172,13 +179,13 @@ export function FicheAdministrativePanel({
       className="bg-surface border border-accent rounded-xl p-4 space-y-4"
       aria-labelledby="fiche-administrative-titre"
     >
-      <h3
+      <Titre
         id="fiche-administrative-titre"
         className="font-display text-lg font-semibold text-foreground"
       >
         Fiche administrative{' '}
         <span className="font-normal text-muted-foreground">{patient.idPatient}</span>
-      </h3>
+      </Titre>
 
       {/* D-284 §3 et §4 : ce que la garde d'âge fait au portail, dit au
           praticien — lu sur le dossier ENREGISTRÉ, pas sur la saisie en cours. */}
