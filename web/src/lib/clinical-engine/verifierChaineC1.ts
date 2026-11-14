@@ -3,6 +3,7 @@ import { ORDRE_CONSULTATION_PORTEUSE, whereConsultationPorteuse } from '@/lib/co
 import { filtrerPassationsExploitables } from '@/lib/scoring/validite';
 import { canonicalJson, canonicalSha256 } from './canonical';
 import { lireCouverturesAdressage } from './adressagesSignalAlertePrisma';
+import { joindreDesignationsCabinet } from './designationsCabinetPrisma';
 import { lireAdmissibilitePriorites } from '@/lib/clinical/prioritesAdmissibles';
 import { construireChaineC1Tolerante, lireSelectionPriorite } from './selectionPrioritePrisma';
 import { adaptRuntimeInputs } from './runtimeFromPrisma';
@@ -71,7 +72,7 @@ export async function entreesRuntime(idPatient: string) {
   const [responses, consultation] = await Promise.all([
     prisma.questionnaireReponse.findMany({
       where: { idPatient },
-      select: { idReponse: true, idQuestionnaire: true, dateReponse: true, scoresJson: true, statutValidite: true },
+      select: { idReponse: true, idQuestionnaire: true, dateReponse: true, scoresJson: true, statutValidite: true, idAssignation: true },
       orderBy: [{ dateReponse: 'asc' }, { idReponse: 'asc' }],
     }),
     prisma.consultation.findFirst({
@@ -83,6 +84,9 @@ export async function entreesRuntime(idPatient: string) {
       orderBy: ORDRE_CONSULTATION_PORTEUSE,
     }),
   ]);
+  // [[D-515]] §4 : la désignation copiée sur l'assignation des passations du
+  // cabinet, jointe drapeau allumé seulement — `SAF-QUEST-02` la lit.
+  const passationsSecurite = await joindreDesignationsCabinet(responses);
   return {
     ...adaptRuntimeInputs(
       // `createdAt` n'est lu que par `proposeRuntimeEpisode`, qui n'est PAS appelé
@@ -92,7 +96,7 @@ export async function entreesRuntime(idPatient: string) {
       filtrerPassationsExploitables(responses),
       consultation,
       // Toutes les passations ([[D-275]] §2) : la même source que le cockpit.
-      responses,
+      passationsSecurite,
     ),
     idConsultationPorteuse: consultation?.id ?? null,
   };

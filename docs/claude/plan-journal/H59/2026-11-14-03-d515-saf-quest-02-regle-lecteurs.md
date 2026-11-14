@@ -1,0 +1,6 @@
+- **Mise à jour (2026-11-14, lot D-277, code de [[D-515]] §6.2, PR 2 sur 4)** : la règle `SAF-QUEST-02` non signée et ses lecteurs, derrière `WN_ENABLE_DECLARATION_SUICIDE_CAB`, éteint. Chemin clinique, sans migration.
+  - **Table** `safetyQuestionnaireCabinetV1.ts`, en codes, textes à part ; non signée. `SAF-QUEST-01` identique à l'octet.
+  - **Producteur** : question désignée contre la valeur « non » copiée ; hors options = constat (y compris l'option écartée hors int4, réponse 20261114-1112-a, option 1) ; illisible et désignation inconnue (§7) = limitation.
+  - **Lecteurs** : Fil, moteur, lettre, par la seule jointure `joindreDesignationsCabinet`. Lettre : version d'ancrage `safety-signals-questionnaire-cabinet-v1`, inchangée sans réponse du cabinet.
+  - **Bancs** : `safetyQuestionnaireCabinet.guard.test.ts`, banc de la copie étendu (P3-a de `wn-reviewer` sur #2103), banc sur base réelle au CI.
+  - **Reste** : PR 3 (courriel, message patient, banc navigateur↔serveur), PR 4 (signature), recomptage puis allumage par le responsable.

@@ -8,6 +8,7 @@ import { SIGNATURE_PRATICIEN } from '@/lib/correspondance/signature';
 import { sha256 } from './corpusSyntheseV1';
 import { SAFETY_SIGNALS_SHA256, SAFETY_SIGNAL_CONDUITES, rangDuSignal } from './safetySignalsV1';
 import { SAFETY_QUESTIONNAIRE_SHA256 } from './safetyQuestionnaireV1';
+import { MENTION_QUESTIONNAIRE_CABINET, SAFETY_QUESTIONNAIRE_CABINET_SHA256 } from './safetyQuestionnaireCabinetV1';
 import { reponsesSecuriteAdressees, type ReponseSecurite } from '@/lib/clinical-engine/safetyFindings';
 
 // Lettre d'adressage — la SEULE raison cliniquement obligatoire d'écrire à un
@@ -68,6 +69,28 @@ export const SHA_ANCRAGE_ADRESSAGE_QUESTIONNAIRE = sha256(
   JSON.stringify({ anamnese: SAFETY_SIGNALS_SHA256, questionnaire: SAFETY_QUESTIONNAIRE_SHA256 }),
 );
 
+/**
+ * L'estampille d'une lettre qui cite AU MOINS UNE réponse d'un instrument du
+ * cabinet ([[D-515]] §5). Une lettre sans réponse du cabinet garde la sienne,
+ * au caractère près. PRÉFIXE `safety-signals-` CONSERVÉ, pour le motif
+ * ci-dessus : le trigger et `couverturesRetenues` l'exigent.
+ */
+export const VERSION_ANCRAGE_ADRESSAGE_QUESTIONNAIRE_CABINET = 'safety-signals-questionnaire-cabinet-v1';
+
+/**
+ * Le SHA VIVANT d'une lettre qui cite une réponse du cabinet : celui des TROIS
+ * tables dont elle recopie un texte. Que l'une bouge, et la lettre se lit
+ * périmée. Les libellés du praticien n'y entrent pas : ils ne sont pas signés
+ * ([[D-515]] §3) et vivent dans la copie de l'assignation.
+ */
+export const SHA_ANCRAGE_ADRESSAGE_QUESTIONNAIRE_CABINET = sha256(
+  JSON.stringify({
+    anamnese: SAFETY_SIGNALS_SHA256,
+    questionnaire: SAFETY_QUESTIONNAIRE_SHA256,
+    cabinet: SAFETY_QUESTIONNAIRE_CABINET_SHA256,
+  }),
+);
+
 export type EntreeCourrierAdressage = {
   patientId: string;
   /**
@@ -81,7 +104,8 @@ export type EntreeCourrierAdressage = {
    * `reponsesSecuriteDeclarees` les rend. Le module retient celles que le
    * producteur retient (`reponsesSecuriteAdressees`) ; il n'en dérive rien.
    * L'appelant passe `[]` quand `SAF-QUEST-01` n'est pas signée : la lettre
-   * ne doit pas citer ce que le moteur ne bloque pas.
+   * ne doit pas citer ce que le moteur ne bloque pas. De même pour les
+   * réponses du cabinet (`cabinet` présent) et `SAF-QUEST-02` ([[D-515]]).
    */
   reponses: ReponseSecurite[];
   /** SHA VIVANT de la table de sécurité au moment du rendu (provenance). */
@@ -188,6 +212,9 @@ export function genererCourrierAdressage(
   const horsCotation = retenus.some(signal => !signal.cote);
   const horsOptions = reponses.some(reponse => reponse.lecture.kind === 'hors_options');
   const avecQuestionnaire = reponses.length > 0;
+  // [[D-515]] §5 : une réponse d'un instrument du cabinet est citée depuis la
+  // copie, marquée (§), sous la mention qui la dit écrite par le praticien.
+  const avecCabinet = reponses.some(reponse => reponse.cabinet);
   // La source, dite au médecin : anamnèse seule (texte d'avant [[D-275]] §2,
   // au caractère près), questionnaires seuls, ou les deux.
   const origine = !avecQuestionnaire
@@ -211,11 +238,15 @@ export function genererCourrierAdressage(
     ...(avecQuestionnaire
       ? ['Réponses du patient à la question sur les idées de mort ou de suicide :\n'
         + reponses
-          .map(reponse => `— ${reponse.instrument}, passation du ${reponse.date} : ${
-            reponse.lecture.kind === 'option'
+          .map(reponse => {
+            const citee = reponse.lecture.kind === 'option'
               ? `« ${reponse.lecture.libelle} »`
-              : 'valeur hors des options de la question (‡)'
-          }`)
+              : 'valeur hors des options de la question (‡)';
+            return reponse.cabinet
+              ? `— questionnaire « ${reponse.instrument} » (§), passation du ${reponse.date},`
+                + ` question « ${reponse.cabinet.enonce || reponse.idQuestion} » : ${citee}`
+              : `— ${reponse.instrument}, passation du ${reponse.date} : ${citee}`;
+          })
           .join('\n')]
       : []),
     // RECOPIÉ, jamais reformulé : ce texte est celui du rang `adressage` de la
@@ -224,6 +255,7 @@ export function genererCourrierAdressage(
     !avecQuestionnaire ? PHRASE_DECLARE : retenus.length === 0 ? PHRASE_DECLARE_QUESTIONNAIRE : PHRASE_DECLARE_MIXTE,
     ...(horsCotation ? [PHRASE_HORS_COTATION] : []),
     ...(horsOptions ? [PHRASE_HORS_OPTIONS] : []),
+    ...(avecCabinet ? [`(§) ${MENTION_QUESTIONNAIRE_CABINET}`] : []),
     PHRASE_ABSTENTION,
     INFORMATION_MEDECIN,
     `Avec mes remerciements pour votre lecture. Courrier préparé le ${dateLisible}.`,
@@ -235,7 +267,13 @@ export function genererCourrierAdressage(
     id: `courrier-adressage-${entree.patientId}-${dateLisible}`,
     type: 'narratif',
     regime: 'statique_valide',
-    provenance: avecQuestionnaire
+    provenance: avecCabinet
+      ? {
+        source: 'signaux_securite_questionnaires',
+        ancrageHash: SHA_ANCRAGE_ADRESSAGE_QUESTIONNAIRE_CABINET,
+        version: VERSION_ANCRAGE_ADRESSAGE_QUESTIONNAIRE_CABINET,
+      }
+      : avecQuestionnaire
       ? {
         source: 'signaux_securite_questionnaires',
         ancrageHash: SHA_ANCRAGE_ADRESSAGE_QUESTIONNAIRE,
@@ -317,6 +355,7 @@ export function rendreCourrierAdressageFige(entree: {
     provenance: {
       // La source se lit sur la version que la lettre a consignée.
       source: entree.ancrageVersion === VERSION_ANCRAGE_ADRESSAGE_QUESTIONNAIRE
+        || entree.ancrageVersion === VERSION_ANCRAGE_ADRESSAGE_QUESTIONNAIRE_CABINET
         ? 'signaux_securite_questionnaires'
         : 'signaux_securite_anamnese',
       ancrageHash: entree.ancrageSha256,

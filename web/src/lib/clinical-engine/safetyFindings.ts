@@ -21,7 +21,16 @@ import {
   questionSecuriteDe,
   regleSecuriteQuestionnaireValidee,
 } from '@/lib/clinical/safetyQuestionnaireV1';
+import {
+  LIMITATION_QUESTIONNAIRE_CABINET_DESIGNATION_INCONNUE,
+  LIMITATION_QUESTIONNAIRE_CABINET_ILLISIBLE,
+  MENTION_QUESTIONNAIRE_CABINET,
+  REGLE_SECURITE_QUESTIONNAIRE_CABINET,
+  SAFETY_QUESTIONNAIRE_CABINET_METADATA,
+  regleSecuriteQuestionnaireCabinetValidee,
+} from '@/lib/clinical/safetyQuestionnaireCabinetV1';
 import { sha256 } from '@/lib/clinical/corpusSyntheseV1';
+import { declarationSuicideCabinetActive } from '@/lib/securite/declarationSuicideCabinet';
 import {
   PREFIXE_FINDING_ANAMNESE,
   PREFIXE_FINDING_QUESTIONNAIRE,
@@ -173,6 +182,24 @@ export type PassationSecuriteRow = {
   dateReponse: Date;
   scoresJson: unknown;
   statutValidite?: string | null;
+  /**
+   * [[D-515]] §4 : la déclaration et la désignation COPIÉES sur l'assignation
+   * d'un instrument du cabinet, jointes par `joindreDesignationsCabinet`.
+   * ABSENTE = non chargée (drapeau éteint, catalogue, appelant qui ne la lit
+   * pas) : la passation n'est alors pas lue par `SAF-QUEST-02`. Présente, elle
+   * dit ce que l'assignation porte — NULL compris, qui n'est jamais « non ».
+   */
+  designationCabinet?: DesignationCabinetLue;
+};
+
+/** Les colonnes de l'assignation que `SAF-QUEST-02` lit, telles que la base les rend. */
+export type DesignationCabinetLue = {
+  poseQuestionSuicide: boolean | null;
+  /** Titre de l'assignation : nom de l'instrument quand la copie manque (§7). */
+  titreAssignation: string;
+  questionSuicideId: string | null;
+  questionSuicideOptionNon: number | null;
+  questionSuicideCopie: unknown;
 };
 
 /**
@@ -184,6 +211,11 @@ export type PassationSecuriteRow = {
  *     première ;
  *   — `hors_options` : une valeur est présente, qu'aucune option ne connaît ;
  *   — `illisible` : aucune réponse lisible (clé absente, nulle, vide).
+ *
+ * Et une quatrième, pour les seuls instruments du cabinet ([[D-515]] §7) :
+ *   — `designation_inconnue` : l'instrument est déclaré « oui », mais
+ *     l'assignation ne porte pas de désignation lisible. Ni « non », ni
+ *     constat : une limitation.
  */
 export type ReponseSecurite = {
   idReponse: string;
@@ -195,7 +227,15 @@ export type ReponseSecurite = {
   lecture:
     | { kind: 'option'; v: number; libelle: string; non: boolean }
     | { kind: 'hors_options'; cle: string }
-    | { kind: 'illisible' };
+    | { kind: 'illisible' }
+    | { kind: 'designation_inconnue' };
+  /**
+   * Présent pour une passation d'un instrument du cabinet, lue par
+   * `SAF-QUEST-02` ([[D-515]]) ; absent pour le catalogue (`SAF-QUEST-01`).
+   * `enonce` : l'énoncé copié, verbatim ; `null` quand la désignation est
+   * inconnue (§7).
+   */
+  cabinet?: { enonce: string | null };
 };
 
 function lireValeurBrute(valeur: unknown): { kind: 'illisible' } | { kind: 'nombre'; n: number } | { kind: 'autre'; cle: string } {
@@ -212,6 +252,102 @@ function lireValeurBrute(valeur: unknown): { kind: 'illisible' } | { kind: 'nomb
     return /^-?\d+(\.\d+)?$/.test(texte) ? { kind: 'nombre', n: Number(texte) } : { kind: 'autre', cle: JSON.stringify(texte) };
   }
   return { kind: 'autre', cle: JSON.stringify(valeur) ?? typeof valeur };
+}
+
+function rawAnswersDe(row: PassationSecuriteRow): Record<string, unknown> {
+  const scores = row.scoresJson !== null && typeof row.scoresJson === 'object' && !Array.isArray(row.scoresJson)
+    ? row.scoresJson as Record<string, unknown>
+    : {};
+  return scores.rawAnswers !== null && typeof scores.rawAnswers === 'object' && !Array.isArray(scores.rawAnswers)
+    ? scores.rawAnswers as Record<string, unknown>
+    : {};
+}
+
+type CopieLue = { instrument: string; enonce: string; options: { v: number; l: string }[] };
+
+/**
+ * La copie de l'assignation, VÉRIFIÉE et jamais complétée ([[D-515]] §4 et
+ * §7). Toute forme inattendue — copie absente, champ manquant, valeur
+ * « non » hors des options copiées — rend `null` : la désignation est alors
+ * inconnue. Rien n'est relu de l'instrument, rien n'est reconstitué.
+ */
+function lireCopieDesignation(designation: DesignationCabinetLue): CopieLue | null {
+  const { questionSuicideId, questionSuicideOptionNon, questionSuicideCopie } = designation;
+  if (typeof questionSuicideId !== 'string' || questionSuicideId.length === 0) return null;
+  if (!Number.isInteger(questionSuicideOptionNon)) return null;
+  const copie = questionSuicideCopie as { instrument?: unknown; enonce?: unknown; options?: unknown } | null;
+  if (!copie || typeof copie !== 'object' || Array.isArray(copie)) return null;
+  // Toute chaîne, vide comprise : l'écrivain (`copieDesignationSuicide`) copie
+  // tel quel, et un libellé vide n'efface pas la désignation — il se cite
+  // par l'identifiant de la question (revue `wn-reviewer` de la PR 2, P3).
+  if (typeof copie.instrument !== 'string' || typeof copie.enonce !== 'string') return null;
+  if (!Array.isArray(copie.options) || copie.options.length === 0) return null;
+  const options: { v: number; l: string }[] = [];
+  for (const brute of copie.options) {
+    const option = brute as { v?: unknown; l?: unknown } | null;
+    if (!option || !Number.isInteger(option.v) || typeof option.l !== 'string') return null;
+    options.push({ v: option.v as number, l: option.l });
+  }
+  if (!options.some(option => option.v === questionSuicideOptionNon)) return null;
+  return { instrument: copie.instrument, enonce: copie.enonce, options };
+}
+
+/**
+ * La réponse d'une passation d'un instrument du cabinet ([[D-515]] §1, §2 et
+ * §7), ou `null` quand la règle ne la lit pas : désignation non chargée, ou
+ * déclaration autre que « oui » (« non », non déclaré). Seule la question
+ * désignée est lue ; les autres questions de l'instrument ne le sont pas.
+ *
+ * MÊME LECTURE DE VALEUR que `SAF-QUEST-01` (`lireValeurBrute`), comparée à
+ * la valeur « non » COPIÉE — pas au rang de l'option. Une valeur que la copie
+ * ne connaît pas est « hors options », donc un constat (fail-closed) ; c'est
+ * aussi le sort d'une option que la copie a écartée hors int4 (réponse
+ * 20261114-1112-a).
+ */
+function lireReponseCabinet(row: PassationSecuriteRow): ReponseSecurite | null {
+  // Drapeau éteint, rien n'est lu, même si une désignation a été jointe :
+  // la jointure le vérifie déjà, et ce second contrôle tient si un appelant
+  // la contournait (contre-revue Codex de la PR 2, P2).
+  if (!declarationSuicideCabinetActive()) return null;
+  const designation = row.designationCabinet;
+  if (!designation || designation.poseQuestionSuicide !== true) return null;
+  if (!row.idQuestionnaire.startsWith('CAB_')) return null;
+  const date = row.dateReponse.toISOString().slice(0, 10);
+  const copie = lireCopieDesignation(designation);
+  if (!copie) {
+    return {
+      idReponse: row.idReponse,
+      idQuestionnaire: row.idQuestionnaire,
+      idQuestion: designation.questionSuicideId ?? '',
+      instrument: designation.titreAssignation,
+      date,
+      lecture: { kind: 'designation_inconnue' },
+      cabinet: { enonce: null },
+    };
+  }
+  const idQuestion = designation.questionSuicideId as string;
+  const brutes = rawAnswersDe(row);
+  const valeur = lireValeurBrute(Object.hasOwn(brutes, idQuestion) ? brutes[idQuestion] : undefined);
+  let lecture: ReponseSecurite['lecture'];
+  if (valeur.kind === 'illisible') {
+    lecture = { kind: 'illisible' };
+  } else if (valeur.kind === 'autre') {
+    lecture = { kind: 'hors_options', cle: valeur.cle };
+  } else {
+    const option = copie.options.find(candidate => candidate.v === valeur.n);
+    lecture = option === undefined
+      ? { kind: 'hors_options', cle: String(valeur.n) }
+      : { kind: 'option', v: valeur.n, libelle: option.l, non: valeur.n === designation.questionSuicideOptionNon };
+  }
+  return {
+    idReponse: row.idReponse,
+    idQuestionnaire: row.idQuestionnaire,
+    idQuestion,
+    instrument: copie.instrument,
+    date,
+    lecture,
+    cabinet: { enonce: copie.enonce },
+  };
 }
 
 /**
@@ -238,7 +374,13 @@ export function reponsesSecuriteDeclarees(rows: readonly PassationSecuriteRow[])
   const reponses: ReponseSecurite[] = [];
   for (const row of rows.filter(passation => passation.statutValidite !== 'INVALID')) {
     const question = questionSecuriteDe(row.idQuestionnaire);
-    if (!question) continue;
+    if (!question) {
+      // [[D-515]] §1 : un instrument du cabinet n'est lu que si son
+      // assignation a été chargée ET porte la déclaration « oui ».
+      const cabinet = lireReponseCabinet(row);
+      if (cabinet) reponses.push(cabinet);
+      continue;
+    }
     const scores = row.scoresJson !== null && typeof row.scoresJson === 'object' && !Array.isArray(row.scoresJson)
       ? row.scoresJson as Record<string, unknown>
       : {};
@@ -384,6 +526,93 @@ function construireFindingsQuestionnaire(reponses: ReponseSecurite[]): {
 }
 
 /**
+ * Les constats du QUATRIÈME producteur ([[D-515]] §2, `SAF-QUEST-02`) : la
+ * question désignée d'un instrument du cabinet, lue dans la copie.
+ *
+ * LES QUATRE SORTIES DE `SAF-QUEST-01`, PLUS CELLE DU §7 :
+ *   1. réponse autre que la valeur « non » ⇒ un constat de rang `adressage` ;
+ *   2. valeur hors des options copiées ⇒ un constat aussi (fail-closed) ;
+ *   3. réponse illisible ⇒ aucun constat, une limitation par instrument (A2) ;
+ *   4. désignation inconnue (§7) ⇒ aucun constat, une limitation par instrument ;
+ *   5. table non signée ⇒ aucun constat, la règle jointe en `candidate`.
+ *
+ * LA RÈGLE N'EST JOINTE QUE SI UNE RÉPONSE OU UNE LIMITATION L'APPELLE
+ * ([[D-515]] §2) : un dossier sans instrument du cabinet déclaré « oui » garde
+ * l'empreinte d'avant ce lot, au caractère près. Même motif que
+ * `construireFindingsQuestionnaire` : `review.rules` entre dans l'empreinte de
+ * chaque carte diffusée.
+ *
+ * LES LIBELLÉS SONT CEUX DU PRATICIEN, CITÉS VERBATIM ET MARQUÉS COMME TELS :
+ * la mention entre dans les limitations de chaque constat ([[D-515]] §3).
+ */
+function construireFindingsQuestionnaireCabinet(reponses: ReponseSecurite[]): {
+  findings: SafetyFinding[];
+  rules: ClinicalRuleRef[];
+  limitations: string[];
+} {
+  const adressees = reponsesSecuriteAdressees(reponses);
+  const sansConclusion = reponses.filter(reponse => (
+    reponse.lecture.kind === 'illisible' || reponse.lecture.kind === 'designation_inconnue'
+  ));
+  const regle = regleSecuriteQuestionnaireCabinetValidee();
+  if (!regle) {
+    return {
+      findings: [],
+      rules: adressees.length > 0 || sansConclusion.length > 0
+        ? [{
+          ruleId: REGLE_SECURITE_QUESTIONNAIRE_CABINET,
+          version: SAFETY_QUESTIONNAIRE_CABINET_METADATA.version,
+          lifecycle: 'candidate',
+        }]
+        : [],
+      limitations: [],
+    };
+  }
+
+  const findings: SafetyFinding[] = adressees.map(reponse => {
+    const citee = reponse.lecture.kind === 'option'
+      ? `« ${reponse.lecture.libelle} »`
+      : 'valeur hors des options de la question';
+    return {
+      findingId: findingIdQuestionnaire(reponse),
+      kind: 'safety' as const,
+      disposition: 'requires_practitioner_review' as const,
+      // FIGÉ, pour le motif exact du premier producteur (`DC-23`).
+      confidence: 'à_documenter' as const,
+      rationale: `${CONDUITE_SECURITE_QUESTIONNAIRE} Réponse au questionnaire « ${reponse.instrument} » du ${reponse.date},`
+        + ` à la question « ${reponse.cabinet?.enonce || reponse.idQuestion} » : ${citee}.`
+        + ` Passation : ${reponse.idReponse}.`,
+      ruleId: regle.ruleId,
+      provenance: { responseIds: [], needIds: [], clinicalObjectCodes: [] },
+      limitations: reponse.lecture.kind === 'hors_options'
+        ? [LIMITATION_QUESTIONNAIRE_PROVENANCE, MENTION_QUESTIONNAIRE_CABINET, LIMITATION_QUESTIONNAIRE_HORS_OPTIONS]
+        : [LIMITATION_QUESTIONNAIRE_PROVENANCE, MENTION_QUESTIONNAIRE_CABINET],
+    };
+  });
+
+  // A2 et §7 : une limitation par instrument et par cas, dans un ordre qui ne
+  // doit rien à la base (identifiant d'instrument, puis nom cité).
+  const limitations: string[] = [];
+  for (const [kind, gabarit] of [
+    ['illisible', LIMITATION_QUESTIONNAIRE_CABINET_ILLISIBLE],
+    ['designation_inconnue', LIMITATION_QUESTIONNAIRE_CABINET_DESIGNATION_INCONNUE],
+  ] as const) {
+    const parInstrument = new Map<string, { instrument: string; n: number }>();
+    for (const reponse of sansConclusion.filter(candidate => candidate.lecture.kind === kind)) {
+      const cle = JSON.stringify([reponse.idQuestionnaire, reponse.instrument]);
+      const courant = parInstrument.get(cle);
+      if (courant) courant.n += 1;
+      else parInstrument.set(cle, { instrument: reponse.instrument, n: 1 });
+    }
+    for (const cle of [...parInstrument.keys()].sort()) {
+      const { instrument, n } = parInstrument.get(cle) as { instrument: string; n: number };
+      limitations.push(gabarit.replace('{n}', String(n)).replace('{instrument}', `« ${instrument} »`));
+    }
+  }
+  return { findings, rules: findings.length > 0 || limitations.length > 0 ? [regle] : [], limitations };
+}
+
+/**
  * Les constats de sécurité d'un dossier, et les règles à joindre à la revue.
  *
  * TROIS CAS, ET AUCUN N'EST « NE RIEN FAIRE EN SILENCE » :
@@ -426,11 +655,14 @@ export function construireSafetyFindings(
   limitations: string[];
 } {
   const securiteEI = construireFindingsEffetIndesirable();
-  const securiteQuestionnaire = construireFindingsQuestionnaire(reponsesSecurite);
+  // `SAF-QUEST-01` reçoit les SEULES réponses du catalogue : sa sortie est
+  // celle d'avant [[D-515]], au caractère près. `SAF-QUEST-02` lit les autres.
+  const securiteQuestionnaire = construireFindingsQuestionnaire(reponsesSecurite.filter(reponse => !reponse.cabinet));
+  const securiteCabinet = construireFindingsQuestionnaireCabinet(reponsesSecurite.filter(reponse => reponse.cabinet));
   const regle = regleSecuriteValidee();
   if (!regle) {
     return {
-      findings: [...securiteEI.findings, ...securiteQuestionnaire.findings],
+      findings: [...securiteEI.findings, ...securiteQuestionnaire.findings, ...securiteCabinet.findings],
       rules: [
         {
           ruleId: REGLE_SECURITE_ANAMNESE,
@@ -439,8 +671,9 @@ export function construireSafetyFindings(
         },
         ...securiteEI.rules,
         ...securiteQuestionnaire.rules,
+        ...securiteCabinet.rules,
       ],
-      limitations: [...securiteEI.limitations, ...securiteQuestionnaire.limitations],
+      limitations: [...securiteEI.limitations, ...securiteQuestionnaire.limitations, ...securiteCabinet.limitations],
     };
   }
 
@@ -475,11 +708,12 @@ export function construireSafetyFindings(
     });
   }
   // Le troisième producteur À LA FIN : les dossiers sans réponse positive ni
-  // illisible gardent l'ordre — donc l'empreinte — d'avant [[D-275]] §2.
+  // illisible gardent l'ordre — donc l'empreinte — d'avant [[D-275]] §2. Le
+  // quatrième APRÈS lui, pour le même motif ([[D-515]] §2).
   return {
-    findings: [...findings, ...securiteEI.findings, ...securiteQuestionnaire.findings],
-    rules: [regle, ...securiteEI.rules, ...securiteQuestionnaire.rules],
-    limitations: [...securiteEI.limitations, ...securiteQuestionnaire.limitations],
+    findings: [...findings, ...securiteEI.findings, ...securiteQuestionnaire.findings, ...securiteCabinet.findings],
+    rules: [regle, ...securiteEI.rules, ...securiteQuestionnaire.rules, ...securiteCabinet.rules],
+    limitations: [...securiteEI.limitations, ...securiteQuestionnaire.limitations, ...securiteCabinet.limitations],
   };
 }
 

@@ -2066,6 +2066,17 @@ jobs:
           DB_POOL_MAX: '4'
         run: npx vitest run src/lib/correspondance/reservation.pg.test.ts
 
+      # La désignation copiée sur l'assignation (D-515 §4, H59) sur base
+      # réelle : la lecture de l'envoi rend definition_json en objet, la copie
+      # passe le CHECK assignations_designation_suicide_coherente (une
+      # demi-copie y est refusée), et SAF-QUEST-02 la relit telle quelle.
+      - name: Cabinet suicide designation real-database bench
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        env:
+          WN_DESIGNATION_CABINET_BANC_BASE: wellneuro_ci
+        run: npx vitest run src/lib/clinical-engine/designationsCabinet.pg.test.ts
+
       # C3 compteur d'attente du rail (D-210) : la sémantique « la DERNIÈRE
       # ligne du dossier décide » vivait en TypeScript éprouvé par un mock, qui
       # servait une liste déjà dédupliquée — il simulait la déduplication au lieu

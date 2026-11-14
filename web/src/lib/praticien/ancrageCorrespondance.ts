@@ -1,6 +1,6 @@
 import { INDICATIONS_BIOLOGIE_SHA256 } from '@/lib/biology-library/indicationsBiologieV1';
 import { SAFETY_SIGNALS_SHA256 } from '@/lib/clinical/safetySignalsV1';
-import { SHA_ANCRAGE_ADRESSAGE_QUESTIONNAIRE } from '@/lib/clinical/courrierAdressage';
+import { SHA_ANCRAGE_ADRESSAGE_QUESTIONNAIRE, SHA_ANCRAGE_ADRESSAGE_QUESTIONNAIRE_CABINET } from '@/lib/clinical/courrierAdressage';
 import type { VerdictAncre } from './correspondanceMedecin';
 
 // Verdict d'ancrage d'une lettre de correspondance médecin ([[D-073]]).
@@ -79,6 +79,9 @@ const SHA_ATTENDU_PAR_VERSION: ReadonlyMap<string, string> = new Map([
   // La lettre qui cite une réponse de questionnaire ([[D-275]] §2) : le SHA
   // des deux tables qu'elle recopie.
   ['safety-signals-questionnaire-v1', SHA_ANCRAGE_ADRESSAGE_QUESTIONNAIRE],
+  // La lettre qui cite une réponse d'un instrument du cabinet ([[D-515]] §5) :
+  // le SHA des trois tables dont elle recopie un texte.
+  ['safety-signals-questionnaire-cabinet-v1', SHA_ANCRAGE_ADRESSAGE_QUESTIONNAIRE_CABINET],
 ]);
 
 export function verdictAncrage(sha: string | null, version: string | null): VerdictAncrage {
