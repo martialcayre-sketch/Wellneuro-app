@@ -84,7 +84,7 @@ export default function ConditionsPage() {
         {/* Vers l'accueil de l'espace, qui choisit l'étape (consentement, fiche,
             parcours) : arrivé par le lien de l'e-mail, le patient n'y est pas
             encore passé dans cette session. */}
-        <Link href={`/portail/${token}`} className="shrink-0 text-sm text-primary hover:underline">
+        <Link href={`/portail/${token}`} className="shrink-0 text-sm text-primary hover:underline print:hidden">
           ← Mon espace
         </Link>
       </div>

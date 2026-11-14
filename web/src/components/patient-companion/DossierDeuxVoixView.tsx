@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { LienReconnexion } from '@/components/patient/LienReconnexion';
 import { PatientButton } from '@/components/patient/ui/PatientButton';
 import { PatientCard } from '@/components/patient/ui/PatientCard';
 import { PatientInlineMessage } from '@/components/patient/ui/PatientInlineMessage';
@@ -83,6 +84,8 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
   const [etat, setEtat] = useState<Etat>({ phase: 'chargement' });
   const [envoi, setEnvoi] = useState(false);
   const [erreurEnvoi, setErreurEnvoi] = useState('');
+  /** Refus 401 d'un envoi : « Me reconnecter », dans un nouvel onglet (Q6a de PAT-5). */
+  const [sessionExpiree, setSessionExpiree] = useState(false);
   /** Ce qui vient d'être transmis, ou `null`. Deux gestes, deux accusés : un
    *  message unique ferait dire à un texte ce qu'on dit d'un clic. */
   const [repondu, setRepondu] = useState<'reponse' | 'version' | 'etape' | 'correction' | null>(
@@ -143,6 +146,7 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
     async (idObjectif: string, sens: 'ratifie' | 'conteste') => {
       setEnvoi(true);
       setErreurEnvoi('');
+      setSessionExpiree(false);
       // Le succès précédent est retiré AVANT de repartir : sans cela, un refus
       // s'afficherait à côté d'un « c'est transmis » toujours à l'écran, et le
       // patient lirait les deux à la fois sans savoir lequel le concerne.
@@ -163,6 +167,7 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
           await charger();
         } else {
           setErreurEnvoi(data.error ?? 'Votre réponse n’a pas pu être enregistrée.');
+          setSessionExpiree(res.status === 401);
         }
       } catch {
         setErreurEnvoi('Erreur réseau. Réessayez.');
@@ -185,6 +190,7 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
     async (idObjectif: string) => {
       setEnvoi(true);
       setErreurEnvoi('');
+      setSessionExpiree(false);
       setRepondu(null);
       try {
         const res = await fetch('/api/portail/dossier', {
@@ -203,6 +209,7 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
           await charger();
         } else {
           setErreurEnvoi(data.error ?? 'Votre texte n’a pas pu être enregistré.');
+          setSessionExpiree(res.status === 401);
         }
       } catch {
         setErreurEnvoi('Erreur réseau. Réessayez.');
@@ -234,6 +241,7 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
     async (idObjectif: string) => {
       setEnvoi(true);
       setErreurEnvoi('');
+      setSessionExpiree(false);
       setRepondu(null);
       try {
         const res = await fetch('/api/portail/dossier', {
@@ -252,6 +260,7 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
           await charger();
         } else {
           setErreurEnvoi(data.error ?? 'Votre demande n’a pas pu être enregistrée.');
+          setSessionExpiree(res.status === 401);
         }
       } catch {
         setErreurEnvoi('Erreur réseau. Réessayez.');
@@ -279,6 +288,7 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
     async (idObjectif: string, jalon: string) => {
       setEnvoi(true);
       setErreurEnvoi('');
+      setSessionExpiree(false);
       setRepondu(null);
       try {
         const res = await fetch('/api/portail/dossier', {
@@ -303,6 +313,7 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
           await charger();
         } else {
           setErreurEnvoi(data.error ?? 'Votre réponse n’a pas pu être enregistrée.');
+          setSessionExpiree(res.status === 401);
         }
       } catch {
         setErreurEnvoi('Erreur réseau. Réessayez.');
@@ -383,7 +394,11 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
 
               {objectifs.map((objectif) => (
                 <div key={objectif.id} className="space-y-2 rounded-lg border border-border p-4">
-                  <div className="space-y-1">
+                  {/* LES DEUX VOIX (Q3a de PAT-5, [[D-481]] §1 bis, DOC-9) : un
+                      intitulé lisible et un fond par voix, que le texte double
+                      toujours. À l'impression, les fonds tombent et les
+                      intitulés restent. */}
+                  <div className="space-y-1 rounded-xl bg-voice-patient p-4 print:bg-transparent print:p-0">
                     {/* SA PAROLE LUI EST RENDUE COMME SIENNE (`D-167`,
                         appliqué au patient le 2026-09-11). Quand l'énoncé est
                         son dépôt « ce qui compte pour moi » cité MOT POUR MOT,
@@ -399,7 +414,7 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
                         la formulation neutre, qui reste vraie dans les deux
                         cas. Même discipline que l'accord, plus bas : la forme
                         n'est dite que lorsqu'elle est établie. */}
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-sm font-semibold text-foreground">
                       {/* `!= null` ET NON `!== null` : une réponse plus
                           ancienne — ou une fixture — ne porte pas le champ, et
                           `undefined !== null` est VRAI. C'est la seconde fois
@@ -418,8 +433,8 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
                   </div>
 
                   {objectif.reformulationPraticien && (
-                    <div className="space-y-1">
-                      <p className="text-xs text-muted-foreground">
+                    <div className="space-y-1 rounded-xl border border-border bg-voice-practitioner p-4 print:border-0 print:bg-transparent print:p-0">
+                      <p className="text-sm font-semibold text-foreground">
                         Ce que votre praticien en a compris
                       </p>
                       <p className="whitespace-pre-wrap text-base leading-relaxed">
@@ -538,6 +553,7 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
                         type="button"
                         variant="neutral"
                         disabled={envoi}
+                        className="print:hidden"
                         onClick={() => {
                           setErreurEnvoi('');
                           if (demandeId === objectif.id) {
@@ -559,7 +575,7 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
                       </PatientButton>
 
                       {demandeId === objectif.id && (
-                        <div className="space-y-2 rounded-lg border border-border p-3">
+                        <div className="space-y-2 rounded-lg border border-border p-3 print:hidden">
                           <label
                             htmlFor={`demande-${objectif.id}`}
                             className="block text-sm font-medium"
@@ -614,8 +630,9 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
                     </div>
                   )}
 
+                  {/* Commandes masquées à l'impression (Q5a de PAT-5, DOC-9). */}
                   {ratifiable && objectif.etat !== 'ratifie' && (
-                    <div className="space-y-2 pt-1">
+                    <div className="space-y-2 pt-1 print:hidden">
                       <p className="text-xs text-muted-foreground">
                         Votre réponse reste dans votre dossier et ne s’efface pas. Si vous changez
                         d’avis, répondez à nouveau : c’est la dernière réponse qui vaut.
@@ -789,7 +806,7 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
                   {jalonDu.statut === 'ouverte'
                     && ratifiable
                     && (objectif.etat === 'ratifie' || objectif.etat === 'dit_autrement') && (
-                      <div className="space-y-2 rounded-lg border border-border p-3">
+                      <div className="space-y-2 rounded-lg border border-border p-3 print:hidden">
                         <label
                           htmlFor={`jalon-${objectif.id}`}
                           className="block text-sm font-medium"
@@ -1074,6 +1091,15 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
               {erreurEnvoi && (
                 <PatientInlineMessage tone="error">{erreurEnvoi}</PatientInlineMessage>
               )}
+              {/* Nouvel onglet : le texte saisi n'existe que dans cette page
+                  ([[D-488]], DOC-9 ; question `20261113-1856-d`). Le lien ne
+                  vit qu'avec le message qu'il complète : ouvrir ou refermer
+                  une saisie efface le message, et le lien avec lui. */}
+              {erreurEnvoi && sessionExpiree && (
+                <div className="print:hidden">
+                  <LienReconnexion nouvelOnglet />
+                </div>
+              )}
             </>
           )}
 
@@ -1095,8 +1121,8 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
               têtes d'objectif concurrentes : la rendre sous chacune la ferait
               dire qu'elle répond à chacune. */}
           {objectifs.length > 0 && comprehension?.synthese && (
-            <div className="space-y-1 border-t border-border pt-4">
-              <p className="text-xs text-muted-foreground">
+            <div className="space-y-1 rounded-xl border border-border bg-voice-practitioner p-4 print:border-0 print:bg-transparent print:p-0">
+              <p className="text-sm font-semibold text-foreground">
                 Ce que votre praticien a compris de vous
                 {dateLisible(
                   comprehension.synthese.redigeeLe ?? comprehension.synthese.publieeLe,
@@ -1129,7 +1155,10 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
           ) : (
             <ul className="space-y-3">
               {ceQuiCompte.map((entree) => (
-                <li key={entree.id} className="space-y-1 border-l-2 border-border pl-3">
+                <li
+                  key={entree.id}
+                  className="space-y-1 rounded-xl bg-voice-patient p-4 print:bg-transparent print:p-0"
+                >
                   {/* JAMAIS `saisiLe ?? creeLe`. Les deux dates ne disent pas
                       la même chose : `saisiLe` est ce que le patient a DÉCLARÉ
                       (« cela se rapporte à ce jour-là »), `creeLe` est le
@@ -1151,7 +1180,7 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
           )}
           <a
             href={`/portail/${token}/ce-qui-compte`}
-            className="inline-flex text-sm text-primary hover:underline"
+            className="inline-flex text-sm text-primary hover:underline print:hidden"
           >
             Déposer ce qui compte pour moi aujourd’hui
           </a>
@@ -1229,7 +1258,7 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
                   garde structurelle qui le tient. */}
               <a
                 href={`/portail/${token}/comprehension`}
-                className="inline-flex text-sm text-primary hover:underline"
+                className="inline-flex text-sm text-primary hover:underline print:hidden"
               >
                 Répondre à ce texte
               </a>
