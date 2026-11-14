@@ -1,8 +1,8 @@
 # Registre sanitaire du corpus clinique
 
-`source_registry.json` contient 631 notices normalisées : 391 issues du pack WN
+`source_registry.json` contient 636 notices normalisées : 391 issues du pack WN
 Ultimate v2 (`NNFC1_Annee1`, `NNPP2_Annee2`), 116 instruments du cabinet
-(`INSTRUMENTS_CABINET`), et 124 sources externes (`SOURCES_EXTERNES` — BP-07 :
+(`INSTRUMENTS_CABINET`), et 129 sources externes (`SOURCES_EXTERNES` — BP-07 :
 avis d'agence, recommandation, essai, règlement, `WN-SRC-0508` à `0511`, puis
 pour la position P5 v0.3 une recommandation de l'OMS, `WN-SRC-0555` ; besoin 2 :
 trois avis d'agence, un rapport d'évaluation, une recommandation de pratique,
@@ -59,7 +59,10 @@ et un rapport des National Academies (IOM), `WN-SRC-0653` ;
 besoin 1, équilibre de l'assiette : un rapport de consultation de l'OMS, le
 résumé d'un article, une revue exploratoire, `WN-SRC-0654` à `0656`, puis une
 recommandation de l'AFEF, des lignes directrices européennes et une
-méta-analyse, `WN-SRC-0657` à `0659`),
+méta-analyse, `WN-SRC-0657` à `0659` ;
+besoin 4, perception et sensations corporelles : une étude primaire, une revue,
+deux études de laboratoire et une lettre sur deux biomarqueurs,
+`WN-SRC-0660` à `0664`),
 dont seuls des extraits ciblés sont ingérés. Le manuscrit soumis `WN-SRC-0546`
 est `deprecated` : remplacé par sa version publiée `WN-SRC-0564`, ses claims ne
 sont pas retenus. Les plages `0525` à `0539` et `0556` à `0559` sont
@@ -117,7 +120,11 @@ corpus runtime.
   trois sont sous licence CC BY (`0656`, `0658`, `0659`) ; le rapport de
   l'OMS (`0654`, tous droits réservés), le résumé de l'article (`0655`, droits
   de l'éditeur) et la recommandation de l'AFEF (`0657`, aucune licence
-  affichée) restent à vérifier. La recommandation de l'OMS
+  affichée) restent à vérifier ; au 2026-11-14, pour le besoin 4, deux sont
+  sous licence CC BY (`0662`, `0663`) ; l'étude de Seethaler et al. (`0660`,
+  tous droits réservés), le manuscrit d'auteur de Camilleri (`0661`, droits de
+  l'éditeur) et la lettre de Massier et al. (`0664`, CC BY-NC, clause non
+  commerciale) restent à vérifier. La recommandation de l'OMS
   (`WN-SRC-0555`, tous droits réservés), dont un extrait court est ingéré pour
   usage interne sur arbitrage du responsable, reste à vérifier.
 - Quarantaine sanitaire (`lifecycleStatus: quarantined`) : relue au registre
