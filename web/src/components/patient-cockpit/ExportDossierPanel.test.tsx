@@ -317,3 +317,13 @@ describe('ExportDossierPanel — échecs', () => {
     expect(within(dialogue).queryByRole('alert')).toBeNull();
   });
 });
+
+describe('ExportDossierPanel — PRA-3b, PR 7 (Q15 a)', () => {
+  it('distingue complet et pseudonymisé, et ne dit jamais « anonymisé »', () => {
+    const { container } = render(<ExportDossierPanel idPatient="PAT_SEED_03" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Exporter en PDF' }));
+    const texte = container.ownerDocument.body.textContent ?? '';
+    expect(texte).toMatch(/pseudonymisée/);
+    expect(texte).not.toMatch(/anonymis/i);
+  });
+});
