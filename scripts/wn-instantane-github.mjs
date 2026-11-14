@@ -33,7 +33,7 @@
 
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
-import { existsSync, realpathSync, writeFileSync } from 'node:fs';
+import { closeSync, constants, existsSync, lstatSync, openSync, realpathSync, writeFileSync } from 'node:fs';
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { court } from './lib/registres.mjs';
@@ -116,6 +116,25 @@ export function sousLeDepot(chemin, racine = RACINE) {
 }
 const MARQUE_DEPOT = '.' + 'git';
 
+/** La sortie existe-t-elle déjà comme lien symbolique ? L'écriture le suivrait. */
+export function sortieEstUnLien(chemin) {
+  try {
+    return lstatSync(chemin).isSymbolicLink();
+  } catch {
+    return false;
+  }
+}
+
+/** Écrit sans suivre un lien posé entre le contrôle et l'écriture (`O_NOFOLLOW`). */
+export function ecrireSansSuivre(chemin, contenu) {
+  const fd = openSync(chemin, constants.O_WRONLY | constants.O_CREAT | constants.O_TRUNC | constants.O_NOFOLLOW, 0o600);
+  try {
+    writeFileSync(fd, contenu);
+  } finally {
+    closeSync(fd);
+  }
+}
+
 /** Les déclarations « prête » d'une liste de commentaires d'issue. */
 export function declarations(commentaires, tete) {
   const ds = [];
@@ -139,7 +158,7 @@ export function resumerChecks(pages) {
   const parNom = new Map();
   for (const r of pages.flatMap((p) => p?.check_runs ?? [])) {
     const avant = parNom.get(r.name);
-    if (!avant || String(r.started_at ?? '') >= String(avant.started_at ?? '')) parNom.set(r.name, r);
+    if (!avant || plusRecent(r, avant)) parNom.set(r.name, r);
   }
   const echecs = [];
   const enCours = [];
@@ -150,6 +169,19 @@ export function resumerChecks(pages) {
   const requis = parNom.get(CHECK_REQUIS);
   const etatRequis = requis ? (requis.status !== 'completed' ? 'en_cours' : court(requis.conclusion, 20)) : null;
   return { total: parNom.size, succes: parNom.size - echecs.length - enCours.length, echecs: echecs.sort(), en_cours: enCours.sort(), requis: etatRequis === null ? {} : { [CHECK_REQUIS]: etatRequis } };
+}
+
+/**
+ * Entre deux exécutions d'un même check, la plus récente : par `started_at`
+ * quand les deux sont lisibles et distincts, sinon par `id` (croissant à la
+ * création) — un re-run en file n'a pas encore de `started_at`, et l'ordre
+ * des pages ne départage rien.
+ */
+export function plusRecent(r, avant) {
+  const a = typeof r?.started_at === 'string' ? Date.parse(r.started_at) : Number.NaN;
+  const b = typeof avant?.started_at === 'string' ? Date.parse(avant.started_at) : Number.NaN;
+  if (!Number.isNaN(a) && !Number.isNaN(b) && a !== b) return a > b;
+  return Number(r?.id ?? 0) > Number(avant?.id ?? 0);
 }
 
 /** Ce que le corps de PR donne sans être recopié : longueur, empreinte, handoffs nommés. */
@@ -239,7 +271,10 @@ export function prendre({ lireJson, lireJournal, git, maintenant, sondes = true,
       // Les deux gardes rendent `2` sur une lecture impossible : le code est
       // gardé tel quel, jamais lu comme un `0`.
       try {
-        pr.revue_pr_agent = { code: gardes.revue({ pr: p.number, lireJson, lireJournal }).code };
+        // La tête que la garde a jugée, relue par elle : le superviseur ne
+        // croit son code que si c'est celle de l'instantané.
+        const revue = gardes.revue({ pr: p.number, lireJson, lireJournal });
+        pr.revue_pr_agent = { code: revue.code, tete: /^[0-9a-f]{40}$/.test(revue.tete ?? '') ? revue.tete : null };
       } catch (err) {
         noter(p.number, 'revue PR-Agent', err);
       }
@@ -268,13 +303,14 @@ function lancer(cmd, args) {
 export function principal(argv, deps = null) {
   const { options, erreur } = analyserArguments(argv);
   if (erreur) return { code: SORTIE_USAGE, lignes: [`✗ ${erreur}`, USAGE] };
+  if (sortieEstUnLien(options.sortie)) return { code: SORTIE_USAGE, lignes: [`✗ sortie refusée : ${court(options.sortie, 200)} est un lien symbolique — l'écriture le suivrait`, USAGE] };
   if (sousLeDepot(options.sortie)) return { code: SORTIE_USAGE, lignes: [`✗ sortie refusée sous le dépôt : ${court(options.sortie, 200)} — l'instantané vit dans le bloc-notes de la session`, USAGE] };
   const d = deps ?? {
     lireJson: (chemin, paginer) => JSON.parse(lancer('gh', ['api', ...(paginer ? ['--paginate', '--slurp'] : []), chemin])),
     lireJournal: (id) => lancer('gh', ['run', 'view', String(id), '--log']),
     git: (a) => lancer('git', a),
     maintenant: Date.now(),
-    ecrire: (chemin, contenu) => writeFileSync(chemin, contenu),
+    ecrire: ecrireSansSuivre,
   };
   const { code, instantane, erreurs } = prendre({ ...d, sondes: options.sondes, fermees: options.fermees });
   const lignes = erreurs.map((e) => `✗ lecture en échec${e.pr ? ` (#${e.pr})` : ''} — ${e.lecture} : ${e.motif}`);

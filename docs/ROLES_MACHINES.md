@@ -345,7 +345,8 @@ PR fermées récentes, il garde leur état et le merge. Le 2026-11-14, il a pris
 89 s pour six PR ouvertes, et sa durée croît avec leur nombre.
 `--sans-sondes` le raccourcit, mais aucune PR n'est alors examinable. Son
 chemin de sortie est refusé dans tout arbre Git (ce worktree, la copie
-principale, un autre dépôt), liens symboliques résolus.
+principale, un autre dépôt), liens symboliques résolus. Une sortie qui est
+elle-même un lien est refusée, et l'écriture ne suit aucun lien.
 
 Le superviseur reprend les actions dues du contrôle des registres et y ajoute
 ce que GitHub permet d'établir :
@@ -357,14 +358,22 @@ ce que GitHub permet d'établir :
   l'instantané : une déclaration sur la tête, faite par un auteur qui a
   l'accès au dépôt ; une tête dans le dépôt ; la base `main` ; pas de
   brouillon ; aucun check en échec ni en cours, et `verify` conclu
-  `success` ; les deux gardes à `0`. Une ligne émise après l'instantané
-  attend le suivant ;
-- `declaration_sans_message` : une PR déclarée sans ligne au registre ;
+  `success` ; les deux gardes à `0`, la revue jugée sur la tête même de
+  l'instantané. Une ligne émise après l'instantané attend le suivant, et un
+  instantané périmé ne rend jamais une PR examinable ;
+- `declaration_sans_message` : une PR déclarée sans ligne au registre. Une
+  ligne traitée couvre la déclaration qu'elle annonce si elle la précède de
+  dix minutes au plus et n'a pas été traitée avant elle ;
 - `lot_a_passer_fait`, `lot_pr_fermee`, `question_a_clore` ;
-- `chevauchement_signale` : un signal, l'ordre des merges ne change pas.
+- `chevauchement_signale` : un signal, l'ordre des merges ne change pas ;
+  `chevauchement_non_etabli` quand une liste de fichiers est illisible ou
+  tronquée, celle de la PR ou d'une voisine.
 
-Une tête venue d'un fork, ou une déclaration d'un auteur sans accès au dépôt,
-est une anomalie. Il rend aussi la prochaine échéance.
+Une tête venue d'un fork est une anomalie dès qu'un registre nomme la PR
+(ligne `prete`, carnet) ou qu'une déclaration la vise. Une PR de fork que
+personne ne porte n'en est pas une, sans quoi le dépôt public garderait le
+superviseur en anomalie. Une déclaration d'un auteur sans accès au dépôt est
+toujours une anomalie. Il rend aussi la prochaine échéance.
 
 Sa portée est celle du contrôle des registres, en plus étroite encore :
 
@@ -375,7 +384,7 @@ Sa portée est celle du contrôle des registres, en plus étroite encore :
 - le mode dégradé ne rend jamais `0`. C'est le cas d'un instantané absent,
   hors contrat, périmé (plus de trente minutes), partiel ou pris sans les
   sondes, ou d'un export sans manifeste ou périmé. Un état de PR hors
-  énumération est une anomalie ;
+  énumération est une anomalie, qu'un registre nomme la PR ou non ;
 - il ne recopie aucun texte libre, ni des registres ni de GitHub (titres,
   corps de PR, textes de commentaires) ;
 - il n'écrit rien et ne lance aucun agent. Le faire tourner sans session

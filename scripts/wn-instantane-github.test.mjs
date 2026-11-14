@@ -3,7 +3,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -15,11 +15,14 @@ import {
   SORTIE_USAGE,
   analyserArguments,
   declarations,
+  ecrireSansSuivre,
   motifErreur,
+  plusRecent,
   prendre,
   principal,
   resumerChecks,
   resumerCorps,
+  sortieEstUnLien,
   sousLeDepot,
 } from './wn-instantane-github.mjs';
 
@@ -68,6 +71,43 @@ test('checks : dernière exécution par nom, en échec, en cours, état exact du
   assert.deepEqual(resumerChecks([]), { total: 0, succes: 0, echecs: [], en_cours: [], requis: {} });
   assert.deepEqual(resumerChecks([{ check_runs: [{ name: 'verify', status: 'completed', conclusion: 'skipped' }] }]).requis, { verify: 'skipped' });
   assert.deepEqual(resumerChecks([{ check_runs: [{ name: 'verify', status: 'queued' }] }]).requis, { verify: 'en_cours' });
+});
+
+test('L2 bis 4 : départage par id quand started_at manque ou est égal — l\'ordre des pages ne compte pas', () => {
+  const vert = { id: 10, name: 'verify', status: 'completed', conclusion: 'success', started_at: '2026-01-10T11:00:00Z' };
+  const enFile = { id: 11, name: 'verify', status: 'queued', conclusion: null, started_at: null };
+  for (const ordre of [[vert, enFile], [enFile, vert]]) {
+    assert.deepEqual(resumerChecks([{ check_runs: ordre }]).requis, { verify: 'en_cours' }, 're-run en file, sans started_at : il l\'emporte');
+  }
+  const egal = { ...vert, id: 12, conclusion: 'failure' };
+  for (const ordre of [[vert, egal], [egal, vert]]) {
+    assert.deepEqual(resumerChecks([{ check_runs: ordre }]).requis, { verify: 'failure' }, 'started_at égal : le plus grand id');
+  }
+  assert.ok(plusRecent({ id: 1, started_at: '2026-01-10T12:00:00Z' }, { id: 2, started_at: '2026-01-10T11:00:00Z' }), 'dates lisibles et distinctes : la date');
+});
+
+test('L2 bis 6 : une sortie qui est un lien symbolique est refusée, et l\'écriture ne suit aucun lien', () => {
+  const base = mkdtempSync(join(tmpdir(), 'wn-instantane-lien-'));
+  try {
+    const cible = join(base, 'cible.json');
+    const lien = join(base, 'lien.json');
+    symlinkSync(cible, lien);
+    assert.ok(sortieEstUnLien(lien));
+    assert.ok(!sortieEstUnLien(join(base, 'absent.json')));
+    const ecrits = [];
+    const r = principal(['--sortie', lien], { ecrire: (c, x) => ecrits.push([c, x]) });
+    assert.equal(r.code, SORTIE_USAGE);
+    assert.match(r.lignes[0], /lien symbolique/);
+    assert.deepEqual(ecrits, []);
+    assert.throws(() => ecrireSansSuivre(lien, '{}'), /ELOOP|EMLINK/, 'O_NOFOLLOW : un lien posé entre contrôle et écriture n\'est pas suivi');
+    assert.ok(!existsSync(cible));
+    const fichier = join(base, 'i.json');
+    writeFileSync(fichier, 'ancien');
+    ecrireSansSuivre(fichier, '{}');
+    assert.equal(readFileSync(fichier, 'utf8'), '{}', 'un fichier ordinaire se réécrit');
+  } finally {
+    rmSync(base, { recursive: true, force: true });
+  }
 });
 
 test('motif d\'erreur : une réponse illisible ne se recopie pas', () => {
@@ -217,8 +257,10 @@ test('une sonde qui lève : null et une erreur, jamais un code 0', () => {
   assert.equal(instantane.prs[0].revue_pr_agent, null);
   assert.equal(instantane.prs[0].sonde_release_db, null);
   assert.deepEqual(erreurs.filter((e) => e.pr === 101).map((e) => e.lecture), ['revue PR-Agent', 'sonde release-db']);
-  const vertes = prendre({ lireJson, ...sansReseau, sondes: true, gardes: { revue: () => ({ code: 0 }), releaseDb: () => ({ code: 0 }) } });
-  assert.deepEqual([vertes.instantane.prs[0].revue_pr_agent, vertes.instantane.prs[0].sonde_release_db], [{ code: 0 }, { code: 0 }]);
+  const vertes = prendre({ lireJson, ...sansReseau, sondes: true, gardes: { revue: () => ({ code: 0, tete: TETE }), releaseDb: () => ({ code: 0 }) } });
+  assert.deepEqual([vertes.instantane.prs[0].revue_pr_agent, vertes.instantane.prs[0].sonde_release_db], [{ code: 0, tete: TETE }, { code: 0 }]);
+  const sansTete = prendre({ lireJson, ...sansReseau, sondes: true, gardes: { revue: () => ({ code: 0, tete: 'illisible' }), releaseDb: () => ({ code: 0 }) } });
+  assert.deepEqual(sansTete.instantane.prs[0].revue_pr_agent, { code: 0, tete: null }, 'L2 bis 5 : la tête jugée par la garde est gardée, ou nulle');
 });
 
 test('principal : écrit le fichier demandé et rend une ligne machine', () => {

@@ -346,7 +346,7 @@ export function lire({ pr, lireJson, lireJournal }) {
   for (const c of verdict.conditions) lignes.push(`${c.ok ? '✓' : '❌'} (${c.id}) ${c.motif}`);
   lignes.push(...avertissements);
   lignes.push(`REVUE pr-agent code=${verdict.code} pr=${pr} tete=${tete}${run ? ` run=${run.id}` : ''}`);
-  return { code: verdict.code, lignes };
+  return { code: verdict.code, lignes, tete };
 }
 
 // ── Câblage CLI ─────────────────────────────────────────────────────────────

@@ -12,7 +12,7 @@
 // (titres et corps de PR, textes de commentaires) : il ne rend que des
 // identifiants, des numéros, des états et des horodatages, passés par `court`.
 
-import { analyser, court, instant } from './registres.mjs';
+import { SANS_NOUVELLES_MS, analyser, court, instant } from './registres.mjs';
 
 /** Au-delà, l'instantané décrit un état passé : mode dégradé. */
 export const INSTANTANE_PERIME_MIN = 30;
@@ -23,7 +23,13 @@ export const SCHEMA_INSTANTANE = 1;
 /** Associations GitHub d'un auteur de commentaire qui a l'accès en écriture au dépôt. */
 export const ASSOCIATIONS_DU_DEPOT = ['OWNER', 'MEMBER', 'COLLABORATOR'];
 
-const SANS_NOUVELLES_MS = 4 * 3600 * 1000;
+/**
+ * Une ligne `prete` traitée couvre la déclaration qu'elle annonce : la file
+ * écrit sa ligne puis son commentaire, à quelques secondes ou minutes près.
+ */
+export const TOLERANCE_DECLARATION_MS = 10 * 60 * 1000;
+/** Les états de PR que l'instantané énumère ; tout autre se lit en anomalie. */
+export const ETATS_PR = ['open', 'merged', 'closed'];
 const vide = (v) => v === undefined || v === null || (typeof v === 'string' && v.trim() === '');
 const texte = (v) => (typeof v === 'string' ? v : '');
 const iso = (t) => new Date(t).toISOString().replace(/\.\d{3}Z$/, 'Z');
@@ -49,9 +55,9 @@ export function numeroDePr(v) {
 export function lireInstantane(inst, maintenant) {
   const degrade = [];
   if (!inst || typeof inst !== 'object' || Array.isArray(inst)) {
-    return { prs: new Map(), priseLe: null, degrade: ['instantané absent ou illisible : aucun croisement avec GitHub, les actions dues viennent des seuls registres'] };
+    return { prs: new Map(), priseLe: null, perime: false, degrade: ['instantané absent ou illisible : aucun croisement avec GitHub, les actions dues viennent des seuls registres'] };
   }
-  const inutilisable = (motif, priseLe = null) => ({ prs: new Map(), priseLe, utilisable: false, degrade: [motif] });
+  const inutilisable = (motif, priseLe = null) => ({ prs: new Map(), priseLe, utilisable: false, perime: false, degrade: [motif] });
   if (inst.schema !== SCHEMA_INSTANTANE || !Array.isArray(inst.prs) || !Array.isArray(inst.erreurs)) {
     return inutilisable(`instantané hors contrat (schéma attendu ${SCHEMA_INSTANTANE}, \`prs\` et \`erreurs\` en tableaux) : aucun croisement avec GitHub`);
   }
@@ -59,7 +65,8 @@ export function lireInstantane(inst, maintenant) {
   if (priseLe === null) return inutilisable('instantané sans heure de prise lisible : aucun croisement avec GitHub');
   if (priseLe > maintenant + AVANCE_HORLOGE_MS) return inutilisable('instantané daté dans le futur : horloge ou fichier douteux, aucun croisement avec GitHub', priseLe);
   const ageMin = (maintenant - priseLe) / 60000;
-  if (ageMin > INSTANTANE_PERIME_MIN) degrade.push(`instantané vieux de ${Math.round(ageMin)} min — il décrit un état passé ; le refaire avant tout geste`);
+  const perime = ageMin > INSTANTANE_PERIME_MIN;
+  if (perime) degrade.push(`instantané vieux de ${Math.round(ageMin)} min — il décrit un état passé ; le refaire avant tout geste`);
   if (inst.erreurs.length > 0) degrade.push(`${inst.erreurs.length} lecture(s) GitHub en échec à la prise de l'instantané : les sondes concernées sont tenues pour non établies`);
   if (inst.sondes !== true) degrade.push('instantané pris sans les sondes de merge : aucune PR ne peut être dite examinable');
   const prs = new Map();
@@ -69,7 +76,7 @@ export function lireInstantane(inst, maintenant) {
     else ecartees += 1;
   }
   if (ecartees > 0) degrade.push(`${ecartees} entrée(s) de PR hors contrat ou en double, écartée(s) : une ligne qui les nomme se lit « hors instantané »`);
-  return { prs, priseLe, utilisable: true, degrade };
+  return { prs, priseLe, utilisable: true, perime, degrade };
 }
 
 /**
@@ -104,6 +111,9 @@ export function conditionsObservees(pr) {
   else if (echecs > 0) ci = `${echecs} check(s) en échec`;
   else if (enCours > 0) ci = `${enCours} check(s) en cours`;
   else if (ch.requis?.[CHECK_REQUIS] !== 'success') ci = `\`${CHECK_REQUIS}\` ${ch.requis?.[CHECK_REQUIS] ? `à ${court(ch.requis[CHECK_REQUIS], 20)}` : 'absent'} : un CI partiel n'est pas un CI vert`;
+  // La garde relit la tête elle-même : un push entre ses lectures et celles de
+  // l'instantané ferait passer son code pour celui d'une autre tête.
+  const revueSurTete = /^[0-9a-f]{40}$/.test(texte(pr.revue_pr_agent?.tete)) && pr.revue_pr_agent.tete === pr.tete;
   let declaration = 'déclaration sur la tête';
   if (d === null) declaration = 'aucune déclaration « prête » sur la PR';
   else if (!surTete(d.sha, pr.tete)) declaration = 'déclaration sur un sha qui n\'est plus la tête';
@@ -113,7 +123,7 @@ export function conditionsObservees(pr) {
     { id: 'base', ok: pr.base === 'main', motif: pr.base === 'main' ? 'base `main`' : 'base autre que `main` (PR empilée) ou illisible' },
     { id: 'brouillon', ok: pr.brouillon === false, motif: pr.brouillon === false ? 'PR prête à la revue' : 'PR en brouillon ou état illisible' },
     { id: 'ci', ok: ci === 'checks verts sur la tête', motif: ci },
-    { id: 'revue', ok: pr.revue_pr_agent?.code === 0, motif: pr.revue_pr_agent ? `wn-revue-pr-agent → ${court(pr.revue_pr_agent.code, 4)}` : 'revue PR-Agent non sondée' },
+    { id: 'revue', ok: pr.revue_pr_agent?.code === 0 && revueSurTete, motif: !pr.revue_pr_agent ? 'revue PR-Agent non sondée' : !revueSurTete ? 'revue jugée sur une autre tête que celle lue (push entre deux lectures) ou tête illisible' : `wn-revue-pr-agent → ${court(pr.revue_pr_agent.code, 4)}` },
     { id: 'release-db', ok: pr.sonde_release_db?.code === 0, motif: pr.sonde_release_db ? `wn-sonde-release-db → ${court(pr.sonde_release_db.code, 4)}` : 'sonde release-db non jouée' },
   ];
 }
@@ -128,15 +138,28 @@ const confronterMerge = (n) => [
 const confronterEtat = (n) => [`gh pr view ${n} --json state,mergedAt,mergeCommit`];
 const confronterLigne = (collection, id) => `ArtifactData get ${collection}/${id} — version courante avant toute écriture (if_version)`;
 
-/** Les fichiers de code communs à deux PR ouvertes (les `*.md` sont des documents, à part). */
+/** Une liste de fichiers illisible ou tronquée ne prouve aucune absence de chevauchement. */
+const fichiersInconnus = (p) => !Array.isArray(p.fichiers) || p.fichiers_tronques === true;
+
+/**
+ * Les fichiers de code communs à deux PR ouvertes (les `*.md` sont des
+ * documents, à part). Rend `{ voisins, nonEtablis }` : `nonEtablis` nomme les
+ * PR dont la liste illisible ou tronquée laisse le chevauchement non établi —
+ * la PR elle-même comprise.
+ */
 function chevauchements(pr, ouvertes) {
-  const miens = new Set((pr.fichiers ?? []).filter((f) => !texte(f).endsWith('.md')));
-  if (miens.size === 0) return [];
-  return ouvertes
-    .filter((o) => o.numero !== pr.numero && Array.isArray(o.fichiers))
+  const autres = ouvertes.filter((o) => o.numero !== pr.numero);
+  if (!Array.isArray(pr.fichiers)) return { voisins: [], nonEtablis: [pr.numero] };
+  const miens = new Set(pr.fichiers.filter((f) => !texte(f).endsWith('.md')));
+  const nonEtablis = pr.fichiers_tronques === true ? [pr.numero] : [];
+  if (miens.size === 0) return { voisins: [], nonEtablis };
+  const voisins = autres
+    .filter((o) => Array.isArray(o.fichiers))
     .map((o) => ({ numero: o.numero, chemins: new Set(o.fichiers.filter((f) => miens.has(f))).size }))
     .filter((x) => x.chemins > 0)
     .sort((a, b) => b.chemins - a.chemins || a.numero - b.numero);
+  nonEtablis.push(...autres.filter(fichiersInconnus).map((o) => o.numero).sort((a, b) => a - b));
+  return { voisins, nonEtablis };
 }
 
 /**
@@ -150,7 +173,7 @@ export function superviser(lu, instantane, maintenant) {
   const analyse = analyser(lu, maintenant);
   // Le croisement porte sur un instantané UTILISABLE, même vide : une ligne
   // `prete` confrontée à un instantané sans sa PR sort « hors instantané ».
-  const { prs, priseLe, degrade, utilisable: croise } = lireInstantane(instantane, maintenant);
+  const { prs, priseLe, degrade, perime, utilisable: croise } = lireInstantane(instantane, maintenant);
   const anomalies = [];
   const actions = [];
   const remplacees = new Set();
@@ -163,10 +186,20 @@ export function superviser(lu, instantane, maintenant) {
   const ouvertes = [...prs.values()].filter((p) => p.etat === 'open');
 
   if (croise) {
-    // Une tête hors du dépôt ou une déclaration d'un auteur sans accès en
-    // écriture : la preuve d'origine manque, quel que soit le registre.
+    // Un état de PR hors énumération, qu'un registre la nomme ou non : rien
+    // ne se conclut sur elle.
+    for (const pr of prs.values()) {
+      if (!ETATS_PR.includes(pr.etat)) anomalies.push({ collection: 'github', id: `#${pr.numero}`, regle: 'etat', detail: `état de PR « ${court(pr.etat, 12)} » hors énumération (${ETATS_PR.join(', ')}) — rien ne se conclut` });
+    }
+
+    // Une tête hors du dépôt : anomalie dès qu'un registre nomme la PR ou
+    // qu'une déclaration la vise — une PR de fork que personne ne porte n'est
+    // pas un bruit permanent (le dépôt est public). Une déclaration d'un
+    // auteur sans accès en écriture : anomalie toujours.
+    const portees = new Set([...messages.filter((m) => m.objet === 'prete').map((m) => numeroDePr(m.ref)), ...lots.map((l) => numeroDePr(l.pr))].filter((n) => n !== null));
     for (const pr of ouvertes) {
-      if (pr.meme_depot !== true) anomalies.push({ collection: 'github', id: `#${pr.numero}`, regle: 'origine', detail: 'tête hors du dépôt (fork) ou origine illisible — aucune déclaration ne la couvre' });
+      const visee = portees.has(pr.numero) || (Array.isArray(pr.declarations) && pr.declarations.length > 0);
+      if (pr.meme_depot !== true && visee) anomalies.push({ collection: 'github', id: `#${pr.numero}`, regle: 'origine', detail: 'tête hors du dépôt (fork) ou origine illisible — aucune déclaration ne la couvre' });
       for (const d of pr.declarations ?? []) {
         if (!ASSOCIATIONS_DU_DEPOT.includes(d?.association)) anomalies.push({ collection: 'github', id: `#${pr.numero}`, regle: 'origine', detail: `déclaration « prête » d'un auteur sans accès au dépôt (${court(d?.association, 20)})` });
       }
@@ -174,15 +207,18 @@ export function superviser(lu, instantane, maintenant) {
 
     // Messages `prete` non traités, confrontés à leur PR. Une ligne compte
     // pour `declaration_sans_message` si elle est encore à traiter, ou si elle
-    // a été émise après la dernière déclaration : une ligne traitée (renvoi à
-    // la file) ne couvre pas une déclaration neuve.
+    // annonce la dernière déclaration : émise au plus tard dix minutes avant
+    // elle (la ligne précède le commentaire), et pas traitée avant elle. Une
+    // ligne traitée (renvoi à la file) ne couvre pas une déclaration neuve.
     const prNommees = new Set();
     for (const m of messages) {
       if (m.objet !== 'prete') continue;
       const n = numeroDePr(m.ref);
       if (n !== null) {
         const d = prs.has(n) ? derniereDeclaration(prs.get(n)) : null;
-        if (m.etat !== 'traite' || d === null || (instant(m.emis_le) ?? 0) >= instant(d.cree_le)) prNommees.add(n);
+        const traitee = instant(m.traite_le);
+        const couvre = d !== null && (instant(m.emis_le) ?? 0) >= instant(d.cree_le) - TOLERANCE_DECLARATION_MS && !(traitee !== null && traitee < instant(d.cree_le));
+        if (m.etat !== 'traite' || d === null || couvre) prNommees.add(n);
       }
       if (m.etat === 'traite') continue;
       const base = { collection: 'messages', id: id(m.id), cible: 'integrateur' };
@@ -198,7 +234,7 @@ export function superviser(lu, instantane, maintenant) {
       } else if (pr.etat === 'closed') {
         actions.push({ ...base, type: 'prete_sur_pr_fermee', pr: n, observe: observe(pr), a_confronter: [...confronterEtat(n), confronterLigne('messages', id(m.id))], detail: `#${n} fermée sans merge, ligne \`prete\` encore \`${court(m.etat, 10)}\` — passer à \`traite\`, la file reprend depuis son handoff` });
       } else if (pr.etat !== 'open') {
-        anomalies.push({ collection: 'github', id: `#${n}`, regle: 'etat', detail: `état de PR « ${court(pr.etat, 12)} » hors énumération (open, merged, closed) — rien ne se conclut` });
+        continue; // hors énumération : anomalie déjà dite plus haut
       } else {
         const conditions = conditionsObservees(pr);
         const declaration = derniereDeclaration(pr);
@@ -207,15 +243,20 @@ export function superviser(lu, instantane, maintenant) {
           actions.push({ ...base, type: 'prete_en_attente', pr: n, observe: observe(pr), a_confronter: confronterMerge(n), detail: `#${n} : ligne \`prete\` ${emise === null ? 'sans heure d\'émission lisible' : 'émise après la prise de l\'instantané'} — refaire l'instantané avant tout examen` });
         } else if (declaration !== null && !surTete(declaration.sha, pr.tete)) {
           actions.push({ ...base, type: 'prete_perimee', cible: court(m.de), pr: n, observe: observe(pr), a_confronter: [`gh pr view ${n} --json headRefOid`], detail: `la tête de #${n} a avancé après la déclaration — revue et CI à refaire sur la tête, puis nouvelle déclaration` });
+        } else if (conditions.every((c) => c.ok) && perime) {
+          actions.push({ ...base, type: 'prete_en_attente', pr: n, observe: observe(pr), a_confronter: confronterMerge(n), detail: `#${n} : conditions au vert dans un instantané périmé — le refaire avant tout examen` });
         } else if (conditions.every((c) => c.ok)) {
           actions.push({ ...base, type: 'merge_a_examiner', pr: n, observe: observe(pr), a_confronter: confronterMerge(n), detail: `#${n} : déclaration, CI, revue et sonde au vert dans l'instantané — l'examen du merge vaut d'être fait, sur l'état réel` });
         } else {
           const ko = conditions.filter((c) => !c.ok).map((c) => `${c.id} (${c.motif})`);
           actions.push({ ...base, type: 'prete_en_attente', pr: n, observe: observe(pr), a_confronter: confronterMerge(n), detail: `#${n} déclarée, pas examinable selon l'instantané : ${ko.join(' ; ')}` });
         }
-        const voisins = chevauchements(pr, ouvertes);
+        const { voisins, nonEtablis } = chevauchements(pr, ouvertes);
         if (voisins.length > 0) {
           actions.push({ ...base, type: 'chevauchement_signale', pr: n, observe: observe(pr), a_confronter: [`node scripts/wn-chevauchement.mjs ${n}`], detail: `fichiers de code communs avec ${voisins.map((v) => `#${v.numero} (${v.chemins})`).join(', ')} — signal, l'ordre des merges ne change pas` });
+        }
+        if (nonEtablis.length > 0) {
+          actions.push({ ...base, type: 'chevauchement_non_etabli', pr: n, observe: observe(pr), a_confronter: [`node scripts/wn-chevauchement.mjs ${n}`], detail: `fichiers illisibles ou tronqués pour ${nonEtablis.map((v) => `#${v}`).join(', ')} — chevauchement non établi, ni dans un sens ni dans l'autre` });
         }
       }
     }
