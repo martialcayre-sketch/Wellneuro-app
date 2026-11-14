@@ -49,9 +49,10 @@ export function SignauxAdressesPanel({
       aria-label="Signaux adressés"
       className="rounded-xl border border-border bg-surface p-4"
     >
-      <h3 className="text-sm font-semibold uppercase tracking-wide text-foreground">
+      {/* h4 sous la phase « Décision » (h3), sous-partie en h5 (PRA-3b Q2 a). */}
+      <h4 className="text-sm font-semibold uppercase tracking-wide text-foreground">
         Signaux adressés au médecin
-      </h3>
+      </h4>
       <p className="mt-1 text-sm text-muted-foreground">
         Ces signaux ont fait l’objet d’une lettre d’adressage consignée : ils ne suspendent plus
         la décision, et restent affichés. Révoquer une lettre consignée par erreur fait de nouveau
@@ -75,7 +76,7 @@ export function SignauxAdressesPanel({
           Un bouton sous chaque signal laissait croire qu'on révoquait celui-là
           seul, et deux boutons identiques ne se distinguaient pas au lecteur
           d'écran. */}
-      <h4 className="mt-4 text-sm font-medium text-foreground">Lettres consignées</h4>
+      <h5 className="mt-4 text-sm font-medium text-foreground">Lettres consignées</h5>
       <ul className="mt-2 flex flex-col gap-2">
         {couvertures
           .filter(couverture => couverture.findingIds.some(id => constats.some(c => c.findingId === id)))
@@ -94,7 +95,7 @@ export function SignauxAdressesPanel({
                     type="button"
                     aria-label={`Révoquer la lettre du ${quand}, qui couvre ${couverts > 1 ? `${couverts} signaux` : 'un signal'}`}
                     onClick={() => { setOuverte(cible); setMotif(''); }}
-                    className="min-h-11 rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground"
+                    className="min-h-11 rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                   >
                     Révoquer cette lettre
                   </button>
@@ -109,14 +110,14 @@ export function SignauxAdressesPanel({
                       maxLength={MOTIF_MAX}
                       rows={3}
                       onChange={event => setMotif(event.target.value)}
-                      className="mt-1 w-full rounded-lg border border-border bg-background p-2 text-sm text-foreground"
+                      className="mt-1 w-full rounded-lg border border-border bg-background p-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                     />
                     <div className="mt-2 flex flex-wrap gap-2">
                       <button
                         type="button"
                         disabled={enCours || motif.trim() === ''}
                         onClick={() => onRevoquer(cible, motif.trim())}
-                        className="min-h-11 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+                        className="min-h-11 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                       >
                         Confirmer la révocation
                       </button>
@@ -124,7 +125,7 @@ export function SignauxAdressesPanel({
                         type="button"
                         disabled={enCours}
                         onClick={() => setOuverte(null)}
-                        className="min-h-11 rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground"
+                        className="min-h-11 rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                       >
                         Annuler
                       </button>

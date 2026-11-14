@@ -2101,9 +2101,10 @@ export function ClinicalRuntimeSection({
           aria-label="Plainte et objectif du patient"
           className="rounded-xl border border-border bg-surface p-4 text-base"
         >
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          {/* h4 sous la phase « Décision » (h3), PRA-3b Q2 a. */}
+          <h4 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
             Ce que le patient met en avant
-          </h3>
+          </h4>
           <dl className="mt-3 flex flex-col gap-3">
             <div>
               <dt className="text-sm text-muted-foreground">Plainte la plus intense</dt>
@@ -2191,9 +2192,10 @@ export function ClinicalRuntimeSection({
           aria-label="Constats de sécurité"
           className="rounded-xl border border-status-warning/40 bg-status-warning/5 p-4"
         >
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-status-warning">
+          {/* h4 sous la phase « Décision » (h3) ; la lettre d'adressage en h5. */}
+          <h4 className="text-sm font-semibold uppercase tracking-wide text-status-warning">
             Ce qui suspend la décision
-          </h3>
+          </h4>
           <div className="mt-3 flex flex-col gap-3">
             {(review?.safetyFindings ?? []).map((constat) => (
               <TwoLevelReading
@@ -2358,7 +2360,7 @@ export function ClinicalRuntimeSection({
             className="rounded-xl border border-accent bg-status-warning/10 p-4 text-sm"
           >
             <details>
-              <summary className="cursor-pointer font-semibold text-foreground">
+              <summary className="min-h-11 cursor-pointer py-3 font-semibold text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring">
                 Contradictions touchant cette décision ({recoupements.length})
               </summary>
               <ul className="mt-2 grid gap-2">

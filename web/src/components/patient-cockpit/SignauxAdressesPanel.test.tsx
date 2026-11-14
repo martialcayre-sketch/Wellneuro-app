@@ -79,3 +79,16 @@ describe('SignauxAdressesPanel', () => {
     expect(screen.getByText(/à tous les signaux qu’elle couvre, sauf si une autre lettre les couvre/)).toBeTruthy();
   });
 });
+
+describe('SignauxAdressesPanel — PRA-3b, PR 3 (revue PR-Agent)', () => {
+  it('titre h4, sous-partie h5, et le motif de révocation porte l’anneau de focus comme ses gestes', () => {
+    rendre();
+    expect(screen.getByRole('heading', { level: 4, name: 'Signaux adressés au médecin' })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 5, name: 'Lettres consignées' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: /Révoquer la lettre du 3 octobre 2026/ }));
+    expect(screen.getByLabelText(/Motif de la révocation/).className).toContain('focus-visible:ring-2');
+    for (const bouton of screen.getAllByRole('button')) {
+      expect(bouton.className).toContain('focus-visible:ring-2');
+    }
+  });
+});

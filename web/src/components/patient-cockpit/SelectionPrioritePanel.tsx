@@ -131,12 +131,14 @@ export function SelectionPrioritePanel({
 
   return (
     <section aria-labelledby="selection-priorite-title" className="mt-4">
-      <h3
+      {/* h4 lisible sous la phase « Décision » (h3), même texte (PRA-3b Q2 a) ;
+          il était en petites capitales `text-xs`. */}
+      <h4
         id="selection-priorite-title"
-        className="text-xs font-semibold text-solar-ink uppercase tracking-[.06em] mb-3"
+        className="font-display text-base font-semibold text-foreground mb-3"
       >
         Priorité retenue
-      </h3>
+      </h4>
       <div className="rounded-xl border border-border bg-surface p-4 shadow-card">
         {/* LA PHRASE DE PÉREMPTION — la dette que `D-127` avait nommée sans la
             traiter. Sans elle, le praticien retrouvait « aucune priorité
@@ -199,7 +201,7 @@ export function SelectionPrioritePanel({
                   setBesoinsVises(retenuLibre?.besoinsVises ?? []);
                   setMotif('');
                 }}
-                className="mt-3 min-h-11 rounded-lg border border-border px-3 py-2 text-sm text-foreground"
+                className="mt-3 min-h-11 rounded-lg border border-border px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
               >
                 Retenir une autre priorité
               </button>
@@ -290,7 +292,7 @@ export function SelectionPrioritePanel({
                     <select
                       value={domaineLibre}
                       onChange={event => setDomaineLibre(event.target.value as DomainePrioriteLibre | '')}
-                      className="mt-1 block min-h-11 w-full rounded-lg border border-border bg-surface p-2 text-sm text-foreground"
+                      className="mt-1 block min-h-11 w-full rounded-lg border border-border bg-surface p-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                     >
                       <option value="">Choisir un domaine</option>
                       {DOMAINES_PRIORITE_LIBRE.map(domaine => (
@@ -308,7 +310,7 @@ export function SelectionPrioritePanel({
                       value={libelleLibre}
                       onChange={event => setLibelleLibre(event.target.value)}
                       maxLength={LIBELLE_PRIORITE_LIBRE_MAX}
-                      className="mt-1 block min-h-11 w-full rounded-lg border border-border bg-surface p-2 text-sm text-foreground"
+                      className="mt-1 block min-h-11 w-full rounded-lg border border-border bg-surface p-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                     />
                   </label>
                   <fieldset className="space-y-2">
@@ -371,7 +373,7 @@ export function SelectionPrioritePanel({
                 onChange={event => setMotif(event.target.value)}
                 rows={3}
                 maxLength={2000}
-                className="mt-1 w-full rounded-lg border border-border bg-surface p-2 text-sm text-foreground"
+                className="mt-1 w-full rounded-lg border border-border bg-surface p-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
               />
             </label>
 
@@ -385,7 +387,7 @@ export function SelectionPrioritePanel({
               <button
                 type="submit"
                 disabled={!choixComplet || !motifRenseigne || enregistrement}
-                className="min-h-11 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+                className="min-h-11 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
               >
                 {enregistrement ? 'Enregistrement…' : 'Retenir cette priorité'}
               </button>
@@ -396,7 +398,7 @@ export function SelectionPrioritePanel({
                     setOuvert(false);
                     setMotif('');
                   }}
-                  className="min-h-11 rounded-lg border border-border px-3 py-2 text-sm text-foreground"
+                  className="min-h-11 rounded-lg border border-border px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                 >
                   Annuler
                 </button>
