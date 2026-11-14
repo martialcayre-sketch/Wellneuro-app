@@ -138,6 +138,11 @@ test("prisma migrate status et diff passent en silence (D-523)", () => {
   assert.equal(verdict("cd web && npx prisma migrate diff --from-schema-datasource prisma/schema.prisma --to-schema-datamodel prisma/schema.prisma --script"), "passe");
   assert.equal(verdict("npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script | head"), "passe");
   assert.equal(verdict("npx prisma migrate status || echo absent"), "passe");
+  // PR-Agent, #2137 : un chemin qui contient « prisma » n'est pas un appel.
+  assert.equal(verdict("cat web/prisma/schema.prisma | sed -n 1,20p"), "passe");
+  assert.equal(verdict("git diff main -- web/prisma/migrations | awk '{print $1}'"), "passe");
+  assert.equal(verdict("ls web/prisma/migrations | sort"), "passe");
+  assert.equal(verdict("x=$(ls web/prisma/migrations | tail -1)"), "passe");
 });
 
 // wn-reviewer, 2026-11-14 : une version épinglée ou une option avant la

@@ -201,6 +201,10 @@ for (const [motif, sql] of [
   ["ENABLE REPLICA", 'ALTER TABLE "Journal" ENABLE REPLICA TRIGGER "append_only";'],
   ["ALTER … TYPE", "ALTER TYPE comp ALTER ATTRIBUTE a TYPE int;"],
   ["DELETE sans WHERE", "DELETE FROM t WHERE true::boolean;"],
+  // PR-Agent, #2137.
+  ["GRANT à un rôle ouvert", 'GRANT SELECT, UPDATE ON "patients" TO anon;'],
+  ["GRANT à un rôle ouvert", 'GRANT ALL ON ALL TABLES IN SCHEMA public TO PUBLIC;'],
+  ["ALTER POLICY", 'ALTER POLICY "p" ON "patients" USING (true);'],
   // Quatrième passe de wn-reviewer.
   ["non lu avec certitude", `DO E'BEGIN \\x54RUNCATE "Patient"; END';`],
   ["non lu avec certitude", `DO E'BEGIN \\124RUNCATE "Patient"; END';`],

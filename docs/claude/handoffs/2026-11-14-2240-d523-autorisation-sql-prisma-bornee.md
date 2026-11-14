@@ -30,7 +30,7 @@ Le responsable demande une autorisation permanente, pour toutes les sessions, d'
 - `.claude/hooks/block-risky-commands.mjs` : enveloppes sûres, motif Prisma, motifs de tube et de substitution.
 - `.claude/hooks/guard-prisma-mcp.mjs` : message seul.
 - Bancs : `protect-wellneuro-files.test.mjs`, `protect-wellneuro-files-bash.test.mjs`, `block-risky-commands.test.mjs`.
-- Texte : `docs/decisions/D-523.md` (neuf, numéro réservé par `refs/tags/reserve/D-523`), `CLAUDE.md`, `.claude/rules/db-prisma.md`, `.claude/rules/hooks-garde-fous.md`, `changelog.d/2026-11-14-d523-autorisation-sql-prisma-bornee.md`.
+- Texte : `docs/decisions/D-523.md` (neuf, numéro réservé par `refs/tags/reserve/D-523`), `CLAUDE.md`, `AGENTS.md` (interdit n° 3), `.github/copilot-instructions.md`, `.github/instructions/prisma.instructions.md`, `.claude/rules/db-prisma.md`, `.claude/rules/hooks-garde-fous.md`, `changelog.d/2026-11-14-d523-autorisation-sql-prisma-bornee.md`.
 
 ## Validations exécutées
 

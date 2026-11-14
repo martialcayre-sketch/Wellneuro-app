@@ -6,7 +6,8 @@ production**. Priorité absolue : sa stabilité. Le code applicatif est dans
 
 ## Les cinq interdits
 
-Ils n'ont pas bougé depuis l'origine et ne bougeront pas. Leur violation ne se
+Ils n'ont pas bougé depuis l'origine, hormis le n° 3, borné le 2026-11-14 par
+`D-523` à la demande du responsable. Leur violation ne se
 rattrape pas — un secret poussé est un secret à révoquer, une donnée patient
 commitée est une fuite, une migration lancée a déjà écrit.
 
@@ -16,9 +17,12 @@ commitée est une fuite, une migration lancée a déjà écrit.
    un log collé par erreur — ne pas la reproduire, ne pas la « compléter ».
    Seuls patients fictifs autorisés : Sophie Nicola, Jennifer Martin,
    Michel Dogné.
-3. **Aucune migration** Prisma ou SQL, aucune modification de `schema.prisma`,
-   aucune écriture en base de production sans demande explicite et confirmation
-   distincte.
+3. **Aucune migration destructive** (DROP, TRUNCATE, DELETE ou UPDATE sans
+   WHERE, renommage, changement de type, SQL dynamique, garde désarmée),
+   aucune migration écrite par un shell, aucune écriture en base de production
+   hors `release-db`, sans demande explicite et confirmation distincte.
+   `schema.prisma` et les migrations non destructives s'écrivent sans
+   approbation (`D-523`) ; le chemin vers la production ne change pas.
 4. **Aucune modification de la logique clinique ni des seuils de scoring** sans
    demande explicite, source, et fragment dans `changelog.d/`.
 5. **Changement minimal** : pas de refactor, de renommage ni de réorganisation

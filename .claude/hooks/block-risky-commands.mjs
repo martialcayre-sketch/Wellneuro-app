@@ -137,7 +137,7 @@ const demande = [
     // Prisma dans une substitution (`psql -f <(npx prisma migrate diff …)`,
     // `$(…)`, accent grave) : sa sortie devient l'entrée d'une autre
     // commande, que le garde ne voit pas (wn-reviewer, quatrième passe).
-    motif: /(?:<\(|\$\(|`)[^)`]*\bprisma\b/,
+    motif: /(?:<\(|\$\(|`)[^)`]*\bprisma(?:@\S*)?\s(?:[^)`]*\s)?(?:migrate|db)\b/,
     raison:
       "Commande Prisma dans une substitution : sa sortie alimente une autre " +
       "commande, peut-être un client SQL. La production ne s'écrit que par " +
@@ -149,7 +149,9 @@ const demande = [
     // Liste blanche de lecteurs : `| env psql`, `| command sh`… demandent
     // (Codex, troisième passe).
     // `sort -o`, `uniq - fichier`, `less -o` écrivent : hors liste.
-    motif: /\bprisma\b[^\n;&#]*(?<!\|)\|(?!\|)(?!\s*(?:head|tail|grep|more|cat|wc)\b)/,
+    // Ancré sur l'appel `prisma … migrate|db`, pas sur le mot : `cat
+    // web/prisma/schema.prisma | sed` reste libre (PR-Agent, #2137).
+    motif: /\bprisma(?:@\S*)?\s(?:[^\n;&|#]*\s)?(?:migrate|db)\b[^\n;&#]*(?<!\|)\|(?!\|)(?!\s*(?:head|tail|grep|more|cat|wc)\b)/,
     raison:
       "Sortie Prisma versée dans un client SQL ou un interpréteur : elle " +
       "s'exécute sur une base que le garde ne connaît pas. La production ne " +

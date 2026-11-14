@@ -21,4 +21,4 @@
   - `guard-prisma-mcp.mjs` : seul son message change.
 
   Bancs étendus, un cas par motif destructif.
-- `CLAUDE.md`, `.claude/rules/db-prisma.md` et `.claude/rules/hooks-garde-fous.md` amendés.
+- `CLAUDE.md`, `.claude/rules/db-prisma.md`, `.claude/rules/hooks-garde-fous.md`, l'interdit n° 3 d'`AGENTS.md`, `.github/copilot-instructions.md` et `.github/instructions/prisma.instructions.md` amendés.

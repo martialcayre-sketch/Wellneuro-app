@@ -100,6 +100,10 @@ const MOTIFS_DESTRUCTIFS = [
   { nom: "ENABLE REPLICA", motif: /\benable\s+replica\s+(trigger|rule)\b/ },
   { nom: "DISABLE ROW LEVEL SECURITY", motif: /\b(disable|no\s+force)\s+row\s+level\s+security\b/ },
   { nom: "CREATE RULE", motif: /\bcreate\s+(or\s+replace\s+)?rule\b/ },
+  // Des droits ouverts aux rôles d'API, ou une politique RLS réécrite
+  // (PR-Agent, #2137) : la RLS ne protège plus ce qu'elle protégeait.
+  { nom: "GRANT à un rôle ouvert", motif: /\bgrant\b[^;]*\bto\s+[^;]*\b(public|anon|authenticated)\b/ },
+  { nom: "ALTER POLICY", motif: /\balter\s+policy\b/ },
   { nom: "session_replication_role", motif: /\bsession_replication_role\b/ }
 ];
 
