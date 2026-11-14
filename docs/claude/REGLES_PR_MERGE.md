@@ -265,10 +265,13 @@ session/token (périmètre repris tel quel par `/wn-merge`) :
    base décommissionnée le 2026-09-01, `D-120` — détail :
    `.claude/rules/db-prisma.md`). Sans cela, un `migrate deploy` ou un import qui
    a échoué à mi-course lors de la release (`release-db`) ne se voit nulle part
-   ailleurs. **Et le merge n'applique rien** : l'ordre complet — approbation
-   humaine, sentinelle `WN_RELEASE_DB_OK`, constat par conteneur avant que le
-   code consommateur parte — est dans
-   `.claude/rules/pr-revue-et-release-db.md` §3.
+   ailleurs. **Et le merge déclenche l'écriture sans autre regard** (`D-520`) :
+   aucune approbation humaine ne suit. Une PR de migration ne se merge donc
+   qu'avec l'avis Codex P0 déposé (`D-505` §4) et le GO de `wn-reviewer` sur
+   sa tête ; puis la file suit le run — sentinelle `WN_RELEASE_DB_OK`, constat
+   par conteneur avant que le code consommateur parte, une migration à la
+   fois. L'ordre complet est dans `.claude/rules/pr-revue-et-release-db.md`
+   §3.
 
 Le coût de ces deux gestes se compte en minutes ; celui d'un raté sur
 l'authentification ou une migration se compte en accès patients rompus.

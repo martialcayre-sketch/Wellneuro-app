@@ -80,7 +80,8 @@ scalingo --app wellneuro --region osc-fr1 one-off-stop one-off-NNNN
    conteneurs en cours doivent la voir — piège ci-dessus)
 4. **Migrations DB : par le workflow `release-db` exclusivement** ([[D-087]],
    sous `WN_MIGRATIONS_PAR_RELEASE_DB=1`) — proposé automatiquement au merge
-   d'une migration, appliqué en one-off **après approbation humaine**.
+   d'une migration, appliqué en one-off après le minuteur de l'environnement,
+   **sans approbation humaine** depuis [[D-520]] (la porte est le merge revu).
    Séquence et gardes : `docs/DEPLOIEMENT_RELEASE_DB.md`. Jamais de
    `migrate deploy` à la main contre la production.
 5. Attendre le déploiement (CI de `main` ~13 min, puis build de 5 à 14 min)

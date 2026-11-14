@@ -66,17 +66,20 @@ HAVING bool_or(finished_at IS NOT NULL AND rolled_back_at IS NULL) IS NOT TRUE;
 - Aucune modification de `schema.prisma`, migration ou SQL sans demande
   explicite et confirmation distincte (le hook « demande » la matérialise).
 - **Le chemin vers la production depuis le cutover (`D-087`, qui supplante
-  `D-086` §1-2)** : migration committée → PR relue (`wn-reviewer`) → merge
-  sur `main` → l'auto-deploy Scalingo déploie le **code seul** (le
-  `postdeploy` ne migre plus sous `WN_MIGRATIONS_PAR_RELEASE_DB=1`) → le
-  workflow `release-db`, proposé automatiquement, applique la migration **en
-  one-off dans l'image de production, après approbation humaine**
-  (préflights, sentinelles liées au run, empreinte des migrations re-vérifiée
-  dans le conteneur). **Le gate humain est l'approbation `release-db`** —
-  aucune URL de base ne transite par GitHub. Détail :
-  `docs/DEPLOIEMENT_RELEASE_DB.md` (séquence de mise en service comprise).
+  `D-086` §1-2, amendée par `D-520`)** : migration committée → PR
+  contre-revue (Codex P0 déposé, GO de `wn-reviewer` sur la tête) → merge
+  sur `main` → le **code seul** se déploie (le `postdeploy` ne migre plus
+  sous `WN_MIGRATIONS_PAR_RELEASE_DB=1`) → le workflow `release-db` part de
+  lui-même et applique la migration **en one-off dans l'image de
+  production, sans approbation humaine** (minuteur de 5 min, préflights,
+  sentinelles liées au run, empreinte des migrations re-vérifiée dans le
+  conteneur). **La porte est le merge** : ce que l'approbation vérifiait se
+  vérifie avant lui (`D-520` §2), et aucune URL de base ne transite par
+  GitHub. Une migration à la fois, suivie jusqu'au constat par conteneur
+  (`D-520` §3). Détail : `docs/DEPLOIEMENT_RELEASE_DB.md` (séquence de mise
+  en service comprise).
 - Migration et code dépendant : PR séparées, ou drapeau éteint — le code se
-  déploie AVANT que la migration soit approuvée ; un ADD se protège par
+  déploie AVANT que la migration soit appliquée ; un ADD se protège par
   drapeau éteint, et le code qui consomme le schéma n'arrive qu'après
   l'application **constatée** par conteneur (précédent : incident du
   2026-08-05, PR #574, à l'époque via le build Vercel).

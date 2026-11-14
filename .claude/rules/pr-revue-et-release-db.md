@@ -217,7 +217,8 @@ revue de l'écart. Chaque constat reçoit un verdict, consigné dans un
 commentaire de PR qui nomme la revue retenue et la raison de l'absence des
 bots. Hors champ : les lots
 gardés par leur file (migration, authentification, `.coderabbit.yaml`,
-`pr_agent.yml`) et l'approbation des release-db (`D-044`).
+`pr_agent.yml`) et la release-db (`D-044`), qui ne s'approuve plus
+(`D-520`).
 
 **1.7 Ce qu'un bot a poussé se relit, toujours.** Il peut avoir aligné le
 littéral d'un banc sur le code plutôt que l'inverse. Un banc ainsi « réparé » est
@@ -334,10 +335,10 @@ Chaque étape a un état **à constater**, jamais à supposer.
 | # | Étape | Ce qui la clôt |
 |---|---|---|
 | 1 | PR de migration **seule**, relue, CI vert sur la bonne tête | `wn-attendre-ci <N>` → exit `0`, et `head=` du SNAPSHOT identique à la tête réelle |
-| 2 | **Choisir le créneau** | Geste du responsable : la fenêtre de panne s'ouvre sciemment |
-| 3 | Merger | Le push sur `main` touchant `web/prisma/migrations/**` propose automatiquement le run |
+| 2 | **Contre-revues de la tête** (`D-520` §2) — elles remplacent l'approbation | Avis Codex P0 (`D-505` §4) déposé sur la PR, chaque constat verdicté ; GO de `wn-reviewer` sur le sha de tête. Codex indisponible : pas de merge |
+| 3 | Merger — à toute heure (`D-520` §4), jamais « pour y revenir plus tard » | Le push sur `main` touchant `web/prisma/migrations/**` lance le run, qui part seul après le minuteur |
 | 4 | Scalingo déploie le **code seul** | Le `postdeploy` ne migre plus sous `WN_MIGRATIONS_PAR_RELEASE_DB=1` |
-| 5 | **Approuver** — humain, dans l'environnement protégé | Sentinelle `WN_RELEASE_DB_OK id=<run>` dans les logs du one-off — **liée à CE run** : un `OK` nu laissé par un run antérieur ne prouve rien |
+| 5 | Le one-off applique — **sans approbation humaine** (`D-520` §1) | Sentinelle `WN_RELEASE_DB_OK id=<run>` dans les logs du one-off — **liée à CE run** : un `OK` nu laissé par un run antérieur ne prouve rien |
 | 6 | Constater **par conteneur** | `scalingo --app wellneuro run -d "npx prisma migrate status"` → *up to date* |
 | 7 | Le code consommateur part — et seulement là | Même lot, seconde PR (`D-266` §11) |
 
@@ -354,20 +355,28 @@ Prisma sélectionne explicitement toutes les colonnes scalaires d'un modèle, do
 un `ADD COLUMN` déclaré au schéma et absent de la base fait échouer *chaque*
 requête sur cette table.
 
-- **Approuver dans la foulée du merge.** Ne jamais merger une migration pour « y
-  revenir plus tard ».
-- **Heure creuse, choisie** — la fenêtre dure le déploiement plus l'approbation.
-- Le second gate est un **temps d'arrêt, pas un second regard** :
-  `prevent_self_review` est désactivé (avec un seul relecteur, l'activer rendrait
-  toute release impossible). Le `wait_timer` (5 min) et la liste des relecteurs
-  **se lisent**, ils ne se rappellent pas de mémoire :
+- **Suivre le run dès le merge.** Ne jamais merger une migration pour « y
+  revenir plus tard » : la file reste jusqu'au constat (`D-520` §3), et une
+  seconde migration n'est pas mergée avant lui.
+- **Aucune plage horaire** (`D-520` §4, arbitrage `20261114-1340-d`) : la
+  fenêtre dure le run seul, de 14 à 20 min de bout en bout sur les runs
+  récents, et cette panne est acceptée à toute heure.
+- L'environnement n'est plus **qu'un temps d'arrêt** : la restriction à
+  `main` et le `wait_timer` (5 min), pendant lequel la file qui a mergé peut
+  encore annuler le run (`gh run cancel <id>`). Ses relecteurs requis se
+  retirent après le lot de gardes de `D-520` (§6, §8) ;
+  jusqu'au constat de ce retrait, l'intégrateur approuve lui-même par l'API,
+  sous délégation du 2026-11-14, aux conditions de `D-520` §2 et §3. Les
+  règles de l'environnement **se lisent**, elles ne se rappellent pas de
+  mémoire :
 
 ```bash
 gh api repos/{owner}/{repo}/environments/release-db --jq '.protection_rules'
 gh api repos/{owner}/{repo}/actions/runs/<ID>/approvals --jq '.[] | {state, user: .user.login}'
 ```
 
-Pendant le minuteur, le `POST` d'approbation échoue en **422** (« No pending
+Tant que des relecteurs sont requis, le `POST` d'approbation échoue pendant le
+minuteur en **422** (« No pending
 deployment requests to approve or reject »). **Ce message a déjà été mal lu deux
 fois, de deux façons opposées** : comme une permission manquante (2026-09-11),
 puis comme l'absence de toute porte de relecture (2026-09-12 — conclusion écrite
@@ -397,7 +406,9 @@ approbations est la seule preuve de qui a ouvert la porte.
    handoff mergé pendant l'attente) n'a plus lieu depuis ce même jour ; ce qui
    reste gelé se lit par phases, **avant chaque merge** :
    `node scripts/wn-sonde-release-db.mjs <N>` — `0` seul autorise. Attente
-   d'approbation (`waiting`, phase 1) : gelés, les seuls merges qui touchent
+   à la porte (`waiting`, phase 1 ; le seul minuteur une fois les relecteurs
+   retirés, `D-520` §6 — la sonde lit les deux de la même façon) : gelés,
+   les seuls merges qui touchent
    une migration, un chemin clinique, une table signée hors de `clinical/` ou
    le contrat de fraîcheur (`D-389` §5, `D-416`),
    `release-db.yml` et ce que son run exécute, ou le déployeur. Tout autre état non conclu — exécution (phase 2),
@@ -405,7 +416,13 @@ approbations est la seule preuve de qui a ouvert la porte.
    Lecture impossible : gel. Deux runs à la fois — un second en file derrière
    un run en attente — gèlent donc tout merge jusqu'à la décision du
    responsable sur l'ancien. Un run coincé ne se contourne pas : sa sortie est
-   le rejet par le responsable (`D-374` §5).
+   le rejet par le responsable (`D-374` §5). **Une fois les relecteurs
+   retirés (`D-520` §6), « rejeter » se lit « annuler »** :
+   `gh run cancel <id>`, avant le lancement du one-off (au-delà, piège 3).
+   Une migration laissée ainsi en attente gèle tout merge sur un chemin
+   déclencheur, jusqu'à son revert (PR P0) ou à sa reprise par un
+   `workflow_dispatch` humain. Sans cela, le run suivant l'appliquerait sans
+   revue (`D-520` §3 bis).
 3. **Annuler le job GitHub n'arrête pas le one-off** (`--detached`) : la migration
    continue pendant que le workflow s'affiche annulé. Seul
    `scalingo one-off-stop <conteneur>` l'arrête.
@@ -432,9 +449,11 @@ approbations est la seule preuve de qui a ouvert la porte.
    `integration-link-manual-deploy main`, jamais en ré-approuvant l'ancien run.
    Si l'auto-déploiement était rétabli, la garde serait à rétablir avec lui.
 
-L'approbation (`POST …/pending_deployments`) et le déclenchement
-(`gh workflow run release-db.yml`) sont refusés par le classifieur de permissions :
-**ces deux gestes reviennent à l'humain.**
+Le déclenchement manuel (`gh workflow run release-db.yml`) **reste un geste
+humain** (`D-520` §5). L'approbation (`POST …/pending_deployments`) n'est plus
+exigée une fois les relecteurs requis retirés (`D-520` §6) ; d'ici là, seul
+l'intégrateur la fait, sous la délégation du 2026-11-14, et aucune autre
+session.
 
 ## 6. Constater, et comment
 
