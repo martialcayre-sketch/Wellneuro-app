@@ -339,7 +339,7 @@ Chaque étape a un état **à constater**, jamais à supposer.
 | 3 | Merger — à toute heure (`D-520` §4), jamais « pour y revenir plus tard » | Le push sur `main` touchant `web/prisma/migrations/**` lance le run, qui part seul après le minuteur |
 | 4 | Scalingo déploie le **code seul** | Le `postdeploy` ne migre plus sous `WN_MIGRATIONS_PAR_RELEASE_DB=1` |
 | 5 | Le one-off applique — **sans approbation humaine** (`D-520` §1) | Sentinelle `WN_RELEASE_DB_OK id=<run>` dans les logs du one-off — **liée à CE run** : un `OK` nu laissé par un run antérieur ne prouve rien |
-| 6 | Constater **par conteneur** | `scalingo --app wellneuro run -d "npx prisma migrate status"` → *up to date* |
+| 6 | Constater **par conteneur**, puis l'écrire sur la PR | `scalingo --app wellneuro run -d "npx prisma migrate status"` → *up to date* ; puis, sur la PR de la migration, une ligne seule `WN_CONSTAT_RELEASE_DB run=<id du run>` — sans elle, la sonde gèle la migration suivante (`D-520` §3) |
 | 7 | Le code consommateur part — et seulement là | Même lot, seconde PR (`D-266` §11) |
 
 **« Migration seule » emporte le schéma, pas seulement le SQL** : `migration.sql`
@@ -422,7 +422,11 @@ approbations est la seule preuve de qui a ouvert la porte.
    Une migration laissée ainsi en attente gèle tout merge sur un chemin
    déclencheur, jusqu'à son revert (PR P0) ou à sa reprise par un
    `workflow_dispatch` humain. Sans cela, le run suivant l'appliquerait sans
-   revue (`D-520` §3 bis).
+   revue (`D-520` §3 bis). La sonde le lit (`D-520` §8) : les migrations de
+   la tête absentes du commit du dernier run attesté « appliqué » (vert, ou
+   rouge après ses deux attestations) gèlent tout chemin déclencheur ; le
+   revert pur de ces migrations passe. Une PR qui ajoute une migration
+   attend en outre le constat de la précédente (étape 6 du §3).
 3. **Annuler le job GitHub n'arrête pas le one-off** (`--detached`) : la migration
    continue pendant que le workflow s'affiche annulé. Seul
    `scalingo one-off-stop <conteneur>` l'arrête.

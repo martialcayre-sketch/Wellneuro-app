@@ -309,30 +309,114 @@ test('D-389 §5 — une tête modifiant la table signée des indications arrête
   }
 });
 
-// Le résumé pour l'approbateur (revue CodeRabbit de #1744) : la liste des
-// migrations ne peut pas nommer la table signée ; un push qui ne touche
-// qu'elle doit pourtant la montrer, sinon l'approbateur lit « push clinique
-// seul » et ne sait pas qu'il juge une re-signature. `gh` factice en échec :
-// borne inconnue, plage du push (`AVANT..APRES`).
-function resumePour({ table }) {
-  const { base, local, approuve, tete } = depotJouet({ migrations: false, table });
+/**
+ * Joue le job `resume` sur un dépôt jouet. `borne` : ce que rend `gh` pour le
+ * dernier run réussi — 'connue' (le commit approuvé), 'muette' (l'API échoue),
+ * 'tardive' (deux échecs, puis la borne), ou un SHA à rendre tel quel.
+ * `panne` : 'migrations' ou 'signes' fait échouer le `git diff` correspondant.
+ * `sleep` est factice : les attentes entre deux lectures ne coûtent rien.
+ */
+function jouerResume({ table = false, migrations = false, borne = 'connue', evenement = 'push', panne = null } = {}) {
+  const { base, local, approuve, tete } = depotJouet({ migrations, table });
   try {
     const bin = poserScalingo(base, '');
-    writeFileSync(join(bin, 'gh'), '#!/bin/sh\necho "(jouet) api muette" >&2\nexit 1\n');
-    chmodSync(join(bin, 'gh'), 0o755);
+    const appels = join(base, 'gh-appels');
+    const sommeils = join(base, 'sommeils');
+    const sha = borne === 'connue' || borne === 'tardive' ? approuve : borne;
+    const reponse = `{"workflow_runs":[{"head_sha":"${sha}","created_at":"2026-11-14T00:00:00Z"}]}`;
+    const echecs = borne === 'muette' ? 99 : borne === 'tardive' ? 2 : 0;
+    writeFileSync(
+      join(bin, 'gh'),
+      `#!/bin/sh\necho appel >> '${appels}'\nN=$(wc -l < '${appels}')\nif [ "$N" -le ${echecs} ]; then echo "(jouet) api muette" >&2; exit 1; fi\necho '${reponse}'\n`,
+    );
+    writeFileSync(join(bin, 'sleep'), `#!/bin/sh\necho "$@" >> '${sommeils}'\n`);
+    const vraiGit = execFileSync('sh', ['-c', 'command -v git']).toString().trim();
+    writeFileSync(
+      join(bin, 'git'),
+      `#!/bin/sh\nif [ "$1" = diff ]; then\n  case "$*" in\n    *diff-filter*) [ '${panne}' = migrations ] && { echo "fatal: (jouet)" >&2; exit 128; } ;;\n    *) [ '${panne}' = signes ] && { echo "fatal: (jouet)" >&2; exit 128; } ;;\n  esac\nfi\nexec '${vraiGit}' "$@"\n`,
+    );
+    for (const outil of ['gh', 'sleep', 'git']) chmodSync(join(bin, outil), 0o755);
     const resume = join(base, 'resume.md');
     writeFileSync(resume, '');
     const r = jouer(scriptDeLEtape("Résumé pour l'approbateur"), {
       cwd: local,
       bin,
-      env: { AVANT: approuve, APRES: tete, EVENEMENT: 'push', DEPOT: 'jouet/jouet', GITHUB_STEP_SUMMARY: resume },
+      env: { AVANT: approuve, APRES: tete, EVENEMENT: evenement, DEPOT: 'jouet/jouet', GITHUB_STEP_SUMMARY: resume },
     });
-    assert.equal(r.code, 0, `le résumé ne doit pas échouer :\n${r.sortie}`);
-    return readFileSync(resume, 'utf8');
+    const compter = (f) => {
+      try {
+        return readFileSync(f, 'utf8').split('\n').filter(Boolean).length;
+      } catch {
+        return 0;
+      }
+    };
+    return { ...r, texte: readFileSync(resume, 'utf8'), appels: compter(appels), sommeils: compter(sommeils) };
   } finally {
     rmSync(base, { recursive: true, force: true });
   }
 }
+
+// Le résumé pour l'approbateur (revue CodeRabbit de #1744) : la liste des
+// migrations ne peut pas nommer la table signée ; un push qui ne touche
+// qu'elle doit pourtant la montrer, sinon l'approbateur lit « push clinique
+// seul » et ne sait pas qu'il juge une re-signature. Borne connue : depuis
+// D-520 §8, une borne inconnue arrête un run de push.
+function resumePour({ table }) {
+  const r = jouerResume({ table });
+  assert.equal(r.code, 0, `le résumé ne doit pas échouer :\n${r.sortie}`);
+  return r.texte;
+}
+
+// ── D-520 §8, garde 2 : `resume` arrête ce que plus personne ne lit ─────────
+
+test('D-520 §8 — borne inconnue sur un push : trois lectures, puis échec avant l’environnement, résumé écrit', () => {
+  const r = jouerResume({ borne: 'muette' });
+  assert.notEqual(r.code, 0, `une borne inconnue ne doit plus laisser partir un push :\n${r.sortie}`);
+  assert.equal(r.appels, 3, 'la borne se lit trois fois avant de conclure');
+  assert.equal(r.sommeils, 2, 'deux attentes entre les trois lectures');
+  assert.match(r.texte, /Borne inconnue/, 'le résumé dit encore pourquoi');
+  assert.match(r.sortie, /borne inconnue/i);
+  assert.match(r.sortie, /20261114-1459-d/, 'le refus cite son arbitrage');
+});
+
+test('D-520 §8 — borne inatteignable dans l’historique sur un push : échec', () => {
+  const r = jouerResume({ borne: 'f'.repeat(40) });
+  assert.notEqual(r.code, 0, r.sortie);
+  assert.match(r.texte, /Borne inconnue/);
+});
+
+test('D-520 §8 — borne inconnue sur un dispatch : le run continue, avertissement écrit', () => {
+  const r = jouerResume({ borne: 'muette', evenement: 'workflow_dispatch' });
+  assert.equal(r.code, 0, `le dispatch est un geste humain : il continue :\n${r.sortie}`);
+  assert.match(r.texte, /Borne inconnue/);
+});
+
+test('D-520 §8 — une borne lue au troisième essai suffit', () => {
+  const r = jouerResume({ borne: 'tardive' });
+  assert.equal(r.code, 0, r.sortie);
+  assert.equal(r.appels, 3);
+  assert.match(r.texte, /Migrations en attente depuis la dernière release réussie/);
+});
+
+test('D-520 §8 — un diff en échec arrête le run, migrations comme tables signées', () => {
+  for (const panne of ['migrations', 'signes']) {
+    for (const evenement of ['push', 'workflow_dispatch']) {
+      const r = jouerResume({ panne, evenement });
+      assert.notEqual(r.code, 0, `${panne}/${evenement} : un diff en échec ne doit plus laisser partir la release :\n${r.sortie}`);
+      assert.match(r.texte, panne === 'migrations' ? /Le diff a échoué/ : /Le diff des tables signées a échoué/);
+      assert.match(r.sortie, /diff/i);
+    }
+  }
+});
+
+test('D-520 §8 — borne connue, diffs lisibles : le résumé réussit, sur un push comme sur un dispatch', () => {
+  for (const evenement of ['push', 'workflow_dispatch']) {
+    const r = jouerResume({ migrations: true, evenement });
+    assert.equal(r.code, 0, r.sortie);
+    assert.equal(r.appels, 1);
+    assert.match(r.texte, /20260202000000_neuve/);
+  }
+});
 
 test('D-389 §5 — le résumé nomme la table signée quand le push la modifie', () => {
   const texte = resumePour({ table: true });

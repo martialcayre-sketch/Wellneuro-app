@@ -18,6 +18,7 @@ import {
   SORTIE_ILLISIBLE,
   SORTIE_PERMIS,
   SORTIE_USAGE,
+  MARQUEUR_CONSTAT,
   analyserArguments,
   conseilDeuxRuns,
   estFichierDeclencheur,
@@ -26,7 +27,7 @@ import {
   phaseDuRun,
   sonder,
 } from './wn-sonde-release-db.mjs';
-import { CHEMINS_RELEASE_DB } from './wn-deploiement-deployer.mjs';
+import { CHEMINS_RELEASE_DB, ETAPES_ATTESTATION } from './wn-deploiement-deployer.mjs';
 
 const RACINE = join(dirname(fileURLToPath(import.meta.url)), '..');
 const lire = (chemin) => readFileSync(join(RACINE, chemin), 'utf8');
@@ -34,6 +35,10 @@ const SHA = 'a'.repeat(40);
 const TETE = 'b'.repeat(40);
 const DECLENCHEUR = 'c'.repeat(40);
 const run = (statuts, id = 1) => ({ id, head_sha: SHA, statuts, phase: phaseDuRun(statuts) });
+const MIG = 'web/prisma/migrations/';
+const M1 = '20261101000000_un';
+const M2 = '20261102000000_deux';
+const M3 = '20261103000000_trois';
 
 // ── Phases (D-374 §2, à la lettre) ──────────────────────────────────────────
 
@@ -103,14 +108,21 @@ test('chemins gelés : un préfixe de dossier ne mord pas sur un voisin de même
 test('deux runs : l’ancien n’est rejeté que si la tête apporte une migration ou un changement clinique', () => {
   const ancien = { id: 7, head_sha: SHA };
   assert.equal(conseilDeuxRuns({ id: 8, head_sha: TETE }, TETE, [], true), null, 'un run qui porte la tête n’a pas de conseil');
-  assert.match(conseilDeuxRuns(ancien, TETE, [], true), /s'approuve tel quel/);
+  // D-520 : sans relecteur, rien ne « s'approuve » ; l'arrêt est l'annulation.
+  assert.match(conseilDeuxRuns(ancien, TETE, [], true), /part tel quel/);
+  assert.doesNotMatch(conseilDeuxRuns(ancien, TETE, [], true), /s'approuve/);
   assert.match(conseilDeuxRuns(ancien, TETE, [], true), /appliquée/);
-  assert.match(conseilDeuxRuns(ancien, TETE, ['web/src/lib/clinical/a.ts'], true), /REJETER/);
-  assert.match(conseilDeuxRuns(ancien, TETE, ['web/prisma/migrations/x/migration.sql'], true), /REJETER/);
+  assert.match(conseilDeuxRuns(ancien, TETE, ['web/src/lib/clinical/a.ts'], true), /ANNULER/);
+  assert.match(conseilDeuxRuns(ancien, TETE, ['web/src/lib/clinical/a.ts'], true), /gh run cancel 7/);
+  assert.match(conseilDeuxRuns(ancien, TETE, ['web/prisma/migrations/x/migration.sql'], true), /ANNULER/);
   assert.match(conseilDeuxRuns(ancien, TETE, null, true), /illisible/);
-  assert.doesNotMatch(conseilDeuxRuns(ancien, TETE, null, true), /REJETER|tel quel/);
+  assert.doesNotMatch(conseilDeuxRuns(ancien, TETE, null, true), /ANNULER|tel quel|approuver/);
+  for (const n of [[], ['web/src/lib/clinical/a.ts'], null]) {
+    assert.doesNotMatch(conseilDeuxRuns(ancien, TETE, n, true), /REJETER|se rejette/, 'D-520 : « rejeter » se lit « annuler »');
+  }
   // Historique réécrit : le workflow refusera, jamais « tel quel ».
   assert.match(conseilDeuxRuns(ancien, TETE, [], false), /historique réécrit/);
+  assert.match(conseilDeuxRuns(ancien, TETE, [], false), /ANNULER/);
   assert.doesNotMatch(conseilDeuxRuns(ancien, TETE, [], false), /tel quel/);
 });
 
@@ -121,13 +133,38 @@ test('deux runs : l’ancien n’est rejeté que si la tête apporte une migrati
  * consomme l'état courant, puis avance d'un cran (le run bouge entre deux
  * appels). `recents` : page non filtrée. `fichiers` : pages de la PR.
  */
-function simuler({ etats = [[]], recents = [], deMain = null, fichiers = [[]], panne = null, git = {} } = {}) {
+function simuler({
+  etats = [[]],
+  recents = [],
+  deMain = null,
+  fichiers = [[]],
+  panne = null,
+  git = {},
+  succes = [{ id: 4, status: 'completed', conclusion: 'success', head_sha: SHA, head_branch: 'main' }],
+  etapes = {},
+  prs = {},
+  commentaires = {},
+  runsParId = {},
+} = {}) {
   const appels = [];
   let i = 0;
   const lireJson = (chemin, paginer) => {
     appels.push({ chemin, paginer });
     if (panne && chemin.includes(panne)) throw new Error(`HTTP 502 sur ${panne}`);
     const statut = chemin.match(/[?&]status=([a-z_]+)/)?.[1];
+    // Le dernier run réussi de `main` : borne du reliquat (D-520 §3 bis).
+    if (statut === 'success') return { workflow_runs: succes };
+    const jobs = chemin.match(/\/actions\/runs\/(\d+)\/jobs/)?.[1];
+    if (jobs) return { jobs: [{ name: 'release', steps: etapes[jobs] ?? [] }] };
+    const parId = chemin.match(/\/actions\/runs\/(\d+)$/)?.[1];
+    if (parId) {
+      if (!runsParId[parId]) throw new Error(`HTTP 404 sur le run ${parId}`);
+      return runsParId[parId];
+    }
+    const commit = chemin.match(/\/commits\/([0-9a-f]+)\/pulls$/)?.[1];
+    if (commit) return prs[commit] ?? [];
+    const issue = chemin.match(/\/issues\/(\d+)\/comments/)?.[1];
+    if (issue) return [commentaires[issue] ?? []];
     if (statut) {
       const etat = etats[Math.min(i++, etats.length - 1)];
       return [{ workflow_runs: etat.filter((r) => r.status === statut) }];
@@ -146,6 +183,8 @@ function simuler({ etats = [[]], recents = [], deMain = null, fichiers = [[]], p
     if (cle === 'log') return `${DECLENCHEUR}\n`;
     if (cle === 'diff') return '';
     if (cle === 'merge-base') return '';
+    // Par défaut, toute révision porte les mêmes migrations : aucun reliquat.
+    if (cle === 'ls-tree') return `${MIG}${M1}\n${MIG}migration_lock.toml\n`;
     throw new Error(`git ${cle} non simulé`);
   };
   return { lireJson, git: gitSimule, appels };
@@ -156,7 +195,9 @@ const r = (id, status, head_sha = SHA, head_branch = 'main') => ({ id, status, h
 test('collecte : deux passes dans l’ordre de vie d’un run, chaque statut paginé, plus une page non filtrée', () => {
   const s = simuler();
   sonder({ pr: null, ...s });
-  const filtres = s.appels.filter((a) => a.chemin.includes('status='));
+  // `status=success` est la borne du reliquat (D-520 §3 bis), pas un run non conclu.
+  const filtres = s.appels.filter((a) => a.chemin.includes('status=') && !a.chemin.includes('status=success'));
+  assert.ok(s.appels.some((a) => /status=success&branch=main&per_page=1$/.test(a.chemin)), 'sans PR, le reliquat se lit');
   assert.deepEqual(
     filtres.map((a) => a.chemin.match(/status=([a-z_]+)/)[1]),
     [...STATUTS_NON_CONCLUS, ...STATUTS_NON_CONCLUS],
@@ -248,8 +289,244 @@ test('collecte : le conseil de D-374 §3 sort pour un ancien run en attente', ()
     }),
   });
   assert.equal(v.code, SORTIE_PERMIS);
-  assert.ok(v.lignes.some((l) => /^· run 1 : .*REJETER/.test(l)));
+  assert.ok(v.lignes.some((l) => /^· run 1 : .*ANNULER/.test(l)));
   assert.match(v.lignes.at(-1), /^SONDE release-db code=0 phase=attente runs=1 pr=1$/);
+});
+
+// ── D-520 §3 bis : une migration non appliquée gèle les chemins déclencheurs ──
+
+const AVANT = 'd'.repeat(40);
+const C1 = '1'.repeat(40);
+const C2 = '2'.repeat(40);
+/**
+ * `git ls-tree` simulé : les migrations portées par chaque révision ; avec
+ * `-r`, les fichiers d'une migration (`migration.sql`, plus `annexes[m]`).
+ */
+const arbres = (parSha, annexes = {}) => (args) => {
+  const sha = args.find((a) => /^[0-9a-f]{40}$/.test(a));
+  const liste = parSha[sha];
+  if (!liste) throw new Error(`révision inconnue ${sha}`);
+  if (args.includes('-r')) {
+    const m = args.at(-1).slice(MIG.length).replace(/\/$/, '');
+    if (!liste.includes(m)) return '';
+    return ['migration.sql', ...(annexes[m] ?? [])].map((f) => `${MIG}${m}/${f}`).join('\n') + '\n';
+  }
+  return [...liste, 'migration_lock.toml'].map((n) => `${MIG}${n}`).join('\n') + '\n';
+};
+const succesSur = (id, head_sha) => ({ id, status: 'completed', conclusion: 'success', head_sha, head_branch: 'main' });
+const conclu = (id, conclusion, head_sha = TETE) => ({ id, status: 'completed', conclusion, head_sha, head_branch: 'main' });
+const attestation = (oneOff, verification) => [
+  { name: ETAPES_ATTESTATION[0], conclusion: oneOff },
+  { name: ETAPES_ATTESTATION[1], conclusion: verification },
+];
+/**
+ * Main porte M1 et M2 ; le dernier run vert ne portait que M1 ; le run de la
+ * tête est conclu sans succès (`conclusion`, avec `etapes`).
+ */
+function reliquat({ conclusion = 'cancelled', etapes = [], fichiers, pr = 1, tete = [M1, M2], annexes = {} } = {}) {
+  const deMain = [conclu(11, conclusion), succesSur(10, AVANT)];
+  return sonder({
+    pr,
+    ...simuler({
+      deMain,
+      recents: deMain,
+      succes: [succesSur(10, AVANT)],
+      etapes: { 11: etapes },
+      fichiers,
+      git: { 'ls-tree': arbres({ [AVANT]: [M1], [TETE]: tete }, annexes) },
+    }),
+  });
+}
+
+test('§3 bis — après un run annulé, la migration non appliquée gèle une PR clinique, pas une PR de code', () => {
+  const v = reliquat({ fichiers: [[{ filename: 'web/src/lib/clinical/a.ts', status: 'modified' }]] });
+  assert.equal(v.code, SORTIE_GELE);
+  assert.match(v.lignes.join('\n'), new RegExp(`non appliquée.*${M2}`));
+  assert.match(v.lignes.join('\n'), /D-520 §3 bis/);
+  assert.match(v.lignes.join('\n'), /revert/);
+  const code = reliquat({ fichiers: [[{ filename: 'web/src/app/page.tsx', status: 'modified' }]] });
+  assert.equal(code.code, SORTIE_PERMIS, code.lignes.join('\n'));
+});
+
+test('§3 bis — chaque chemin déclencheur est gelé par le reliquat', () => {
+  for (const c of CHEMINS_RELEASE_DB) {
+    const chemin = estFichierDeclencheur(c) ? c : `${c}/x/y.sql`;
+    const v = reliquat({ fichiers: [[{ filename: chemin, status: 'modified' }]] });
+    assert.equal(v.code, SORTIE_GELE, chemin);
+  }
+});
+
+test('§3 bis — rouge AVANT écriture gèle ; rouge APRÈS attestation complète ne gèle pas', () => {
+  const clinique = [[{ filename: 'web/src/lib/clinical/a.ts', status: 'modified' }]];
+  // Build ou garde en échec : le one-off n'a pas tourné.
+  assert.equal(reliquat({ conclusion: 'failure', etapes: [], fichiers: clinique }).code, SORTIE_GELE);
+  // One-off rouge ou sans sentinelle : état inconnu, jamais lu « appliqué ».
+  assert.equal(reliquat({ conclusion: 'failure', etapes: attestation('failure', null), fichiers: clinique }).code, SORTIE_GELE);
+  // Annulé pendant le one-off (piège 3) : inconnu, gèle.
+  assert.equal(reliquat({ conclusion: 'cancelled', etapes: attestation('cancelled', null), fichiers: clinique }).code, SORTIE_GELE);
+  // Les deux attestations vertes : la migration est appliquée, le reliquat est vide.
+  const applique = reliquat({ conclusion: 'failure', etapes: attestation('success', 'success'), fichiers: clinique });
+  assert.equal(applique.code, SORTIE_PERMIS, applique.lignes.join('\n'));
+});
+
+test('§3 bis — le revert pur de la migration en attente sort du gel ; un revert qui touche autre chose y reste', () => {
+  const revert = [[{ filename: `${MIG}${M2}/migration.sql`, status: 'removed' }, { filename: 'web/prisma/schema.prisma', status: 'modified' }]];
+  const v = reliquat({ fichiers: revert });
+  assert.equal(v.code, SORTIE_PERMIS, v.lignes.join('\n'));
+  const melange = [[{ filename: `${MIG}${M2}/migration.sql`, status: 'removed' }, { filename: 'web/src/lib/clinical/a.ts', status: 'modified' }]];
+  assert.equal(reliquat({ fichiers: melange }).code, SORTIE_GELE);
+  // Retirer une migration DÉJÀ appliquée n'est pas le revert du reliquat.
+  const autre = [[{ filename: `${MIG}${M1}/migration.sql`, status: 'removed' }]];
+  assert.equal(reliquat({ fichiers: autre }).code, SORTIE_GELE);
+  // Modifier la migration en attente n'est pas la retirer.
+  const reecrite = [[{ filename: `${MIG}${M2}/migration.sql`, status: 'modified' }]];
+  assert.equal(reliquat({ fichiers: reecrite }).code, SORTIE_GELE);
+});
+
+test('§3 bis — un revert PARTIEL du reliquat gèle : le run qu’il déclenche écrirait le reste (revue wn-reviewer)', () => {
+  const retire = (m, f = 'migration.sql') => ({ filename: `${MIG}${m}/${f}`, status: 'removed' });
+  // Reliquat {M2, M3} : retirer M2 seul laisse M3 partir.
+  const deux = { tete: [M1, M2, M3] };
+  assert.equal(reliquat({ ...deux, fichiers: [[retire(M2)]] }).code, SORTIE_GELE);
+  assert.equal(reliquat({ ...deux, fichiers: [[retire(M2), retire(M3)]] }).code, SORTIE_PERMIS);
+  // Un fichier annexe retiré seul laisse la migration en place.
+  const annexe = { annexes: { [M2]: ['notes.md'] } };
+  assert.equal(reliquat({ ...annexe, fichiers: [[retire(M2, 'notes.md')]] }).code, SORTIE_GELE);
+  assert.equal(reliquat({ ...annexe, fichiers: [[retire(M2), retire(M2, 'notes.md')]] }).code, SORTIE_PERMIS);
+});
+
+test('§3 bis — sans numéro de PR, un reliquat gèle', () => {
+  const v = reliquat({ pr: null });
+  assert.equal(v.code, SORTIE_GELE);
+  assert.match(v.lignes.join('\n'), /numéro de PR/);
+});
+
+test('§3 bis — borne illisible : aucun run attesté, ou révision introuvable, gèle par prudence (code 2)', () => {
+  const clinique = [[{ filename: 'web/src/lib/clinical/a.ts', status: 'modified' }]];
+  const sansSucces = sonder({ pr: 1, ...simuler({ succes: [], fichiers: clinique }) });
+  assert.equal(sansSucces.code, SORTIE_ILLISIBLE);
+  const introuvable = sonder({ pr: 1, ...simuler({ fichiers: clinique, git: { 'ls-tree': arbres({}) } }) });
+  assert.equal(introuvable.code, SORTIE_ILLISIBLE);
+  const panne = sonder({ pr: 1, ...simuler({ fichiers: clinique, panne: 'status=success' }) });
+  assert.equal(panne.code, SORTIE_ILLISIBLE);
+});
+
+test('§3 bis — une PR de doc ne lit pas le reliquat : aucune lecture de plus, aucun gel', () => {
+  const s = simuler({ fichiers: [[{ filename: 'docs/x.md', status: 'modified' }]], git: { 'ls-tree': new Error('ne doit pas être lu') } });
+  assert.equal(sonder({ pr: 1, ...s }).code, SORTIE_PERMIS);
+  assert.ok(!s.appels.some((a) => a.chemin.includes('status=success')));
+});
+
+// ── D-520 §3 : une seconde migration attend le constat de la première ──────
+
+const AJOUT_M3 = [[{ filename: `${MIG}${M3}/migration.sql`, status: 'added' }]];
+const journalAjouts = `@${C2}\n\n${MIG}${M2}/migration.sql\n@${C1}\n\n${MIG}${M1}/migration.sql\n${MIG}migration_lock.toml\n`;
+const runVert = { id: 10, path: '.github/workflows/release-db.yml', head_branch: 'main', status: 'completed', conclusion: 'success', head_sha: TETE, updated_at: '2026-11-14T11:00:00Z' };
+const constat = (corps, { association = 'OWNER', le = '2026-11-14T12:00:00Z' } = {}) => ({ author_association: association, body: corps, created_at: le });
+
+function seconde({ commentaires = [], runsParId = { 10: runVert }, git = {}, prs = { [C2]: [{ number: 500, merge_commit_sha: C2 }] } } = {}) {
+  return sonder({
+    pr: 1,
+    ...simuler({
+      deMain: [succesSur(10, TETE)],
+      succes: [succesSur(10, TETE)],
+      fichiers: AJOUT_M3,
+      prs,
+      commentaires: { 500: commentaires },
+      runsParId,
+      git: {
+        'ls-tree': arbres({ [TETE]: [M1, M2] }),
+        log: (args) => (args.includes('--diff-filter=A') ? journalAjouts : `${DECLENCHEUR}\n`),
+        ...git,
+      },
+    }),
+  });
+}
+
+test('§3 — une seconde migration gèle tant que la PR de la première ne porte pas de constat', () => {
+  const v = seconde();
+  assert.equal(v.code, SORTIE_GELE);
+  const texte = v.lignes.join('\n');
+  assert.match(texte, /D-520 §3/);
+  assert.match(texte, /#500/);
+  assert.ok(texte.includes(M2), texte);
+  assert.ok(texte.includes(`${MARQUEUR_CONSTAT} run=`), texte);
+});
+
+test('§3 — le constat lié au run qui a appliqué la migration lève le gel', () => {
+  const v = seconde({ commentaires: [constat(`Constat par conteneur : à jour.\n${MARQUEUR_CONSTAT} run=10\n`)] });
+  assert.equal(v.code, SORTIE_PERMIS, v.lignes.join('\n'));
+});
+
+test('§3 — un constat qui ne prouve rien ne lève pas le gel', () => {
+  const ligne = `${MARQUEUR_CONSTAT} run=10`;
+  const cas = {
+    'auteur extérieur au dépôt': seconde({ commentaires: [constat(ligne, { association: 'NONE' })] }),
+    'écrit avant la fin du run': seconde({ commentaires: [constat(ligne, { le: '2026-11-14T10:00:00Z' })] }),
+    'cité dans une phrase': seconde({ commentaires: [constat(`le marqueur \`${ligne}\` reste à écrire`)] }),
+    'run rouge avant écriture': seconde({ commentaires: [constat(ligne)], runsParId: { 10: { ...runVert, conclusion: 'failure' } } }),
+    'run d’un autre workflow': seconde({ commentaires: [constat(ligne)], runsParId: { 10: { ...runVert, path: '.github/workflows/ci.yml' } } }),
+    'run hors de main': seconde({ commentaires: [constat(ligne)], runsParId: { 10: { ...runVert, head_branch: 'essai' } } }),
+    'run qui ne contient pas la migration': seconde({
+      commentaires: [constat(ligne)],
+      git: { 'merge-base': (args) => (args[2] === C2 ? (() => { throw new Error('non'); })() : '') },
+    }),
+    'aucune PR pour le commit': seconde({ commentaires: [constat(ligne)], prs: {} }),
+    // Le dépôt merge en squash : une autre PR mergée qui contient le commit n'est pas la sienne.
+    'PR dont le merge n’est pas le commit': seconde({
+      commentaires: [constat(ligne)],
+      prs: { [C2]: [{ number: 500, merge_commit_sha: 'e'.repeat(40), merged_at: '2026-11-13T00:00:00Z' }] },
+    }),
+    // Contre-revue Codex : l'ascendance ne suffit pas, le run doit PORTER la migration.
+    'run descendant qui a retiré la migration': seconde({
+      commentaires: [constat(ligne)],
+      runsParId: { 10: { ...runVert, head_sha: 'e'.repeat(40) } },
+      git: { 'ls-tree': arbres({ [TETE]: [M1, M2], ['e'.repeat(40)]: [M1] }) },
+    }),
+  };
+  for (const [nom, v] of Object.entries(cas)) assert.equal(v.code, SORTIE_GELE, `${nom} :\n${v.lignes.join('\n')}`);
+});
+
+test('§3 — une lecture impossible du constat gèle en code 2, jamais « constat invalide » (contre-revue Codex)', () => {
+  // Run cité introuvable, puis un constat plus ancien et valide : la panne ne doit pas laisser passer l'ancien.
+  const ancien = constat(`${MARQUEUR_CONSTAT} run=10`, { le: '2026-11-14T12:00:00Z' });
+  const recent = constat(`${MARQUEUR_CONSTAT} run=99`, { le: '2026-11-14T13:00:00Z' });
+  assert.equal(seconde({ commentaires: [ancien, recent] }).code, SORTIE_ILLISIBLE);
+  // Des migrations présentes sans commit d'ajout lisible (clone superficiel) : rien n'est vérifié (revue wn-reviewer).
+  assert.equal(seconde({ git: { log: (args) => (args.includes('--diff-filter=A') ? '' : `${DECLENCHEUR}\n`) } }).code, SORTIE_ILLISIBLE);
+});
+
+test('§3 — la dernière migration est la dernière AJOUTÉE encore présente, pas une migration retirée', () => {
+  // M2 ajoutée puis retirée (revert) : c'est M1 dont le constat compte.
+  const journal = `@${C2}\n\n${MIG}${M2}/migration.sql\n@${C1}\n\n${MIG}${M1}/migration.sql\n`;
+  const v = sonder({
+    pr: 1,
+    ...simuler({
+      deMain: [succesSur(10, TETE)],
+      succes: [succesSur(10, TETE)],
+      fichiers: AJOUT_M3,
+      prs: { [C1]: [{ number: 400, merge_commit_sha: C1 }] },
+      commentaires: { 400: [constat(`${MARQUEUR_CONSTAT} run=10`)] },
+      runsParId: { 10: runVert },
+      git: { 'ls-tree': arbres({ [TETE]: [M1] }), log: (args) => (args.includes('--diff-filter=A') ? journal : `${DECLENCHEUR}\n`) },
+    }),
+  });
+  assert.equal(v.code, SORTIE_PERMIS, v.lignes.join('\n'));
+});
+
+test('§3 — une PR sans migration ajoutée ne lit aucun constat', () => {
+  const s = simuler({ recents: [r(5, 'completed', DECLENCHEUR)], fichiers: [[{ filename: 'web/src/lib/clinical/a.ts', status: 'modified' }]] });
+  const v = sonder({ pr: 1, ...s });
+  assert.equal(v.code, SORTIE_PERMIS, v.lignes.join('\n'));
+  assert.ok(!s.appels.some((a) => a.chemin.includes('/issues/')));
+});
+
+// ── D-520 §7 : le CLI Prisma de l'image est gelé ────────────────────────────
+
+test('§7 — web/package.json et web/package-lock.json sont des chemins gelés', () => {
+  assert.ok(estGele('web/package.json'));
+  assert.ok(estGele('web/package-lock.json'));
+  assert.ok(!estGele('package.json'), 'la racine ne construit pas l’image');
 });
 
 // ── Câblage CLI et parité avec le dépôt ─────────────────────────────────────

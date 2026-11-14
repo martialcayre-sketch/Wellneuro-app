@@ -73,6 +73,9 @@ for (const chemin of [
     // et jamais le motif clinique (la disjonction se teste dans les deux sens).
     assert.match(j.sortie, /release-db/);
     assert.doesNotMatch(j.sortie, /D-xxx/);
+    // D-520 : plus d'approbation humaine du run ; la porte est le merge contre-revu.
+    assert.doesNotMatch(j.sortie, /approuv|à la main/);
+    assert.match(j.sortie, /D-520/);
   });
 }
 

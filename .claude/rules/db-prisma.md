@@ -78,6 +78,18 @@ HAVING bool_or(finished_at IS NOT NULL AND rolled_back_at IS NULL) IS NOT TRUE;
   GitHub. Une migration à la fois, suivie jusqu'au constat par conteneur
   (`D-520` §3). Détail : `docs/DEPLOIEMENT_RELEASE_DB.md` (séquence de mise
   en service comprise).
+- **Période transitoire** (`D-520` §6) : tant que l'environnement
+  `release-db` garde ses relecteurs requis (lu par `gh api
+  repos/{owner}/{repo}/environments/release-db --jq '.protection_rules'`),
+  le run attend en `waiting` que l'intégrateur l'approuve, sous la délégation
+  du 2026-11-14. Le retrait vient après le lot de gardes (§8), sur un accord
+  daté du responsable. Ensuite, le run part seul après le minuteur.
+- **Ce que la sonde exige** (`scripts/wn-sonde-release-db.mjs`, `D-520` §3
+  et §3 bis) : une migration de `main` qu'aucun run attesté « appliqué » ne
+  porte gèle toute PR sur un chemin déclencheur, sauf le revert pur de cette
+  migration. Une PR qui ajoute une migration attend le constat de la
+  précédente : après la lecture par conteneur, la file écrit sur la PR de
+  cette migration la ligne `WN_CONSTAT_RELEASE_DB run=<id du run>`.
 - Migration et code dépendant : PR séparées, ou drapeau éteint — le code se
   déploie AVANT que la migration soit appliquée ; un ADD se protège par
   drapeau éteint, et le code qui consomme le schéma n'arrive qu'après

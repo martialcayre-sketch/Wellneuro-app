@@ -59,7 +59,7 @@ if (!ouverturesLecture.has(premierMot)) {
     "deny",
     `Requête MCP Supabase refusée : elle commence par « ${premierMot} », qui ` +
     `n'est pas une lecture. La base de production ne se modifie que par une ` +
-    `migration Prisma committée, relue en PR et appliquée par release-db approuvée (D-087).`
+    `migration Prisma committée, contre-revue en PR, mergée puis appliquée par release-db (D-087, amendée par D-520).`
   );
 }
 
@@ -68,7 +68,7 @@ if (ecriture.test(sql) || selectInto.test(sql)) {
     "deny",
     "Requête MCP Supabase refusée : elle contient une opération d'écriture ou " +
     "de DDL. La base de production ne se modifie que par une migration Prisma " +
-    "committée, relue en PR et appliquée par release-db approuvée (D-087)."
+    "committée, contre-revue en PR, mergée puis appliquée par release-db (D-087, amendée par D-520)."
   );
 }
 

@@ -58,8 +58,11 @@ cd web && npm run type-check
   `wn-reviewer`). Voir `docs/DEPLOIEMENT_RELEASE_DB.md`.
 - Le workflow est PROPOSE AUTOMATIQUEMENT des qu'une migration atterrit sur
   `main` (declencheur `push` filtre sur `web/prisma/migrations/**`), et reste
-  declenchable a la main pour l'import NABM. L'automatisation porte sur le
-  declenchement, JAMAIS sur l'approbation : le run attend un relecteur requis.
+  declenchable a la main pour l'import NABM. Periode transitoire (`D-520`
+  §6) : tant que l'environnement garde ses relecteurs requis, le run attend
+  que l'integrateur l'approuve, sous la delegation du 2026-11-14. Le retrait
+  vient apres le lot de gardes (§8), sur un accord date du responsable ;
+  ensuite, le run part seul apres le minuteur.
   Un job `resume`, sans environnement donc joue AVANT le gate, ecrit dans le
   Summary la liste des migrations apportees — de quoi approuver en sachant.
 - Prerequis du workflow : secret d'environnement `MIGRATE_DATABASE_URL` (URL
