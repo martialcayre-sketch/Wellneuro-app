@@ -43,8 +43,10 @@ export async function authentifierPatientPortail(
 /**
  * Garde du dossier de la page ([[D-481]], complément DOC-12, Q8 a) : à appeler
  * par une route d'écriture du portail APRÈS `authentifierPatientPortail` (401 et
- * 403 passent avant, inchangés) et AVANT toute lecture du corps, toute écriture
- * et toute notification. Renvoie le refus 409 (T-51) quand le segment de la page
+ * 403 passent avant, inchangés) et AVANT toute écriture et toute notification —
+ * et avant la lecture du corps là où elle suit l'authentification (`trust/choix`
+ * et `trust/signalement` lisent leur JSON avant elle, sans rien écrire). Renvoie
+ * le refus 409 (T-51) quand le segment de la page
  * qui envoie, porté par l'en-tête `EN_TETE_DOSSIER_PAGE`, n'est pas l'`idPatient`
  * de la session — absent compris ; sinon `null`.
  */
