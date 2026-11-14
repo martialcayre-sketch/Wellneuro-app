@@ -141,7 +141,12 @@ function etiquetteEn(texte, i) {
  */
 function lexer(source) {
   const texte = source.replace(/\r\n?/g, "\n");
-  let sortie = "";
+  // La sortie s'accumule en morceaux ; `fin` en garde les derniers
+  // caractères. Lire la fin d'une chaîne accumulée l'aplatit en entier :
+  // à chaque littéral, le coût devenait quadratique (PR-Agent, #2137).
+  const morceaux = [];
+  let fin = "";
+  const ajouter = (x) => { morceaux.push(x); fin = (fin + x).slice(-256); };
   const corps = [];
   const identifiants = [];
   let incomplet = /\bu&['"]|\buescape\b/.test(texte);
@@ -149,7 +154,7 @@ function lexer(source) {
     const c = texte[i];
     if (c === "-" && texte[i + 1] === "-") {
       while (i < texte.length && texte[i] !== "\n") i++;
-      sortie += " ";
+      ajouter(" ");
     } else if (c === "/" && texte[i + 1] === "*") {
       // Les commentaires de PostgreSQL s'imbriquent.
       let profondeur = 1;
@@ -161,7 +166,7 @@ function lexer(source) {
       }
       if (profondeur > 0) incomplet = true;
       i--;
-      sortie += " ";
+      ajouter(" ");
     } else if (c === '"') {
       let ferme = false;
       const debut = i + 1;
@@ -177,11 +182,12 @@ function lexer(source) {
       // Un rôle ou un paramètre sensible garde son nom (`TO "anon"`, la
       // forme qu'écrit Prisma) : sinon le motif GRANT ne le verrait pas
       // (PR-Agent, #2137).
-      sortie += IDENTIFIANTS_SENSIBLES.has(nom) ? ` ${nom} ` : " ident ";
+      ajouter(IDENTIFIANTS_SENSIBLES.has(nom) ? ` ${nom} ` : " ident ");
     } else if (c === "'") {
       // Chaîne E (`E'…'`) : la barre oblique échappe le caractère suivant.
       const chaineE = texte[i - 1] === "e" && !/[\p{L}\p{N}_$]/u.test(texte[i - 2] ?? " ");
-      if (chaineE) sortie = sortie.slice(0, -1);
+      // Le `e` de `E'…'` vient d'être émis seul : il se retire.
+      if (chaineE) { morceaux.pop(); fin = fin.slice(0, -1); }
       const debutChaine = i + 1;
       let ferme = false;
       for (i++; i < texte.length; i++) {
@@ -197,7 +203,8 @@ function lexer(source) {
       // Le corps se décode comme PostgreSQL le lit : `''` vaut `'`, et dans
       // une chaîne E, `\x` vaut `x` (Codex, quatrième passe : `''--''`
       // brut ouvrait un faux commentaire).
-      if (/\b(do(\s+language\s+\S+)?|as)\s*$/.test(sortie)) {
+      // Seule la fin de la sortie compte (motif ancré).
+      if (/\b(do(\s+language\s+\S+)?|as)\s*$/.test(fin)) {
         const brut = texte.slice(debutChaine, i);
         // `\xHH`, `\ooo`, `\uXXXX` d'une chaîne E se décodent en lettres
         // que le crochet ne voit pas (`\x54RUNCATE`) : non lu avec
@@ -205,7 +212,7 @@ function lexer(source) {
         if (chaineE && /\\[0-7xuU]/.test(brut)) incomplet = true;
         corps.push(chaineE ? brut.replace(/''/g, "'").replace(/\\(.)/gs, "$1") : brut.replace(/''/g, "'"));
       }
-      sortie += " lit ";
+      ajouter(" lit ");
     } else if (c === "$" && !/[\p{L}\p{N}_$]/u.test(texte[i - 1] ?? " ") && etiquetteEn(texte, i)) {
       const etiquette = etiquetteEn(texte, i);
       const fin = texte.indexOf(etiquette, i + etiquette.length);
@@ -217,12 +224,12 @@ function lexer(source) {
         corps.push(texte.slice(i + etiquette.length, fin));
         i = fin + etiquette.length - 1;
       }
-      sortie += " lit ";
+      ajouter(" lit ");
     } else {
-      sortie += c;
+      ajouter(c);
     }
   }
-  return { texte: sortie, corps, identifiants, incomplet };
+  return { texte: morceaux.join(""), corps, identifiants, incomplet };
 }
 
 /** Profondeur de parenthèses à la position `fin` du texte lexé. */
@@ -252,6 +259,14 @@ function conditionTautologique(condition) {
     terme.split(/\band\b/).every((facteur) => /^(true|1 ?= ?1|not false)$/.test(facteur.trim())));
 }
 
+// Lu en place (drapeau `y`) : trancher la suite à chaque caractère était
+// quadratique sur une longue instruction.
+const WHERE_EN = /where\b/y;
+function whereEn(texte, i) {
+  WHERE_EN.lastIndex = i;
+  return WHERE_EN.test(texte);
+}
+
 /**
  * Une clause WHERE de niveau supérieur, dans `suite` (le texte lexé qui suit
  * le DELETE ou l'UPDATE), qui ne soit pas tautologique.
@@ -262,7 +277,7 @@ function whereBorne(suite) {
     const c = suite[i];
     if (c === "(") profondeur++;
     else if (c === ")") profondeur = Math.max(0, profondeur - 1);
-    else if (profondeur === 0 && /^where\b/.test(suite.slice(i)) && !/\w/.test(suite[i - 1] ?? " ")) {
+    else if (profondeur === 0 && c === "w" && whereEn(suite, i) && !/\w/.test(suite[i - 1] ?? " ")) {
       const condition = suite.slice(i + 5).split(/\breturning\b/)[0];
       return !conditionTautologique(condition);
     }

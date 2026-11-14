@@ -123,6 +123,16 @@ for (const sql of [
   });
 }
 
+
+// PR-Agent, #2137 : une migration de données de 20 000 littéraux se juge en
+// temps linéaire (le crochet a un délai).
+test("silence D-523 : migration de données volumineuse jugée vite", () => {
+  const lignes = Array.from({ length: 20000 }, (_, n) => `INSERT INTO "x" ("id", "v") VALUES (${n}, 'valeur ${n}');`);
+  const debut = Date.now();
+  assert.equal(jugement(MIGRATION, { content: lignes.join("\n") }).verdict, "passe");
+  assert.ok(Date.now() - debut < 2000, `trop lent : ${Date.now() - debut} ms`);
+});
+
 for (const [motif, sql] of [
   ["DROP", 'ALTER TABLE "x" DROP COLUMN "y";'],
   ["DROP", 'DROP TABLE "x";'],

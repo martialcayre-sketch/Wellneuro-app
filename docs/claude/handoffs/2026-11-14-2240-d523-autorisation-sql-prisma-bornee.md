@@ -34,11 +34,18 @@ Le responsable demande une autorisation permanente, pour toutes les sessions, d'
 
 ## Validations exécutées
 
-- `node --test .claude/hooks/*.test.mjs` : 570 tests, 570 verts.
+- `node --test .claude/hooks/*.test.mjs` : 577 tests, 577 verts (après les suivis de PR-Agent).
+- Performance : une migration de 40 000 littéraux se juge en 185 ms ; la croissance est linéaire, et elle est au banc.
 - Le corpus : les 147 `migration.sql` du dépôt passés au vrai crochet. 106 en silence ; les autres portent un DROP (24), du SQL dynamique dans un corps (11), une écriture dans un corps (4), un RENAME (1) ou `session_replication_role` (1). Aucune migration laissée en silence n'est destructive.
 - T1 complet (`npm run check`) : vert sur la version de la troisième passe. Sur la quatrième, un seul échec : `scripts/wn-codex-avis.test.mjs`, « bout en bout », dû à la passe Codex qui tournait en même temps (dossiers temporaires). Rejoué seul, il est vert, 30 sur 30.
 - Contre-revue Codex P0 (D-505), quatre passes. Elles relèvent 1, puis 11, puis 5, puis 2 P1. Tous sont fermés et posés au banc. Les avis sont déposés sur la PR.
 - `wn-reviewer` : quatre NO-GO, tous corrigés et posés au banc. La cinquième passe, ciblée, rend **GO avec réserves**. Sa seule réserve est un P2 : une substitution entre guillemets doubles est masquée, trou antérieur au lot. Elle est déclarée dans les Limites de D-523 plutôt qu'élargie, parce que le juger ferait demander chaque message de commit qui cite Prisma. Le banc des commandes ordinaires (commit avec heredoc, `gh pr create --body-file`, `npm run`) reste en silence.
+
+- PR-Agent sur #2137, en quatre revues de tête :
+  - le premier run a échoué sur un délai dépassé côté modèle, puis la relance a rendu 0 ;
+  - les constats successifs sont tous corrigés, verdicts postés : l'interdit n° 3 d'`AGENTS.md` et les deux fichiers `.github/`, l'ancrage des motifs de tube et de substitution sur l'appel `prisma … migrate|db`, `GRANT` aux rôles ouverts (cités compris), `ALTER POLICY`, les redirections `2>&1`, le coût quadratique du lexeur ;
+  - le constat « fragment changelog absent » est écarté avec motif : le fragment est dans le diff, et la quatrième revue avait élagué ce diff (passerelle à 1, « pruning diff »). La revue de la tête revient alors à `wn-reviewer` (D-448).
+- Le premier rouge de `verify` sur `d5e212a0` venait du banc « Cabinet instrument send race bench », hors du lot : relancé une fois, il est vert, et le CI de `main` est vert.
 
 ## Problèmes ouverts
 
