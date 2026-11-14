@@ -2,7 +2,7 @@ import { readFileSync, readdirSync, statSync } from 'fs';
 import { extname, join, relative, sep } from 'path';
 import { describe, expect, it } from 'vitest';
 import { RACINE as RACINE_DEPOT } from './bio-parcours/balayageSources';
-import { contexteResolution, importsResolus } from './bio-parcours/resolutionImports';
+import { contexteResolution, hoteEnMemoire, importsResolus } from './bio-parcours/resolutionImports';
 
 // Garde structurelle — réserve R2 de l'audit de conformité 5.0, arbitrée le
 // 2026-07-21.
@@ -154,8 +154,13 @@ function fichiersPatient(): string[] {
 const INDETERMINE = '<import indéterminé>';
 const COMPOSANTS = 'web/src/components/';
 
-function racinesMonteesDansLePortail(depart: readonly string[] = fichiersSources(join(RACINE, 'app/portail'))): string[] {
-  const contexte = contexteResolution();
+// `memoire` (clés relatives à `web/src`) : un graphe fabriqué pour une
+// contre-épreuve, résolu par `hoteEnMemoire`, sans écrire aucun fichier.
+function racinesMonteesDansLePortail(
+  depart: readonly string[] = fichiersSources(join(RACINE, 'app/portail')),
+  memoire?: ReadonlyMap<string, string>,
+): string[] {
+  const contexte = memoire ? { ...contexteResolution(), cache: undefined, hote: hoteEnMemoire(memoire) } : contexteResolution();
   const aVisiter = [...depart];
   const vus = new Set(aVisiter);
   const racines = new Set<string>();
@@ -163,7 +168,8 @@ function racinesMonteesDansLePortail(depart: readonly string[] = fichiersSources
   while (aVisiter.length > 0) {
     const fichier = aVisiter.pop() as string;
     const chemin = relative(RACINE_DEPOT, fichier).split(sep).join('/');
-    for (const i of importsResolus(chemin, contexte)) {
+    const source = memoire ? (memoire.get(chemin.slice('web/src/'.length)) ?? '') : undefined;
+    for (const i of importsResolus(chemin, contexte, source)) {
       if (i.indetermine) {
         racines.add(INDETERMINE);
         continue;
@@ -241,4 +247,18 @@ describe('surfaces patient — aucune gamification (R2)', () => {
     expect(racines).toContain('components/patient');
     expect(racines.length).toBeGreaterThan(2);
   }, 60_000);
+
+  // CONTRE-ÉPREUVE REPORTÉE PAR #2092 : un `@/components/x/…` qui ne se résout
+  // pas (une feuille de style, une image) garde sa racine, et se déclare comme
+  // un composant ; un composant résolu donne la sienne et se remonte.
+  it('la racine d’un asset @/components non résolu est conservée', () => {
+    const memoire = new Map([
+      ['app/portail/page.tsx', "import '@/components/patient-essai-style/theme.css';\nimport { A } from '@/components/patient-essai/A';\nexport default A;\n"],
+      ['components/patient-essai/A.tsx', 'export const A = 1;\n'],
+    ]);
+    expect(racinesMonteesDansLePortail([join(RACINE, 'app/portail/page.tsx')], memoire)).toEqual([
+      'components/patient-essai',
+      'components/patient-essai-style',
+    ]);
+  });
 });
