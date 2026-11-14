@@ -15,6 +15,7 @@ import {
 import { instrumentAFormeVariable } from '@/lib/questionnaires/alimentaire';
 import { buildMiniSynthese } from '@/lib/scoring/miniSynthese';
 import { ETIQUETTE_NON_INTERPRETABLE } from '@/lib/scoring/passationsNonInterpretables';
+import { texteScoreNonCalcule } from '@/lib/scoring/enqueteAlimentaireIncomplete';
 import type { ScoreSubScore } from '@/lib/scoring/types';
 import { statutExcluDuRaisonnement } from '@/lib/scoring/validite';
 import { DATEUR_CALENDAIRE, type Dateur } from './datesExport';
@@ -125,6 +126,10 @@ function blocsScores(p: PassationExport): BlocExport[] {
       libelle: 'Score',
       valeur: `${p.scorePrincipal}${typeof max === 'number' ? `/${max}` : ''}`,
     });
+  } else {
+    // Enquête SiiN incomplète ([[D-517]]) : même texte qu'à la fiche.
+    const nonCalcule = texteScoreNonCalcule(scores);
+    if (nonCalcule) blocs.push({ type: 'champ', libelle: 'Score', valeur: nonCalcule });
   }
 
   if (subScores.length === 0 && p.interpretation?.trim()) {

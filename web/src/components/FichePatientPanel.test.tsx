@@ -7,6 +7,7 @@ import { C5FeatureProvider } from './patient-cockpit/C5FeatureProvider';
 import type { DecisionCard } from '@/lib/clinical-engine/types';
 import { MESSAGE_DOSSIER_CLOS } from '@/lib/patient/cycleDeVie';
 import { reinitialiserReplisFiche } from './patient-cockpit/replisFiche';
+import { TEXTE_ENQUETE_ALIMENTAIRE_INCOMPLETE } from '@/lib/scoring/enqueteAlimentaireIncomplete';
 
 // La fiche MÉMORISE l'onglet et la phase en localStorage (par patient) : sans
 // purge entre les cas, un test qui navigue vers « Trajectoire » ferait
@@ -208,8 +209,33 @@ type Options = {
     | 'dimensions'
     | 'dimensions-degradees'
     | 'non-interpretable'
+    | 'siin-incomplete'
     | 'subscores-detail'
     | 'certification';
+};
+
+// Enquête SIIN incomplète ([[D-517]]) : forme exacte que le moteur
+// `seuils_points` enregistre — ni total, ni bande, ses manquants et une
+// catégorie descriptive.
+const REPONSES_SIIN_INCOMPLETE = {
+  reponses: [
+    {
+      idReponse: 'REP_SIIN',
+      idAssignation: 'ASG001',
+      idQuestionnaire: 'Q_ALI_01',
+      titre: 'Enquête alimentaire SIIN',
+      dateSoumission: '2026-07-22T10:00:00.000Z',
+      scorePrincipal: null,
+      interpretation: null,
+      scoresParsed: {
+        type: 'seuils_points', scored: false, total: null, maxTotal: 90, interpretation: null,
+        raisonNonScore: TEXTE_ENQUETE_ALIMENTAIRE_INCOMPLETE,
+        dimensions: [{ id: 'PETIT_DEJ', label: 'Petit-déjeuner', total: 2, max: 4, repondus: 2, items: 3, interpretation: null }],
+        missing: 1, missingIds: ['SIIN01'],
+      },
+      subScoreRanges: null,
+    },
+  ],
 };
 
 // Passation dont le résultat enregistré n'est pas une mesure (réservoir
@@ -734,6 +760,7 @@ function stubFetch(options: Options = {}) {
       if (options.reponses === 'dimensions') return ok(REPONSES_A_DIMENSIONS);
       if (options.reponses === 'dimensions-degradees') return ok(REPONSES_A_DIMENSIONS_DEGRADEES);
       if (options.reponses === 'non-interpretable') return ok(REPONSES_NON_INTERPRETABLE);
+      if (options.reponses === 'siin-incomplete') return ok(REPONSES_SIIN_INCOMPLETE);
       if (options.reponses === 'subscores-detail') return ok(REPONSES_A_SUBSCORES_AVEC_DETAIL);
       if (options.reponses === 'certification') return ok(REPONSES_CERTIFICATION);
       return ok(REPONSES);
@@ -2004,6 +2031,17 @@ describe('FichePatientPanel — deep-link ?onglet= (Fiche-trajectoire 5.0)', () 
     // et il ferait passer une passation invalide pour une passation ancienne.
     expect(within(ligne).getByText('Non interprétable')).toBeTruthy();
     expect(ligne.textContent).not.toContain('Historique');
+  });
+
+  it('enquête SIIN incomplète : le texte validé, ni score ni bande, catégories et manquants gardés ([[D-517]])', async () => {
+    await rendreFiche({ reponses: 'siin-incomplete' });
+    fireEvent.click(screen.getByRole('button', { name: /Détail des réponses/i }));
+
+    const ligne = (await screen.findByText('Enquête alimentaire SIIN')).closest('tr')!;
+    expect(within(ligne).getByText(TEXTE_ENQUETE_ALIMENTAIRE_INCOMPLETE)).toBeTruthy();
+    expect(within(ligne).getByText('Petit-déjeuner')).toBeTruthy();
+    expect(within(ligne).getByText('1 manquant(s)')).toBeTruthy();
+    expect(ligne.textContent).not.toContain('/90');
   });
 
   it('contrôle négatif — un instrument courant ne gagne ni motif ni badge', async () => {

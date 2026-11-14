@@ -169,7 +169,12 @@ const SOURCE_ROUTE = readFileSync(join(__dirname, '../../../../lib/synthese/gene
 // v34 (2026-11-13, D-511, t77) : section neuve des règles non appliquées par le
 // service, texte validé par le responsable ; aucune autre ligne ne bouge. Gardée à
 // part par `promptReglesNonServies.guard.test.ts`.
-const EMPREINTE_V34 = '0d179022f57ca4aa';
+// v35 (2026-11-13, D-517, t49) : un paragraphe sur `scored: false` et `raisonNonScore` à la
+// racine d'un questionnaire (enquête SiiN incomplète) ; aucune autre ligne ne bouge.
+// Retouché avant tout service (revue P0) : le mot pour mot réservé au texte validé,
+// tout autre motif repris en son sens, et un motif de passation incomplète
+// n'établit aucune valeur, pas même un apport nul (D-517 §3, seconde passe Codex).
+const EMPREINTE_V35 = '3c34ec7b753f0119';
 
 /**
  * La seule phrase de la consigne autorisée à attribuer une validité — parce
@@ -291,7 +296,7 @@ describe('garde-fou alimentaire — consigne système', () => {
     expect(
       { version: VERSION_PROMPT_SYNTHESE, empreinte },
       "consigne modifiée : incrémenter VERSION_PROMPT_SYNTHESE et reporter la nouvelle empreinte ici. CE GESTE N'EST PAS MÉCANIQUE — la consigne est du clinique (`DC-17`) : relire ce qui a changé, et si un interdit a bougé, une décision `D-xxx` et un fragment `changelog.d/` sont dus AVANT de reporter l'empreinte. C'est ici que passe une clause affaiblie qu'aucune assertion de vocabulaire ne voit.",
-    ).toEqual({ version: 'synthese-v34', empreinte: EMPREINTE_V34 });
+    ).toEqual({ version: 'synthese-v35', empreinte: EMPREINTE_V35 });
   });
 
   it('ne présente pas les questionnaires comme validés, et dit pourquoi (D-034)', () => {

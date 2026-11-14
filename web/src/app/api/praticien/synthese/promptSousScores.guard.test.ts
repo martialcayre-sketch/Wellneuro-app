@@ -229,8 +229,12 @@ describe('consigne système — les trois porteurs de sous-scores', () => {
     const besoinsNuls = charge.scoresBesoins.filter((b: any) => b.total === null);
     expect(dimNulles.length, 'aucune dimension à null — le cas n’est plus exercé').toBeGreaterThan(0);
     expect(besoinsNuls.length, 'aucun besoin à null — le cas n’est plus exercé').toBeGreaterThan(0);
-    // Et ces null coexistent avec un total global qui, lui, n'est PAS renormalisé.
-    expect(typeof charge.total).toBe('number');
+    // Avant [[D-517]], ces null coexistaient avec un total global non
+    // renormalisé, comptant les manquants pour zéro. Le moteur ne calcule plus
+    // ce total : `scored: false` et son `raisonNonScore` partent au modèle.
+    expect(charge.total).toBeNull();
+    expect(charge.scored).toBe(false);
+    expect(typeof charge.raisonNonScore).toBe('string');
   });
 
   it('n’affirme plus que TOUT sous-score porte un max', () => {
