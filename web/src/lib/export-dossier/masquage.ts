@@ -913,12 +913,36 @@ export function masquerSynthese(s: SyntheseExport, masquer: Masqueur): SyntheseE
 }
 
 /**
+ * Dates calendaires écrites en chiffres dans un texte relevé : JJ/MM/AAAA ou
+ * JJ.MM.AAAA (même séparateur deux fois, jamais le tiret, qui sépare les
+ * bornes d'un intervalle « 1.5-10 »), et AAAA-MM-JJ.
+ */
+const DATE_CHIFFREE = /\b\d{1,2}([/.])\d{1,2}\1\d{2,4}\b|\b\d{4}-\d{2}-\d{2}\b/g;
+export const DATE_RETIREE = 'date retirée';
+
+function echapperMotif(texte: string): string {
+  return texte.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
  * La biologie ([[D-519]] §4) : l'intervalle et l'unité sont des textes relevés
  * sur le compte rendu, masqués comme tout texte libre ; le laboratoire est
- * RETIRÉ (il peut situer le patient). Valeur, date et libellé du catalogue ne
- * sont pas des textes libres.
+ * RETIRÉ (il peut situer le patient). Dans l'intervalle, en plus, les noms des
+ * laboratoires du dossier sont masqués et les dates écrites en chiffres
+ * retirées (contre-revue Codex de #2105). Valeur, date et libellé du
+ * catalogue ne sont pas des textes libres.
  */
 export function masquerBiologie(b: BiologieExport, masquer: Masqueur): BiologieExport {
+  const laboratoires = [...new Set(
+    b.analytes.flatMap(a => a.mesures.flatMap(m => (m.laboratoire && m.laboratoire.trim().length >= 3 ? [m.laboratoire.trim()] : []))),
+  )].sort((x, y) => y.length - x.length);
+  const motifLaboratoires = laboratoires.length > 0
+    ? new RegExp(laboratoires.map(echapperMotif).join('|'), 'giu')
+    : null;
+  const masquerIntervalle = (texte: string): string => {
+    const sansLaboratoire = motifLaboratoires ? texte.replace(motifLaboratoires, MARQUE_MASQUE) : texte;
+    return masquer(sansLaboratoire.replace(DATE_CHIFFREE, DATE_RETIREE));
+  };
   return {
     ...b,
     analytes: b.analytes.map(a => ({
@@ -926,7 +950,7 @@ export function masquerBiologie(b: BiologieExport, masquer: Masqueur): BiologieE
       mesures: a.mesures.map(m => ({
         ...m,
         unite: masquerOuNull(m.unite, masquer),
-        intervalle: 'texte' in m.intervalle ? { texte: masquer(m.intervalle.texte) } : m.intervalle,
+        intervalle: 'texte' in m.intervalle ? { texte: masquerIntervalle(m.intervalle.texte) } : m.intervalle,
         laboratoire: null,
       })),
     })),

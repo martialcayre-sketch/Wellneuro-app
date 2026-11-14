@@ -1549,6 +1549,24 @@ describe('assemblerDossierExport — biologie ([[D-519]])', () => {
     }
   });
 
+  it('version ia-externe : un intervalle qui cite un laboratoire du dossier ou une date les perd (Codex, #2105)', async () => {
+    brancherBiologie();
+    prisma.resultatBiologique.findMany.mockResolvedValue([
+      { ...LIGNES[0], ligneCandidate: { ...LUE, intervalleLu: '1.5-10 (réf. laboratoire des lilas, 10/09/2026, 2026-09-10)' } },
+    ]);
+    const texte = section5(await assemblerOuEchouer('ia-externe'));
+    expect(texte).toContain('« 1.5-10 (réf. [masqué], date retirée, date retirée) »');
+    expect(texte).not.toMatch(/Lilas|2026/i);
+  });
+
+  it('version complète : l’intervalle reste tel qu’imprimé', async () => {
+    brancherBiologie();
+    prisma.resultatBiologique.findMany.mockResolvedValue([
+      { ...LIGNES[0], ligneCandidate: { ...LUE, intervalleLu: '1.5-10 (réf. 10/09/2026)' } },
+    ]);
+    expect(section5(await assemblerOuEchouer('complete'))).toContain('« 1.5-10 (réf. 10/09/2026) »');
+  });
+
   it('version ia-externe : l’unité relevée passe par le masqueur', async () => {
     brancherBiologie();
     prisma.resultatBiologique.findMany.mockResolvedValue([{

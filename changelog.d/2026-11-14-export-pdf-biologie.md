@@ -15,7 +15,8 @@
   marquage, ni une plage WellNeuro (DC-47), ni une qualification.
 - **Version « IA externe ».** Le nom du laboratoire est retiré et les dates
   passent en jours relatifs (D-512). L'intervalle et l'unité sont masqués
-  comme tout texte libre. Les dates de biologie ne déplacent pas J0.
+  comme tout texte libre. Dans l'intervalle, en plus, les noms des
+  laboratoires du dossier sont masqués et les dates en chiffres retirées. Les dates de biologie ne déplacent pas J0.
 - **Panneau d'export** : la description et l'aide de la version « IA
   externe » annoncent la biologie, et le retrait du laboratoire.
 - **Préambule** : le contenu annonce la section 5. La liste « Non inclus »

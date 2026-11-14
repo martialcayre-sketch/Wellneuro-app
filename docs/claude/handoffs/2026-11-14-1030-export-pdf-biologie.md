@@ -99,7 +99,11 @@ Quatre réponses du responsable, toutes en session.
     lot ;
   - bancs de temps du masqueur.
   Le segment E2E n'a pas été atteint. C'est le CI qui juge.
-- Passe Codex (D-505), CI : voir la PR.
+- Contre-revue Codex (D-505) sur 87f7982f : un P1, corrigé. Dans la
+  version « IA externe », l'intervalle perd maintenant les noms des
+  laboratoires du dossier et les dates écrites en chiffres. Deux bancs de
+  l'assembleur couvrent ce cas. La limite restante est écrite en D-519 §4.
+- CI : voir la PR.
 
 ## Problèmes ouverts
 

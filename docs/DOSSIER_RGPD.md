@@ -1299,7 +1299,9 @@ lecture consignée ([[D-268]]). Chaque mesure donne la valeur, l'unité, la
 date du prélèvement et l'intervalle imprimé par le laboratoire, sans
 interprétation. La version « Pour une IA externe » retire le nom du
 laboratoire, écrit les dates en jours relatifs et masque l'intervalle et
-l'unité comme tout texte libre. Elle ne porte jamais :
+l'unité comme tout texte libre. Dans l'intervalle, elle masque en plus les
+noms des laboratoires du dossier et retire les dates écrites en chiffres.
+Elle ne porte jamais :
 
 - le compte rendu ;
 - les commentaires du laboratoire ;
