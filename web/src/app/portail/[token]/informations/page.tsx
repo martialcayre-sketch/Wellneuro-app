@@ -6,6 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import type { TrustEtatResponse } from '@/app/api/portail/trust/etat/route';
 import { getDocumentCourant, REGISTRE_DOCUMENTS_TRUST } from '@/lib/trust/contenus/registre';
 import { DocumentTrust } from '@/components/patient/trust/DocumentTrust';
+import { datePublicationEnLettres } from '@/lib/trust/datePublication';
 import { MesChoix } from '@/components/patient/trust/MesChoix';
 import { SignalerProbleme } from '@/components/patient/trust/SignalerProbleme';
 import { PatientCard } from '@/components/patient/ui/PatientCard';
@@ -113,7 +114,7 @@ export default function InformationsPage() {
         <CarteCentre id="conditions" titre={conditions.titre}>
           <p className="text-sm text-muted-foreground">{conditions.resume}</p>
           <p className="text-xs text-muted-foreground">
-            Version {conditions.version} — publiée le {conditions.publieLe}
+            Version {conditions.version} — publiée le {datePublicationEnLettres(conditions.publieLe)}
           </p>
           <Link href={`/portail/${token}/conditions`} className="inline-block text-sm text-primary hover:underline print:hidden">
             Lire les conditions d’utilisation
@@ -197,7 +198,7 @@ export default function InformationsPage() {
               <div className="flex flex-wrap items-baseline justify-between gap-x-3">
                 <span className="text-foreground">{doc.titre}</span>
                 <span className="text-xs text-muted-foreground">
-                  {doc.version} — publiée le {doc.publieLe}
+                  {doc.version} — publiée le {datePublicationEnLettres(doc.publieLe)}
                 </span>
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">{doc.changeSummary}</p>

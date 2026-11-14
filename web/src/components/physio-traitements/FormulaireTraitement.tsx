@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import {
   BLOCS_PATIENT,
   CHAMPS_PATIENT,
@@ -61,6 +61,7 @@ export function FormulaireTraitement({
   onEnvoyer,
   onAnnuler,
   idBase,
+  erreur,
 }: {
   nature: Nature;
   initiales?: ValeursTraitement;
@@ -71,6 +72,8 @@ export function FormulaireTraitement({
   onEnvoyer: (valeurs: ValeursTraitement) => void;
   onAnnuler: () => void;
   idBase: string;
+  /** Le message d'un envoi de ce formulaire qui a échoué, au-dessus de ses boutons (Q5 a de PAT-6). */
+  erreur?: ReactNode;
 }) {
   const [v, setV] = useState<ValeursTraitement>(() => ({ ...initiales, fin: avecFin ? initiales.fin ?? '' : null }));
   const bloc = BLOCS_PATIENT[nature];
@@ -130,6 +133,7 @@ export function FormulaireTraitement({
           ))}
         </div>
       </fieldset>
+      {erreur}
       <div className="flex flex-wrap gap-2">
         <button
           type="button"
