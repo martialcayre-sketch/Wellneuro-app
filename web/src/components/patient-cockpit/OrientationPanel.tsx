@@ -395,7 +395,7 @@ export function OrientationPanel({
         value={motifGeste}
         maxLength={MOTIF_LONGUEUR_MAX}
         onChange={event => setMotifGeste(event.target.value)}
-        className="mt-1 w-full rounded-md border border-border bg-surface p-2 text-xs text-foreground"
+        className="mt-1 w-full rounded-md border border-border bg-surface p-2 text-xs text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
       />
       <p className="mt-1 text-2xs text-muted-foreground">
         Votre motif, votre nom et la date sont enregistrés. Rien n’est effacé : l’exploration reste
@@ -409,7 +409,7 @@ export function OrientationPanel({
           // un aller-retour, mais ne remplace RIEN — le serveur revérifie.
           disabled={gesteEnCours || !motifRecevable(motifGeste)}
           onClick={() => void enregistrerGeste(cle, action, motifGeste)}
-          className="rounded-md border border-border px-2 py-1 text-xs font-medium text-foreground disabled:opacity-60"
+          className="min-h-11 rounded-md border border-border px-3 py-1 text-xs font-medium text-foreground disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
         >
           {gesteEnCours
             ? 'Enregistrement...'
@@ -419,7 +419,7 @@ export function OrientationPanel({
           type="button"
           disabled={gesteEnCours}
           onClick={() => { setFormulaire(null); setMotifGeste(''); setIssueGeste(null); }}
-          className="rounded-md px-2 py-1 text-xs text-muted-foreground disabled:opacity-60"
+          className="min-h-11 rounded-md px-3 py-1 text-xs text-muted-foreground disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
         >
           Annuler
         </button>
@@ -655,7 +655,7 @@ export function OrientationPanel({
                     type="button"
                     disabled={gesteEnCours}
                     onClick={() => { setFormulaire({ cle, action: 'reprendre' }); setMotifGeste(''); setIssueGeste(null); }}
-                    className="mt-2 rounded-md border border-border px-2 py-1 text-xs font-medium text-foreground disabled:opacity-60"
+                    className="mt-2 min-h-11 rounded-md border border-border px-3 py-1 text-xs font-medium text-foreground disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                   >
                     Reprendre cette exploration
                   </button>
@@ -693,7 +693,7 @@ export function OrientationPanel({
           <button
             type="button"
             onClick={relire}
-            className="mt-2 rounded-md border border-border px-2 py-1 text-xs font-medium text-foreground"
+            className="mt-2 min-h-11 rounded-md border border-border px-3 py-1 text-xs font-medium text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
           >
             Réessayer
           </button>
@@ -893,7 +893,7 @@ export function OrientationPanel({
                           type="button"
                           disabled={ajoutEnCours === cle}
                           onClick={() => ajouterALaFile(cle, qid as string, titre)}
-                          className="rounded-md border border-border px-2 py-1 text-xs font-medium text-foreground disabled:opacity-60"
+                          className="min-h-11 rounded-md border border-border px-3 py-1 text-xs font-medium text-foreground disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                         >
                           {ajoutEnCours === cle ? 'Ajout...' : 'Ajouter à la file d’envoi'}
                         </button>
@@ -922,7 +922,7 @@ export function OrientationPanel({
                         type="button"
                         disabled={gesteEnCours}
                         onClick={() => { setFormulaire({ cle, action: 'ecarter' }); setMotifGeste(''); setIssueGeste(null); }}
-                        className="rounded-md px-2 py-1 text-xs text-muted-foreground underline decoration-dotted disabled:opacity-60"
+                        className="min-h-11 rounded-md px-3 py-1 text-xs text-muted-foreground underline decoration-dotted disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                       >
                         Écarter cette exploration
                       </button>
@@ -955,7 +955,7 @@ export function OrientationPanel({
                 type="button"
                 disabled={envoiEnCours}
                 onClick={() => void envoyerLaFile()}
-                className="rounded-md border border-border px-3 py-1.5 text-xs font-semibold text-foreground disabled:opacity-60"
+                className="min-h-11 rounded-md border border-border px-3 py-1.5 text-xs font-semibold text-foreground disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
               >
                 {envoiEnCours
                   ? 'Envoi...'

@@ -1092,3 +1092,18 @@ describe('OrientationPanel — écartement praticien', () => {
     expect(await screen.findByText('2 explorations écartées')).toBeTruthy();
   });
 });
+
+describe('OrientationPanel — PRA-3b, PR 3 (Q11 a), à sa place dans l’onglet Trajectoire', () => {
+  it('chaque bouton fait 44 px au moins et porte un anneau de focus', async () => {
+    stubFetch(ACTIF);
+    render(<OrientationPanel idPatient="PAT_SEED_03" />);
+
+    fireEvent.click((await screen.findAllByRole('button', BOUTON_ECARTER))[0]);
+    const boutons = screen.getAllByRole('button');
+    expect(boutons.length).toBeGreaterThan(2);
+    for (const bouton of boutons) {
+      expect(bouton.className).toContain('min-h-11');
+      expect(bouton.className).toContain('focus-visible:ring-2');
+    }
+  });
+});

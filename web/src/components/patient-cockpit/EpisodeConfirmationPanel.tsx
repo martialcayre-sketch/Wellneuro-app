@@ -61,9 +61,10 @@ export function EpisodeConfirmationPanel({
 
   return (
     <section aria-labelledby="episode-confirmation-title" className="rounded-xl border border-border bg-surface p-4">
-      <h3 id="episode-confirmation-title" className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+      {/* h4 sous la phase « Décision » (h3), ses sous-parties en h5 (PRA-3b Q2 a). */}
+      <h4 id="episode-confirmation-title" className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
         Confirmation de l’épisode {jalon}
-      </h3>
+      </h4>
       <p className="mt-2 text-base text-muted-foreground">
         Vérifiez les conditions et les questionnaires à inclure. Confirmer enregistre l’épisode. Une nouvelle
         confirmation remplace la sélection retenue, sans déplacer la date de l’acte.
@@ -72,7 +73,7 @@ export function EpisodeConfirmationPanel({
       {preconditions && (
         <div className="mt-3 grid gap-3">
           <div>
-            <h4 className="text-sm font-semibold text-foreground">Conditions requises</h4>
+            <h5 className="text-sm font-semibold text-foreground">Conditions requises</h5>
             <ul className="mt-2 grid gap-1.5">
               {preconditions.dures.map(condition => (
                 <li key={condition.id} className="flex items-start gap-2 text-sm">
@@ -95,7 +96,7 @@ export function EpisodeConfirmationPanel({
 
           {preconditions.souples.some(condition => !condition.satisfaite) && (
             <div>
-              <h4 className="text-sm font-semibold text-foreground">Avertissements</h4>
+              <h5 className="text-sm font-semibold text-foreground">Avertissements</h5>
               <ul className="mt-2 grid gap-2">
                 {preconditions.souples.filter(condition => !condition.satisfaite).map(condition => (
                   <li key={condition.id} className="rounded-lg border border-accent bg-status-warning/10 p-3 text-sm">
@@ -204,7 +205,7 @@ export function EpisodeConfirmationPanel({
           selectedIds,
           aContourner.map(conditionId => ({ conditionId, motif: (motifs[conditionId] ?? '').trim() })),
         )}
-        className="mt-4 min-h-11 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
+        className="mt-4 min-h-11 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
       >
         {submitting ? 'Confirmation en cours…' : `Confirmer l’épisode ${jalon}`}
       </button>

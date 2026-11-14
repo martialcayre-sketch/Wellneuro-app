@@ -91,9 +91,9 @@ export function DecisionSummaryCard({
   if (!decisionCard) {
     return (
       <section aria-labelledby={idTitre}>
-        <h3 id={idTitre} className="text-xs font-semibold text-solar-ink uppercase tracking-[.06em] mb-3">
+        <h4 id={idTitre} className="font-display text-base font-semibold text-foreground mb-3">
           {titre}
-        </h3>
+        </h4>
         {/* Carte de décision 5.0 : liseré primaire (maquette cible). */}
         <div className="rounded-xl border border-border border-l-4 border-l-primary bg-surface p-4 shadow-card">
           <p className="text-base font-semibold text-foreground">Décision clinique non préparée</p>
@@ -203,9 +203,9 @@ export function DecisionSummaryCard({
 
   return (
     <section aria-labelledby={idTitre}>
-      <h3 id={idTitre} className="text-xs font-semibold text-solar-ink uppercase tracking-[.06em] mb-3">
+      <h4 id={idTitre} className="font-display text-base font-semibold text-foreground mb-3">
         {titre}
-      </h3>
+      </h4>
       <TwoLevelReading
         label="Voir les sources et limites"
         onOuverture={mesurable ? () => envoyerMesure('ouverture') : undefined}
