@@ -9,7 +9,9 @@ neufs (« Oui, tout accepté », 2026-11-14).
   questionnaires dans ses deux entrées (Bibliothèque et Fil du jour) ; T-70
   confirme la désactivation d'un instrument du cabinet ; T-71 et T-72
   confirment la soumission de la revue en lot de l'atelier corpus, en disant
-  qu'elle n'est pas atomique ; T-73 est le surtitre du rayon Connaissances.
+  qu'elle n'est pas atomique (un terme égal à 1 s'écrit au singulier, variante
+  acceptée ensuite sur constat de PR-Agent) ; T-73 est le surtitre du rayon
+  Connaissances.
   Emplacements neufs de « Réessayer » (T-17), « Confirmer la désactivation »
   et « Annuler ». Titre mis à jour par famille.
 - D-481 : complément DOC-13, validation de la famille au sens du §4 ; Q1 à

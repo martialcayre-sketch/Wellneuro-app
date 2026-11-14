@@ -16,6 +16,7 @@ Inscrire, avant tout code de PRA-4 (Bibliothèque et ateliers, P37 à P50), la v
 - T-67 à T-73 acceptés mot pour mot, variantes comprises ; apostrophes droites, comme le texte accepté (règle de T-18).
 - Q3 : confirmation de l'envoi aussi dans `FileEnvoiAside.tsx` (Fil du jour) ; D-030 inchangée.
 - Q7 : la confirmation dit que la soumission n'est pas atomique ; route, garde, signature claim par claim, résumé du résultat et reprise inchangés.
+- T-71 : variante ajoutée sur constat de PR-Agent (#2131), un terme égal à 1 s'écrit au singulier (« 1 validation », « 1 rejet ») ; acceptée par écrit le 2026-11-14 (« Oui, variante (a) »), ligne `20261114-2118-d`.
 - P42 : D-326 §2 strict, habillage seul.
 
 ## Fichiers modifiés
