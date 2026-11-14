@@ -323,10 +323,16 @@ describe('ExportDossierPanel — échecs', () => {
 
 describe('ExportDossierPanel — PRA-3b, PR 7 (Q15 a)', () => {
   it('distingue complet et pseudonymisé, et ne dit jamais « anonymisé »', () => {
-    const { container } = render(<ExportDossierPanel idPatient="PAT_SEED_03" />);
+    render(<ExportDossierPanel idPatient="PAT_SEED_03" />);
     fireEvent.click(screen.getByRole('button', { name: 'Exporter en PDF' }));
-    const texte = container.ownerDocument.body.textContent ?? '';
-    expect(texte).toMatch(/pseudonymisée/);
-    expect(texte).not.toMatch(/anonymis/i);
+    // Le dialogue ouvert, et lui seul : deux options distinctes, la
+    // pseudonymisée par défaut (revue PR-Agent, « Test peu probant »).
+    const dialogue = screen.getByRole('dialog');
+    const pseudonymisee = within(dialogue).getByRole('radio', { name: 'Pour une IA externe (pseudonymisée)' });
+    const complete = within(dialogue).getByRole('radio', { name: 'Complète' });
+    expect((pseudonymisee as HTMLInputElement).checked).toBe(true);
+    expect((complete as HTMLInputElement).checked).toBe(false);
+    expect(within(dialogue).getAllByRole('radio')).toHaveLength(2);
+    expect(dialogue.textContent ?? '').not.toMatch(/anonymis/i);
   });
 });
