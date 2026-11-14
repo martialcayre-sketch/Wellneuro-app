@@ -225,6 +225,17 @@ model Assignation {
   // le catalogue (CHECK `assignations_declaration_suicide_cabinet_seul`).
   poseQuestionSuicide Boolean? @map("pose_question_suicide")
 
+  // D-515 §4 (H59, lot D-277) : copie de la désignation de l'instrument,
+  // prise à l'envoi avec la déclaration — id de la question, valeur entière de
+  // son option « non », copie JSON figée (nom de l'instrument, énoncé et
+  // options, verbatim). Le lot de code lit cette copie, jamais l'instrument.
+  // Toutes trois remplies ou toutes vides, et remplies seulement sous « oui »
+  // (CHECK `assignations_designation_suicide_coherente`, non modélisé ici).
+  // NULL = désignation INCONNUE, jamais « non » (DC-24, D-515 §7).
+  questionSuicideId        String? @map("question_suicide_id")
+  questionSuicideOptionNon Int?    @map("question_suicide_option_non")
+  questionSuicideCopie     Json?   @map("question_suicide_copie")
+
   patient            Patient             @relation(fields: [idPatient], references: [idPatient])
   protocolCheckins       ProtocolCheckin[]
   agendaSommeilNuits     AgendaSommeilNuit[]

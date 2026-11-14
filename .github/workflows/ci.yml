@@ -1420,6 +1420,16 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/nf7_declaration_suicide_cabinet_v1_negatif.sql
 
+      # D-515 §4 (H59, lot D-277 ; réponses 20261112-2025-a, 20261113-1807-a) :
+      # copie de la désignation sur l'assignation — trois colonnes toutes
+      # remplies ou toutes vides, remplies seulement sous la copie « oui » ;
+      # absentes sous « oui » = désignation inconnue, admise ; copie JSON
+      # seulement objet. Transaction annulée.
+      - name: D-515 designation copy negative tests
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/d515_designation_suicide_assignation_v1_negatif.sql
+
       # Les mêmes tables, en deux sessions (D-439 ; contre-revue Codex de
       # #1871, P1-1) : deux premières poses, deux premières versions, une
       # révision contre un acte, un retrait contre un arbitrage, une révocation

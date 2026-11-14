@@ -95,7 +95,10 @@ BEGIN
   FROM pg_constraint c
   JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = ANY (c.conkey)
   WHERE c.conrelid = 'public.assignations'::regclass AND c.contype = 'c'
-    AND a.attname = 'pose_question_suicide';
+    AND a.attname = 'pose_question_suicide'
+    -- D-515 §4 : la cohérence de la désignation nomme aussi cette colonne ;
+    -- elle est éprouvée par `d515_designation_suicide_assignation_v1_negatif.sql`.
+    AND c.conname <> 'assignations_designation_suicide_coherente';
   IF nb <> 1 THEN
     RAISE EXCEPTION 'NF-7: % contrainte(s) CHECK sur la copie de la déclaration d''assignations ; une seule attendue.', nb;
   END IF;
