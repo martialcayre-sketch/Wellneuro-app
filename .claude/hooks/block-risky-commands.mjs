@@ -42,12 +42,23 @@ const brute = original.toLowerCase();
 //    silencieusement autorisé, alors que c'est exactement ce que le niveau
 //    « demande » existe pour faire relire.
 const sansPrefixeCd = brute.replace(/^\s*cd\s+[^\s&;|]+\s*&&\s*/, "");
+// `wn-dev-db.sh` construit lui-même l'URL de la base locale de son worktree
+// (127.0.0.1) avant `prisma migrate deploy` : c'est la voie locale sans
+// demande de D-523 (`wn-local-migrate.sh`, qu'elle citait, est retiré depuis
+// le 2026-09-01). Une enveloppe ne vaut que SEULE : chaînée (`&&`, `||`, `;`,
+// `|`, retour à la ligne, substitution), la suite serait dispensée avec elle
+// (wn-reviewer, 2026-11-14).
 const enveloppesSures = [
   /^npm\s+run\s+test:worktree\b/,
   /^(bash\s+)?scripts\/wn-test-worktree\.sh\b/,
-  /^(bash\s+)?scripts\/wn-local-migrate\.sh\b/
+  /^(bash\s+)?scripts\/wn-dev-db\.sh\b/
 ];
-const enveloppeSure = enveloppesSures.some((motif) => motif.test(sansPrefixeCd));
+const enveloppeSure =
+  enveloppesSures.some((motif) => motif.test(sansPrefixeCd)) &&
+  // Redirections `2>&1` mises à part, tout `&`, `|`, `;`, retour à la ligne,
+  // substitution de commande ou de processus (`$(`, accent grave, `<(`,
+  // `>(`) chaîne une autre commande (wn-reviewer, troisième passe).
+  !/[&|;\n`]|\$\(|[<>]\(/.test(sansPrefixeCd.replace(/\d*[<>]&\d*-?/g, " "));
 
 // Un heredoc ne transporte du CODE que si quelque chose, dans la commande, sait
 // l'exécuter. `cat >> docs/claude/SESSION_LOG.md <<'ENTREE'` écrit un texte, et
@@ -102,11 +113,48 @@ const refus = [
 
 const demande = [
   {
-    motif: /\bprisma\s+(migrate|db\s+push|db\s+execute)\b/,
+    // `migrate status` et `migrate diff` n'écrivent dans aucune base : silence
+    // ([[D-523]]) — sauf `--from-migrations` (rejoue les migrations dans une
+    // base fantôme, comme `--to-migrations`), `-o|--output` (qui écrit un
+    // fichier, une migration peut-être), `--shadow…` ou `--config` (qui peut désigner une autre
+    // base). Le reste touche une base, et le garde ne sait pas laquelle.
+    // `prisma@7`, ou une option avant la sous-commande (`prisma --config x
+    // migrate deploy`), ne la masquent pas. Le silence exige un segment que
+    // le garde lit en entier : ni guillemet, ni `$`, ni accent grave, ni barre
+    // oblique (le shell y assemble `--from-"migrations"` ou cache un
+    // `$(: migrate diff)`), et aucun `db` ni `migrate` avant le `migrate
+    // status|diff` (`db push --schema=a migrate diff`) — Codex et wn-reviewer,
+    // 2026-11-14. La base locale se migre sans demande par
+    // `scripts/wn-dev-db.sh --migrate` (enveloppe sûre ci-dessus).
+    motif: /\bprisma(?:@\S*)?\s(?!(?:(?!--(?:from-migrations|to-migrations|config|shadow|output)|-o\b|\bdb\b|\bmigrate\b)[^\n;&|#'"$`\\])*?\bmigrate\s+(?:status|diff)\b(?:(?!--(?:from-migrations|to-migrations|config|shadow|output)|-o\b)[^\n;&|#'"$`\\])*(?:[\n;&|#]|$))[^\n;&|#]*?\b(?:migrate|db\s+(?:push|execute))\b/,
     raison:
       "Commande Prisma touchant une base. Vérifier sur QUELLE base : la " +
-      "production ne doit être migrée que par le build Vercel de main, à " +
-      "partir d'une migration relue en PR."
+      "production ne se migre que par release-db, depuis une migration " +
+      "mergée et contre-revue (D-520) ; la base locale, par " +
+      "scripts/wn-dev-db.sh --migrate, sans demande (D-523)."
+  },
+  {
+    // Prisma dans une substitution (`psql -f <(npx prisma migrate diff …)`,
+    // `$(…)`, accent grave) : sa sortie devient l'entrée d'une autre
+    // commande, que le garde ne voit pas (wn-reviewer, quatrième passe).
+    motif: /(?:<\(|\$\(|`)[^)`]*\bprisma\b/,
+    raison:
+      "Commande Prisma dans une substitution : sa sortie alimente une autre " +
+      "commande, peut-être un client SQL. La production ne s'écrit que par " +
+      "release-db (D-520) ; une migration s'écrit par Write (D-523)."
+  },
+  {
+    // Un `migrate diff --script` en silence, versé dans un client SQL ou un
+    // interpréteur, écrit dans une base (wn-reviewer, 2026-11-14).
+    // Liste blanche de lecteurs : `| env psql`, `| command sh`… demandent
+    // (Codex, troisième passe).
+    // `sort -o`, `uniq - fichier`, `less -o` écrivent : hors liste.
+    motif: /\bprisma\b[^\n;&#]*(?<!\|)\|(?!\|)(?!\s*(?:head|tail|grep|more|cat|wc)\b)/,
+    raison:
+      "Sortie Prisma versée dans un client SQL ou un interpréteur : elle " +
+      "s'exécute sur une base que le garde ne connaît pas. La production ne " +
+      "s'écrit que par release-db (D-520) ; une migration s'écrit par Write, " +
+      "où son contenu se juge (D-523)."
   },
   {
     motif: /\bsupabase\s+db\s+(push|reset|diff)\b/,

@@ -63,8 +63,21 @@ HAVING bool_or(finished_at IS NOT NULL AND rolled_back_at IS NULL) IS NOT TRUE;
 
 ## Écrire (migrations)
 
-- Aucune modification de `schema.prisma`, migration ou SQL sans demande
-  explicite et confirmation distincte (le hook « demande » la matérialise).
+- **Autorisation permanente bornée (`D-523`, 2026-11-14)** : toute session
+  édite `schema.prisma` et écrit par Edit/Write une migration **non
+  destructive** (CREATE, ADD COLUMN, index, contrainte, UPDATE ou DELETE
+  avec WHERE) sans approbation ; elle lit `prisma migrate status|diff` et
+  migre sa base locale par `bash scripts/wn-dev-db.sh --migrate`, lancé
+  seul, sans demande. Un mot destructif cité en commentaire ne demande
+  plus : le crochet lit le SQL lexé (`D-523` §3.1).
+  Restent à la confirmation du responsable, que le hook « demande »
+  matérialise : une migration **destructive** (DROP, TRUNCATE, DELETE ou
+  UPDATE sans WHERE, RENAME, ALTER … TYPE, MERGE, `EXECUTE` dynamique,
+  déclencheur, règle ou RLS désarmés), une migration écrite par
+  Bash (son SQL ne se juge pas), `prisma migrate deploy|dev|reset|resolve`,
+  `migrate diff --from-migrations|--to-migrations|-o|--shadow…|--config`, `db push`,
+  `db execute` hors enveloppe locale, et toute écriture en
+  production hors `release-db`. Le SQL destructif en Bash reste refusé.
 - **Le chemin vers la production depuis le cutover (`D-087`, qui supplante
   `D-086` §1-2, amendée par `D-520`)** : migration committée → PR
   contre-revue (Codex P0 déposé, GO de `wn-reviewer` sur la tête) → merge

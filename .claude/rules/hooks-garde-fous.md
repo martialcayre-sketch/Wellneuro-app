@@ -20,10 +20,22 @@ Trois verdicts, rendus par les hooks PreToolUse de `.claude/settings.json` :
   `autonomie-frictions`), `prisma format` est aussi refusé, mais lu sur la
   commande **masquée** comme la « demande » : il ne détruit rien, et une
   prose qui le cite doit rester libre ; `prisma format --check` passe.
-- **demande** — `schema.prisma`, `prisma/migrations/`, `supabase/migrations/` ;
-  `prisma migrate`, `supabase db push`, push forcé. L'autorisation en un clic
-  dans la session matérialise la « confirmation explicite » exigée par
-  CLAUDE.md. Depuis le Socle LOT-02, **les fichiers cliniques** aussi — six
+- **demande** — migration **destructive** sous `prisma/migrations/` ou
+  `supabase/migrations/` (DROP, TRUNCATE, DELETE ou UPDATE sans WHERE,
+  RENAME, ALTER … TYPE, MERGE, `EXECUTE` dynamique, DISABLE TRIGGER,
+  RLS désarmée, CREATE RULE, `session_replication_role` — mots cherchés
+  sur le contenu résultant d'un Edit/Write, lexé comme PostgreSQL ; WHERE
+  propre au DELETE/UPDATE, non tautologique ; écriture ou EXECUTE dans un
+  corps `$…$`, CTE, U&/UESCAPE ou construction non fermée : demande — ce
+  qui ne se lit pas avec certitude demande), et toute écriture de schéma ou de
+  migration **par Bash** ou citée par un interpréteur ; `prisma migrate`
+  (sauf `status` et `diff`, en silence — `diff` demande avec
+  `--from-migrations`, `--to-migrations`, `-o|--output`, `--shadow…` ou `--config` ; `prisma@x` et une
+  option avant la sous-commande ne masquent rien), `prisma db push|execute`,
+  `supabase db push`, push forcé. Depuis `D-523` (2026-11-14),
+  `schema.prisma` et les migrations non destructives écrites par Edit/Write
+  passent en **silence**. L'autorisation en un clic dans la session
+  matérialise la confirmation du responsable exigée pour le reste. Depuis le Socle LOT-02, **les fichiers cliniques** aussi — six
   tables signées (`orientationRulesV1`, `stopRulesV1`, `priorityRulesV1`,
   `contradictionsV1`, `corpusSyntheseV1`, `indicationsBiologieV1`) et deux
   fichiers de constantes (`equilibre/constants.ts`, `questions.ts`), et depuis
