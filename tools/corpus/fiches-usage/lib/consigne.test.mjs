@@ -1,4 +1,4 @@
-// La consigne « fiche-usage-v6 » est épinglée : un octet changé sans bump de
+// La consigne « fiche-usage-v7 » est épinglée : un octet changé sans bump de
 // version rougit ici, et l'outil refuse de tourner ([[D-314]] §4).
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
@@ -93,4 +93,25 @@ test('v6 : question interrogative, aucun commentaire sur les sources, objet des 
     assert.match(c, /surveillance_arret :\s+la surveillance et le critère d'arrêt/);
     assert.match(c, /population : la population en clair/);
   }
+});
+
+// [[D-501]] §10 : chaque fait garde toutes ses conditions, rien ne s'ajoute
+// aux claims, un fait s'écrit dans la seule rubrique dont il relève ; la
+// réserve de la « question » est celle du statut, et « cet examen » désigne
+// la mesure d'une fiche sans analyte, des deux côtés.
+test('v7 : conditions entières, rien d’ajouté, un fait dans sa rubrique, réserve du statut', () => {
+  const { redaction, contreLecture } = lireConsignes();
+  assert.match(redaction, /si tu\s+ne peux pas toutes les reprendre, n'écris pas ce fait/);
+  assert.match(redaction, /Chaque phrase reformule un ou plusieurs claims et n'y ajoute rien/);
+  assert.match(redaction, /Ne compare pas\s+deux claims/);
+  assert.match(redaction, /Ne les\s+énonce pas non plus comme des faits, même par la négative/);
+  assert.match(redaction, /Hors de la « question », ne rappelle pas l'usage décisionnel/);
+  assert.match(redaction, /Range chaque fait dans la\s+rubrique dont il relève/);
+  assert.match(redaction, /la question\s+ne demande pas si l'usage est établi ou validé/);
+  for (const c of [redaction, contreLecture]) {
+    assert.match(c, /sous « preuves_limitees », que l'usage n'est pas\s+établi ; sous\s+« non_valide », qu'il n'est pas validé/);
+    assert.match(c, /« cet\s+examen »/);
+  }
+  assert.match(contreLecture, /une rubrique qui ne présente aucun usage n'a\s+pas à le dire/);
+  assert.match(contreLecture, /FIDÈLE si\s+aucun claim ne porte sur l'objet de la rubrique/);
 });

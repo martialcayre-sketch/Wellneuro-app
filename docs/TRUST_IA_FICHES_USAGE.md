@@ -52,7 +52,7 @@
 Le nom des deux modèles et la version de la consigne sont enregistrés avec
 chaque version de fiche et chaque libellé : l'origine de chaque texte se
 retrace. Par défaut : `claude-sonnet-5` et `gpt-5.4`, sous la consigne
-`fiche-usage-v6` (`D-501` §9). La v2 avait remplacé la v1 avant tout envoi
+`fiche-usage-v7` (`D-501` §10). La v2 avait remplacé la v1 avant tout envoi
 (relue par Codex, puis approuvée par le responsable le 2026-11-12) ; la v3
 l'a remplacée après le pilote fer, où aucun texte n'avait été retenu ; la
 v4 précise la seule rubrique « question », refusée même quand elle ne
@@ -61,7 +61,11 @@ hypothèse, refusé parce qu'aucun claim ne le qualifiait de « fonctionnel »,
 qualification que le cadre signé lui impose (`D-477` §2) ; la v6 précise la
 rédaction après le refus des huit fiches du magnésium : une « question »
 interrogative, aucune phrase sur ce que les sources taisent, et l'objet de
-chaque rubrique, donné des deux côtés.
+chaque rubrique, donné des deux côtés ; la v7 cible les refus communs au
+fer, au magnésium et aux polyphénols : un fait se restitue avec toutes ses
+conditions ou ne s'écrit pas, rien ne s'ajoute aux claims, un fait ne
+s'écrit que dans sa rubrique, et la réserve de la « question » est celle du
+statut de la fiche.
 
 Un libellé de population que les claims ne décrivent pas ne passe pas par
 l'IA : il vient d'une correspondance approuvée par le responsable, déposée

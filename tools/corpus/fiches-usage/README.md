@@ -83,7 +83,7 @@ rejoué rend `BROUILLON_INCHANGE`.
 
 ## La consigne versionnée
 
-`versionConsigne` vaut `fiche-usage-v6+<empreinte des deux consignes>`,
+`versionConsigne` vaut `fiche-usage-v7+<empreinte des deux consignes>`,
 épinglée dans `lib/consigne.mjs` et gardée par `lib/consigne.test.mjs`.
 
 Depuis la v2 (`D-501`), le message d'une fiche porte ses cinq axes signés,
@@ -122,6 +122,13 @@ interrogative. Aucune phrase ne dit ce que les sources taisent, hors la
 phrase d'absence pour une rubrique non documentée. La rubrique « population »
 ne nomme que la population d'usage. L'objet de chaque rubrique, repris du
 cadrage v3 §3.2, est donné au rédacteur comme au contre-lecteur.
+
+Depuis la v7 (`D-501` §10), un fait se restitue avec toutes les conditions
+que son claim lui attache, ou ne s'écrit pas ; aucune phrase n'ajoute de
+commentaire, de comparaison ou de conséquence aux claims, et les axes ne
+s'énoncent pas comme des faits. Un fait ne s'écrit que dans la rubrique dont
+il relève. La réserve de la « question » est celle du statut de la fiche, et
+une fiche sans analyte y désigne la mesure par « cet examen ».
 
 ## Ce que l'outil ne voit pas
 
