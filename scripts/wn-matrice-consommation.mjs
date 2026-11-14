@@ -143,12 +143,13 @@ export const SOURCES_DE_SAVOIR = [
     // L'ATELIER (PR 5) : son seul lecteur admis est
     // `atelier-bibliotheque-options/structure.ts` (banc `importeurs.guard.test.ts`),
     // derrière le drapeau `WN_BIBLIOTHEQUE_OPTIONS_ATELIER`, éteint. Le
-    // cockpit (PR 6) suivra sous son propre drapeau. La garde de la validation
+    // cockpit (PR 6) le lit par l'atelier (`cockpit.ts`), sous
+    // `WN_BIBLIOTHEQUE_OPTIONS_COCKPIT`, éteint. La garde de la validation
     // est dans le module même : `etatBibliotheque(...) === 'signee'`. Elle
     // n'autorise aucune prescription (§8) ; rien ne sort vers un patient.
     modulesGardes: [
       { chemin: 'web/src/lib/bibliotheque-options/bibliothequeBesoin2V1.ts', noms: ['etatBibliotheque'] },
-      { chemin: 'web/src/lib/atelier-bibliotheque-options/drapeau.ts', noms: ['atelierOptionsActif'] },
+      { chemin: 'web/src/lib/atelier-bibliotheque-options/drapeau.ts', noms: ['atelierOptionsActif', 'cockpitOptionsActif'] },
     ],
     decisionProduite: 'Pour une hypothèse confirmée du besoin 2, toutes les options et le renvoi de chaque rubrique à ses sources — énumérées, jamais choisies d’après le dossier.',
   },

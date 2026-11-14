@@ -19,6 +19,8 @@ import {
   type Verdict,
 } from '@/lib/bio-parcours/constats/liste';
 import { LIBELLES_NATURE } from '@/lib/physio-traitements/liste';
+import type { OptionsAuCockpit } from '@/lib/atelier-bibliotheque-options/cockpit';
+import { OptionsAuCockpitBloc } from '@/components/atelier-bibliotheque-options/OptionsAuCockpit';
 
 // LES CONSTATS DU PRATICIEN SUR LES HYPOTHÈSES DU PARCOURS ([[D-331]], BP-11) :
 // l'écran du praticien seul, sous `WN_BIO_CONSTAT` (éteint par défaut). Un
@@ -58,6 +60,8 @@ type Donnees = {
   aujourdhui: string;
   hypotheses: HypotheseLue[];
   citables: PieceDecrite[];
+  /** Sous `WN_BIBLIOTHEQUE_OPTIONS_COCKPIT` seulement ([[D-480]] §8, BP-17 PR 6) ; `null` éteint. */
+  optionsBibliotheque?: OptionsAuCockpit | null;
 };
 
 const jour = (iso: string) =>
@@ -458,6 +462,14 @@ export function ConstatsParcoursPanel({ idPatient }: { idPatient: string }) {
               <li key={code} className="rounded-lg border border-border p-3">
                 <h4 className="text-sm font-medium text-foreground">{libelle(code)}</h4>
                 {tete ? <Acte acte={tete} /> : <p className="text-xs text-muted-foreground">Aucun constat posé.</p>}
+                {/* Sous un constat CONFIRMÉ seulement : toutes les options de l'hypothèse (BP-17 PR 6). */}
+                {tete?.acte === 'pose' && tete.verdict === 'confirmee' && donnees.optionsBibliotheque && (
+                  <OptionsAuCockpitBloc
+                    hypotheseCode={code}
+                    options={donnees.optionsBibliotheque}
+                    constatARelire={(lue?.aRelire.length ?? 0) > 0}
+                  />
+                )}
                 {lue && lue.aRelire.length > 0 && (
                   <div className="mt-2 rounded-md border border-border bg-muted/40 p-2">
                     <p className="text-xs font-medium text-foreground">À relire</p>

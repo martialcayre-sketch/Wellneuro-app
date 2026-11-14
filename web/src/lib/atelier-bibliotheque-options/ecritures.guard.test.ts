@@ -10,9 +10,10 @@ import { contexteResolution, designe, importsResolus } from '../bio-parcours/res
 // la migration `20261111180000_bibliotheque_options_textes_v1`). Ce banc garde
 // ce qu'elle ne peut pas dire : QUEL CODE insère — `ecriture.ts` seul, qui
 // porte les refus de la route (option déclarée, état vu, structure signée) —
-// et QUEL CODE lit : le module et les routes de l'atelier, rien d'autre. Ni
-// portail, ni courrier, ni scoring, ni recherche, ni modèle (D-480 §8). Le
-// cockpit (PR 6) s'ajoutera ici, sous son drapeau, en connaissance de cause.
+// et QUEL CODE lit : le module et les routes de l'atelier, et le cockpit — la
+// route des constats, qui rend les options sous un constat confirmé, sous
+// `WN_BIBLIOTHEQUE_OPTIONS_COCKPIT` (PR 6), inscrite ici en connaissance de
+// cause. Ni portail, ni courrier, ni scoring, ni recherche, ni modèle (D-480 §8).
 
 const RACINE = path.join(process.cwd(), 'src');
 const ECRITURE = path.join('lib', 'atelier-bibliotheque-options', 'ecriture.ts');
@@ -55,11 +56,12 @@ const IMBRIQUEE = /\b(?:actes|texte)\s*:\s*\{\s*(?:create|createMany|connectOrCr
 // relatif, `require`, `import()`, commentaire glissé, alias ou lien symbolique
 // ne le cachent plus ; un import indéterminé (non constant, nom nu inconnu)
 // compte comme lecteur. `import type` reste exempté.
-const MODULES_LECTURE = ['lecture', 'ecriture', 'http'].map(m => `web/src/lib/atelier-bibliotheque-options/${m}.ts`);
+// `cockpit` lit par `lecture` : l'importer, c'est lire (PR 6).
+const MODULES_LECTURE = ['lecture', 'ecriture', 'http', 'cockpit'].map(m => `web/src/lib/atelier-bibliotheque-options/${m}.ts`);
 let contexte: ReturnType<typeof contexteResolution> | undefined;
 const importeLaLecture = (fichier: string, source?: string) =>
   importsResolus(`web/src/${fichier.split(path.sep).join('/')}`, (contexte ??= contexteResolution()), source).some(
-    i => !i.typeSeul && designe(i, /(^|\/)atelier-bibliotheque-options\/(?:lecture|ecriture|http)$/, MODULES_LECTURE),
+    i => !i.typeSeul && designe(i, /(^|\/)atelier-bibliotheque-options\/(?:lecture|ecriture|http|cockpit)$/, MODULES_LECTURE),
   );
 
 describe('Bibliothèque des options — qui écrit et qui lit le texte (D-480 §3, §8)', () => {
@@ -74,13 +76,19 @@ describe('Bibliothèque des options — qui écrit et qui lit le texte (D-480 §
     expect(occurrences(IMBRIQUEE)).toEqual([]);
   });
 
-  it('seuls le module et les routes de l’atelier lisent ces tables ou importent sa lecture', () => {
+  it('seuls le module et les routes de l’atelier, et la route du cockpit, lisent ces tables ou importent sa lecture', () => {
     const admis = (fichier: string) =>
       fichier.startsWith(path.join('lib', 'atelier-bibliotheque-options') + path.sep)
       || fichier.startsWith(path.join('app', 'api', 'praticien', 'atelier-options') + path.sep);
+    // LE COCKPIT (PR 6) : importe la lecture par `cockpit.ts`, sans lire les
+    // tables lui-même — admis pour l'import seul.
+    const ROUTE_COCKPIT = path.join('app', 'api', 'praticien', 'biologie', 'constats', 'route.ts');
+    const importeAdmis = (fichier: string) => admis(fichier) || fichier === ROUTE_COCKPIT;
     for (const m of MODELES) expect(occurrences(modele(m, LIRE)).filter(o => !admis(o.fichier))).toEqual([]);
     expect(occurrences(SQL_LECTURE).filter(o => !admis(o.fichier))).toEqual([]);
-    expect(SOURCES.map(s => s.fichier).filter(f => !admis(f) && importeLaLecture(f))).toEqual([]);
+    expect(SOURCES.map(s => s.fichier).filter(f => !importeAdmis(f) && importeLaLecture(f))).toEqual([]);
+    // L'entrée du cockpit n'est pas morte : la route importe bien le cockpit.
+    expect(importeLaLecture(ROUTE_COCKPIT)).toBe(true);
     // Le banc n'est pas vide : la lecture lit bien, et ses routes l'importent.
     expect(occurrences(modele('bibliothequeOptionTexte', LIRE)).length).toBeGreaterThan(0);
     expect(SOURCES.map(s => s.fichier).filter(f => admis(f) && importeLaLecture(f)).length).toBeGreaterThan(0);
@@ -98,6 +106,8 @@ describe('Bibliothèque des options — qui écrit et qui lit le texte (D-480 §
       "import { lireAtelierOptions } from '../atelier-bibliotheque-options/lecture';",
       'import/**/"@/lib/atelier-bibliotheque-options/ecriture";',
       'const h = require("@/lib/atelier-bibliotheque-options/" + "http");',
+      "import { lireOptionsAuCockpit } from '@/lib/atelier-bibliotheque-options/cockpit';",
+      "import { lireOptionsAuCockpit } from '../atelier-bibliotheque-options/cockpit';",
       'const m = await import(chemin);',
     ]) {
       expect(importeLaLecture(neuf, source), source).toBe(true);
@@ -107,5 +117,6 @@ describe('Bibliothèque des options — qui écrit et qui lit le texte (D-480 §
     expect(importeLaLecture(neuf, "import { type AtelierOptions } from '@/lib/atelier-bibliotheque-options/lecture';")).toBe(false);
     expect(importeLaLecture(neuf, "import { type AtelierOptions, lireAtelierOptions } from '@/lib/atelier-bibliotheque-options/lecture';")).toBe(true);
     expect(importeLaLecture(neuf, "import { x } from '@/lib/atelier-bibliotheque-options/etat';")).toBe(false);
+    expect(importeLaLecture(neuf, "import type { OptionsAuCockpit } from '@/lib/atelier-bibliotheque-options/cockpit';")).toBe(false);
   });
 });

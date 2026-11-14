@@ -94,7 +94,7 @@ describe('atelier de la bibliothèque des options (D-480 §3)', () => {
     let lectures = 0;
     const recente = atelier('non_signee', { version: { ...VERSION, id: 'texte0000009', texte: 'Version d’un autre onglet.' }, etat: { etat: 'a_valider' }, etatActes: { etat: 'a_valider' } });
     const fetchMock = vi.fn(async (_url: string, init?: RequestInit) => {
-      if (init?.method === 'POST') return new Response(JSON.stringify({ ok: false, error: 'L’état a changé depuis l’affichage — rechargez l’atelier.' }));
+      if (init?.method === 'POST') return new Response(JSON.stringify({ ok: false, error: 'L’état a changé depuis l’affichage : l’atelier a été relu.' }));
       lectures += 1;
       return new Response(JSON.stringify({ ok: true, atelier: lectures === 1 ? atelier('non_signee') : recente, peutDecider: true }));
     });
@@ -104,11 +104,61 @@ describe('atelier de la bibliothèque des options (D-480 §3)', () => {
     const item = () => screen.getByText('Dose').closest('li') as HTMLElement;
     fireEvent.click(within(item()).getByRole('button', { name: 'Saisir le texte' }));
     fireEvent.change(within(item()).getByLabelText(/Texte de la rubrique « Dose »/), { target: { value: 'Brouillon long, synthétique.' } });
-    fireEvent.click(within(item()).getByRole('button', { name: 'Enregistrer la version' }));
+    // Un vrai clic porte le focus sur le bouton ; jsdom ne le fait pas seul.
+    const enregistrer = within(item()).getByRole('button', { name: 'Enregistrer la version' });
+    enregistrer.focus();
+    fireEvent.click(enregistrer);
     expect(await screen.findByText('Version d’un autre onglet.')).toBeTruthy();
     expect(screen.getByText(/L’état a changé depuis l’affichage/)).toBeTruthy();
     const champ = within(item()).getByLabelText(/Texte de la rubrique « Dose »/) as HTMLTextAreaElement;
     expect(champ.value).toBe('Brouillon long, synthétique.');
+    // Le focus revient au champ une fois les gestes rendus (P3 de `wn-reviewer` sur #2082).
+    await waitFor(() => expect(document.activeElement).toBe(champ));
+    // Second envoi : il part sur la version relue, avec le brouillon intact (banc routé depuis #2082).
+    fireEvent.click(within(item()).getByRole('button', { name: 'Enregistrer la version' }));
+    await waitFor(() => expect(fetchMock.mock.calls.filter(([, i]) => i?.method === 'POST')).toHaveLength(2));
+    const second = fetchMock.mock.calls.filter(([, i]) => i?.method === 'POST')[1] as [string, RequestInit];
+    expect(JSON.parse(second[1].body as string)).toEqual({
+      optionId: 'OPT_BANC_A',
+      rubrique: 'dose',
+      texte: 'Brouillon long, synthétique.',
+      derniereVersionVue: 'texte0000009',
+    });
+  });
+
+  it('une relecture en échec suspend les gestes ; « Recharger » rend le brouillon intact (banc routé depuis #2082)', async () => {
+    let lectures = 0;
+    const fetchMock = vi.fn(async (_url: string, init?: RequestInit) => {
+      if (init?.method === 'POST') return new Response(JSON.stringify({ ok: false, error: 'Refus synthétique.' }));
+      lectures += 1;
+      if (lectures === 2) return new Response(JSON.stringify({ ok: false, error: 'Relecture synthétique en échec.' }));
+      return new Response(JSON.stringify({ ok: true, atelier: atelier('non_signee'), peutDecider: true }));
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    render(<AtelierOptionsPanel />);
+    await screen.findByRole('region', { name: 'OPT_BANC_A' });
+    const item = () => screen.getByText('Dose').closest('li') as HTMLElement;
+    fireEvent.click(within(item()).getByRole('button', { name: 'Saisir le texte' }));
+    fireEvent.change(within(item()).getByLabelText(/Texte de la rubrique « Dose »/), { target: { value: 'Brouillon à garder.' } });
+    fireEvent.click(within(item()).getByRole('button', { name: 'Enregistrer la version' }));
+    expect(await screen.findByText(/Relecture synthétique en échec\. Les gestes sont suspendus/)).toBeTruthy();
+    expect(within(item()).queryByLabelText(/Texte de la rubrique « Dose »/)).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Recharger' }));
+    const champ = (await within(item()).findByLabelText(/Texte de la rubrique « Dose »/)) as HTMLTextAreaElement;
+    expect(champ.value).toBe('Brouillon à garder.');
+  });
+
+  it('« Annuler » jette le brouillon : le champ rouvert part vide (banc routé depuis #2082)', async () => {
+    servir(atelier('non_signee'), true);
+    render(<AtelierOptionsPanel />);
+    await screen.findByRole('region', { name: 'OPT_BANC_A' });
+    const item = () => screen.getByText('Dose').closest('li') as HTMLElement;
+    fireEvent.click(within(item()).getByRole('button', { name: 'Saisir le texte' }));
+    fireEvent.change(within(item()).getByLabelText(/Texte de la rubrique « Dose »/), { target: { value: 'Brouillon jeté.' } });
+    fireEvent.click(within(item()).getByRole('button', { name: 'Annuler' }));
+    expect(within(item()).queryByLabelText(/Texte de la rubrique « Dose »/)).toBeNull();
+    fireEvent.click(within(item()).getByRole('button', { name: 'Saisir le texte' }));
+    expect((within(item()).getByLabelText(/Texte de la rubrique « Dose »/) as HTMLTextAreaElement).value).toBe('');
   });
 
   it('structure à relire : nommée comme telle, validation fermée', async () => {

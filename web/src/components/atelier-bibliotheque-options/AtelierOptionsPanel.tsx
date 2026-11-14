@@ -76,6 +76,17 @@ function SaisieTexte({
   const cle = `${optionId}|${rubrique}`;
   const texte = brouillons.lire(cle);
   const idTexte = useId();
+  // APRÈS UN REFUS, LE FOCUS REVIENT AU CHAMP (P3 de `wn-reviewer` sur #2082) :
+  // le champ est désactivé pendant l'envoi et la relecture, le focus le quitte ;
+  // il y revient une fois les gestes rendus, pour que le brouillon se reprenne
+  // au clavier. Le message `role=status` reste l'annonce.
+  const champ = useRef<HTMLTextAreaElement>(null);
+  const [reprendre, setReprendre] = useState(false);
+  useEffect(() => {
+    if (!reprendre || envoi) return;
+    champ.current?.focus();
+    setReprendre(false);
+  }, [reprendre, envoi]);
   if (texte === undefined) {
     return (
       <div>
@@ -92,6 +103,7 @@ function SaisieTexte({
       'Version enregistrée, à valider.',
     );
     if (ok) brouillons.ecrire(cle, undefined);
+    else setReprendre(true);
   };
   return (
     <div className="flex flex-col gap-2">
@@ -100,6 +112,7 @@ function SaisieTexte({
       </label>
       <textarea
         id={idTexte}
+        ref={champ}
         rows={5}
         autoFocus
         value={texte}
