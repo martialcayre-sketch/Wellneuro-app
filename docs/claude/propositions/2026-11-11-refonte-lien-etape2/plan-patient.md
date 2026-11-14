@@ -240,6 +240,16 @@ pour un autre dossier (constat de PR-Agent sur #2104, question
 `20261114-1105-d`). Le code attend la validation visuelle du prototype et le
 feu vert du responsable.
 
+**Suite du 2026-11-14.** Feu vert du code pour Q1, Q4 à Q7, livrées par
+#2109. Le préalable de Q2a et Q3a est tranché et inscrit par DOC-12 dans
+[[D-481]] et [[D-488]] : garde serveur (Q8 a) — les cinq routes d'écriture
+refusent en 409, sans rien écrire, un segment qui n'est pas l'`idPatient` de
+la session ; segment canonique (Q9 a) — une page ouverte sous un autre
+segment renvoie à l'entrée ; T-51 sous le geste refusé (Q10 a) ; sur U40, la
+mention de sécurité existante sous T-51 (Q11 a). Le lot
+`garde-portail-dossier-session` (carnet de la file D, hors plan patient)
+l'applique ; Q2a et Q3a viennent après lui.
+
 ### PAT-7 — Vérification et stabilisation
 
 Les vérifications du cadrage v3 l.540-553 côté patient : quatre largeurs,
