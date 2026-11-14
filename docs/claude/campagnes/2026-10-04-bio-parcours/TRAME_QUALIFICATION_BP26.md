@@ -241,6 +241,44 @@ sans qualification. L'étage assistant n'ouvre qu'après sa ligne.
 Pour chaque ligne : énoncé de destination, Q1 à Q5, limite, conclusion du
 responsable.
 
+### B1. Options et dose : la bibliothèque des options au cockpit (BP-17)
+
+Ligne posée par la PR 6 de BP-17 ([[D-480]] §8), **avant toute ouverture** :
+la surface est livrée éteinte, sous `WN_BIBLIOTHEQUE_OPTIONS_COCKPIT`, et la
+structure du besoin 2 ne déclare encore aucune option.
+
+- **Faits.**
+  - Au cockpit, sous un constat du praticien dont la tête est « confirmée »
+    (BP-11, `ConstatsParcoursPanel`), le bloc « Bibliothèque des options »
+    liste toutes les options que la structure signée déclare pour
+    l'hypothèse, dans l'ordre des identifiants
+    (`lib/atelier-bibliotheque-options/cockpit.ts`). La seule entrée est la
+    liste des codes d'hypothèse confirmés. Aucune donnée du dossier n'entre
+    dans le choix des options, ni n'en retire, n'en classe ou n'en met en
+    avant aucune.
+  - Chaque rubrique (produit et statut réglementaire, dose, durée,
+    précautions, contre-indications, interactions, surveillance, critère
+    d'arrêt, rôle du praticien) montre son texte s'il est validé par le
+    responsable, avec ses sources. Sinon, elle ne montre que son état.
+  - L'écran dit que l'admissibilité n'est pas calculée et qu'aucun contrôle
+    n'est fait au regard du dossier. Il affiche toujours « ne rien changer,
+    ou surveiller ». Il dit que la bibliothèque n'autorise aucune
+    prescription (BP-18a choisira).
+  - Rien au patient, ni au courrier, ni au scoring, ni à un modèle. Structure
+    non signée : aucune option ne s'affiche.
+- **Énoncé proposé.** « Présenter au praticien, sous l'hypothèse qu'il a
+  lui-même confirmée, toutes les options documentées et signées pour cette
+  hypothèse, avec leurs précautions et leurs sources, sans les confronter
+  au dossier ni en choisir aucune. »
+- **À examiner.**
+  - Q3 : l'affichage est déclenché par le constat posé sur un dossier. Le
+    contenu, lui, ne dépend que de l'hypothèse. Est-ce un traitement qui
+    sert un patient individuel ?
+  - Q4 : une liste non classée d'options, sous une hypothèse confirmée,
+    vaut-elle une recommandation de traitement au sens de l'annexe I b ?
+- **Limite « outil »** :
+- **Conclusion du responsable** :
+
 ## Ce que la trame laisse ouvert
 
 - La lecture de MDCG 2019-11 Rev.1 est une **hypothèse de travail** du

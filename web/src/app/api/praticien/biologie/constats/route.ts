@@ -17,6 +17,7 @@ import { lireConstatsDuDossier, type ConstatsDuDossier } from '@/lib/bio-parcour
 import { MESSAGES_REFUS_CONSTAT } from '@/lib/bio-parcours/constats/messages';
 import { structureDuParcours } from '@/lib/bio-parcours/constats/structure';
 import { isPhysioTraitementsEnabled } from '@/lib/physio-traitements/drapeau';
+import { lireOptionsAuCockpit, type OptionsAuCockpit } from '@/lib/atelier-bibliotheque-options/cockpit';
 
 // LES CONSTATS DU PRATICIEN SUR UNE HYPOTHÈSE DU PARCOURS ([[D-331]], BP-11).
 //
@@ -35,6 +36,14 @@ import { isPhysioTraitementsEnabled } from '@/lib/physio-traitements/drapeau';
 // en pièce que sous `WN_PHYSIO_TRAITEMENTS` aussi ([[D-335]] §7). Aucun constat ne se pose avant la
 // signature de la structure de BP-12a ([[D-314]] §10).
 //
+// LA BIBLIOTHÈQUE DES OPTIONS ([[D-480]] §8, BP-17 PR 6) : sous
+// `WN_BIBLIOTHEQUE_OPTIONS_COCKPIT`, éteint, le GET rend aussi, pour chaque
+// hypothèse dont la tête est « confirmée », TOUTES les options que la
+// structure signée déclare pour elle (`atelier-bibliotheque-options/cockpit`).
+// La seule entrée est la liste des codes confirmés ; rien n'est choisi d'après
+// le dossier. Éteint : `optionsBibliotheque` vaut `null`, rien n'est lu. Un
+// échec de sa lecture se dit, il n'emporte pas les constats.
+//
 // PAS de journal d'accès à l'écriture : dispense `GD-1` ([[D-118]]), comme les
 // autres gestes de biologie — l'acte porte son auteur et sa date.
 
@@ -43,7 +52,14 @@ const ROUTE_JOURNAL = '/api/praticien/biologie/constats';
 export type HypotheseOfferte = { hypotheseCode: string; libelle: string | null };
 
 export type ConstatsGetResponse =
-  | ({ ok: true; structureSignee: boolean; offertes: HypotheseOfferte[]; aujourdhui: string } & ConstatsDuDossier)
+  | ({
+    ok: true;
+    structureSignee: boolean;
+    offertes: HypotheseOfferte[];
+    aujourdhui: string;
+    /** Sous `WN_BIBLIOTHEQUE_OPTIONS_COCKPIT` seulement ; `null` éteint. */
+    optionsBibliotheque: OptionsAuCockpit | null;
+  } & ConstatsDuDossier)
   | { ok: false; reason: string; error: string };
 
 export type ConstatsPostResponse = { ok: true; id: string } | { ok: false; reason: string; error: string };
@@ -90,6 +106,8 @@ export async function GET(req: Request) {
       }),
       structure.signee ? libellesDesHypotheses() : Promise.resolve(new Map<string, string>()),
     ]);
+    const confirmees = constats.hypotheses.filter(h => h.tete?.verdict === 'confirmee').map(h => h.hypotheseCode);
+    const optionsBibliotheque = await lireOptionsAuCockpit(confirmees);
     const offertes = structure.signee
       ? structure.hypotheses.map(h => ({ hypotheseCode: h, libelle: libelles.get(h) ?? null }))
       : [];
@@ -98,6 +116,7 @@ export async function GET(req: Request) {
       structureSignee: structure.signee,
       offertes,
       aujourdhui,
+      optionsBibliotheque,
       ...constats,
     });
   } catch (err) {

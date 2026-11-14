@@ -59,7 +59,12 @@ export async function lireDemandeEcriture(
 export const MESSAGES_REFUS: Record<string, { message: string; status: number }> = {
   // Versions
   option_hors_structure: { message: 'Cette option n’est pas déclarée par la structure de la bibliothèque.', status: 422 },
-  etat_divergent: { message: 'L’état a changé depuis l’affichage — rechargez l’atelier.', status: 409 },
+  // L'écran relit l'atelier après chaque geste : le message dit ce qui s'affiche
+  // déjà, il ne demande pas de recharger (P3 de `wn-reviewer` sur #2082).
+  etat_divergent: {
+    message: 'L’état a changé depuis l’affichage : l’atelier a été relu, et la version la plus récente s’affiche au-dessus de votre brouillon. Relisez-la avant un nouvel envoi.',
+    status: 409,
+  },
   texte_inchange: { message: 'Ce texte est déjà celui de la dernière version, sur la structure du jour.', status: 409 },
   // Actes
   relecture_requise: { message: 'Valider exige de déclarer la relecture intégrale du texte.', status: 422 },

@@ -1,4 +1,5 @@
 import {
+  BIBLIOTHEQUE_BESOIN2_METADATA,
   BIBLIOTHEQUE_BESOIN2_SHA256,
   BIBLIOTHEQUE_BESOIN2_V1,
   etatBibliotheque,
@@ -8,8 +9,9 @@ import { estIdentifiantOption, estRubriqueOption, RUBRIQUES_OPTION, type Rubriqu
 
 // LE SEUL LECTEUR ADMIS DE LA BIBLIOTHÈQUE DES OPTIONS HORS DE SON DOSSIER
 // ([[D-480]] §8, banc `bibliotheque-options/importeurs.guard.test.ts`). Les
-// routes, la lecture, l'écriture et l'écran de l'atelier passent par lui :
-// aucun autre fichier n'importe `bibliotheque-options/`.
+// routes, la lecture, l'écriture et l'écran de l'atelier passent par lui, et
+// le cockpit aussi (`cockpit.ts`, PR 6) : aucun autre fichier n'importe
+// `bibliotheque-options/`.
 //
 // Ce qu'il rend est la STRUCTURE DE RÉFÉRENCES (D-480 §3, première couche) :
 // identifiants opaques, hypothèses, populations et renvois. Aucun texte
@@ -47,4 +49,15 @@ export function contexteDuDepot(): ContexteAtelier {
       renvois: Object.fromEntries(RUBRIQUES_OPTION.map(r => [r, [...(o.renvois[r] ?? [])]])) as Record<RubriqueOption, string[]>,
     })),
   };
+}
+
+/**
+ * La signature est-elle DÉCLARÉE (`validationExterne`) ? Une structure dont la
+ * signature est déclarée mais ne tient plus — une re-signature des fiches
+ * d'usage qui retire une hypothèse citée la rend incohérente — vaut
+ * `non_signee` pour `etatBibliotheque` ; le cockpit la dit « signature rompue »,
+ * et non « jamais signée » (`wn-reviewer` sur la PR 3, constat 4).
+ */
+export function signatureDeclareeDuDepot(): boolean {
+  return BIBLIOTHEQUE_BESOIN2_METADATA.validationExterne === true;
 }

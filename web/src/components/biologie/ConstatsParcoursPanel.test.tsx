@@ -248,3 +248,46 @@ describe('ConstatsParcoursPanel (D-331)', () => {
     expect(confirmer.className).toContain('border-border');
   });
 });
+
+describe('ConstatsParcoursPanel — bibliothèque des options sous un constat confirmé (D-480 §8, BP-17 PR 6)', () => {
+  const CONFIRMEE = { ...TETE, verdict: 'confirmee', motif: null, aRevoirLe: null };
+  const OPTIONS = {
+    lecture: 'ok',
+    etatStructure: 'signee',
+    hypotheses: [
+      {
+        hypotheseCode: 'HYP_TEST_A',
+        options: [
+          {
+            id: 'OPT_BANC_A',
+            populations: ['POP_BANC'],
+            rubriques: [{ rubrique: 'dose', renvois: ['information_manquante'], etat: 'validee', texte: 'Texte validé synthétique.', valideLe: '2026-11-13T10:00:00.000Z' }],
+          },
+        ],
+      },
+    ],
+  };
+
+  it('sous la tête confirmée : toutes les options, l’avertissement et « ne rien changer, ou surveiller »', async () => {
+    stubFetch({ ...LECTURE, hypotheses: [{ ...LECTURE.hypotheses[0], tete: CONFIRMEE, aRelire: [] }], optionsBibliotheque: OPTIONS });
+    rendre();
+    const bloc = await screen.findByRole('region', { name: 'Bibliothèque des options' });
+    expect(bloc.textContent).toContain('OPT_BANC_A');
+    expect(bloc.textContent).toContain('Texte validé synthétique.');
+    expect(bloc.textContent).toContain('L’admissibilité n’est pas calculée');
+    expect(bloc.textContent).toContain('ne rien changer, ou surveiller');
+    expect(bloc.textContent).not.toMatch(/aucune interaction détectée/i);
+  });
+
+  it('tête non confirmée, ou drapeau éteint (`null`) : aucun bloc', async () => {
+    stubFetch({ ...LECTURE, optionsBibliotheque: OPTIONS });
+    rendre();
+    await screen.findByText('Hypothèse de test');
+    expect(screen.queryByRole('region', { name: 'Bibliothèque des options' })).toBeNull();
+    cleanup();
+    stubFetch({ ...LECTURE, hypotheses: [{ ...LECTURE.hypotheses[0], tete: CONFIRMEE }], optionsBibliotheque: null });
+    rendre();
+    await screen.findByText('Hypothèse de test');
+    expect(screen.queryByRole('region', { name: 'Bibliothèque des options' })).toBeNull();
+  });
+});

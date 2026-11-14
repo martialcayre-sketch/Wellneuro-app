@@ -6,8 +6,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 // quand elle refuse, et ne rend aucune valeur. Structure synthétique : la
 // vraie est vide et non signée.
 
-const { getServerSession, prisma, structure } = vi.hoisted(() => ({
+const { getServerSession, prisma, structure, lireOptionsAuCockpit } = vi.hoisted(() => ({
   getServerSession: vi.fn(),
+  lireOptionsAuCockpit: vi.fn(),
   prisma: {
     patient: { findUnique: vi.fn() },
     resultatBiologique: { findMany: vi.fn() },
@@ -33,6 +34,11 @@ vi.mock('@/lib/fiches-usage/lecture', () => ({
     termes: [{ termeId: 'HYP_TEST_A', nature: 'hypothese', reference: 'l1', libelles: [{ id: 'l1', libelle: 'Hypothèse de test' }] }],
   }),
 }));
+
+// La bibliothèque au cockpit (BP-17 PR 6) : son drapeau et son assemblage ont
+// leur banc (`atelier-bibliotheque-options/cockpit.test.ts`) ; ici, ce que la
+// route lui passe et ce qu'elle en rend.
+vi.mock('@/lib/atelier-bibliotheque-options/cockpit', () => ({ lireOptionsAuCockpit }));
 
 import { GET, POST } from './route';
 
@@ -91,6 +97,7 @@ beforeEach(() => {
   prisma.constatPraticien.create.mockResolvedValue({ id: 'nouveau' });
   prisma.pieceConstatPraticien.createMany.mockResolvedValue({ count: 1 });
   prisma.journalAccesDossier.create.mockResolvedValue({});
+  lireOptionsAuCockpit.mockResolvedValue(null);
 });
 
 afterEach(() => {
@@ -350,5 +357,52 @@ describe('POST — les refus de la base, reconnus à leur code', () => {
     expect((await POST(requete(POSE))).status).toBe(500);
     expect(JSON.stringify(espion.mock.calls)).not.toContain('identifiant PAT1');
     espion.mockRestore();
+  });
+});
+
+describe('GET — la bibliothèque des options sous les constats confirmés (D-480 §8, BP-17 PR 6)', () => {
+  const acte = (id: string, ordre: number, hypotheseCode: string, verdict: string | null, acteNom = 'pose') => ({
+    id,
+    ordre: BigInt(ordre),
+    acte: acteNom,
+    hypotheseCode,
+    verdict,
+    motif: verdict === 'non_retenue' ? 'contexte_explique' : null,
+    note: null,
+    aRevoirLe: null,
+    idConstatRemplace: null,
+    praticienEmail: PRATICIEN,
+    acteLe: new Date('2026-10-10T09:00:00.000Z'),
+    pieces: [],
+  });
+
+  it('ne passe que les hypothèses dont la TÊTE est confirmée, et rend ce que la bibliothèque rend', async () => {
+    structure.hypotheses = ['HYP_TEST_A', 'HYP_TEST_B', 'HYP_TEST_C', 'HYP_TEST_D'];
+    prisma.constatPraticien.findMany.mockResolvedValue([
+      acte('a1', 1, 'HYP_TEST_A', 'confirmee'),
+      acte('b1', 2, 'HYP_TEST_B', 'non_retenue'),
+      // Confirmée puis retirée : plus de tête.
+      acte('c1', 3, 'HYP_TEST_C', 'confirmee'),
+      acte('c2', 4, 'HYP_TEST_C', null, 'retrait'),
+      // Non retenue puis confirmée : la tête compte, pas l'historique.
+      acte('d1', 5, 'HYP_TEST_D', 'non_retenue'),
+      acte('d2', 6, 'HYP_TEST_D', 'confirmee'),
+    ]);
+    const rendu = { lecture: 'ok', etatStructure: 'signee', hypotheses: [] };
+    lireOptionsAuCockpit.mockResolvedValue(rendu);
+    const corps = await (await lecture()).json();
+    expect(lireOptionsAuCockpit).toHaveBeenCalledTimes(1);
+    expect([...lireOptionsAuCockpit.mock.calls[0][0]].sort()).toEqual(['HYP_TEST_A', 'HYP_TEST_D']);
+    expect(corps.optionsBibliotheque).toEqual(rendu);
+    structure.hypotheses = ['HYP_TEST_A'];
+  });
+
+  it('drapeau éteint (`null`) : la réponse le porte tel quel, les constats restent', async () => {
+    prisma.constatPraticien.findMany.mockResolvedValue([acte('a1', 1, 'HYP_TEST_A', 'confirmee')]);
+    const response = await lecture();
+    expect(response.status).toBe(200);
+    const corps = await response.json();
+    expect(corps.optionsBibliotheque).toBeNull();
+    expect(corps.hypotheses[0].tete.id).toBe('a1');
   });
 });
