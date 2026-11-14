@@ -4,6 +4,16 @@ Ce document décrit le workflow GitHub Actions [`release-db.yml`](../.github/wor
 et son runbook. Il sépare l'**écriture en base de production** (migrations Prisma,
 import de nomenclature NABM) du **build applicatif Vercel**.
 
+> **Amendement du 2026-11-14 — plus d'approbation humaine ([[D-520]]).** Le
+> run part de lui-même après le minuteur de 5 min de l'environnement, qui
+> garde sa restriction à `main`. La porte est le **merge** d'une PR de
+> migration qui porte l'avis Codex P0 et le GO de `wn-reviewer` sur sa tête.
+> La file suit ensuite le run jusqu'au constat par conteneur : une migration
+> à la fois, à toute heure. Les relecteurs requis de l'environnement se
+> retirent après le lot de gardes de [[D-520]] (§6, §8). Jusque-là, l'intégrateur
+> approuve sous délégation. Partout ci-dessous, « approbation humaine » se lit
+> à la lumière de cet amendement.
+
 > **Réécriture du 2026-08-22 — la cible est Scalingo, et le chemin passe par
 > un one-off.** Le cutover HDS a déplacé la production sur Scalingo, dont la
 > base **n'est pas exposée à Internet** : le workflow ne s'y connecte plus

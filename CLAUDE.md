@@ -35,9 +35,10 @@ technologique sans demande explicite. État courant :
   explicite (décision `D-xxx` + fragment `changelog.d/`).
 - **Base de production (Scalingo depuis le 2026-08-22) : lecture uniquement
   depuis un conteneur `scalingo run -d`, écriture uniquement par migration
-  relue puis release-db approuvée (`D-087`, qui supplante `D-086` §1-2 — le
-  one-off applique APRÈS approbation humaine, le `postdeploy` ne migre plus
-  sous drapeau)**. La base Supabase gelée n'existe plus (`D-120`), et son
+  relue puis release-db (`D-087`, amendée par `D-520` — sans approbation
+  humaine : la porte est le merge, après Codex P0 et `wn-reviewer` ; un
+  merge à la fois, sentinelle et constat par conteneur ; le `postdeploy` ne
+  migre plus sous drapeau)**. La base Supabase gelée n'existe plus (`D-120`), et son
   connecteur MCP est débranché (constaté le 2026-10-21). Détail :
   `.claude/rules/db-prisma.md`.
 
@@ -204,7 +205,7 @@ node scripts/wn-etat-reel.mjs      # état réel du dépôt — rapporte, ne ré
   `gh api --paginate --slurp repos/{owner}/{repo}/pulls/<N>/comments`.
   Trois verdicts, aucun commentaire sans l'un d'eux : corrigé, écarté **avec
   motif**, routé **avec adresse**. Et **merger une migration ne l'applique
-  pas** — `release-db` approuvée, sentinelle, constat par conteneur, puis
+  pas** — `release-db` conclue (sans approbation, `D-520`), sentinelle, constat par conteneur, puis
   seulement le code consommateur. Détail :
   `.claude/rules/pr-revue-et-release-db.md`.
 - **Libération dès le merge** (`D-373` §1) : une PR ordinaire n'attend ni le

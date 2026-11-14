@@ -22,7 +22,11 @@ documentaire reste P2. Les classes de `wn-lot` (§ table) donnent le défaut :
 - **P0 — critique** : sécurité, auth/autorisation (périmètre de l'exception
   `wn-merge` : `lib/auth.ts`, middleware portail, lien magique, cookie de
   session, `patients.access_token`, tout chemin session/token), migration,
-  clinique/scoring, garde-fous, données sensibles, production.
+  clinique/scoring, garde-fous, données sensibles, production. En font
+  partie, depuis que la release ne s'approuve plus (`D-520` §7) :
+  `release-db.yml`, `deploiement-production.yml`, ce que leurs runs
+  exécutent, et tout job qui déclare `environment: release-db` ou
+  `environment: deploy-production`.
 
 ## Budget par niveau — une revue de plus exige une mission différente
 

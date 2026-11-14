@@ -67,7 +67,7 @@ dernière session.
      par `scalingo logs --filter one-off-N`. (L'`execute_sql` MCP Supabase que
      ce skill nommait jusqu'au 2026-09-16 vise une base **décommissionnée** le
      2026-09-01, `D-120`.) Sur une migration, ce constat ne peut pas aboutir
-     avant que `release-db` ait été approuvée et la sentinelle
+     avant que `release-db` ait conclu (sans approbation humaine depuis `D-520`) et la sentinelle
      `WN_RELEASE_DB_OK id=<run>` constatée — **merger n'applique pas** : c'est
      une obligation de suite, jamais une condition de merge, sinon aucune PR de
      migration ne pourrait être mergée. Ordre complet :
@@ -166,8 +166,8 @@ dernière session.
      `git diff --name-only <en service> origin/main -- web/prisma/migrations`
      non vide, `<en service>` lu sur la ligne « En service » de la sonde.
      Lire alors d'abord la sonde de l'étape 7 ter (elle se rejoue de toute
-     façon juste avant le merge) : si un run `release-db` attend
-     l'approbation (phase 1) sur un commit qui contient la migration
+     façon juste avant le merge) : si un run `release-db` attend à la
+     porte (phase 1) sur un commit qui contient la migration
      (`git merge-base --is-ancestor <commit de la migration> <commit du run>`),
      ce n'est pas une retenue — le déployeur retient la tête et les PR non
      gelées mergent (`D-374`, « Effet sur le plan ») ; l'exception ne vaut
@@ -225,7 +225,7 @@ dernière session.
    directement — jamais dans un tube. Elle lit tous les runs non conclus de
    `release-db.yml` (filtre par statut, toutes pages) et rend **`0` seul pour
    autoriser le merge** : aucun run non conclu, ou runs tous en attente
-   d'approbation (`waiting`, phase 1) et la PR ne touche ni
+   à la porte (`waiting`, phase 1 — le seul minuteur une fois les relecteurs retirés, `D-520` §6) et la PR ne touche ni
    `web/prisma/migrations/**`, ni `web/src/lib/clinical/**`, ni
    `release-db.yml` et ce que son run exécute, ni le déployeur (liste :
    `CHEMINS_GELES` du script). **`1`** = gelé — un run hors de l'attente

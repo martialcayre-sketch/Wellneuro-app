@@ -52,9 +52,10 @@ cd web && npm run type-check
 - Le build de production execute `web/scripts/build.sh` : il genere le
   client Prisma et construit Next. Il N'ECRIT PLUS EN BASE.
 - Les migrations Prisma committees (relues en PR) et l'import NABM s'appliquent
-  HORS du build, via le workflow GitHub Actions `release-db` (gate par
-  l'environnement protege `release-db` = second gate humain, en plus de la revue
-  de PR). Voir `docs/DEPLOIEMENT_RELEASE_DB.md`.
+  HORS du build, via le workflow GitHub Actions `release-db` (environnement
+  protege `release-db` : restriction a `main` et minuteur, sans approbation
+  humaine depuis `D-520` ; la porte est le merge, apres Codex P0 et
+  `wn-reviewer`). Voir `docs/DEPLOIEMENT_RELEASE_DB.md`.
 - Le workflow est PROPOSE AUTOMATIQUEMENT des qu'une migration atterrit sur
   `main` (declencheur `push` filtre sur `web/prisma/migrations/**`), et reste
   declenchable a la main pour l'import NABM. L'automatisation porte sur le

@@ -192,7 +192,7 @@ attend d'être lu.
   sonder :
   - `prete` : les déclarations « prête @<sha> » neuves, pour l'intégrateur ;
   - `merge <N>` : la PR mergée ou fermée, pour la file qui l'a déclarée ;
-  - `release-db` : un run en attente d'approbation, geste humain (`D-087`).
+  - `release-db` : un run en attente à la porte (`waiting`). Jusqu'au retrait des relecteurs (`D-520` §6), c'est une approbation que seul l'intégrateur fait, sous délégation ; ensuite, ce n'est plus que le minuteur.
 
   Codes : `0` événement, `3` délai échu (la ligne compte les lectures en
   échec, s'il y en a eu), `2` aucune lecture aboutie. Il ne
@@ -243,8 +243,9 @@ suivi.
   lot suivant (§5 du plan : le rang suivant dont les portes sont levées).
   Le lot s'inscrit `bloque`, avec son motif, si son départ attend un geste ou
   une réponse du responsable. Une ligne dont l'exécution est un geste du
-  responsable (texte, signature, approbation, release-db, constat qui lui
-  revient) n'est pas un lot : elle reste à sa file D.
+  responsable (texte, signature, approbation, constat qui lui revient)
+  n'est pas un lot : elle reste à sa file D. Une release-db n'est plus un
+  geste du responsable (`D-520`).
 - **Buter.** `etat: bloque`, `motif` (question, porte, geste du
   responsable ; un lot préalable s'écrit dans `apres`, pas en motif),
   `questions`, `handoff` ; écrire le handoff ; prendre le lot `pret`
