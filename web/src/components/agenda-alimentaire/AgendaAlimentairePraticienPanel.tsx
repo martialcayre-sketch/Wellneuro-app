@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { EpisodeAgendaAli } from '@/app/api/praticien/agenda-alimentaire/route';
 import type { AgregatsAgendaAli } from '@/lib/agenda-alimentaire/agregats';
 import type { JourRow, PriseJour } from '@/lib/agenda-alimentaire/types';
@@ -268,6 +268,21 @@ export function AgendaAlimentairePraticienPanel({
     void charger();
   }, [charger]);
 
+  // « Réessayer » (T-17, Q17 a) : le focus revient au panneau une fois la
+  // relecture lue, réussie ou non — le bouton qui l'avait est démonté.
+  const racine = useRef<HTMLDivElement>(null);
+  const focusApresRelecture = useRef(false);
+  useEffect(() => {
+    if (etat !== 'chargement' && focusApresRelecture.current) {
+      focusApresRelecture.current = false;
+      racine.current?.focus();
+    }
+  }, [etat]);
+  const relire = () => {
+    focusApresRelecture.current = true;
+    void charger();
+  };
+
   // Patron du jumeau sommeil (`AgendaSommeilPraticienPanel.cloturer`). Les
   // refus restent au SERVEUR — quarantaine avec dates nommées, recueil vide,
   // assignation annulée : les re-implémenter ici dupliquerait la règle, et
@@ -290,11 +305,30 @@ export function AgendaAlimentairePraticienPanel({
     }
   }
 
+  // Une seule racine pour tous les états : c'est elle qui reçoit le focus
+  // après « Réessayer ».
+  const enveloppe = (contenu: ReactNode) => (
+    <div ref={racine} tabIndex={-1} className="focus-visible:outline-none">
+      {contenu}
+    </div>
+  );
+
   if (etat === 'chargement') {
-    return <p className="text-sm text-muted-foreground">Chargement de l’agenda alimentaire…</p>;
+    return enveloppe(<p className="text-sm text-muted-foreground">Chargement de l’agenda alimentaire…</p>);
   }
   if (etat === 'erreur') {
-    return <p className="text-sm text-status-danger">{message}</p>;
+    return enveloppe(
+      <div role="alert" className="flex flex-wrap items-center gap-3 text-sm text-status-danger">
+        <span className="min-w-0">{message}</span>
+        <button
+          type="button"
+          onClick={relire}
+          className="min-h-11 shrink-0 rounded-lg border border-accent px-3 py-1 text-sm font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+        >
+          Réessayer
+        </button>
+      </div>,
+    );
   }
   if (episodes.length === 0) {
     // Descriptif, sans impératif (D-027) : drapeau `WN_AGENDA_ALI` éteint,
@@ -302,12 +336,12 @@ export function AgendaAlimentairePraticienPanel({
     // route d'assignation — le geste « Assignez l'instrument » ne serait alors
     // possible nulle part. Cette réponse ne lit ni ne sert la position du
     // drapeau : c'est le sens même de D-027.
-    return (
-      <p className="text-sm text-muted-foreground">Aucun agenda alimentaire n’est assigné à ce patient.</p>
+    return enveloppe(
+      <p className="text-sm text-muted-foreground">Aucun agenda alimentaire n’est assigné à ce patient.</p>,
     );
   }
 
-  return (
+  return enveloppe(
     <div className="flex flex-col gap-6">
       {message && <p className="text-sm text-status-danger">{message}</p>}
       {/*
@@ -321,7 +355,9 @@ export function AgendaAlimentairePraticienPanel({
         <section key={ep.idAssignation} className="flex flex-col gap-3 rounded-lg border border-border bg-background p-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <p className="text-sm font-semibold text-foreground">{ep.titre}</p>
+              {/* Q2 a : l'intitulé de l'épisode devient titre, même texte
+                  (tiroir h2, puis h3). */}
+              <h3 className="text-sm font-semibold text-foreground">{ep.titre}</h3>
               <p className="text-xs text-muted-foreground">
                 {ep.statut === 'annulee' ? 'Annulée' : ep.statut === 'cloture' ? 'Clôturé' : 'En cours'} ·{' '}
                 {ep.fenetre.nbRenseignees} journée{ep.fenetre.nbRenseignees > 1 ? 's' : ''} notée
@@ -347,7 +383,8 @@ export function AgendaAlimentairePraticienPanel({
                 type="button"
                 onClick={() => void cloturer(ep.idAssignation)}
                 disabled={clotureEnCours === ep.idAssignation}
-                className="inline-flex min-h-9 items-center rounded-lg border border-primary bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                // Q3 a : une seule action pleine par zone — bordé, 44 px, focus.
+                className="inline-flex min-h-11 items-center rounded-lg border border-primary px-3 text-sm font-medium text-primary hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:opacity-50"
               >
                 {clotureEnCours === ep.idAssignation ? 'Clôture…' : 'Clôturer et verser au dossier'}
               </button>
@@ -374,6 +411,6 @@ export function AgendaAlimentairePraticienPanel({
           </div>
         </section>
       ))}
-    </div>
+    </div>,
   );
 }

@@ -64,9 +64,13 @@ const jourCivil = (aaaammjj: string) => aaaammjj.split('-').reverse().join('/');
 /** Les refus nés d'une lecture périmée : le panneau relit le dossier. */
 const REFUS_PERIMES = new Set(['tete_changee', 'ligne_inconnue', 'conflit_concurrent', 'refus_base', 'version_non_diffusee']);
 
-const classeBouton = 'min-h-11 rounded-lg border border-border px-3 py-2 text-sm text-foreground disabled:opacity-50';
-const classePrincipal = 'min-h-11 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50';
-const classeChamp = 'mt-1 block min-h-11 w-full rounded-lg border border-border bg-background px-2 text-sm text-foreground';
+// Anneau de focus sur boutons et champs (P60, PRA-3b PR 8) : absent jusqu'ici.
+const focusVisible = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring';
+const classeBouton = `min-h-11 rounded-lg border border-border px-3 py-2 text-sm text-foreground disabled:opacity-50 ${focusVisible}`;
+const classePrincipal = `min-h-11 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50 ${focusVisible}`;
+const classeChamp = `mt-1 block min-h-11 w-full rounded-lg border border-border bg-background px-2 text-sm text-foreground ${focusVisible}`;
+const classeReessayer = `min-h-11 rounded-sm underline ${focusVisible}`;
+const classeSommaire = `min-h-11 cursor-pointer rounded-sm py-2 ${focusVisible}`;
 
 const libelleVersion = (v: VersionLue | undefined) => (v ? `Version du ${instant(v.creeLe)}` : 'Version inconnue');
 
@@ -107,7 +111,7 @@ function Historique({ lignes, version }: { lignes: DecisionLue[]; version: Versi
   if (lignes.length < 2) return null;
   return (
     <details className="text-xs text-muted-foreground">
-      <summary className="min-h-11 cursor-pointer py-2">Historique ({lignes.length} lignes)</summary>
+      <summary className={classeSommaire}>Historique ({lignes.length} lignes)</summary>
       <ol className="space-y-1 pl-4">
         {[...lignes].reverse().map(l => (
           <li key={l.id}>
@@ -269,7 +273,7 @@ function FormulaireDecision({
               max={aujourdhui}
               disabled={envoi || dateInconnue}
               onChange={e => setEvenementLe(e.target.value)}
-              className="mt-1 block min-h-11 rounded-lg border border-border bg-background px-2 text-sm text-foreground"
+              className={`mt-1 block min-h-11 rounded-lg border border-border bg-background px-2 text-sm text-foreground ${focusVisible}`}
             />
           </label>
           <label className="flex min-h-11 items-center gap-2 text-sm text-foreground">
@@ -379,7 +383,7 @@ export function DecisionsParcoursPanel({ idPatient }: { idPatient: string }) {
     return (
       <p role="alert" className="text-sm text-foreground">
         Les décisions de parcours n’ont pas pu être lues.{' '}
-        <button type="button" onClick={() => void charger()} className="min-h-11 underline">Réessayer</button>
+        <button type="button" onClick={() => void charger()} className={classeReessayer}>Réessayer</button>
       </p>
     );
   }
@@ -478,9 +482,10 @@ export function DecisionsParcoursPanel({ idPatient }: { idPatient: string }) {
         )}
 
         <section aria-label="Révision" className="space-y-1">
-          <h4 tabIndex={-1} ref={el => focaliser(el, 'titre', `${version.id}:revision`)} className="text-xs font-semibold text-foreground">
+          {/* Q2 a : tiroir h2, puis h3 (h3 sauté jusqu'ici). */}
+          <h3 tabIndex={-1} ref={el => focaliser(el, 'titre', `${version.id}:revision`)} className="text-xs font-semibold text-foreground">
             Révision
-          </h4>
+          </h3>
           {revision ? (
             <>
               <p className="text-sm text-foreground">{decrire(revision, version)}</p>
@@ -503,9 +508,9 @@ export function DecisionsParcoursPanel({ idPatient }: { idPatient: string }) {
         </section>
 
         <section aria-label="Choix et mise en œuvre" className="space-y-2">
-          <h4 tabIndex={-1} ref={el => focaliser(el, 'titre', `${version.id}:choix`)} className="text-xs font-semibold text-foreground">
+          <h3 tabIndex={-1} ref={el => focaliser(el, 'titre', `${version.id}:choix`)} className="text-xs font-semibold text-foreground">
             Choix du patient et mise en œuvre
-          </h4>
+          </h3>
           {lacunaires.map(p => (
             <p key={p ?? ''} className="flex items-center gap-1 text-xs font-medium text-foreground">
               <AlertTriangle aria-hidden="true" size={14} className="text-accent" />
@@ -547,7 +552,7 @@ export function DecisionsParcoursPanel({ idPatient }: { idPatient: string }) {
             levé se retire, et l'historique le garde). */}
         {filsRetires.length > 0 && (
           <details className="text-xs text-muted-foreground">
-            <summary className="min-h-11 cursor-pointer py-2">Décisions retirées ({filsRetires.length})</summary>
+            <summary className={classeSommaire}>Décisions retirées ({filsRetires.length})</summary>
             <ul className="space-y-2 pl-4">
               {filsRetires.map(f => {
                 const derniere = f.historique.filter(l => l.acte === 'pose').at(-1) ?? f.racine;
@@ -584,7 +589,7 @@ export function DecisionsParcoursPanel({ idPatient }: { idPatient: string }) {
       {erreurLecture && (
         <p role="alert" className="text-sm text-foreground">
           La relecture a échoué : ce qui suit peut ne plus être à jour.{' '}
-          <button type="button" onClick={() => void charger()} className="min-h-11 underline">Réessayer</button>
+          <button type="button" onClick={() => void charger()} className={classeReessayer}>Réessayer</button>
         </p>
       )}
       {message && <p role="alert" className="text-sm text-foreground">{message}</p>}

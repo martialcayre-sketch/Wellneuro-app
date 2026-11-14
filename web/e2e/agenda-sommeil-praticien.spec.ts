@@ -157,12 +157,30 @@ test.describe('agenda du sommeil — panneau praticien', () => {
     const boite = await page.locator('.recharts-bar-rectangle').first().boundingBox();
     expect(boite?.height ?? 0).toBeGreaterThan(20);
 
-    // L'infobulle se lit au survol : sans objet sur un écran tactile.
+    // L'infobulle se lit au survol : sans objet sur un écran tactile. Ses
+    // textes existent aussi dans la liste repliée : on les cherche dans
+    // l'infobulle.
     if (!test.info().project.use.isMobile) {
       await page.locator('.recharts-bar-rectangle').nth(1).hover();
-      await expect(page.getByText('Essai de dormir 00:00 · lever 08:00')).toBeVisible();
-      await expect(page.getByText('Endormissement : Ne sait pas')).toBeVisible();
+      const infobulle = page.locator('.recharts-tooltip-wrapper');
+      await expect(infobulle.getByText('Essai de dormir 00:00 · lever 08:00')).toBeVisible();
+      await expect(infobulle.getByText('Endormissement : Ne sait pas')).toBeVisible();
     }
+
+    // Sans souris (Q6 b, PRA-3b PR 8) : la liste des nuits porte les mêmes
+    // rubriques, au clavier comme au doigt.
+    const repli = page.getByRole('button', { name: 'Voir les nuits une par une' });
+    const nuit2 = page.getByRole('listitem').filter({ hasText: /^Nuit 2/ });
+    await expect(repli).toHaveAttribute('aria-expanded', 'false');
+    // Repliée, la liste n'est pas affichée (affichage calculé, pas seulement
+    // l'attribut `hidden`).
+    await expect(nuit2).toBeHidden();
+    await repli.click();
+    await expect(repli).toHaveAttribute('aria-expanded', 'true');
+    await expect(nuit2.getByText('Essai de dormir 00:00 · lever 08:00')).toBeVisible();
+    await expect(nuit2.getByText('Endormissement : Ne sait pas')).toBeVisible();
+    await repli.click();
+    await expect(nuit2).toBeHidden();
   });
 
   test('sous sept nuits, la clôture demande confirmation et « Laisser l’agenda ouvert » ne ferme rien', async ({

@@ -1,5 +1,7 @@
 'use client';
 
+import { useId, useState } from 'react';
+import { ChevronDown } from 'lucide-react';
 import {
   Bar,
   BarChart,
@@ -44,7 +46,21 @@ import {
 // dérivent), et deux lignes de référence portent les médianes d'extinction et de
 // lever.
 
-const COULEUR_SEMAINE = ['#a5b4fc', '#818cf8', '#4f46e5'] as const;
+// Jetons du thème (Q6 b) : trois teintes de `primary` pour les semaines, de la
+// plus claire à la pleine ; liseré de week-end en champagne ; tiret et
+// médianes en `muted-foreground`.
+const COULEUR_SEMAINE = [
+  'rgb(var(--color-primary-rgb) / 0.4)',
+  'rgb(var(--color-primary-rgb) / 0.7)',
+  'rgb(var(--color-primary-rgb) / 1)',
+] as const;
+const COULEUR_WEEKEND = 'var(--lien-champagne)';
+const COULEUR_REPERE = 'var(--muted-foreground)';
+
+// « Nuit 12 » → « 12 », pour l'axe horizontal.
+function numeroNuit(label: string): string {
+  return label.replace(/^Nuit /, '');
+}
 
 // Heures écoulées depuis 20 h (fenêtre visuelle 20 h → 12 h, 16 h), borné.
 function heuresDepuis20(hhmm: string): number {
@@ -153,7 +169,7 @@ export function BarreNuit(props: unknown) {
           x2={x + width}
           y1={y}
           y2={y}
-          stroke="#64748b"
+          stroke={COULEUR_REPERE}
           strokeWidth={2}
           strokeDasharray="2 2"
         />
@@ -177,7 +193,7 @@ export function BarreNuit(props: unknown) {
           height={height + 2}
           rx={4}
           fill="none"
-          stroke="#f59e0b"
+          stroke={COULEUR_WEEKEND}
           strokeWidth={1.5}
         />
       )}
@@ -185,66 +201,139 @@ export function BarreNuit(props: unknown) {
   );
 }
 
-function Tooltipilote({ active, payload }: { active?: boolean; payload?: { payload: Point }[] }) {
-  if (!active || !payload?.length) return null;
-  const p = payload[0].payload;
-  if (!p.nuit) return null;
+type LigneNuit = { cle: string; texte: string; titre?: boolean; commentaire?: boolean };
+
+// Les rubriques d'une nuit, dans l'ordre de l'infobulle. L'infobulle et la
+// liste « Voir les nuits une par une » (T-66, [[D-488]]) les lisent toutes deux
+// ici : la liste ne peut ni en perdre une, ni en dire une autrement — c'est la
+// condition pour masquer le graphe aux lecteurs d'écran (Q6 b, [[D-481]]).
+export function lignesNuit(p: Point): LigneNuit[] {
+  if (!p.nuit) return [];
   const n = p.nuit;
   const facteurs = n.facteurs
     ? CLES_FACTEURS.filter((cle) => n.facteurs?.[cle as CleFacteur]).map((cle) => LABEL_FACTEURS[cle])
     : [];
-  return (
-    <div className="rounded-lg border border-border bg-surface px-3 py-2 text-xs text-foreground shadow-card">
-      <p className="font-semibold">
-        {p.label}
-        {p.weekend ? ' · week-end' : ''}
-      </p>
-      <p>
-        {p.essaiDeDormir ? 'Essai de dormir' : 'Extinction'} {n.heureCoucher} · lever{' '}
-        {n.heureLever}
-      </p>
-      <p>
-        Endormissement :{' '}
-        {n.latence === INCONNU ? LABEL_INCONNU_PRATICIEN : LABEL_LATENCE[n.latence]}
-      </p>
-      <p>
-        Lever :{' '}
-        {n.leverImmediat === true
+  const lignes: LigneNuit[] = [
+    { cle: 'nuit', titre: true, texte: `${p.label}${p.weekend ? ' · week-end' : ''}` },
+    {
+      cle: 'horaires',
+      texte: `${p.essaiDeDormir ? 'Essai de dormir' : 'Extinction'} ${n.heureCoucher} · lever ${n.heureLever}`,
+    },
+    {
+      cle: 'endormissement',
+      texte: `Endormissement : ${n.latence === INCONNU ? LABEL_INCONNU_PRATICIEN : LABEL_LATENCE[n.latence]}`,
+    },
+    {
+      cle: 'lever',
+      texte: `Lever : ${
+        n.leverImmediat === true
           ? 'dès le réveil'
           : n.leverImmediat === false && n.heureReveilFinal
             ? `réveil ${n.heureReveilFinal}, soit ${dureeMinutes(n.heureReveilFinal, n.heureLever)} min éveillé au lit`
-            : 'non renseigné'}
-      </p>
-      <p>
-        Aide au sommeil :{' '}
-        {n.aideSommeil === undefined
-          ? 'non renseignée'
-          : n.aideSommeil === 'prise'
-            ? 'oui'
-            : 'aucune'}
-      </p>
-      {/* Le WASO est une durée cumulée, jamais une position dans la nuit — il se
-          lit ici, il ne se dessine pas dans la barre. */}
-      <p>
-        Éveil nocturne :{' '}
-        {n.reveils
+            : 'non renseigné'
+      }`,
+    },
+    {
+      cle: 'aide',
+      texte: `Aide au sommeil : ${
+        n.aideSommeil === undefined ? 'non renseignée' : n.aideSommeil === 'prise' ? 'oui' : 'aucune'
+      }`,
+    },
+    // Le WASO est une durée cumulée, jamais une position dans la nuit — il se
+    // lit ici, il ne se dessine pas dans la barre.
+    {
+      cle: 'eveil',
+      texte: `Éveil nocturne : ${
+        n.reveils
           ? `${LABEL_DUREE_REVEILS[n.reveils.dureeTotale]}${
               n.reveils.nombre !== undefined ? ` · ${n.reveils.nombre} réveil(s)` : ''
             }`
-          : 'non renseigné'}
-      </p>
-      <p>
-        Qualité : {n.qualite}/5{n.forme ? ` · forme ${n.forme}/5` : ''}
-      </p>
-      {n.facteurs?.rienDeParticulier && <p>{LABEL_RIEN_DE_PARTICULIER}</p>}
-      {facteurs.length > 0 && <p>{facteurs.join(' · ')}</p>}
-      {n.commentaire && <p className="italic">« {n.commentaire} »</p>}
+          : 'non renseigné'
+      }`,
+    },
+    { cle: 'qualite', texte: `Qualité : ${n.qualite}/5${n.forme ? ` · forme ${n.forme}/5` : ''}` },
+  ];
+  if (n.facteurs?.rienDeParticulier) lignes.push({ cle: 'rien', texte: LABEL_RIEN_DE_PARTICULIER });
+  if (facteurs.length > 0) lignes.push({ cle: 'facteurs', texte: facteurs.join(' · ') });
+  if (n.commentaire) lignes.push({ cle: 'commentaire', commentaire: true, texte: `« ${n.commentaire} »` });
+  return lignes;
+}
+
+function classeLigne(l: LigneNuit): string {
+  if (l.titre) return 'font-semibold';
+  if (l.commentaire) return 'italic';
+  return '';
+}
+
+// Exportée pour le test d'équivalence avec la liste.
+export function Tooltipilote({ active, payload }: { active?: boolean; payload?: { payload: Point }[] }) {
+  if (!active || !payload?.length) return null;
+  const lignes = lignesNuit(payload[0].payload);
+  if (lignes.length === 0) return null;
+  return (
+    <div className="rounded-lg border border-border bg-surface px-3 py-2 text-xs text-foreground shadow-card">
+      {lignes.map((l) => (
+        <p key={l.cle} className={classeLigne(l) || undefined}>
+          {l.texte}
+        </p>
+      ))}
     </div>
   );
 }
 
-export function ChronogrammeSommeil({ nuits }: { nuits: NuitRow[] }) {
-  const points: Point[] = nuits.map((row, i) => {
+// Repli sous le graphe (Q6 b) : chaque nuit notée, avec toutes les rubriques de
+// l'infobulle. Une nuit non notée n'a pas de ligne, comme elle n'a pas de barre.
+// Le focus reste sur le bouton à l'ouverture comme à la fermeture.
+function ListeNuits({ points }: { points: Point[] }) {
+  const [ouverte, setOuverte] = useState(false);
+  const id = useId();
+  return (
+    <div className="mt-2 flex flex-col gap-2">
+      <button
+        type="button"
+        aria-expanded={ouverte}
+        aria-controls={id}
+        onClick={() => setOuverte((o) => !o)}
+        className="inline-flex min-h-11 items-center justify-between gap-2 self-start rounded-lg border border-border px-3 text-sm font-medium text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+      >
+        Voir les nuits une par une
+        <ChevronDown
+          aria-hidden="true"
+          size={16}
+          className={`shrink-0 motion-safe:transition-transform ${ouverte ? 'rotate-180' : ''}`}
+        />
+      </button>
+      {/* `hidden` seul ne suffit pas : sous Tailwind 3, la classe `flex`
+          l'emporte sur la règle `[hidden]` du preflight. La classe `hidden`
+          porte donc aussi le repli. */}
+      <ul
+        id={id}
+        hidden={!ouverte}
+        className={`${ouverte ? 'flex' : 'hidden'} flex-col rounded-lg border border-border`}
+      >
+        {points.map((p) => (
+          <li
+            key={p.label}
+            className={`flex flex-col gap-0.5 border-t border-border px-3 py-2 text-sm text-foreground first:border-t-0 ${
+              p.weekend ? 'border-l-2 border-l-lien-champagne' : ''
+            }`}
+          >
+            {lignesNuit(p).map((l) => (
+              <p key={l.cle} className={`[overflow-wrap:anywhere] ${classeLigne(l)}`}>
+                {l.texte}
+              </p>
+            ))}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+// Exportée pour le test d'équivalence : recharts ne rend ni barre ni infobulle
+// en jsdom.
+export function pointsDepuisNuits(nuits: NuitRow[]): Point[] {
+  return nuits.map((row, i) => {
     const r = row.reponses;
     // La barre court de l'extinction à la SORTIE DU LIT. Elle s'arrêtait
     // auparavant à `heureReveilFinal ?? heureLever` — inoffensif tant que ce
@@ -273,6 +362,10 @@ export function ChronogrammeSommeil({ nuits }: { nuits: NuitRow[] }) {
       latenceInconnue: r.latence === INCONNU,
     };
   });
+}
+
+export function ChronogrammeSommeil({ nuits }: { nuits: NuitRow[] }) {
+  const points = pointsDepuisNuits(nuits);
 
   if (points.length === 0) {
     return <p className="text-sm text-muted-foreground">Aucune nuit renseignée pour le moment.</p>;
@@ -283,17 +376,21 @@ export function ChronogrammeSommeil({ nuits }: { nuits: NuitRow[] }) {
 
   return (
     <div>
-      <div style={{ width: '100%', height: 240 }}>
+      {/* Masqué aux lecteurs d'écran parce que la liste des nuits, plus bas,
+          porte chaque rubrique de l'infobulle (Q6 b, test d'équivalence). Sans
+          cette liste, le graphe doit rester exposé. */}
+      <div aria-hidden="true" style={{ width: '100%', height: 240 }}>
         <ResponsiveContainer>
           <BarChart data={points} margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} />
+            {/* Le numéro seul, à l'horizontale : les étiquettes « Nuit N »
+                inclinées à -40° étaient illisibles au téléphone ; « Nuit N »
+                se lit dans l'infobulle et dans la liste. */}
             <XAxis
               dataKey="label"
               tick={{ fontSize: 10 }}
+              tickFormatter={numeroNuit}
               interval={0}
-              angle={-40}
-              textAnchor="end"
-              height={48}
             />
             <YAxis
               domain={[0, 16]}
@@ -303,8 +400,8 @@ export function ChronogrammeSommeil({ nuits }: { nuits: NuitRow[] }) {
               tick={{ fontSize: 10 }}
               width={34}
             />
-            <ReferenceLine y={medExtinction} stroke="#64748b" strokeDasharray="4 4" />
-            <ReferenceLine y={medLever} stroke="#64748b" strokeDasharray="4 4" />
+            <ReferenceLine y={medExtinction} stroke={COULEUR_REPERE} strokeDasharray="4 4" />
+            <ReferenceLine y={medLever} stroke={COULEUR_REPERE} strokeDasharray="4 4" />
             <Tooltip content={<Tooltipilote />} />
             <Bar dataKey="plage" isAnimationActive={false} shape={<BarreNuit />} />
           </BarChart>
@@ -319,6 +416,7 @@ export function ChronogrammeSommeil({ nuits }: { nuits: NuitRow[] }) {
         de la lumière, ou heure où le patient a essayé de dormir pour les agendas ouverts
         depuis la v4. Pointillés : médianes de ce repère du soir et du lever.
       </p>
+      <ListeNuits points={points} />
     </div>
   );
 }
