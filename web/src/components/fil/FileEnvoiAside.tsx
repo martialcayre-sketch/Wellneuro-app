@@ -77,8 +77,11 @@ export function FileEnvoiAside() {
       } catch {
         setIssue({ succes: false, message: `Envoi impossible pour ${patient}.` });
       } finally {
-        setEnvoiEnCours(null);
+        // Relire AVANT de réactiver le déclencheur (P3 de wn-reviewer sur
+        // #2139) : sinon la confirmation lui rend le focus sur une ligne qui
+        // vient de partir, pendant la relecture.
         await chargerFile();
+        setEnvoiEnCours(null);
       }
     },
     [chargerFile],

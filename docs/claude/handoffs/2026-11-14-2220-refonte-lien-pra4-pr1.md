@@ -34,7 +34,16 @@ Poser dans le code les réponses (a) de D-481 (complément DOC-13) qui touchent 
 ## Problèmes ouverts
 
 - Le sélecteur de statut des assignations récentes n'a pas de libellé accessible ; le poser demande un texte hors de D-488 (à inscrire au registre avant tout code).
-- Constat PR-Agent sur #2139 (focus perdu après la confirmation) : corrigé dans un second commit. Le focus revient au déclencheur dès qu'il redevient actif, s'il existe encore ; banc ajouté au refus d'envoi du Fil du jour, prouvé rouge sans le correctif. Après un succès, la ligne disparaît et il n'y a plus de déclencheur.
+- Constats PR-Agent sur #2139, tous deux corrigés :
+  - focus perdu après la confirmation : il revient au déclencheur dès que celui-ci redevient actif, s'il existe encore ;
+  - focus volé par une bascule de `desactive` : la question ne prend le focus qu'à l'ouverture.
+
+  Chaque correctif a son banc, prouvé rouge sans lui.
+- Revue `wn-reviewer` (recours D-448 : PR-Agent a élagué le diff sur `20235356`) : GO, aucun P0 à P2, six P3.
+  - P3-1 corrigé : l'aside relit la file avant de réactiver le déclencheur, comme la Bibliothèque. Test d'Échap ajouté.
+  - Après un succès suivi d'une relecture en échec, l'aside garde l'état connu, comportement d'avant la PR : la ligne partie reste affichée, et le serveur refuse un second envoi (409 `deja_envoye`).
+- Routé au carnet, hors PRA-4 : la confirmation nomme le contenu lu par le client, alors que la route envoie le brouillon tel qu'il est en base. Un ajout depuis un autre onglet pendant la confirmation partirait sans avoir été nommé ; le corriger touche la route.
+- PRA-4 PR 2 : le h1 d'`EnTeteRayon` laisse la Biologie en h1 → h3 (saut). La cascade de ce rayon est à reprendre dans la PR 2.
 - Hors PRA-4 (inchangé) : `chargerBibliotheque` avale l'échec ; `bibliotheque/options` sans entrée ; décor après COM-1.
 
 ## Prochaine action exacte

@@ -37,6 +37,18 @@ describe('GesteConfirme', () => {
     expect(document.activeElement).toBe(annuler);
   });
 
+  it('Échap referme sans rien faire et rend le focus au déclencheur', () => {
+    const onConfirmer = vi.fn();
+    render(rendu(false, onConfirmer));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Geste' }));
+    fireEvent.keyDown(screen.getByRole('alertdialog'), { key: 'Escape' });
+
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+    expect(onConfirmer).not.toHaveBeenCalled();
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Geste' }));
+  });
+
   it('la confirmation appelle le geste une fois et rend le focus au déclencheur redevenu actif', () => {
     const onConfirmer = vi.fn();
     const { rerender } = render(rendu(false, onConfirmer));
