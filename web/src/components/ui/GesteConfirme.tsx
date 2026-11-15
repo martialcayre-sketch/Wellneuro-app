@@ -41,6 +41,15 @@ export function GesteConfirme({
   const rendreFocus = useRef(false);
   const idQuestion = useId();
 
+  // À l'ouverture seulement : le focus va à la question. Dépendre aussi de
+  // `desactive` le reprendrait au bloc à chaque bascule venue d'ailleurs (un
+  // autre envoi qui part pendant que cette confirmation est ouverte), alors
+  // que le clavier est sur « Confirmer » ou « Annuler » (second constat
+  // PR-Agent sur #2139).
+  useEffect(() => {
+    if (ouverte) blocRef.current?.focus();
+  }, [ouverte]);
+
   // Le focus revient au déclencheur après « Annuler » comme après la
   // confirmation (constat PR-Agent sur #2139) : un geste refusé laisse la
   // ligne en place, et le clavier ne doit pas retomber sur la page. Pendant
@@ -48,9 +57,7 @@ export function GesteConfirme({
   // le focus : on attend qu'il redevienne actif. S'il a disparu (la ligne est
   // partie avec le succès), il n'y a plus rien à rendre.
   useEffect(() => {
-    if (ouverte) {
-      blocRef.current?.focus();
-    } else if (rendreFocus.current && !desactive && declencheurRef.current) {
+    if (!ouverte && rendreFocus.current && !desactive && declencheurRef.current) {
       rendreFocus.current = false;
       declencheurRef.current.focus();
     }

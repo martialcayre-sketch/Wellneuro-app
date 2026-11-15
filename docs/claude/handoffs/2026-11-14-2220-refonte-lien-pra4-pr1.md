@@ -2,7 +2,7 @@
 
 ## Branche et état du dépôt
 
-- Branche `claude/refonte-lien-pra4-pr1`, créée depuis `origin/main@304e5709` dans le worktree `.claude/worktrees/refonte-lien-pra4-pr1`, avancée par `--ff-only` à `983f956e` puis `0045026a` avant tout commit (aucun fichier commun ; le second pas ne porte que de la doc), un seul commit.
+- Branche `claude/refonte-lien-pra4-pr1`, créée depuis `origin/main@304e5709` dans le worktree `.claude/worktrees/refonte-lien-pra4-pr1`, avancée par `--ff-only` à `983f956e` puis `0045026a` avant tout commit (aucun fichier commun ; le second pas ne porte que de la doc). Puis, sur arbitrage du responsable (« fusion ok », D-518), fusion d'`origin/main@71efdcb3` (`728424bc`), sans conflit, pour recevoir #2143 : le cas 10 du banc `banc-envoi-cabinet-deux-sessions` attendait 200 au lieu du 409 de #2130, et il avait rougi trois fois en CI sur cette PR, hors du diff. Les correctifs de revue sont committés à part.
 - La session ne merge pas : l'intégrateur merge sur « prête @<sha> » (D-373, D-454).
 
 ## Objectif
