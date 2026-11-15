@@ -1,4 +1,4 @@
-// La consigne « fiche-usage-v8 » est épinglée : un octet changé sans bump de
+// La consigne « fiche-usage-v9 » est épinglée : un octet changé sans bump de
 // version rougit ici, et l'outil refuse de tourner ([[D-314]] §4).
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
@@ -153,8 +153,9 @@ test('v8 : population nommée, quantités selon leur fonction, catégorie « mé
   // Contre-passe Codex : la condition de sécurité remplace la phrase d'absence,
   // et son omission n'est jamais exemptée sous « oui ».
   assert.match(redaction, /elle écrit\s+cette condition à la place de la phrase d'absence/);
-  assert.match(redaction, /n'accueille aucune condition de sécurité ou d'admissibilité/);
-  assert.match(contreLecture, /l'écrit à la place de la phrase d'absence,\s+et la phrase d'absence seule y est une condition tue/);
+  assert.match(redaction, /n'accueille\s+aucune condition de sécurité ou d'admissibilité/);
+  // v9 (D-501 §12) : la phrase de quantité rejoint la phrase d'absence.
+  assert.match(contreLecture, /l'écrit à la place de la phrase d'absence\s+ou de la phrase de quantité, et l'une ou l'autre seule y est une condition\s+tue/);
   assert.match(contreLecture, /Cette exemption ne\s+vaut jamais pour une condition de sécurité ou d'admissibilité/);
   // Seconde contre-passe : un nombre d'une désignation approuvée n'est pas un
   // défaut, et l'exemption écarte le seul fait inexprimable, pas le claim.
@@ -182,4 +183,38 @@ test('v8 : population nommée, quantités selon leur fonction, catégorie « mé
   assert.match(contreLecture, /un fait propre à une spécialité\s+généralisé à cette catégorie en est un/);
   assert.match(redaction, /Un claim fourni n'a pas à être employé/);
   assert.match(contreLecture, /Un claim\s+fourni qui ne porte pas sur l'objet de la rubrique n'a pas à y figurer/);
+});
+
+// [[D-501]] §12 : arbitrages du 2026-11-15 (Q1-B, Q2-A, Q3-A). Un fait
+// empêché par une quantité de prise ne s'écrit ni entier ni privé d'elle, et
+// une phrase fixe distincte de l'absence le dit ; « le dosage de » est une
+// forme du cadre dans la « question » ; la phrase d'absence s'écrit si et
+// seulement si aucun claim fourni ne porte sur l'objet. Des deux côtés.
+test('v9 : phrase de quantité, « le dosage de » dans la question, objet des claims et phrase d’absence', () => {
+  const { redaction, contreLecture } = lireConsignes();
+  const phraseDeQuantite = "Les sources retenues documentent ce point avec une quantité de prise, qui ne s'écrit pas dans cette fiche.";
+  for (const c of [redaction, contreLecture]) {
+    assert.ok(c.includes(phraseDeQuantite), 'phrase de quantité, mot pour mot');
+    assert.match(c, /Les sources retenues ne documentent pas ce point\./);
+    assert.match(c, /« le dosage\s+de »,\s+accordés/);
+    assert.match(c, /pas seulement son sujet/);
+    assert.match(c, /Un claim qui ne relie aucun\s+résultat de l'examen à ce qu'il permet ou interdit de conclure ne porte\s+pas sur l'objet de « interpretations »/);
+    // Contre-revue Codex (D-505) : « resultats_consequences » garde l'alternative,
+    // et un fait empêché par une quantité de prise compte pour la phrase d'absence.
+    assert.match(c, /un claim qui ne nomme ni un\s+résultat possible de l'examen, ni une conséquence qu'un résultat\s+autorise, ne porte pas sur celui de « resultats_consequences »/);
+    // Contre-passe : la quantité de prise l'emporte quand les deux empêchements se cumulent.
+    assert.match(c, /Empêché\s+seulement\s+par\s+un\s+médicament\s+nommé/);
+    assert.match(c, /Empêché\s+par\s+une\s+quantité\s+de\s+prise,\s+même\s+s'il\s+l'est\s+aussi\s+par\s+un\s+médicament\s+nommé\s+ou\s+une\s+autre\s+quantité\s+exclue,\s+il\s+y\s+compte/);
+    assert.match(c, /privé de cette quantité ou de\s+ce\s+médicament/);
+    assert.match(c, /fait\s+auquel\s+son\s+claim\s+attache\s+une\s+quantité\s+de\s+prise/);
+  }
+  assert.match(redaction, /ni l'une ni l'autre/);
+  assert.match(redaction, /elle s'écrit si, et seulement si, aucun ne porte sur\s+l'objet de la rubrique/);
+  assert.match(redaction, /elle\s+prend la phrase de quantité, pas la phrase d'absence/);
+  assert.match(redaction, /aucun autre terme de\s+mesure ne s'y ajoute/);
+  assert.match(contreLecture, /examine TOUS les\s+claims fournis, pas seulement ceux que le texte emploie/);
+  assert.match(contreLecture, /toujours dans « question » ou « population »/);
+  assert.match(contreLecture, /Tout\s+autre terme de mesure ajouté à cette désignation/);
+  assert.match(contreLecture, /est INFIDÈLE dans la « question », même porté par un claim/);
+  assert.match(contreLecture, /la phrase d'absence est alors\s+INFIDÈLE/);
 });
