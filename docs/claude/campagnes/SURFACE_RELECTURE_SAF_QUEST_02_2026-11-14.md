@@ -3,6 +3,11 @@
 Cette surface est produite le 2026-11-14, **avant** la demande de signature
 ([[D-195]] §2). Elle sert à la PR 4 du lot de code de [[D-515]] §6.2.
 
+> **Signée le 2026-11-15** sur déclaration écrite du responsable, sur le SHA
+> `67b9ef5436a97018c8db41f45c269b32db278e86db7cf45808f180cc30e88f1f` ; la
+> signature n'autorise pas l'allumage ([[D-524]] §3). La déclaration est
+> consignée dans [[D-515]] ; la signature vit dans le code.
+
 > **Amendée le 2026-11-14 par [[D-524]]** (réponses B du responsable aux
 > questions `20261114-2145-a` et `20261114-2146-a`). Le texte « hors
 > options » du cabinet est neuf (sections 3.1 et 4), et le SHA est passé de

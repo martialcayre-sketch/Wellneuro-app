@@ -402,7 +402,9 @@ describe('GET /api/patient/questionnaire — désignation servie d’un instrume
     expect(corps.designationSuicideCabinet).toEqual({ idQuestion: 'Q2', valeurNon: 0 });
   });
 
-  it('table NON signée (état livré) : l’encart, pas la désignation', async () => {
+  it('table NON signée (signature retirée) : l’encart, pas la désignation', async () => {
+    // La table est signée depuis le 2026-11-15 ([[D-524]]) : l'état non signé se pose ici.
+    Object.assign(SAFETY_QUESTIONNAIRE_CABINET_METADATA, { validationExterne: false, dateValidation: null, shaPerimetre: null });
     const corps = await lire();
     expect(corps.encartUrgenceCabinet).toBe(true);
     expect('designationSuicideCabinet' in corps).toBe(false);

@@ -1,0 +1,5 @@
+- **Mise à jour (2026-11-15, lot D-277, PR 4 étape 2)** : `SAF-QUEST-02` est signée sur déclaration écrite du responsable (SHA `67b9ef54…`). La table porte la signature en littéral et elle est inscrite dans `shaPerimetreLitteral`. L'E2E est inversé : la désignation est servie, et le message paraît. Le commentaire de `alerteSecuritePraticien.ts` cite `D-522`. Le drapeau reste éteint : la signature n'autorise pas l'allumage (`D-524` §3).
+  - **Reste** :
+    - le lot `h59-d515-deverrouillage` (`D-524` §2), mergé et déployé ;
+    - le recomptage, par conteneur, des `CAB_` à copie NULL (`D-515` §6, étape 3) ;
+    - l'allumage par le responsable, puis la troisième migration de H59.

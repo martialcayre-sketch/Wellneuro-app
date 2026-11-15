@@ -172,7 +172,8 @@ describe('parité cockpit ↔ Fil — un instrument du cabinet ([[D-515]])', () 
     expect(constatsDuCockpit(ANAMNESE_C1_FIXTURE, [jointe(CAB_NON)])).toEqual([]);
     expect(await lireSignauxSecuriteOuverts('praticien@wellneuro.fr')).toEqual([]);
 
-    Object.assign(SAFETY_QUESTIONNAIRE_CABINET_METADATA, ETAT_LIVRE);
+    // La table est signée depuis le 2026-11-15 ([[D-524]]) : l'état non signé se pose ici.
+    Object.assign(SAFETY_QUESTIONNAIRE_CABINET_METADATA, { validationExterne: false, dateValidation: null, shaPerimetre: null });
     poserDossier(ANAMNESE_C1_FIXTURE, [CAB_POSITIF]);
     expect(constatsDuCockpit(ANAMNESE_C1_FIXTURE, [jointe(CAB_POSITIF)])).toEqual([]);
     expect(await lireSignauxSecuriteOuverts('praticien@wellneuro.fr')).toEqual([]);
