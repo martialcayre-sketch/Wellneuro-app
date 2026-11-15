@@ -1,8 +1,8 @@
 # Registre sanitaire du corpus clinique
 
-`source_registry.json` contient 637 notices normalisées : 391 issues du pack WN
+`source_registry.json` contient 643 notices normalisées : 391 issues du pack WN
 Ultimate v2 (`NNFC1_Annee1`, `NNPP2_Annee2`), 116 instruments du cabinet
-(`INSTRUMENTS_CABINET`), et 130 sources externes (`SOURCES_EXTERNES` — BP-07 :
+(`INSTRUMENTS_CABINET`), et 136 sources externes (`SOURCES_EXTERNES` — BP-07 :
 avis d'agence, recommandation, essai, règlement, `WN-SRC-0508` à `0511`, puis
 pour la position P5 v0.3 une recommandation de l'OMS, `WN-SRC-0555` ; besoin 2 :
 trois avis d'agence, un rapport d'évaluation, une recommandation de pratique,
@@ -63,7 +63,13 @@ méta-analyse, `WN-SRC-0657` à `0659` ;
 besoin 4, perception et sensations corporelles : une étude primaire, une revue,
 deux études de laboratoire et une lettre sur deux biomarqueurs,
 `WN-SRC-0660` à `0664`, puis l'article de développement d'un instrument
-d'intéroception, `WN-SRC-0665`, et un passage ajouté à `WN-SRC-0553`),
+d'intéroception, `WN-SRC-0665`, et un passage ajouté à `WN-SRC-0553` ;
+besoin 5, mouvements, fonctions corporelles et repos : les résumés de deux
+publications primaires d'instruments et d'une étude primaire, `WN-SRC-0666` à
+`0668`, puis le guide d'analyse d'un questionnaire d'activité physique de
+l'OMS, `WN-SRC-0669`, et des lignes directrices de l'OMS sur l'activité
+physique et la sédentarité, `WN-SRC-0670`, et l'article de développement d'un
+instrument de santé musculo-squelettique, `WN-SRC-0671`),
 dont seuls des extraits ciblés sont ingérés. Le manuscrit soumis `WN-SRC-0546`
 est `deprecated` : remplacé par sa version publiée `WN-SRC-0564`, ses claims ne
 sont pas retenus. Les plages `0525` à `0539` et `0556` à `0559` sont
@@ -127,7 +133,13 @@ corpus runtime.
   l'éditeur) et la lettre de Massier et al. (`0664`, CC BY-NC, clause non
   commerciale) restent à vérifier ; `0665` est sous licence CC BY 4.0,
   instrument déclaré dans le domaine public ; ce statut vaut pour les extraits,
-  l'intégration de l'instrument au produit restant à vérifier. La recommandation de l'OMS
+  l'intégration de l'instrument au produit restant à vérifier ; au 2026-11-15,
+  pour le besoin 5, les trois résumés (`0666` à `0668`, droits de l'éditeur),
+  le guide de l'OMS (`0669`, aucune licence affichée) et ses lignes
+  directrices (`0670`, CC BY-NC-SA 3.0 IGO, usage non commercial) restent à
+  vérifier ; `0671` est sous licence CC BY 4.0, statut qui vaut pour les
+  extraits de l'article, l'usage de l'instrument relevant de la licence de son
+  détenteur. La recommandation de l'OMS
   (`WN-SRC-0555`, tous droits réservés), dont un extrait court est ingéré pour
   usage interne sur arbitrage du responsable, reste à vérifier.
 - Quarantaine sanitaire (`lifecycleStatus: quarantined`) : relue au registre

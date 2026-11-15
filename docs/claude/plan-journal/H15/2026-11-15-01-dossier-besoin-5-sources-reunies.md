@@ -1,0 +1,18 @@
+- **Mise à jour (2026-11-15, dossier du besoin 5, étape 3 : sources réunies)** : forme opaque (`D-251` §4), identifiants, comptes et mécanismes seulement. Suite de l'étape 2 (`2026-11-14-07`, #2140). M1 à M5 (`20261114-2305-b` à `2309-b`) ont été tranchées et ne se reposent pas.
+  - **Envois** : cinq, chacun sur accord explicite du responsable, envoi par envoi, par la route d'ingestion, depuis des conteneurs `scalingo run -d`. Tout est en attente de validation et rien n'est étiqueté.
+    - `LOT_062` : 9 passages, tirés des quatre pièces SIIN `0392`, `0393`, `0396` et `0397`. Fidélité aux PDF vérifiée par sac de mots et à l'image. Un écart interne de `0397` (sens d'un item) est consigné au dossier, et le verbatim est gardé sans correction ;
+    - `LOT_063` : 3 passages et 12 claims, tirés des résumés de deux publications primaires d'instruments et d'une étude primaire (`0666` à `0668`). Une discordance bibliographique de date est consignée comme non résolue ;
+    - `LOT_064` : 3 passages et 9 claims, tirés du guide d'analyse du questionnaire d'activité physique de l'OMS (`0669`) ;
+    - `LOT_065` : 4 passages et 9 claims, tirés des lignes directrices de l'OMS sur l'activité physique et la sédentarité (`0670`) ;
+    - `LOT_066` : 3 passages et 7 claims, tirés de l'article de développement d'un instrument de santé musculo-squelettique (`0671`).
+  - **Constats** : chaque envoi a été relu en lecture seule par conteneur (transaction annulée). Les nombres de passages actifs et de claims en attente sont ceux de la charge, les empreintes sont identiques et rien n'avait été pris avant. Chaque charge est passée par les parseurs de la route avant l'envoi.
+  - **Registre** : six notices externes inscrites, de `0666` à `0671`. Elles portent les droits « à vérifier », sauf la licence ouverte de `0671`, qui ne vaut que pour l'article. Les notices des quatre pièces restent en l'état.
+  - **Questions** (liste commune, file B, cliniques, avec l'avis de Codex à l'aveugle, `D-505`) :
+    - `20261115-0949-b` (fait nouveau sur la grille de l'Epworth) : B, grille de référence actuelle. Elle amende M2 pour la seule source de cette grille ;
+    - `20261115-1050-b` (choix d'un instrument de mobilité) : A. L'instrument est retenu pour instruction documentaire seulement ; son usage clinique en français reste conditionné à la version, aux propriétés de mesure et aux droits. La mobilité reste « non évaluée », et la priorité écartée le reste.
+  - **Règle du guide (M4)** : elle reste partiellement étayée. Une branche est fondée ; aucun seuil de déclenchement n'est sourcé ; l'association des branches et la place « au socle » n'ont aucune source. La recommandation `0575` attend le texte intégral, que le téléchargement automatique n'obtient pas : deux points y sont à vérifier sur le texte, sans claim ni ingestion d'ici là.
+  - **Restent ouverts** :
+    - les textes intégraux des publications primaires du PSQI et de l'Epworth, à joindre aux mêmes notices ;
+    - la licence et le statut de la version française de l'instrument de mobilité, à demander à son détenteur ;
+    - les droits des notices « à vérifier ».
+  - **Suite** : l'étiquetage et les positions viennent ensuite. Aucun code : `BESOIN_SOURCES`, la convergence, les grilles servies et tout nouvel instrument relèvent chacun d'une décision distincte, appliquée par J3-12f après signature (`D-312` §3).
