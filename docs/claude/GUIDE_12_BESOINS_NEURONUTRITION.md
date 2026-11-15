@@ -97,12 +97,32 @@ Le cerveau a besoin de se percevoir (schéma corporel) pour s'ancrer et
 ressentir une sécurité fondamentale archaïque. Englobe le confort digestif
 (axe intestin-cerveau).
 
-- **Variables d'entrée** : questionnaires des Troubles Fonctionnels
-  Intestinaux (TFI) et d'hyperexcitabilité clinique. Biomarqueurs de
-  perméabilité : LBP, zonuline.
-- **Règle de décision** : si troubles digestifs ou hyperperméabilité,
-  prescrire la réparation du microbiote/leaky gut avant de traiter la
-  sphère psychique.
+- **Section réécrite sur le dossier de preuve signé** (`D-526`, 2026-11-15,
+  `D-312` §3). Les claims, valeurs et sources sont au dossier privé du
+  besoin 4 ; ici, les mécanismes seulement (`D-251` §4).
+- **Variables d'entrée** : deux questionnaires internes SIIN, sur symptômes
+  déclarés — troubles fonctionnels digestifs et intestinaux (`Q_GAS_01`) et
+  hyperexcitabilité (`Q_INF_01`) — qui repèrent et suivent, sans diagnostic.
+  La douleur et la conscience intéroceptive sont des variables du besoin,
+  sans instrument servi. Les deux biomarqueurs de perméabilité de la version
+  précédente de cette section sont « non évalués ».
+- **Règle de décision** : un constat par questionnaire. Les barèmes de la
+  pièce pro sont transcrits mot pour mot, et les valeurs frontières suivent
+  une convention signée comme arbitrage. Les bandes affichent le constat ;
+  les claims du dossier ne fondent aucun déclenchement, et les lignes
+  existantes restent régies par leurs décisions. Aucune règle d'ordre entre
+  les constats du besoin ; la routine et la hiérarchie de ce guide n'en sont
+  pas modifiées. Un score ne qualifie jamais à lui seul une
+  plainte de fonctionnelle. La règle précédente (réparation sur trouble
+  digestif ou hyperperméabilité, avant la sphère psychique) est retirée.
+- **Références citées** : identifiants au dossier privé ; seuls les claims
+  cités par une position signée fondent un constat, dans le rôle qu'elle leur
+  donne. La liste des claims de provenance ou de limite seulement est au
+  `D-526` §5.5.
+- **Population visée et « non évalué »** : `D-526` §4.
+- **Motif de la part de pondération** : parts égales entre les deux
+  questionnaires, aucune pondération sourcée (`D-526` §6.3).
+- **Application** : lot J3-12f.
 
 ### 5. Les mouvements, les fonctions corporelles et le repos
 
