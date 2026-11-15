@@ -6,6 +6,7 @@ import type { AssignPackResponse } from '@/app/api/praticien/packs/assign/route'
 import type { QuestionnairesApiResponse } from '@/app/api/praticien/questionnaires/route';
 import type { QuestionnairesRegistryApiResponse } from '@/app/api/praticien/questionnaires/registry/route';
 import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
 import { PanneauSuperpose } from '@/components/ui/PanneauSuperpose';
 
 type Questionnaire = QuestionnairesApiResponse['questionnaires'][number];
@@ -17,8 +18,13 @@ type SuggestedPackSelection = {
   nonce: number;
 };
 
-const inputCls = 'bg-surface border border-border rounded-lg px-3 py-2 text-sm text-foreground';
-const btnPrimary = 'px-4 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground disabled:opacity-60';
+// Q5 de D-481 : champs et sélecteurs à 44 px, focus visible, comme `ui/Input` ;
+// les boutons passent par `ui/Button`. Une case garde sa taille, sa ligne fait
+// la zone de clic de 44 px (`CLASSE_CASE`).
+const inputCls =
+  'min-h-11 bg-surface border border-border rounded-lg px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring';
+const CLASSE_CASE =
+  'flex min-h-11 items-center gap-2 text-sm text-foreground hover:bg-muted/50 rounded px-1 py-0.5 cursor-pointer has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-focus-ring';
 
 export function PacksPanel({
   questionnaires,
@@ -438,7 +444,7 @@ export function PacksPanel({
 
           <div className="max-h-56 overflow-y-auto border border-border rounded-lg p-2 flex flex-col gap-1">
             {questionnairesFiltres.map(q => (
-              <label key={q.id} className="flex items-center gap-2 text-sm text-foreground hover:bg-muted/50 rounded px-1 py-0.5 cursor-pointer">
+              <label key={q.id} className={CLASSE_CASE}>
                 <input type="checkbox" checked={selectedQids.has(q.id)} onChange={() => toggleQid(q.id)} />
                 <span>{q.titre}</span>
                 <span className="text-xs text-muted-foreground">
@@ -449,9 +455,9 @@ export function PacksPanel({
           </div>
 
           <div className="flex items-center gap-3">
-            <button type="submit" disabled={saving || selectedQids.size === 0 || !nom.trim()} className={btnPrimary}>
+            <Button type="submit" disabled={saving || selectedQids.size === 0 || !nom.trim()}>
               {saving ? 'Création...' : 'Créer le pack'}
-            </button>
+            </Button>
             {feedback && (
               <span className={`text-sm ${feedback.ok ? 'text-status-success' : 'text-status-danger'}`}>{feedback.msg}</span>
             )}
@@ -496,14 +502,14 @@ export function PacksPanel({
                     </p>
                   )}
                 </div>
-                <div className="flex items-center gap-3 shrink-0">
-                  <button
+                <div className="flex flex-wrap items-center justify-end gap-2 shrink-0">
+                  <Button
                     type="button"
+                    variant="outline"
                     onClick={() => onEditPack(p)}
-                    className="text-xs text-foreground hover:underline"
                   >
                     Modifier
-                  </button>
+                  </Button>
                   {/* Le pack de base est assigné à chaque nouveau patient : le
                       démarquer ou l'éteindre casse l'accueil de TOUS les
                       patients. L'API le refuse en 409 — l'UI n'est qu'une
@@ -516,16 +522,17 @@ export function PacksPanel({
                   {p.actif && (
                     <>
                       {!p.parDefaut && (
-                        <button
+                        <Button
                           type="button"
+                          variant="outline"
                           onClick={() => onToggleDefaut(p.idPack, p.nom, true)}
-                          className="text-xs text-foreground hover:underline"
                         >
                           Définir par défaut
-                        </button>
+                        </Button>
                       )}
-                      <button
+                      <Button
                         type="button"
+                        variant="danger"
                         onClick={() => onDesactiver(p.idPack, p.nom)}
                         disabled={p.parDefaut}
                         title={
@@ -533,10 +540,10 @@ export function PacksPanel({
                             ? "Ce pack est le pack de base : il est assigné à chaque nouveau patient. Définissez d'abord un autre pack actif comme pack de base."
                             : undefined
                         }
-                        className="text-xs text-status-danger hover:underline disabled:text-muted-foreground disabled:no-underline disabled:cursor-not-allowed"
+                        className="disabled:cursor-not-allowed disabled:text-muted-foreground"
                       >
                         Désactiver
-                      </button>
+                      </Button>
                     </>
                   )}
                 </div>
@@ -569,9 +576,9 @@ export function PacksPanel({
           <input type="date" value={assignForm.dateLimite} onChange={e => setAssignForm(p => ({ ...p, dateLimite: e.target.value }))} className={inputCls} />
           <input value={assignForm.notes} onChange={e => setAssignForm(p => ({ ...p, notes: e.target.value }))} placeholder="Notes praticien (optionnel)" className={inputCls} maxLength={500} />
           <div className="flex items-center gap-3 md:col-span-2">
-            <button type="submit" disabled={assigning} className={btnPrimary}>
+            <Button type="submit" disabled={assigning}>
               {assigning ? 'Assignation...' : 'Assigner le pack'}
-            </button>
+            </Button>
             {assignFeedback && (
               <span className={`text-sm ${assignFeedback.ok ? 'text-status-success' : 'text-status-danger'}`}>{assignFeedback.msg}</span>
             )}
@@ -631,13 +638,13 @@ export function PacksPanel({
                     </option>
                   ))}
                 </select>
-                <button
+                <Button
                   type="button"
+                  variant="outline"
                   onClick={() => setEditOnlyPackSelection(prev => !prev)}
-                  className="px-3 py-2 rounded-lg text-xs border border-border text-foreground hover:bg-muted/40"
                 >
                   {editOnlyPackSelection ? 'Afficher tous les questionnaires' : 'Revenir aux questionnaires du pack'}
-                </button>
+                </Button>
                 <span className="text-xs text-muted-foreground">{editSelectedQids.size} sélectionné(s)</span>
               </div>
 
@@ -648,7 +655,7 @@ export function PacksPanel({
                   </p>
                 ) : (
                   editQuestionnairesFiltres.map(q => (
-                    <label key={q.id} className="flex items-center gap-2 text-sm text-foreground hover:bg-muted/50 rounded px-1 py-0.5 cursor-pointer">
+                    <label key={q.id} className={CLASSE_CASE}>
                       <input type="checkbox" checked={editSelectedQids.has(q.id)} onChange={() => toggleEditQid(q.id)} />
                       <span>{q.titre}</span>
                       <span className="text-xs text-muted-foreground">
@@ -676,7 +683,7 @@ export function PacksPanel({
                     sont suspendus, ils ne pourront pas y être rajoutés.
                   </p>
                   {editSuspendusPresents.map(s => (
-                    <label key={s.id} className="flex items-center gap-2 text-sm text-foreground hover:bg-muted/50 rounded px-1 py-0.5 cursor-pointer">
+                    <label key={s.id} className={CLASSE_CASE}>
                       <input type="checkbox" checked={editSelectedQids.has(s.id)} onChange={() => toggleEditQid(s.id)} />
                       <span>{s.titre}</span>
                       <span className="text-xs text-muted-foreground">(suspendu — {s.id})</span>
@@ -695,7 +702,7 @@ export function PacksPanel({
                     ce pack. Décochez-les pour les retirer. Ils ne pourront pas y être rajoutés via un pack.
                   </p>
                   {editConsultationPresents.map(q => (
-                    <label key={q.id} className="flex items-center gap-2 text-sm text-foreground hover:bg-muted/50 rounded px-1 py-0.5 cursor-pointer">
+                    <label key={q.id} className={CLASSE_CASE}>
                       <input type="checkbox" checked={editSelectedQids.has(q.id)} onChange={() => toggleEditQid(q.id)} />
                       <span>{q.titre}</span>
                       <span className="text-xs text-muted-foreground">(consultation — {q.id})</span>
@@ -705,16 +712,16 @@ export function PacksPanel({
               )}
 
               <div className="flex items-center gap-3">
-                <button type="submit" disabled={savingEdit || editSelectedQids.size === 0 || !editNom.trim()} className={btnPrimary}>
+                <Button type="submit" disabled={savingEdit || editSelectedQids.size === 0 || !editNom.trim()}>
                   {savingEdit ? 'Enregistrement...' : 'Enregistrer les modifications'}
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
+                  variant="outline"
                   onClick={onCancelEditPack}
-                  className="px-3 py-2 rounded-lg text-sm text-muted-foreground border border-border"
                 >
                   Annuler
-                </button>
+                </Button>
                 {editFeedback && (
                   <span className={`text-sm ${editFeedback.ok ? 'text-status-success' : 'text-status-danger'}`}>{editFeedback.msg}</span>
                 )}

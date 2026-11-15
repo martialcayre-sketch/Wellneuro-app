@@ -96,7 +96,10 @@ test.describe('Orientation NNPP2 → file d’envoi', () => {
     await expect(ligneBrouillonSophie).toContainText(TITRE_CIBLE);
 
     // ── 4. Envoyer depuis cet écran ──
+    // « Envoyer » ouvre la confirmation (Q3 de D-481, T-68 de D-488) ; seule
+    // « Confirmer l'envoi » (T-69) appelle la route.
     await ligneBrouillonSophie.getByRole('button', { name: /^Envoyer/ }).click();
+    await ligneBrouillonSophie.getByRole('button', { name: "Confirmer l'envoi" }).click();
     await expect(page.getByText(new RegExp(`envoyé\\(s\\) à ${NOM_PATIENT}`))).toBeVisible({
       timeout: 10000,
     });

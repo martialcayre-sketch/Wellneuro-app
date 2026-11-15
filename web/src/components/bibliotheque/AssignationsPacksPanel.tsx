@@ -16,6 +16,15 @@ import { Button } from '@/components/ui/Button';
 import { PanneauSuperpose } from '@/components/ui/PanneauSuperpose';
 import { PacksPanel } from '@/components/PacksPanel';
 
+// Q5 de D-481 : 44 px et focus visible, comme `ui/Input` ; `ui/Select` sert
+// d'autres écrans et n'est pas changé par ce lot.
+const CLASSE_SELECT =
+  'min-h-11 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring';
+
+// Clé d'un bloc empilé au téléphone (Q8) : l'en-tête de colonne, masqué au
+// bureau où le tableau le porte.
+const CLASSE_CLE = 'mr-2 text-2xs uppercase tracking-[.07em] text-muted-foreground md:hidden';
+
 // LE RAYON ASSIGNATIONS ET PACKS — né le 2026-09-16 de la scission de la page
 // d'héritage 4.0 « Questionnaires & packs ». Cette page réunissait deux métiers
 // sans rapport : la gestion des dossiers, devenue le rayon « Patients », et
@@ -288,13 +297,14 @@ export function AssignationsPacksPanel() {
           onOpenChange={ouvert => setTiroirOuvert(ouvert ? 'assignation' : null)}
         >
           <form className="grid grid-cols-1 md:grid-cols-2 gap-3" onSubmit={onCreateAssignation}>
-          <Select required value={assignationForm.emailPatient} onChange={e => setAssignationForm(p => ({ ...p, emailPatient: e.target.value }))}>
+          <Select required className={CLASSE_SELECT} value={assignationForm.emailPatient} onChange={e => setAssignationForm(p => ({ ...p, emailPatient: e.target.value }))}>
             <option value="">Patient *</option>
             {(data?.patients ?? []).map(p => (
               <option key={p.idPatient} value={p.email}>{`${p.prenom} ${p.nom} — ${p.email}`}</option>
             ))}
           </Select>
           <Select
+            className={CLASSE_SELECT}
             value={categorieView}
             onChange={e => {
               setCategorieView(e.target.value as 'fonctionnelle' | 'historique');
@@ -307,6 +317,7 @@ export function AssignationsPacksPanel() {
             <option value="historique">Catégories historiques</option>
           </Select>
           <Select
+            className={CLASSE_SELECT}
             value={categorieFilter}
             onChange={e => {
               setCategorieFilter(e.target.value);
@@ -324,7 +335,7 @@ export function AssignationsPacksPanel() {
               </option>
             ))}
           </Select>
-          <Select required value={assignationForm.idQuestionnaire} onChange={e => setAssignationForm(p => ({ ...p, idQuestionnaire: e.target.value }))}>
+          <Select required className={CLASSE_SELECT} value={assignationForm.idQuestionnaire} onChange={e => setAssignationForm(p => ({ ...p, idQuestionnaire: e.target.value }))}>
             <option value="">Questionnaire *</option>
             {questionnairesFiltres.map(q => (
               <option key={q.id} value={q.id}>
@@ -377,14 +388,14 @@ export function AssignationsPacksPanel() {
 
       {/* Tableau assignations */}
       <div className="bg-surface border border-border rounded-xl overflow-hidden shadow-card">
-        <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+        <div className="px-4 py-3 border-b border-border flex flex-wrap items-center justify-between gap-2">
           <h3 className="font-display text-lg font-semibold text-foreground">
             Assignations récentes
             <span className="ml-2 font-mono text-13 font-normal text-muted-foreground" data-testid="assignations-compte">
               ({assignationsTronquees ? `${filteredAssignations.length} sur ${meta?.total}` : filteredAssignations.length})
             </span>
           </h3>
-          <select value={statutFilter} onChange={e => setStatutFilter(e.target.value as StatutFilter)} className="text-xs border border-border rounded-lg px-2 py-1 bg-surface text-muted-foreground">
+          <select value={statutFilter} onChange={e => setStatutFilter(e.target.value as StatutFilter)} className={`text-xs border border-border rounded-lg px-2 py-1 bg-surface text-muted-foreground ${CLASSE_SELECT}`}>
             {(Object.keys(STATUT_LABELS) as StatutFilter[]).map(s => (
               <option key={s} value={s}>{STATUT_LABELS[s]}</option>
             ))}
@@ -395,20 +406,24 @@ export function AssignationsPacksPanel() {
             {erreurStatut}
           </div>
         )}
+        {/* Q8 de D-481 : au téléphone, chaque ligne devient un bloc empilé
+            (patron de Patients, PRA-2a) ; les en-têtes de colonne y passent
+            en clés. Les rôles explicites gardent la sémantique du tableau
+            quand ses éléments passent en `block` ou `flex`. */}
         <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead className="bg-muted text-2xs uppercase tracking-[.07em] text-muted-foreground">
-              <tr>
-                <th className="px-4 py-2 text-left">Date</th>
-                <th className="px-4 py-2 text-left">Patient</th>
-                <th className="px-4 py-2 text-left">Questionnaire</th>
-                <th className="px-4 py-2 text-left">Statut</th>
-                <th className="px-4 py-2 text-left">Action</th>
+          <table role="table" className="block w-full text-sm md:table md:min-w-full">
+            <thead role="rowgroup" className="hidden bg-muted text-2xs uppercase tracking-[.07em] text-muted-foreground md:table-header-group">
+              <tr role="row">
+                <th role="columnheader" className="px-4 py-2 text-left">Date</th>
+                <th role="columnheader" className="px-4 py-2 text-left">Patient</th>
+                <th role="columnheader" className="px-4 py-2 text-left">Questionnaire</th>
+                <th role="columnheader" className="px-4 py-2 text-left">Statut</th>
+                <th role="columnheader" className="px-4 py-2 text-left">Action</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody role="rowgroup" className="block md:table-row-group">
               {filteredAssignations.length === 0 && (
-                <tr><td colSpan={5} className="px-4 py-4 text-center text-muted-foreground">
+                <tr role="row" className="block md:table-row"><td role="cell" colSpan={5} className="block px-4 py-4 text-center text-muted-foreground md:table-cell">
                   {/* Sous filtre, « Aucune assignation. » se lirait comme une
                       affirmation sur l'ensemble du dossier : on nomme le filtre. */}
                   {statutFilter ? `Aucune assignation « ${statutFilter} ».` : 'Aucune assignation.'}
@@ -433,15 +448,25 @@ export function AssignationsPacksPanel() {
                   a.statut !== 'Annulée' &&
                   estAnnulable({ statut: a.statut, statutReponses: a.statutReponses, aPassation: a.aPassation ?? false });
                 return (
-                <tr key={a.idAssignation} className="border-t border-border">
-                  <td className="px-4 py-2">{a.dateAssignation ? new Date(a.dateAssignation).toLocaleDateString('fr-FR') : '—'}</td>
-                  <td className="px-4 py-2">{a.emailPatient || a.idPatient || '—'}</td>
-                  <td className="px-4 py-2">{a.titre || a.idQuestionnaire || '—'}</td>
-                  <td className="px-4 py-2"><StatusBadge value={a.statut} /></td>
-                  <td className="px-4 py-2">
+                <tr key={a.idAssignation} role="row" className="flex flex-col gap-1 border-t border-border px-4 py-3 md:table-row md:p-0">
+                  <td role="cell" className="md:table-cell md:px-4 md:py-2">
+                    <span className={CLASSE_CLE}>Date</span>
+                    {a.dateAssignation ? new Date(a.dateAssignation).toLocaleDateString('fr-FR') : '—'}
+                  </td>
+                  <td role="cell" className="[overflow-wrap:anywhere] md:table-cell md:px-4 md:py-2">
+                    <span className={CLASSE_CLE}>Patient</span>
+                    {a.emailPatient || a.idPatient || '—'}
+                  </td>
+                  <td role="cell" className="md:table-cell md:px-4 md:py-2">
+                    <span className={CLASSE_CLE}>Questionnaire</span>
+                    {a.titre || a.idQuestionnaire || '—'}
+                  </td>
+                  <td role="cell" className="md:table-cell md:px-4 md:py-2"><StatusBadge value={a.statut} /></td>
+                  <td role="cell" className="md:table-cell md:px-4 md:py-2">
                     {annulable ? (
-                      <button
+                      <Button
                         type="button"
+                        variant="danger"
                         onClick={() => {
                           setErreurAnnulation(null);
                           setAnnulationCible({
@@ -454,12 +479,11 @@ export function AssignationsPacksPanel() {
                             nbJourneesAgenda: a.nbJourneesAgenda ?? null,
                           });
                         }}
-                        className="text-xs font-medium text-status-danger hover:underline"
                       >
                         Annuler
-                      </button>
+                      </Button>
                     ) : (
-                      <span className="text-xs text-muted-foreground">—</span>
+                      <span className="hidden text-xs text-muted-foreground md:inline">—</span>
                     )}
                   </td>
                 </tr>

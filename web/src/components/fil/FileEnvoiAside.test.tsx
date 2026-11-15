@@ -1,12 +1,19 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { FileEnvoiAside } from './FileEnvoiAside';
 
 // L'aside rend la file de la Bibliothèque visible ET validable depuis
-// l'accueil : le clic « Envoyer » EST la validation (D-030 inchangée). Elle
+// l'accueil : « Confirmer l'envoi », après « Envoyer », EST la validation
+// (D-030 inchangée ; confirmation de Q3, D-481 complément DOC-13). Elle
 // n'édite rien — la composition reste dans la Bibliothèque, liée en pied.
+
+/** « Envoyer (2) » puis « Confirmer l'envoi » : le seul chemin vers la route. */
+async function envoyerEtConfirmer() {
+  fireEvent.click(await screen.findByRole('button', { name: /envoyer \(2\)/i }));
+  fireEvent.click(screen.getByRole('button', { name: "Confirmer l'envoi" }));
+}
 
 afterEach(() => {
   cleanup();
@@ -87,7 +94,31 @@ describe('FileEnvoiAside', () => {
     expect(screen.queryByText(/la file est vide/i)).toBeNull();
   });
 
-  it('envoie le brouillon au clic, dit le compte et relit la file', async () => {
+  it('le clic « Envoyer » ouvre la confirmation (T-68) sans rien envoyer ; « Annuler » rend le geste', async () => {
+    const { appels } = stubFetch([{ payload: { brouillons: [BROUILLON_SOPHIE] } }]);
+
+    render(<FileEnvoiAside />);
+
+    fireEvent.click(await screen.findByRole('button', { name: /envoyer \(2\)/i }));
+
+    const confirmation = screen.getByRole('alertdialog', {
+      name: 'Envoyer 2 questionnaires à Sophie Nicola en un seul mail ?',
+    });
+    // Sous la question, les titres des éléments de la file.
+    expect(confirmation.textContent).toContain('Index de qualité du sommeil de Pittsburgh');
+    expect(confirmation.textContent).toContain('Instrument du cabinet');
+    expect(document.activeElement).toBe(confirmation);
+    expect(appels.filter(a => a.url.startsWith('/api/praticien/file-envoi/envoyer'))).toHaveLength(0);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Annuler' }));
+
+    const declencheur = screen.getByRole('button', { name: /envoyer \(2\)/i });
+    expect(document.activeElement).toBe(declencheur);
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+    expect(appels.filter(a => a.url.startsWith('/api/praticien/file-envoi/envoyer'))).toHaveLength(0);
+  });
+
+  it('envoie le brouillon à la confirmation, dit le compte et relit la file', async () => {
     const { appels } = stubFetch([
       { payload: { brouillons: [BROUILLON_SOPHIE] } },
       { payload: { brouillons: [] } },
@@ -95,7 +126,7 @@ describe('FileEnvoiAside', () => {
 
     render(<FileEnvoiAside />);
 
-    fireEvent.click(await screen.findByRole('button', { name: /envoyer \(2\)/i }));
+    await envoyerEtConfirmer();
 
     expect(
       await screen.findByText(/Sophie Nicola : 2 questionnaires envoyés — un seul mail\./),
@@ -117,11 +148,13 @@ describe('FileEnvoiAside', () => {
 
     render(<FileEnvoiAside />);
 
-    fireEvent.click(await screen.findByRole('button', { name: /envoyer \(2\)/i }));
+    await envoyerEtConfirmer();
 
     expect(await screen.findByText('Envoi impossible : Dossier clos.')).toBeTruthy();
-    // L'échec n'a pas consommé le brouillon : le geste reste possible.
-    expect(await screen.findByRole('button', { name: /envoyer \(2\)/i })).toBeTruthy();
+    // L'échec n'a pas consommé le brouillon : le geste reste possible, et le
+    // focus lui revient (constat PR-Agent sur #2139), pas à la page.
+    const declencheur = await screen.findByRole('button', { name: /envoyer \(2\)/i });
+    await waitFor(() => expect(document.activeElement).toBe(declencheur));
   });
 
   it('garde l’état connu quand la relecture après envoi échoue', async () => {
@@ -132,7 +165,7 @@ describe('FileEnvoiAside', () => {
 
     render(<FileEnvoiAside />);
 
-    fireEvent.click(await screen.findByRole('button', { name: /envoyer \(2\)/i }));
+    await envoyerEtConfirmer();
 
     await screen.findByText(/2 questionnaires envoyés/);
     // La relecture a échoué : on ne fabrique ni une file vide ni une panne —

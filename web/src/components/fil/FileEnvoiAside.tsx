@@ -8,13 +8,14 @@ import type {
 } from '@/app/api/praticien/file-envoi/route';
 import type { EnvoyerFileResponse } from '@/app/api/praticien/file-envoi/envoyer/route';
 import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
+import { EnvoiConfirme } from '@/components/bibliotheque/EnvoiConfirme';
 import { PanneauRail } from '@/components/fil/PanneauRail';
 
 /** Panneau « File d'envoi » de l'aside (demande propriétaire 2026-08-09) :
  * la file de la Bibliothèque devient visible ET validable depuis l'accueil —
- * le clic « Envoyer » EST la validation (doctrine D-030 inchangée : rien ne
- * part sans elle, elle change seulement d'écran). La composition de la file
+ * « Confirmer l'envoi », après « Envoyer », EST la validation (doctrine D-030
+ * inchangée : rien ne part sans elle, elle change seulement d'écran ;
+ * confirmation de Q3, D-481 complément DOC-13). La composition de la file
  * (retrait d'un item, date limite, notes) reste dans la Bibliothèque, liée en
  * pied de panneau — l'aside envoie, elle n'édite pas. */
 export function FileEnvoiAside() {
@@ -76,8 +77,11 @@ export function FileEnvoiAside() {
       } catch {
         setIssue({ succes: false, message: `Envoi impossible pour ${patient}.` });
       } finally {
-        setEnvoiEnCours(null);
+        // Relire AVANT de réactiver le déclencheur (P3 de wn-reviewer sur
+        // #2139) : sinon la confirmation lui rend le focus sur une ligne qui
+        // vient de partir, pendant la relecture.
         await chargerFile();
+        setEnvoiEnCours(null);
       }
     },
     [chargerFile],
@@ -136,17 +140,21 @@ export function FileEnvoiAside() {
                   </li>
                 ))}
               </ul>
-              <Button
-                type="button"
-                variant="outline"
-                className="mt-2 w-full"
-                disabled={envoiEnCours !== null}
-                onClick={() => envoyer(b)}
-              >
-                {envoiEnCours === b.idBrouillon
-                  ? 'Envoi...'
-                  : `Envoyer (${b.items.length}) — un seul mail`}
-              </Button>
+              {/* Q3 de D-481 : le clic ouvre la confirmation (T-68, T-69) ;
+                  seule « Confirmer l'envoi » appelle la route. */}
+              <div className="mt-2">
+                <EnvoiConfirme
+                  brouillon={b}
+                  classeDeclencheur="w-full"
+                  desactive={envoiEnCours !== null}
+                  libelle={
+                    envoiEnCours === b.idBrouillon
+                      ? 'Envoi...'
+                      : `Envoyer (${b.items.length}) — un seul mail`
+                  }
+                  onEnvoyer={() => void envoyer(b)}
+                />
+              </div>
             </li>
           ))}
         </ul>

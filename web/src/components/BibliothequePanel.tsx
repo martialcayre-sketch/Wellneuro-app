@@ -1,9 +1,14 @@
 'use client';
 
-import { useCallback, useEffect, useId, useMemo, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { RefreshCw, X } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { GesteConfirme } from '@/components/ui/GesteConfirme';
+import { TRAIT_ICONE } from '@/components/ui/icone';
+import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { EnvoiConfirme } from '@/components/bibliotheque/EnvoiConfirme';
 import { MOTIF_DECLARATION_REQUISE, questionsDesignables } from '@/lib/securite/declarationSuicideCabinet';
 import { PanneauSuperpose } from '@/components/ui/PanneauSuperpose';
 import { QuestionField } from '@/components/patient/QuestionField';
@@ -48,6 +53,10 @@ export function BibliothequePanel({ entrees }: { entrees: BibliothequeEntree[] }
   const [patients, setPatients] = useState<PatientOption[]>([]);
   const [picks, setPicks] = useState<Set<string>>(new Set());
   const [brouillons, setBrouillons] = useState<FileEnvoiBrouillon[]>([]);
+  // Q2 de D-481 : une file illisible n'est pas une file vide. Le message de
+  // file vide n'apparaît que sur une réponse saine (`chargee`).
+  const [etatFile, setEtatFile] = useState<'chargement' | 'chargee' | 'echec'>('chargement');
+  const titreFileRef = useRef<HTMLHeadingElement>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
   // Refus de « publier » ou de « Déclarer », affiché DANS le tiroir ouvert :
@@ -93,15 +102,34 @@ export function BibliothequePanel({ entrees }: { entrees: BibliothequeEntree[] }
     });
   }, [entreesCourantes, recherche, categorie]);
 
-  const chargerFile = useCallback(async () => {
+  // Rend `true` sur une lecture saine. Sur 401 comme sur 500, la route rend
+  // `{brouillons: [], unavailable: true}` : l'afficher vide ferait croire
+  // qu'il n'y a rien à valider (T-67 de D-488, amendement DOC-13).
+  const chargerFile = useCallback(async (): Promise<boolean> => {
     try {
       const res = await fetch('/api/praticien/file-envoi');
       const json = (await res.json()) as FileEnvoiApiResponse;
-      setBrouillons(json.brouillons ?? []);
+      if (!res.ok || json?.unavailable) {
+        setBrouillons([]);
+        setEtatFile('echec');
+        return false;
+      }
+      setBrouillons(Array.isArray(json?.brouillons) ? json.brouillons : []);
+      setEtatFile('chargee');
+      return true;
     } catch {
       setBrouillons([]);
+      setEtatFile('echec');
+      return false;
     }
   }, []);
+
+  // T-17 sous T-67 : relit la seule file. Sur un nouvel échec, « Réessayer »
+  // reste monté et garde le focus ; sur une lecture saine il disparaît, et le
+  // focus vient au titre de la zone plutôt que de retomber sur la page.
+  async function relireFile() {
+    if (await chargerFile()) titreFileRef.current?.focus();
+  }
 
   const chargerBibliotheque = useCallback(async () => {
     try {
@@ -470,22 +498,22 @@ export function BibliothequePanel({ entrees }: { entrees: BibliothequeEntree[] }
             {/* Catalogue */}
             <section className="rounded-xl border border-border bg-surface shadow-card">
               <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
-                <h3 className="font-display text-lg font-semibold text-foreground">Catalogue</h3>
+                <h2 className="font-display text-lg font-semibold text-foreground">Catalogue</h2>
                 <span className="font-mono text-2xs text-muted-foreground">
                   {filtres.length}/{entrees.length} instruments
                 </span>
               </div>
               <div className="border-b border-border px-5 py-3">
-                <input
+                <Input
                   type="search"
                   value={recherche}
                   onChange={e => setRecherche(e.target.value)}
                   placeholder="Rechercher un titre, un code, un domaine…"
                   aria-label="Rechercher dans le catalogue"
-                  className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full placeholder:text-muted-foreground"
                 />
               </div>
-              <div className="flex gap-1.5 overflow-x-auto border-b border-border px-5 py-2.5">
+              <div className="flex gap-2 overflow-x-auto border-b border-border px-5 py-2.5">
                 <ChipFiltre actif={categorie === null} onClick={() => setCategorie(null)}>
                   Tous
                 </ChipFiltre>
@@ -505,9 +533,9 @@ export function BibliothequePanel({ entrees }: { entrees: BibliothequeEntree[] }
                         type="button"
                         onClick={() => setSelectionId(e.id)}
                         aria-pressed={selectionId === e.id}
-                        className={`w-full rounded-lg px-3 py-2.5 text-left transition-colors ${
+                        className={`min-h-11 w-full rounded-lg px-3 py-2.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring ${
                           selectionId === e.id
-                            ? 'bg-indigo-600/10 ring-1 ring-inset ring-indigo-600/40'
+                            ? 'bg-primary/10 ring-1 ring-inset ring-primary/40'
                             : 'hover:bg-muted'
                         }`}
                       >
@@ -541,9 +569,9 @@ export function BibliothequePanel({ entrees }: { entrees: BibliothequeEntree[] }
               </ul>
               <div data-testid="instruments-cabinet" className="border-t border-border px-5 py-4">
                 <div className="flex items-center justify-between gap-2">
-                  <h4 className="font-display text-sm font-semibold text-foreground">
+                  <h3 className="font-display text-sm font-semibold text-foreground">
                     Instruments du cabinet
-                  </h4>
+                  </h3>
                   <span className="font-mono text-2xs text-muted-foreground">
                     {instrumentsCabinet.length}
                   </span>
@@ -577,43 +605,46 @@ export function BibliothequePanel({ entrees }: { entrees: BibliothequeEntree[] }
                         {i.declarationRequise && (
                           <p className="mt-1 text-xs text-status-danger">{MOTIF_DECLARATION_REQUISE}.</p>
                         )}
-                        <div className="mt-2 flex flex-wrap gap-1.5">
+                        {/* Q5 et Q6 de D-481 : gestes à 44 px par `ui/Button`,
+                            aucun plein dans la zone ; « Désactiver » confirmé
+                            (Q4, T-70 de D-488). */}
+                        <div className="mt-2 flex flex-wrap gap-2">
                           {i.declarationRequise && (
-                            <button
+                            <Button
                               type="button"
+                              variant="outline"
                               disabled={occupe}
                               onClick={() => void ouvrirDeclaration(i.idInstrument)}
-                              className="rounded-lg border border-indigo-600 bg-indigo-600/10 px-2.5 py-1 text-xs font-medium text-primary transition-colors hover:bg-indigo-600/20 disabled:opacity-60"
                             >
                               Déclarer
-                            </button>
+                            </Button>
                           )}
                           {i.statutRelecture === 'grille_a_relire' && (
-                            <button
+                            <Button
                               type="button"
+                              variant="outline"
                               disabled={occupe}
                               onClick={() => void ouvrirRelecture(i.idInstrument)}
-                              className="rounded-lg border border-indigo-600 bg-indigo-600/10 px-2.5 py-1 text-xs font-medium text-primary transition-colors hover:bg-indigo-600/20 disabled:opacity-60"
                             >
                               Relire la grille
-                            </button>
+                            </Button>
                           )}
-                          <button
+                          <Button
                             type="button"
+                            variant="outline"
                             disabled={occupe}
                             onClick={() => void ouvrirEdition(i.idInstrument)}
-                            className="rounded-lg border border-border px-2.5 py-1 text-xs font-medium text-foreground transition-colors hover:bg-muted disabled:opacity-60"
                           >
                             Modifier
-                          </button>
-                          <button
-                            type="button"
-                            disabled={occupe}
-                            onClick={() => void desactiverInstrument(i.idInstrument)}
-                            className="rounded-lg border border-border px-2.5 py-1 text-xs font-medium text-status-danger transition-colors hover:bg-status-danger/10 disabled:opacity-60"
-                          >
-                            Désactiver
-                          </button>
+                          </Button>
+                          <GesteConfirme
+                            libelle="Désactiver"
+                            variante="danger"
+                            question={`Désactiver « ${i.titre} » ? Il sera retiré du catalogue du cabinet.`}
+                            libelleConfirmer="Confirmer la désactivation"
+                            desactive={occupe}
+                            onConfirmer={() => void desactiverInstrument(i.idInstrument)}
+                          />
                         </div>
                       </li>
                     ))}
@@ -625,7 +656,7 @@ export function BibliothequePanel({ entrees }: { entrees: BibliothequeEntree[] }
             {/* Aperçu vierge */}
             <section className="rounded-xl border border-border bg-surface shadow-card">
               <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
-                <h3 className="font-display text-lg font-semibold text-foreground">Aperçu vierge</h3>
+                <h2 className="font-display text-lg font-semibold text-foreground">Aperçu vierge</h2>
                 <span className="text-2xs text-muted-foreground">Tel que le patient le verra</span>
               </div>
               <div className="max-h-[430px] overflow-y-auto px-5 py-4">
@@ -690,11 +721,11 @@ export function BibliothequePanel({ entrees }: { entrees: BibliothequeEntree[] }
                 <p className="text-2xs font-semibold uppercase tracking-[.08em] text-muted-foreground">
                   Ajouter pour
                 </p>
-                <div className="flex flex-wrap gap-1.5">
+                <div className="flex flex-wrap gap-2">
                   {patients.map(p => (
                     <label
                       key={p.email}
-                      className={`inline-flex cursor-pointer items-center rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+                      className={`inline-flex min-h-11 cursor-pointer items-center rounded-full border px-3 py-1.5 text-xs font-medium transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-focus-ring ${
                         picks.has(p.email)
                           ? 'border-mint-600 bg-mint-600/10 text-mint-ink'
                           : 'border-border bg-surface text-muted-foreground hover:border-primary/40'
@@ -741,11 +772,37 @@ export function BibliothequePanel({ entrees }: { entrees: BibliothequeEntree[] }
             {/* File d'envoi */}
             <section className="rounded-xl border border-border bg-surface shadow-card">
               <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
-                <h3 className="font-display text-lg font-semibold text-foreground">File d&apos;envoi</h3>
+                {/* `tabIndex={-1}` : « Réessayer » disparaît après une
+                    relecture saine ; le focus vient ici. */}
+                <h2
+                  ref={titreFileRef}
+                  tabIndex={-1}
+                  className="font-display text-lg font-semibold text-foreground focus:outline-none"
+                >
+                  File d&apos;envoi
+                </h2>
                 <Badge variant="info">1 mail par patient</Badge>
               </div>
               <div className="max-h-[430px] overflow-y-auto px-5 py-4">
-                {brouillons.length === 0 && (
+                {/* Q2 de D-481 : T-67 et T-17 sur un échec de lecture ; le
+                    message de file vide sur une réponse saine seulement. */}
+                {etatFile === 'echec' && (
+                  <div className="flex flex-col items-start gap-3">
+                    <p role="alert" className="text-sm text-foreground">
+                      La file d&apos;envoi n&apos;a pas pu être lue.
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => void relireFile()}
+                      className="inline-flex items-center gap-2"
+                    >
+                      <RefreshCw aria-hidden="true" size={18} strokeWidth={TRAIT_ICONE} />
+                      Réessayer
+                    </Button>
+                  </div>
+                )}
+                {etatFile === 'chargee' && brouillons.length === 0 && (
                   <p className="text-sm text-muted-foreground">
                     La file est vide — ajoutez des questionnaires depuis l&apos;aperçu.
                   </p>
@@ -783,36 +840,43 @@ export function BibliothequePanel({ entrees }: { entrees: BibliothequeEntree[] }
                                 </span>
                               )}
                             </span>
+                            {/* Q5 de D-481 : l'icône `x` nommée, à 44 px. */}
                             <button
                               type="button"
                               onClick={() => retirer(b.idBrouillon, item.id)}
                               aria-label={`Retirer ${item.titre} de la file`}
-                              className="rounded p-1 text-muted-foreground hover:bg-status-danger/10 hover:text-status-danger"
+                              className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-status-danger/10 hover:text-status-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                             >
-                              ✕
+                              <X aria-hidden="true" size={14} strokeWidth={TRAIT_ICONE} />
                             </button>
                           </li>
                         ))}
                       </ul>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="mt-3 w-full"
-                        disabled={occupe}
-                        onClick={() => envoyer(b)}
-                      >
-                        Envoyer ({b.items.length}) — un seul mail
-                      </Button>
+                      {/* Q3 de D-481 : le clic ouvre la confirmation (T-68,
+                          T-69) ; seule « Confirmer l'envoi » appelle la route. */}
+                      <div className="mt-3">
+                        <EnvoiConfirme
+                          brouillon={b}
+                          classeDeclencheur="w-full"
+                          desactive={occupe}
+                          libelle={`Envoyer (${b.items.length}) — un seul mail`}
+                          onEnvoyer={() => void envoyer(b)}
+                        />
+                      </div>
                     </li>
                   ))}
                 </ul>
               </div>
               <div className="border-t border-border px-5 py-3">
-                <p className="font-mono text-2xs text-muted-foreground">
-                  {brouillons.length} patient{brouillons.length > 1 ? 's' : ''} · {totalFile}{' '}
-                  élément{totalFile > 1 ? 's' : ''}
-                </p>
-                <p className="mt-1 text-2xs text-muted-foreground">
+                {/* Le compte ne se dit que sur une lecture saine : « 0 patient »
+                    sous T-67 serait le même mensonge que la file vide. */}
+                {etatFile === 'chargee' && (
+                  <p className="mb-1 font-mono text-2xs text-muted-foreground">
+                    {brouillons.length} patient{brouillons.length > 1 ? 's' : ''} · {totalFile}{' '}
+                    élément{totalFile > 1 ? 's' : ''}
+                  </p>
+                )}
+                <p className="text-2xs text-muted-foreground">
                   Un seul lien portail par patient. Rien ne part sans votre validation.
                 </p>
               </div>
@@ -837,9 +901,9 @@ function ChipFiltre({
       type="button"
       onClick={onClick}
       aria-pressed={actif}
-      className={`inline-flex flex-none items-center rounded-full border px-3 py-1 text-2xs font-semibold transition-colors ${
+      className={`inline-flex min-h-11 flex-none items-center rounded-full border px-3 py-1 text-2xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring ${
         actif
-          ? 'border-indigo-600 bg-indigo-600/10 text-primary'
+          ? 'border-primary bg-primary/10 text-primary'
           : 'border-border bg-surface text-muted-foreground hover:border-primary/40'
       }`}
     >

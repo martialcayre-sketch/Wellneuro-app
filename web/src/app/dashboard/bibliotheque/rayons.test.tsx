@@ -52,7 +52,7 @@ describe('Rayon Questionnaires — catalogue, puis assignations et packs (D-324 
   it('monte le catalogue et les assignations, sans condition de drapeau', () => {
     render(<QuestionnairesPage />);
 
-    expect(screen.getByRole('heading', { level: 2, name: 'Questionnaires' })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 1, name: 'Questionnaires' })).toBeTruthy();
     expect(screen.getByTestId('biblio-panel')).toBeTruthy();
     expect(screen.getByTestId('assignations-packs-panel')).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Assignations et packs' })).toBeTruthy();
@@ -134,7 +134,7 @@ describe('Connaissances — lecture du corpus (D-310 §2), garde-fou du drapeau'
   it('drapeau éteint : rien n’est monté, une bannière d’indisponibilité dédiée', () => {
     render(<ConnaissancesPage />);
 
-    expect(screen.getByRole('heading', { level: 2, name: 'Connaissances' })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 1, name: 'Connaissances' })).toBeTruthy();
     expect(screen.queryByTestId('recherche-corpus-panel')).toBeNull();
     expect(screen.getByText(/recherche corpus clinique n['’]est pas encore ouverte/i)).toBeTruthy();
   });
