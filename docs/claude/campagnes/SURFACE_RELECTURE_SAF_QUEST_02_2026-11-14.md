@@ -1,20 +1,29 @@
-# Surface de relecture — `SAF-QUEST-02` (D-515, D-522, H59)
+# Surface de relecture — `SAF-QUEST-02` (D-515, D-522, D-524, H59)
 
 Cette surface est produite le 2026-11-14, **avant** la demande de signature
 ([[D-195]] §2). Elle sert à la PR 4 du lot de code de [[D-515]] §6.2.
 
+> **Amendée le 2026-11-14 par [[D-524]]** (réponses B du responsable aux
+> questions `20261114-2145-a` et `20261114-2146-a`). Le texte « hors
+> options » du cabinet est neuf (sections 3.1 et 4), et le SHA est passé de
+> `6c0d224f…` à `67b9ef54…`. Les points 5.4 et 5.5 sont tranchés. **C'est ce
+> SHA neuf que la signature couvre.**
+
 - **Table** : `web/src/lib/clinical/safetyQuestionnaireCabinetV1.ts`, version
   `safety-questionnaire-cabinet-nnpp2-v1`, livrée **non signée** par #2112.
 - **Textes** : `web/src/lib/clinical/safetyQuestionnaireCabinetTextes.ts`, plus
-  trois textes importés de `SAF-QUEST-01`, déjà signés.
-- **SHA du périmètre** à la production de cette surface, calculé sur
-  `main` @`eb454046` :
-  `6c0d224fcc47dc115ecb2097ffbbd6a0956ff2f3491337ac5895b9b4c0b4a604`.
+  deux textes importés de `SAF-QUEST-01`, déjà signés.
+- **SHA du périmètre**, calculé sur la branche de [[D-524]] :
+  `67b9ef5436a97018c8db41f45c269b32db278e86db7cf45808f180cc30e88f1f`.
+  À la première production de cette surface, sur `main` @`eb454046`, il
+  valait `6c0d224fcc47dc115ecb2097ffbbd6a0956ff2f3491337ac5895b9b4c0b4a604`.
   Il couvre les sections 1 à 3. La signature porte sur ce SHA : retoucher un
   seul des textes ci-dessous en change la valeur, et la déclaration serait à
   redonner.
 - **Ce qui ne bouge pas** : la table `SAF-QUEST-01` reste identique à
   l'octet, avec son SHA `eb350485…` et sa signature du 2026-10-10.
+- **Citations** : les textes sont cités ici avec l'apostrophe droite. Le code,
+  que le SHA couvre, porte l'apostrophe typographique (’).
 
 ## 1. Le mécanisme — ce que la signature active
 
@@ -101,6 +110,14 @@ se cite par l'identifiant de la question.
 `{n}` et `{instrument}` sont les seules substitutions. Le nom de l'instrument
 s'y écrit entre guillemets « ».
 
+- **Valeur hors des options copiées ([[D-524]] §1)**. Elle s'ajoute au
+  constat :
+
+  > La valeur enregistrée ne correspond à aucune option de la question telle
+  > qu'elle a été copiée à l'envoi : faute de pouvoir la relire dans cette
+  > copie, elle est traitée comme une réponse autre que « non » plutôt
+  > qu'ignorée.
+
 ### 3.2 Textes repris de `SAF-QUEST-01`, déjà signés, inchangés
 
 Ils entrent dans ce SHA pour que leur retouche referme aussi ce verrou :
@@ -109,11 +126,11 @@ Ils entrent dans ce SHA pour que leur retouche referme aussi ce verrou :
 - **provenance**, sur chaque constat : « Ce constat provient d'une réponse de
   questionnaire. Toute passation non invalidée compte, même hors de l'épisode
   confirmé : une réponse « non » ultérieure ne le lève pas, seule une lettre
-  d'adressage qui le couvre, ou l'invalidation de la passation, le fait. » ;
-- **hors options**, ajouté au constat : « La valeur enregistrée ne correspond à
-  aucune option de la question : faute de savoir ce qu'elle dit, elle est
-  traitée comme une réponse autre que « non » plutôt qu'ignorée. » Voir le
-  point 5.4 pour une option écartée hors int4.
+  d'adressage qui le couvre, ou l'invalidation de la passation, le fait. »
+
+Le texte « hors options » de `SAF-QUEST-01` n'est plus repris : il est
+remplacé par celui de la section 3.1 ([[D-524]] §1, point 5.4). Il reste
+servi, inchangé, aux réponses du catalogue.
 
 ## 4. La lettre d'adressage (textes hors SHA, comme pour `SAF-QUEST-01`)
 
@@ -136,19 +153,22 @@ Ce qui change dans le texte :
 
 - **le pied** : « (§) » suivi de la mention de la section 3.1.
 
-Une valeur hors options s'écrit, sur la même ligne, « … question « … » :
-valeur hors des options de la question (‡) ». Le paragraphe que signale le
-signe (‡) est celui de la lettre de `SAF-QUEST-01`, repris sans changement et
-sans variante pour les `CAB_` :
+Une valeur hors options d'un `CAB_` s'écrit, sur la même ligne, « … question
+« … » : valeur hors des options de la question (¶) ». Le signe (¶) signale ce
+paragraphe, **neuf** ([[D-524]] §1) :
 
-> Pour une ou plusieurs des réponses ci-dessus (‡), la valeur enregistrée ne
-> correspond à aucune option de la question : faute de savoir ce qu'elle dit,
-> elle est traitée comme un adressage plutôt qu'ignorée.
+> Pour une ou plusieurs des réponses ci-dessus (¶), la valeur enregistrée ne
+> correspond à aucune option de la question telle qu'elle a été copiée à
+> l'envoi : faute de pouvoir la relire dans cette copie, elle est traitée
+> comme un adressage plutôt qu'ignorée.
+
+Une réponse du catalogue hors options garde le signe (‡) et son paragraphe de
+`SAF-QUEST-01`, inchangé. Une lettre qui cite les deux porte les deux
+paragraphes, chacun sous son signe (banc).
 
 Les autres paragraphes sont ceux de la lettre de `SAF-QUEST-01`, déjà relus le
 2026-10-10 : ouverture, conduite, provenance, abstention, information et
-signature. Si la question `20261114-2146-a` reçoit la réponse B, une variante
-de ce paragraphe propre aux `CAB_` le remplace pour leurs seules réponses.
+signature.
 
 La garde non prescriptive de la lettre (`terme_prescriptif`) **reste active**.
 Depuis #2130 (réponse `20261114-1217-a`), le même jugement s'applique en amont :
@@ -217,10 +237,15 @@ correspond à aucune option de la question ». **C'est inexact dans ce
 cas** : le patient a vu cette option, puisque la définition servie est celle
 de l'instrument (point 5.5). Le constat est juste, seule l'explication est
 fausse. Le même écart se produit dans le résidu du point 5.5, quand une
-option ajoutée après l'envoi est choisie. Le paragraphe (‡) de la lettre
-(section 4), hors SHA, dit la même chose. Retoucher ce texte changerait aussi le SHA de `SAF-QUEST-01`, ce qui
+option ajoutée après l'envoi est choisie. Le paragraphe (‡) de la lettre, hors SHA,
+disait la même chose pour les `CAB_` avant [[D-524]]. Retoucher ce texte changerait aussi le SHA de `SAF-QUEST-01`, ce qui
 est interdit. Le cas n'existe pas en production : 0 instrument du cabinet
-actif (point 6). La question est posée au responsable (section 7).
+actif (point 6).
+
+**Tranché** ([[D-524]] §1, réponse B à `20261114-2146-a`). `SAF-QUEST-02` porte
+son propre texte, qui nomme la copie (section 3.1). Dans la lettre, la
+réponse d'un `CAB_` reçoit le signe (¶) et son paragraphe (section 4).
+`SAF-QUEST-01` et la lettre sans `CAB_` restent identiques à l'octet.
 
 ### 5.5 La définition servie est vivante, la copie est figée
 
@@ -256,7 +281,14 @@ Selon la modification, l'écart va dans les deux sens :
 
 Le message et le courriel restent d'accord entre eux, puisqu'ils lisent la
 même copie. L'encart permanent reste affiché. Le cas n'existe pas en
-production (point 6). La question est posée au responsable (section 7).
+production (point 6).
+
+**Tranché** ([[D-524]] §2 et §3, réponse B à `20261114-2145-a`). Un lot sans
+migration (`h59-d515-deverrouillage`) refusera ce déverrouillage quand la
+copie ne concorde plus avec la désignation de l'instrument courant, ou quand
+celle-ci est absente. Ce lot est un **prérequis écrit de l'allumage**. La
+signature ne l'attend pas : signée, la table ne produit rien tant que le
+drapeau est éteint.
 
 ### 5.6 Le résidu de bascule du drapeau (`wn-reviewer` de #2130, P3-4)
 
@@ -299,7 +331,7 @@ la table n'est pas signée, aucun constat n'est produit, et la revue dit
 réponse ou une limitation concerne. Signer **active** l'inhibition. Le drapeau
 `WN_ENABLE_DECLARATION_SUICIDE_CAB` reste éteint après la signature :
 l'allumage est un geste distinct du responsable, après le recomptage de
-[[D-515]] §6, étape 3.
+[[D-515]] §6, étape 3, et après le lot du déverrouillage ([[D-524]] §3).
 
 ### 5.9 Effet sur les cartes déjà diffusées
 
@@ -325,8 +357,9 @@ NULL ([[D-515]] §6, étape 3) se refait juste avant l'allumage.
 
 ## 7. Questions au responsable, avant la signature
 
-Elles sont posées dans la liste commune (`docs/ROLES_MACHINES.md`), avec leurs
-faits, leurs options et l'avis de Codex joint ([[D-505]]) :
+Elles ont été posées dans la liste commune (`docs/ROLES_MACHINES.md`), avec
+leurs faits, leurs options et l'avis de Codex joint ([[D-505]]). Le
+responsable a répondu **B aux deux**, le 2026-11-14 ([[D-524]]) :
 
 - **`20261114-2145-a`**, le résidu du déverrouillage (point 5.5). Options :
   - A, l'accepter sans lot ;
@@ -343,9 +376,8 @@ faits, leurs options et l'avis de Codex joint ([[D-505]]) :
   L'assistant recommande B. Codex retient B, avec une confiance forte. Sous
   B, le SHA change avant la signature, et cette surface est amendée.
 
-La signature attend leurs réponses, puis la **déclaration écrite du
-responsable** sur le SHA de la page de tête, ou sur le SHA neuf si une réponse
-change un texte. Après elle, la PR de signature :
+La signature n'attend plus que la **déclaration écrite du responsable**, sur
+le SHA de la page de tête (`67b9ef54…`). Après elle, la PR de signature :
 
 - pose `validationExterne`, `dateValidation`, `sourceReference` et le SHA en
   littéral ;

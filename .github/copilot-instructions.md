@@ -10,7 +10,7 @@ Lire `AGENTS.md`, `CLAUDE.md` et `docs/claude/PROJET_CONTEXTE.md` avant une tâc
 - Ne jamais lire, afficher ou modifier un fichier `.env*`.
 - Tous les textes d’interface sont en français.
 - Changement minimal : aucun refactor, renommage ou réorganisation hors demande.
-- Aucune migration Prisma/SQL, modification de `schema.prisma` ou écriture en base de production sans demande explicite et confirmation distincte.
+- Aucune migration destructive (DROP, TRUNCATE, DELETE/UPDATE sans WHERE, renommage, changement de type, SQL dynamique, garde désarmée), migration écrite par un shell ou écriture en base de production hors `release-db` sans demande explicite et confirmation distincte. `schema.prisma` et les migrations non destructives s'écrivent sans approbation (`D-523`, 2026-11-14).
 - Aucune modification de scoring, seuil ou logique clinique sans demande explicite.
 - Tout changement se trace par un fragment `changelog.d/AAAA-MM-JJ-slug.md`, jamais en éditant le haut de `CHANGELOG.md` : c’est ce qui a fait échouer cinq merges le 2026-07-21 (replié par `scripts/changelog-collate.mjs` — voir `changelog.d/README.md`).
 - Seuls les patients fictifs Sophie Nicola, Jennifer Martin et Michel Dogné peuvent apparaître dans les exemples, tests ou données de démo.

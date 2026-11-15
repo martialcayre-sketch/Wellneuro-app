@@ -1,0 +1,9 @@
+- **Mise à jour (2026-11-14, lot D-277, `D-524`)** : le responsable a répondu B aux deux questions de la surface (`20261114-2145-a`, `20261114-2146-a`).
+  - `SAF-QUEST-02` a désormais son propre texte « hors options », qui nomme la copie prise à l'envoi. Dans la lettre, une réponse d'un `CAB_` porte la marque (¶) et son paragraphe.
+  - Le SHA passe à `67b9ef54…`, et la surface est amendée. `SAF-QUEST-01` et la lettre sans `CAB_` restent identiques à l'octet.
+  - Le lot du déverrouillage (`h59-d515-deverrouillage`) devient un prérequis écrit de l'allumage.
+  - **Reste** :
+    - la déclaration écrite du responsable sur `67b9ef54…`, puis la PR de signature ;
+    - le lot du déverrouillage ;
+    - le recomptage des `CAB_` à copie NULL ;
+    - l'allumage par le responsable.

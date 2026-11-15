@@ -10,6 +10,7 @@ import {
 } from '@/lib/clinical/safetyQuestionnaireTextes';
 import {
   LIMITATION_QUESTIONNAIRE_CABINET_DESIGNATION_INCONNUE,
+  LIMITATION_QUESTIONNAIRE_CABINET_HORS_OPTIONS,
   LIMITATION_QUESTIONNAIRE_CABINET_ILLISIBLE,
   MENTION_QUESTIONNAIRE_CABINET,
   REGLE_SECURITE_QUESTIONNAIRE_CABINET,
@@ -233,10 +234,20 @@ describe('§2 — la valeur « non » copiée commande la production', () => {
       const sortie = construireSafetyFindings([], reponsesSecuriteDeclarees([passationCab('REP-H', { Q2: valeur })]));
       expect(sortie.findings).toHaveLength(1);
       expect(sortie.findings[0].rationale).toContain('valeur hors des options de la question');
+      // [[D-524]] : le texte propre aux copies, jamais celui de `SAF-QUEST-01`.
       expect(sortie.findings[0].limitations).toEqual([
-        LIMITATION_QUESTIONNAIRE_PROVENANCE, MENTION_QUESTIONNAIRE_CABINET, LIMITATION_QUESTIONNAIRE_HORS_OPTIONS,
+        LIMITATION_QUESTIONNAIRE_PROVENANCE, MENTION_QUESTIONNAIRE_CABINET, LIMITATION_QUESTIONNAIRE_CABINET_HORS_OPTIONS,
       ]);
+      expect(sortie.findings[0].limitations).not.toContain(LIMITATION_QUESTIONNAIRE_HORS_OPTIONS);
     }
+  });
+
+  it('D-524 : le texte « hors options » du cabinet nomme la copie, et celui du catalogue reste servi au catalogue', () => {
+    expect(LIMITATION_QUESTIONNAIRE_CABINET_HORS_OPTIONS).toContain('telle qu’elle a été copiée à l’envoi');
+    expect(LIMITATION_QUESTIONNAIRE_CABINET_HORS_OPTIONS).not.toBe(LIMITATION_QUESTIONNAIRE_HORS_OPTIONS);
+    const bdiHors: PassationSecuriteRow = { ...BDI_PLANS, idReponse: 'REP-BDI-H', scoresJson: { total: 3, rawAnswers: { B7: 9 } } };
+    const sortie = construireSafetyFindings([], reponsesSecuriteDeclarees([bdiHors]));
+    expect(sortie.findings.flatMap(finding => finding.limitations)).not.toContain(LIMITATION_QUESTIONNAIRE_CABINET_HORS_OPTIONS);
   });
 
   it('illisible : aucun constat, une limitation par instrument (A2), la règle jointe', () => {
@@ -379,6 +390,11 @@ const EMPREINTES_LETTRES_AVANT = {
   anamnese: '9acfd05494ce13e1dda7bc058bd151b6c872295a575e1fa5be3615f319b2a9c7',
   questionnaire: '3aa1d86d8c871dc9f7aa6c048a71a1820e2a1b16a9fe695990600a61c75853ef',
   mixte: 'f83723d425ca6a0533f8cf32079ec54271f229f114498656c4b895779bd3be26',
+  // [[D-524]] scinde la marque hors options (‡ catalogue, ¶ cabinet) : deux
+  // lettres du CATALOGUE hors options, figées sur `origin/main` à 304e5709,
+  // avant ce lot (revue `wn-reviewer` P0, P3-1).
+  questionnaireHorsOptions: '15e30fdfa1ecd7dbcd97f98a98f450322a63b505a4c29eee69f2d798fd1fe2bb',
+  mixteHorsOptions: 'e2fd8e16abde6728850c477b08de2188feacfe729e95f777de7b74bc0e2d2be6',
 };
 
 function lettre(signaux: string[], rows: PassationSecuriteRow[]) {
@@ -400,6 +416,9 @@ describe('lettre — sans réponse du cabinet, au caractère près ; avec, sa pr
     expect(sha256(lettre([SIGNAL], []).texte)).toBe(EMPREINTES_LETTRES_AVANT.anamnese);
     expect(sha256(lettre([], [BDI_PLANS]).texte)).toBe(EMPREINTES_LETTRES_AVANT.questionnaire);
     expect(sha256(lettre([SIGNAL], [BDI_PLANS]).texte)).toBe(EMPREINTES_LETTRES_AVANT.mixte);
+    const bdiHors: PassationSecuriteRow = { ...BDI_PLANS, idReponse: 'REP-BDI-H', scoresJson: { total: 3, rawAnswers: { B7: 9 } } };
+    expect(sha256(lettre([], [bdiHors]).texte)).toBe(EMPREINTES_LETTRES_AVANT.questionnaireHorsOptions);
+    expect(sha256(lettre([SIGNAL], [bdiHors]).texte)).toBe(EMPREINTES_LETTRES_AVANT.mixteHorsOptions);
   });
 
   it('une réponse du cabinet : citée depuis la copie, marquée (§), sous la mention ; ancre propre et à jour', () => {
@@ -414,6 +433,30 @@ describe('lettre — sans réponse du cabinet, au caractère près ; avec, sa pr
     expect(verdictAncrage(provenance.ancrageHash, provenance.version)).toBe('concordante');
     expect(provenance.version.startsWith('safety-signals-')).toBe(true);
     expect(provenance.version).not.toBe(VERSION_ANCRAGE_ADRESSAGE_QUESTIONNAIRE);
+  });
+
+  it('D-524 : une réponse du cabinet hors options porte sa marque (¶) et son paragraphe, jamais celui du catalogue', () => {
+    const courrier = lettre([], [passationCab('REP-H', { Q2: 2 })]);
+    expect(courrier.texte).toContain('question « Avez-vous eu des idées de mort ? » : valeur hors des options de la question (¶)');
+    expect(courrier.texte).toContain(
+      'Pour une ou plusieurs des réponses ci-dessus (¶), la valeur enregistrée ne correspond à aucune option de la question telle qu’elle a été copiée à l’envoi',
+    );
+    expect(courrier.texte).not.toContain('(‡)');
+  });
+
+  it('D-524 : une lettre qui cite les deux hors options garde à chacune sa marque et son paragraphe', () => {
+    const bdiHors: PassationSecuriteRow = { ...BDI_PLANS, idReponse: 'REP-BDI-H', scoresJson: { total: 3, rawAnswers: { B7: 9 } } };
+    const courrier = lettre([], [bdiHors, passationCab('REP-H', { Q2: 2 })]);
+    expect(courrier.texte).toContain('— BDI, passation du 2026-10-01 : valeur hors des options de la question (‡)');
+    expect(courrier.texte).toContain('valeur hors des options de la question (¶)');
+    expect(courrier.texte).toContain('Pour une ou plusieurs des réponses ci-dessus (‡), la valeur enregistrée ne correspond à aucune option de la question : faute');
+    expect(courrier.texte).toContain('Pour une ou plusieurs des réponses ci-dessus (¶)');
+  });
+
+  it('D-524 : une réponse du cabinet dans les options laisse la lettre sans paragraphe hors options', () => {
+    const courrier = lettre([], [CAB_SOUVENT]);
+    expect(courrier.texte).not.toContain('(¶)');
+    expect(courrier.texte).not.toContain('(‡)');
   });
 
   it('un énoncé vide se cite par l’identifiant de la question, un nom vide par le titre de l’assignation', () => {
