@@ -26,6 +26,7 @@ Exécuter la réponse à `20261113-2355-d` (« Seconde page dans le même artefa
   - la session reporte la réponse dans la question.
   L'identifiant de la ligne de question porte une heure fausse (15 h 25 au lieu de 21 h 58). Il est gardé, puisqu'une ligne ne se supprime jamais, et ses horodatages ont été corrigés.
 - Le cockpit enregistre l'identifiant opaque du compte (`par`), jamais un nom. Les sessions écrivent sous le même compte : la base ne distingue toujours pas un clic du responsable d'une écriture de session (limite connue, 1943-d).
+- PR-Agent (#2158, point d'attention « autorisation d'écriture non définie ») : corrigé. La consigne dit qui peut écrire : la page est privée, seul le compte du responsable écrit. Elle interdit le partage sans règle d'accès sur `reponses`, et écarte une ligne sans `par` ou de `source` autre que `cockpit`. Le cockpit refuse d'écrire sans identifiant de compte (version 13).
 - La page de suivi n'est pas touchée au-delà de l'onglet « Cockpit » : ses boutons « Retenir » et « Retirer » restent. Les retirer serait un autre lot.
 
 ## Fichiers modifiés

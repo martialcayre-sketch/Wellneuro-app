@@ -114,6 +114,15 @@ question et la réponse.
   pas `ordinaire`, passe à `ecartee` avec son motif. La session le signale
   au responsable. Une réponse du cockpit n'a pas d'autre autorité qu'une
   réponse donnée en session.
+
+  **Qui peut écrire.** La page est privée : seul le compte du responsable
+  l'ouvre, et donc écrit dans sa base. Les sessions écrivent sous ce même
+  compte. La base ne contrôle ni `par` ni `source` : c'est le caractère
+  privé de la page qui garantit qu'une ligne vient du responsable. Partager
+  la page ouvrirait l'écriture de `reponses` à d'autres comptes. Elle ne se
+  partage donc pas sans une règle d'accès qui réserve cette collection au
+  propriétaire. Une ligne sans `par`, ou dont la `source` n'est pas
+  `cockpit`, est `ecartee`.
 - **Le guichet.** C'est la session existante « Questions générales et
   audits ». Il prépare une séance par jour (D-466), avant la journée en
   autonomie, d'au plus huit questions, sans heure fixe. Elle ne bloque pas
