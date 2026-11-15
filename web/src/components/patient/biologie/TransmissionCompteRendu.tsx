@@ -15,14 +15,19 @@ import { PatientButton } from '@/components/patient/ui/PatientButton';
 import { PatientInlineMessage } from '@/components/patient/ui/PatientInlineMessage';
 import { enTeteDossierPage, estRefusAutreDossier, MESSAGE_AUTRE_DOSSIER } from '@/lib/portail/dossierPage';
 import { PatientErrorState } from '@/components/patient/PatientErrorState';
+import { LienReconnexion } from '@/components/patient/LienReconnexion';
 import { DateNaissanceEcran } from '@/components/patient/DateNaissanceEcran';
 import { MESSAGE_CIRCUIT_MINEUR } from '@/lib/patient/gardeAge';
 
 // Le patient transmet le compte rendu de ses analyses à son praticien
 // ([[D-269]], BIO-INGEST LOT-04). La route garde l'accès, le drapeau, l'accusé,
 // le dossier ouvert et les plafonds ; l'écran ne fait que dire ce qu'elle
-// répond. 401 renvoie au portail, 403 et 503 sont définitifs, le reste se
-// réessaie (patron de `CourrierMedecinLecture`).
+// répond. 401 au chargement et à l'accusé renvoie au portail, 403 et 503 sont
+// définitifs, le reste se réessaie (patron de `CourrierMedecinLecture`). Un
+// DÉPÔT refusé en 401 ne quitte pas la page (Q2 a du prototype PAT-6,
+// [[D-481]] complément DOC-11) : le message de la route, puis T-36 dans un
+// nouvel onglet, sous le bouton ; le fichier reste choisi, et le patient
+// renvoie lui-même une fois reconnecté.
 //
 // L'ACCUSÉ AVANT LE PREMIER ENVOI (§6) : « L'intelligence artificielle dans
 // Wellneuro », version courante, est présentée ici ; « J'en ai pris
@@ -49,6 +54,8 @@ export function TransmissionCompteRendu({ token }: { token: string }) {
   const [erreur, setErreur] = useState<string | null>(null);
   // Refus de la garde du dossier de la page ([[D-481]] DOC-12) : T-51 sous le bouton.
   const [refusDossier, setRefusDossier] = useState(false);
+  // Dépôt refusé en 401 : le message servi par la route, sous le bouton (Q2 a).
+  const [sessionExpiree, setSessionExpiree] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const annuleRef = useRef(false);
 
@@ -111,16 +118,20 @@ export function TransmissionCompteRendu({ token }: { token: string }) {
     setOccupe(true);
     setErreur(null);
     setRefusDossier(false);
+    setSessionExpiree(null);
     setInfo(null);
     try {
       const form = new FormData();
       form.append('fichier', fichier);
       const res = await fetch('/api/portail/comptes-rendus', { method: 'POST', body: form, headers: enTeteDossierPage(token) });
+      const data = (await res.json().catch(() => null)) as { ok?: boolean; reason?: string; error?: string } | null;
+      // Rien n'est parti et rien n'est relu : la relecture renverrait à
+      // l'entrée et emporterait le fichier choisi (Q2 a). Aucun renvoi
+      // automatique après la reconnexion.
       if (res.status === 401) {
-        router.replace(`/portail/${token}`);
+        setSessionExpiree(data?.error ?? 'Le document n’a pas pu être envoyé. Réessayez.');
         return;
       }
-      const data = (await res.json().catch(() => null)) as { ok?: boolean; reason?: string; error?: string } | null;
       // Rien n'est parti : la page ne relit pas la liste, qui serait celle de
       // l'autre compte, et garde le fichier choisi.
       if (estRefusAutreDossier(res.status, data)) {
@@ -236,6 +247,12 @@ export function TransmissionCompteRendu({ token }: { token: string }) {
                 Envoyer à mon praticien
               </PatientButton>
               {refusDossier && <PatientInlineMessage tone="error">{MESSAGE_AUTRE_DOSSIER}</PatientInlineMessage>}
+              {sessionExpiree && (
+                <div className="space-y-2">
+                  <PatientInlineMessage tone="error">{sessionExpiree}</PatientInlineMessage>
+                  <LienReconnexion nouvelOnglet />
+                </div>
+              )}
             </div>
           )}
         </div>

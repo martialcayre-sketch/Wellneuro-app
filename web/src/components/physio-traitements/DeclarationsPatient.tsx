@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useParams } from 'next/navigation';
 import { enTeteDossierPage, estRefusAutreDossier } from '@/lib/portail/dossierPage';
+import { LienReconnexion } from '@/components/patient/LienReconnexion';
 import { formaterDatePeriode, valeurDatePeriode } from '@/lib/physio-traitements/dates';
 import {
   BLOCS_PATIENT,
@@ -40,8 +41,11 @@ import { corpsTraitement, FormulaireTraitement } from './FormulaireTraitement';
 // lettres (Q7 a) ; l'erreur d'un enregistrement à l'endroit du geste, sans
 // doublon (Q5 a) ; l'état confirmé par le serveur et relu, annoncé aux
 // lecteurs d'écran sans texte neuf (Q6 a) ; sur la page de la fiche seule, une
-// lecture refusée en 401 renvoie à l'entrée (Q4 a). La fiche de l'entrée (U07)
-// ne passe pas `onSessionExpiree` et garde son comportement de lecture.
+// lecture refusée en 401 renvoie à l'entrée (Q4 a), et un enregistrement
+// refusé en 401 montre T-36 sous « Session expirée. Reconnectez-vous. », dans
+// un nouvel onglet (Q3 a) : la saisie reste, le patient renvoie lui-même une
+// fois reconnecté. La fiche de l'entrée (U07) ne passe pas `onSessionExpiree`
+// et garde son comportement.
 
 type Ouverte = Extract<PortailPhysioTraitementsResponse, { saisieOuverte: boolean }>;
 
@@ -168,7 +172,9 @@ export function DeclarationsPatient({
   const [illisible, setIllisible] = useState(false);
   // L'ancre dit où le message s'affiche : la question, la ligne ou le
   // formulaire dont l'enregistrement a échoué (Q5 a).
-  const [message, setMessage] = useState<{ texte: string; ancre: string } | null>(null);
+  // `reconnexion` : refus 401 sur la page de la fiche (U35) seule, T-36 suit le
+  // message (Q3 a).
+  const [message, setMessage] = useState<{ texte: string; ancre: string; reconnexion?: boolean } | null>(null);
   // L'état confirmé par le serveur et relu, annoncé par une région `status`
   // (Q6 a) : jamais avant la confirmation, jamais sur une relecture en échec.
   const [annonce, setAnnonce] = useState('');
@@ -234,7 +240,12 @@ export function DeclarationsPatient({
       });
       const data = (await res.json()) as { ok: boolean; reason?: string; error?: string };
       if (data.ok) setEdition(null);
-      else setMessage({ texte: data.error ?? 'Votre demande n’a pas pu être enregistrée.', ancre });
+      else
+        setMessage({
+          texte: data.error ?? 'Votre demande n’a pas pu être enregistrée.',
+          ancre,
+          reconnexion: res.status === 401 && Boolean(onSessionExpiree),
+        });
       // Rien n'est parti : pas de relecture, qui rendrait les lignes de l'autre
       // compte ; la saisie reste en place ([[D-481]] DOC-12).
       if (estRefusAutreDossier(res.status, data)) return;
@@ -277,8 +288,13 @@ export function DeclarationsPatient({
     const present = donnees.donnees.traitements.some(t => ancre === `ligne:${t.id}` || ancre === `arret:${t.id}`);
     return present && (ancre.startsWith('ligne:') || edition === ancre);
   };
-  const erreurA = (ancre: string) =>
-    message?.ancre === ancre ? <p role="alert" className="text-sm text-foreground">{message.texte}</p> : null;
+  const texteMessage = (m: NonNullable<typeof message>) => (
+    <>
+      <p role="alert" className="text-sm text-foreground">{m.texte}</p>
+      {m.reconnexion && <LienReconnexion nouvelOnglet />}
+    </>
+  );
+  const erreurA = (ancre: string) => (message?.ancre === ancre ? texteMessage(message) : null);
 
   // Q6 a : la réponse retenue et sa mention, telles qu'affichées.
   const annonceCritere = (critere: 'sexe_declare' | 'statut_menstruel', avant: typeof sexe) => (relu: Ouverte) => {
@@ -408,7 +424,7 @@ export function DeclarationsPatient({
     >
       {alerteLecture}
       <p role="status" className="sr-only">{annonce}</p>
-      {message && !ancrePresente(message.ancre) && <p role="alert" className="text-sm text-foreground">{message.texte}</p>}
+      {message && !ancrePresente(message.ancre) && texteMessage(message)}
       {!actif && (
         <p className="text-sm text-muted-foreground">Cette partie de votre fiche ne peut pas être modifiée pour le moment.</p>
       )}

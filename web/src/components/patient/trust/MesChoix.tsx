@@ -6,6 +6,7 @@ import type { ChoixEtat } from '@/app/api/portail/trust/etat/route';
 import { PatientButton } from '@/components/patient/ui/PatientButton';
 import { PatientInlineMessage } from '@/components/patient/ui/PatientInlineMessage';
 import { enTeteDossierPage } from '@/lib/portail/dossierPage';
+import { LienReconnexion } from '@/components/patient/LienReconnexion';
 
 /**
  * « Mes choix et autorisations » (TRUST LOT-03) — chaque finalité facultative
@@ -45,7 +46,9 @@ export function MesChoix({
   const [enCours, setEnCours] = useState<string | null>(null);
   // L'erreur paraît dans l'accordéon du choix qui a échoué, pas sous la liste
   // (Q5 a du prototype PAT-6, [[D-481]] complément DOC-11).
-  const [erreur, setErreur] = useState<{ finalite: string; texte: string } | null>(null);
+  // `reconnexion` : refus 401, T-36 suit le message dans un nouvel onglet
+  // (Q3 a) ; le patient refait lui-même son choix une fois reconnecté.
+  const [erreur, setErreur] = useState<{ finalite: string; texte: string; reconnexion?: boolean } | null>(null);
   // Q6 a : le statut affiché est annoncé aux lecteurs d'écran SEULEMENT quand
   // le serveur a accepté le choix ET que la page l'a relu (nouveaux
   // `choixCourants`) — jamais sur la seule réponse de l'écriture.
@@ -75,7 +78,7 @@ export function MesChoix({
         body: JSON.stringify({ token, finalite, statut }),
       });
       const data = (await res.json()) as { ok: boolean; error?: string };
-      if (!data.ok) setErreur({ finalite, texte: data.error ?? 'Erreur. Réessayez.' });
+      if (!data.ok) setErreur({ finalite, texte: data.error ?? 'Erreur. Réessayez.', reconnexion: res.status === 401 });
       else {
         setAttendu({ finalite, statut });
         onChange();
@@ -122,6 +125,7 @@ export function MesChoix({
               {erreur?.finalite === def.finalite && (
                 <PatientInlineMessage tone="error">{erreur.texte}</PatientInlineMessage>
               )}
+              {erreur?.finalite === def.finalite && erreur.reconnexion && <LienReconnexion nouvelOnglet />}
               <div className="flex flex-wrap gap-2 pt-1">
                 {statut !== 'accorde' && (
                   <PatientButton
