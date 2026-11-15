@@ -5,7 +5,10 @@
 - Branche `feat/bp17-fraicheur-appuis-positions`, worktree `bp17-garde`,
   créée depuis `origin/main` (`304e5709`). Avancée deux fois en
   `--ff-only` avant une édition (D-518 §1) : sur `6c46405a` (#2134, doc),
-  puis sur `0045026a` (D-524, sans recoupement avec ce lot).
+  puis sur `0045026a` (D-524, sans recoupement avec ce lot). Après le
+  premier push, `origin/main` a été fusionné (#2140, #2137, sans
+  recoupement), sur arbitrage du responsable (D-518 §2), pour corriger un
+  compte du fragment de changelog.
 - Lot `bp17-fraicheur-appuis-positions` du carnet (file C, ordre 80), pris
   par la file C, worktree `bp17-garde`.
 - PR **P0** : clinique, et contrat de production lu en préflight de

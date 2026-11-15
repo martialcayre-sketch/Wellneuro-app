@@ -7,6 +7,6 @@ contrôle désormais aussi chacun de ses claims d'appui, sur sa paire exacte :
 présent au corpus, `VALIDE`, actif et non remplacé, dans toute rubrique, la
 dose comprise. `prescriptif` n'est pas exigé d'un appui, sur la réponse du
 responsable. Le prédicat est le même dans le contrat de production et dans
-son négatif, qui reçoit sept cas neufs. La liste des positions citées reste
+son négatif, qui reçoit neuf cas neufs. La liste des positions citées reste
 vide. Aucune migration, aucune option ni aucune signature. Le merge lance
 une release-db, dont le préflight rejoue le contrat étendu.
