@@ -3,6 +3,7 @@ import { refusSaisieSante, statutAge } from '@/lib/patient/gardeAge';
 import { accepteNouvelEnvoi, MESSAGE_DOSSIER_CLOS_PATIENT, RAISON_DOSSIER_CLOS } from '@/lib/patient/cycleDeVie';
 import { prisma } from '@/lib/prisma';
 import { readPatientSession } from '@/lib/patient-session';
+import { refusAutreDossier } from '@/lib/trust/portailAuth';
 import {
   resolvePortailPatientFromSession,
   consultationCourante,
@@ -95,6 +96,9 @@ export async function POST(req: Request): Promise<NextResponse<PortailValiderRes
     if (!patient) {
       return NextResponse.json({ ok: false, reason: 'forbidden', error: 'Accès non reconnu ou révoqué.' }, { status: 403 });
     }
+    // Le dossier de la page ([[D-481]], DOC-12, étendu par DOC-14) : après 401/403, avant tout le reste.
+    const autreDossier = refusAutreDossier(req, patient.idPatient);
+    if (autreDossier) return autreDossier as NextResponse<PortailValiderResponse>;
     // Dossier clos (arbitrage du 2026-11-04, option A ; D4 de LOT-01 IDP2) :
     // aucune assignation, donc pas de pack de base. Une consultation ouverte
     // avant la clôture y menait encore. AVANT la garde d'âge.

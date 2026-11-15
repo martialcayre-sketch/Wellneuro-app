@@ -10,9 +10,13 @@
 // 2. Une page ouverte sous un segment quelconque, avec une session valide, est
 //    renvoyée à l'entrée du dossier de la session (Q9 a), sans texte.
 //
-// CE QU'IL NE PROUVE PAS : les trois autres routes de la garde (documents,
-// comptes rendus, renseignements), tenues par leurs bancs de route et de
-// composant ; la connexion elle-même (lien magique, Google), que couvrent
+// 3. Extension DOC-14 ([[D-481]], [[D-488]]) : sur U23 (« ce qui compte »), la
+//    même confusion de compte refuse le dépôt, T-51 paraît dans le message
+//    d'erreur existant, le texte reste, et aucune entrée n'est écrite.
+//
+// CE QU'IL NE PROUVE PAS : les autres routes de la garde (documents,
+// comptes rendus, renseignements, et les dix autres routes de DOC-14), tenues
+// par leurs bancs de route et de composant ; la connexion elle-même (lien magique, Google), que couvrent
 // `portail-lien-magique` et `portail-google`. Le changement de compte est
 // simulé en posant le cookie de session que pose l'atterrissage.
 //
@@ -21,7 +25,13 @@
 // n'est attendue dans l'un ou l'autre dossier. Aucun dossier réel n'est visé
 // (`D-075`).
 import { test, expect, type Page } from '@playwright/test';
-import { closePrisma, compterEcrituresTrust, provisionnerAccusesPorteTrust } from './helpers/db';
+import {
+  closePrisma,
+  compterEcrituresTrust,
+  compterEntreesCeQuiCompte,
+  nettoyerDossierDeuxVoix,
+  provisionnerAccusesPorteTrust,
+} from './helpers/db';
 import { patientPortailSessionCookie } from './helpers/auth';
 
 const SOPHIE = { idPatient: 'PAT_SEED_01', email: 'sophie.nicola@fictif.wellneuro.fr' };
@@ -106,6 +116,30 @@ test.describe.serial('Portail — garde du dossier de la page', () => {
 
     expect(await compterEcrituresTrust(SOPHIE.idPatient)).toEqual(avantSophie);
     expect(await compterEcrituresTrust(JENNIFER.idPatient)).toEqual(avantJennifer);
+  });
+
+  test('U23 (DOC-14) : un autre compte connecté, le dépôt est refusé, T-51 paraît et le texte reste', async ({ page }) => {
+    // Fenêtre de dépôt ouverte pour Sophie : aucun dépôt antérieur.
+    await nettoyerDossierDeuxVoix(SOPHIE.idPatient);
+    await page.context().addCookies([patientPortailSessionCookie(SOPHIE.idPatient, SOPHIE.email)]);
+    await page.goto(`/portail/${SOPHIE.idPatient}/ce-qui-compte`);
+    const champ = page.getByLabel('Ce que je veux dire');
+    await expect(champ).toBeVisible();
+    await page.context().addCookies([patientPortailSessionCookie(JENNIFER.idPatient, JENNIFER.email)]);
+    const avantSophie = await compterEntreesCeQuiCompte(SOPHIE.idPatient);
+    const avantJennifer = await compterEntreesCeQuiCompte(JENNIFER.idPatient);
+
+    await champ.fill('Parcours E2E de la garde du dossier.');
+    const reponse = page.waitForResponse(
+      r => r.url().endsWith('/api/portail/ce-qui-compte') && r.request().method() === 'POST',
+    );
+    await page.getByRole('button', { name: 'Envoyer' }).click();
+    expect((await reponse).status()).toBe(409);
+
+    await expect(page.getByText(T51)).toBeVisible();
+    await expect(champ).toHaveValue('Parcours E2E de la garde du dossier.');
+    expect(await compterEntreesCeQuiCompte(SOPHIE.idPatient)).toBe(avantSophie);
+    expect(await compterEntreesCeQuiCompte(JENNIFER.idPatient)).toBe(avantJennifer);
   });
 
   test('un segment quelconque est renvoyé à l’entrée du dossier de la session', async ({ page }) => {

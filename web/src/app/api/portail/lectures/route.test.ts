@@ -1,4 +1,5 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
+import { EN_TETE_DOSSIER_PAGE, MESSAGE_AUTRE_DOSSIER } from '@/lib/portail/dossierPage';
 
 // Bancs en style « SIGNATURE RÉELLE » : on ne mocke QUE Prisma, et on forge un
 // vrai cookie avec `signPatientSession`. Neutraliser l'authentification par un
@@ -40,6 +41,18 @@ vi.mock('@/lib/protocol/portailProtocol', () => ({ resolveProtocoleDiffuse }));
 import { signPatientSession } from '@/lib/patient-session';
 import { GET, POST } from './route';
 
+/**
+ * La même requête sous le segment donné (`null` : en-tête absent), et sans
+ * cookie au besoin : la garde du dossier de la page ([[D-481]], DOC-14).
+ */
+function sousSegment(req: Request, segment: string | null, { sansCookie = false } = {}): Request {
+  const entetes = new Headers(req.headers);
+  if (segment === null) entetes.delete(EN_TETE_DOSSIER_PAGE);
+  else entetes.set(EN_TETE_DOSSIER_PAGE, segment);
+  if (sansCookie) entetes.delete('cookie');
+  return new Request(req, { headers: entetes });
+}
+
 const PATIENT = { idPatient: 'PAT_TEST', email: 'sophie.nicola@example.test' };
 const ENVOI = { id: 'env_1', dateEnvoi: new Date('2026-09-01T10:00:00.000Z') };
 const SYNTHESE = {
@@ -70,7 +83,7 @@ function requete(cookie?: string, corps?: unknown): Request {
     method: corps === undefined ? 'GET' : 'POST',
     headers: {
       ...(cookie ? { cookie: `wn_portail=${encodeURIComponent(cookie)}` } : {}),
-      ...(corps === undefined ? {} : { 'Content-Type': 'application/json' }),
+      ...(corps === undefined ? {} : { 'Content-Type': 'application/json', [EN_TETE_DOSSIER_PAGE]: PATIENT.idPatient }),
     },
     ...(corps === undefined ? {} : { body: typeof corps === 'string' ? corps : JSON.stringify(corps) }),
   });
@@ -192,6 +205,28 @@ describe('LE DRAPEAU D’UNE SURFACE NE SE LÈVE PAS ICI', () => {
 });
 
 describe('POST — le serveur vérifie, il ne croit pas le navigateur', () => {
+  // La garde du dossier de la page ([[D-481]], DOC-14).
+  it('page ouverte sous un autre dossier, ou sans segment : 409 (T-51), rien d’écrit', async () => {
+    for (const segment of ['PAT_AUTRE', null]) {
+      const res = await POST(sousSegment(requete(cookieProprio(), { espece: 'bilan', idObjet: 'env_1' }), segment));
+      expect(res.status).toBe(409);
+      expect(await res.json()).toEqual({ ok: false, reason: 'autre_dossier', error: MESSAGE_AUTRE_DOSSIER });
+    }
+    expect(prisma.portailLecturePatient.create).not.toHaveBeenCalled();
+  });
+
+  it('sans session, le 401 passe avant la garde du dossier de la page', async () => {
+    const res = await POST(sousSegment(requete(cookieProprio(), { espece: 'bilan', idObjet: 'env_1' }), 'PAT_AUTRE', { sansCookie: true }));
+    expect(res.status).toBe(401);
+  });
+
+  it('compte refusé (introuvable ou révoqué) : le 403 passe avant la garde du dossier de la page', async () => {
+    prisma.patient.findUnique.mockReset();
+    prisma.patient.findUnique.mockResolvedValue(null);
+    const res = await POST(sousSegment(requete(cookieProprio(), { espece: 'bilan', idObjet: 'env_1' }), 'PAT_AUTRE'));
+    expect(res.status).toBe(403);
+  });
+
   it('consigne le document SERVI, et le triplet est complet', async () => {
     const reponse = await POST(requete(cookieProprio(), { espece: 'bilan', idObjet: 'env_1' }));
     expect(reponse.status).toBe(200);
@@ -518,7 +553,7 @@ describe('le courrier à remettre au médecin avant un complément ciblé (D-345
       });
       const req = new Request('http://localhost/api/portail/lectures', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', cookie: `wn_portail=${encodeURIComponent(cookieProprio())}` },
+        headers: { 'Content-Type': 'application/json', cookie: `wn_portail=${encodeURIComponent(cookieProprio())}`, [EN_TETE_DOSSIER_PAGE]: PATIENT.idPatient },
         body: fluxSansFin,
         duplex: 'half',
       } as RequestInit);

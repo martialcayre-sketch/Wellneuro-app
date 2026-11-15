@@ -2,6 +2,8 @@
 
 import { useEffect, useRef } from 'react';
 import type { EspeceLecture, LectureAttendue } from '@/lib/portail/lecturesAttendues';
+import { enTeteDossierPage } from '@/lib/portail/dossierPage';
+import { useSegmentPage } from '@/lib/portail/useSegmentPage';
 
 /*
  * CONSIGNE QU'UN DOCUMENT A ÉTÉ OUVERT. Ne rend rien.
@@ -55,6 +57,9 @@ import type { EspeceLecture, LectureAttendue } from '@/lib/portail/lecturesAtten
  */
 export function ConsignerLecturePortail({ espece, idObjet: idVise }: { espece: EspeceLecture; idObjet?: string }) {
   const envoye = useRef(false);
+  // Le segment de la page : la route refuse (409) un autre dossier, et ce
+  // refus reste muet comme tout échec ici ([[D-488]] DOC-14).
+  const segmentPage = useSegmentPage();
 
   useEffect(() => {
     if (envoye.current) return;
@@ -100,7 +105,7 @@ export function ConsignerLecturePortail({ espece, idObjet: idVise }: { espece: E
       try {
         await fetch('/api/portail/lectures', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...enTeteDossierPage(segmentPage) },
           body: JSON.stringify({ espece, idObjet }),
         });
       } catch {
@@ -108,7 +113,7 @@ export function ConsignerLecturePortail({ espece, idObjet: idVise }: { espece: E
         // exactement ce qu'un échec doit produire.
       }
     })();
-  }, [espece, idVise]);
+  }, [espece, idVise, segmentPage]);
 
   return null;
 }

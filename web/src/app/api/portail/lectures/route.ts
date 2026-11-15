@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { readPatientSession } from '@/lib/patient-session';
 import { resolvePortailPatientFromSession } from '@/lib/consultation/portail';
+import { refusAutreDossier } from '@/lib/trust/portailAuth';
 import { whereEnvoiVisible } from '@/lib/documents/bilanPatient';
 import { syntheseServieAuPatient } from '@/lib/praticien/syntheseComprehension';
 import { isComprehensionEnabled } from '@/lib/patient/featureFlag';
@@ -389,6 +390,9 @@ export async function POST(req: Request): Promise<NextResponse<PortailLecturesRe
 
   const garde = await garderAcces(req, requestContext, 'POST');
   if (garde.refus) return garde.refus;
+  // Le dossier de la page ([[D-481]], DOC-12, étendu par DOC-14) : après 401/403, avant tout le reste.
+  const autreDossier = refusAutreDossier(req, garde.patient.idPatient);
+  if (autreDossier) return withCorrelationHeader(autreDossier as NextResponse<PortailLecturesResponse>, requestContext);
   if (!corpsLisible) return echec('corps_invalide', 'Requête illisible.', 400);
 
   const { espece, idObjet, cycleRef } = (corps ?? {}) as { espece?: unknown; idObjet?: unknown; cycleRef?: unknown };

@@ -9,6 +9,8 @@ import { PatientButton, patientButtonClassName } from '@/components/patient/ui/P
 import { patientInputClassName } from '@/components/patient/ui/PatientField';
 import { PatientInlineMessage } from '@/components/patient/ui/PatientInlineMessage';
 import { PatientPageHeader } from '@/components/patient/ui/PatientPageHeader';
+import { enTeteDossierPage } from '@/lib/portail/dossierPage';
+import { useSegmentPage } from '@/lib/portail/useSegmentPage';
 
 // D-284 §3 et §4, lot (h). Deux écrans pour un dossier qui n'est pas « majeur » :
 // la date manque — on la demande, puis on la fait confirmer, parce qu'une
@@ -97,6 +99,8 @@ export function DateNaissanceEcran({ onEnregistree }: { onEnregistree: (statut: 
   const [aConfirmer, setAConfirmer] = useState(false);
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState('');
+  // Le segment de la page `/portail/[token]` : U04 et ses reprises.
+  const segmentPage = useSegmentPage();
 
   const enregistrer = async () => {
     setErreur('');
@@ -104,7 +108,8 @@ export function DateNaissanceEcran({ onEnregistree }: { onEnregistree: (statut: 
     try {
       const res = await fetch('/api/portail/date-naissance', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        // Le segment de la page : la route refuse (409, T-51) un autre dossier ([[D-481]] DOC-14).
+        headers: { 'Content-Type': 'application/json', ...enTeteDossierPage(segmentPage) },
         body: JSON.stringify({ dateNaissance: saisie }),
       });
       const data = (await res.json()) as PortailDateNaissanceResponse;

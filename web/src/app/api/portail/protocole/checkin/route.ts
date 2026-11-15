@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { authorizePortail, resolveProtocoleDiffuse } from '@/lib/protocol/portailProtocol';
+import { refusAutreDossier } from '@/lib/trust/portailAuth';
 import { calendrierDuProtocoleDiffuse } from '@/lib/protocol/calendriersPersistes';
 import {
   ensurePointEtape,
@@ -74,6 +75,9 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
       const status = auth.reason === 'unauthenticated' ? 401 : 404;
       return NextResponse.json(auth, { status });
     }
+    // Le dossier de la page ([[D-481]], DOC-12, étendu par DOC-14) : après 401/403, avant tout le reste.
+    const autreDossier = refusAutreDossier(req, auth.idPatient);
+    if (autreDossier) return autreDossier as NextResponse<PostResponse>;
 
     // Dossier clos (arbitrage du 2026-11-05) : plus de suivi, donc plus de
     // rendez-vous de suivi ; le GET reste lisible.

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { authentifierPatientPortail } from '@/lib/trust/portailAuth';
+import { authentifierPatientPortail, refusAutreDossier } from '@/lib/trust/portailAuth';
 import { documentMedecinPatientOuvert, telechargerDocument } from '@/lib/documents/documentMedecinImprime';
 import { classeEtCode } from '@/lib/observability/classeEtCode';
 
@@ -29,6 +29,9 @@ export async function POST(req: Request): Promise<Response> {
   try {
     const auth = await authentifierPatientPortail(req);
     if (auth.erreur) return auth.erreur;
+    // Le dossier de la page ([[D-481]], DOC-12, étendu par DOC-14) : après 401/403, avant tout le reste.
+    const autreDossier = refusAutreDossier(req, auth.patient.idPatient);
+    if (autreDossier) return autreDossier;
 
     const document = await telechargerDocument(auth.patient.idPatient);
     if (!document) {

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { enTeteDossierPage } from '@/lib/portail/dossierPage';
 import { AvisLectureDatee } from '@/components/patient/AvisLectureDatee';
 import { PatientCard } from '@/components/patient/ui/PatientCard';
 import { patientButtonClassName } from '@/components/patient/ui/PatientButton';
@@ -230,7 +231,8 @@ export function PatientCompanionHome({ token }: { token: string }) {
     lectureEnvoyee.current = true;
     void fetch('/api/portail/lectures', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      // Refus de la garde (409) : muet, la lecture reste « non ouverte » ([[D-488]] DOC-14).
+      headers: { 'Content-Type': 'application/json', ...enTeteDossierPage(token) },
       body: JSON.stringify({ espece: 'protocole', cycleRef: vue.cycleRef }),
     }).then((res) => {
       if (res.ok) setLectureConsignee(true);

@@ -10,6 +10,7 @@ import {
   episodeIdDepuisCycle,
 } from '@/lib/food-observation/episodeDepuisProtocole';
 import { isSessionValideForPatient, readPatientSession } from '@/lib/patient-session';
+import { refusAutreDossier } from '@/lib/trust/portailAuth';
 import {
   ancreDepuisAssignation,
   authorizePortail,
@@ -110,6 +111,9 @@ export async function POST(req: Request): Promise<NextResponse<SaveResponse>> {
         { status: 401 },
       );
     }
+    // Le dossier de la page ([[D-481]], DOC-12, étendu par DOC-14) : après 401/403, avant tout le reste.
+    const autreDossier = refusAutreDossier(req, auth.idPatient);
+    if (autreDossier) return autreDossier as NextResponse<SaveResponse>;
 
     // Dossier clos (arbitrage du 2026-11-05) : le journal ne se transmet plus ;
     // le GET reste ouvert aux archives.

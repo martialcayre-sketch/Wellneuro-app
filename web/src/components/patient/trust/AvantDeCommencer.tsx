@@ -7,6 +7,7 @@ import { PatientButton } from '@/components/patient/ui/PatientButton';
 import { PatientInlineMessage } from '@/components/patient/ui/PatientInlineMessage';
 import { PatientPageHeader } from '@/components/patient/ui/PatientPageHeader';
 import { documentsRequerantAccuse } from '@/lib/trust/avantDeCommencer';
+import { enTeteDossierPage } from '@/lib/portail/dossierPage';
 
 /**
  * Séquence « Avant de commencer » (TRUST LOT-02) — quatre écrans courts
@@ -33,7 +34,8 @@ export function AvantDeCommencer({ token, onDone }: { token: string; onDone: () 
   useEffect(() => {
     void fetch('/api/portail/trust/lecture', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      // Refus de la garde (409) : silencieux, comme tout échec de cette trace ([[D-488]] DOC-14).
+      headers: { 'Content-Type': 'application/json', ...enTeteDossierPage(token) },
       body: JSON.stringify({ token, documentKey: 'cadre_accompagnement', type: 'presente' }),
     }).catch(() => undefined);
   }, [token]);
@@ -53,7 +55,8 @@ export function AvantDeCommencer({ token, onDone }: { token: string; onDone: () 
       for (const documentKey of documentsRequerantAccuse()) {
         const res = await fetch('/api/portail/trust/lecture', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          // T-51 paraît dans le message d'erreur existant ([[D-488]] DOC-14).
+          headers: { 'Content-Type': 'application/json', ...enTeteDossierPage(token) },
           body: JSON.stringify({ token, documentKey, type: 'pris_connaissance' }),
         });
         const data = (await res.json()) as { ok: boolean; error?: string };

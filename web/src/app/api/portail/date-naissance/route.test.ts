@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { EN_TETE_DOSSIER_PAGE, MESSAGE_AUTRE_DOSSIER } from '@/lib/portail/dossierPage';
 
 const { prisma } = vi.hoisted(() => ({
   prisma: {
@@ -9,6 +10,18 @@ vi.mock('@/lib/prisma', () => ({ prisma }));
 
 import { signPatientSession } from '@/lib/patient-session';
 import { POST } from './route';
+
+/**
+ * La même requête sous le segment donné (`null` : en-tête absent), et sans
+ * cookie au besoin : la garde du dossier de la page ([[D-481]], DOC-14).
+ */
+function sousSegment(req: Request, segment: string | null, { sansCookie = false } = {}): Request {
+  const entetes = new Headers(req.headers);
+  if (segment === null) entetes.delete(EN_TETE_DOSSIER_PAGE);
+  else entetes.set(EN_TETE_DOSSIER_PAGE, segment);
+  if (sansCookie) entetes.delete('cookie');
+  return new Request(req, { headers: entetes });
+}
 
 // D-284 §3, lot (h) : le patient donne sa date de naissance quand elle manque.
 // Ce banc tient les trois promesses de la route — l'identité vient de la
@@ -27,7 +40,7 @@ const patient = {
 };
 
 function requete(corps: unknown, avecSession = true): Request {
-  const headers = new Headers({ 'content-type': 'application/json' });
+  const headers = new Headers({ 'content-type': 'application/json', [EN_TETE_DOSSIER_PAGE]: 'PAT_SOPHIE' });
   if (avecSession) {
     const jeton = signPatientSession({ idPatient: patient.idPatient, email: patient.email });
     headers.set('cookie', `wn_portail=${encodeURIComponent(jeton)}`);
@@ -51,6 +64,28 @@ describe('POST /api/portail/date-naissance', () => {
     const res = await POST(requete({ dateNaissance: '1985-03-12' }, false));
     expect(res.status).toBe(401);
     expect(prisma.patient.updateMany).not.toHaveBeenCalled();
+  });
+
+  // La garde du dossier de la page ([[D-481]], DOC-14).
+  it('page ouverte sous un autre dossier, ou sans segment : 409 (T-51), rien d’écrit', async () => {
+    for (const segment of ['PAT_AUTRE', null]) {
+      const res = await POST(sousSegment(requete({ dateNaissance: '1985-03-12' }), segment));
+      expect(res.status).toBe(409);
+      expect(await res.json()).toEqual({ ok: false, reason: 'autre_dossier', error: MESSAGE_AUTRE_DOSSIER });
+    }
+    expect(prisma.patient.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('sans session, le 401 passe avant la garde du dossier de la page', async () => {
+    const res = await POST(sousSegment(requete({ dateNaissance: '1985-03-12' }), 'PAT_AUTRE', { sansCookie: true }));
+    expect(res.status).toBe(401);
+  });
+
+  it('compte refusé (introuvable ou révoqué) : le 403 passe avant la garde du dossier de la page', async () => {
+    prisma.patient.findUnique.mockReset();
+    prisma.patient.findUnique.mockResolvedValue(null);
+    const res = await POST(sousSegment(requete({ dateNaissance: '1985-03-12' }), 'PAT_AUTRE'));
+    expect(res.status).toBe(403);
   });
 
   it('★ écrit la date au dossier DE LA SESSION, seulement si elle manque encore, et rend « majeur »', async () => {

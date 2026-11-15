@@ -35,6 +35,8 @@ import { PatientButton } from '@/components/patient/ui/PatientButton';
 import { PatientField, patientInputClassName } from '@/components/patient/ui/PatientField';
 import { PatientInlineMessage } from '@/components/patient/ui/PatientInlineMessage';
 import { PatientPageHeader } from '@/components/patient/ui/PatientPageHeader';
+import { enTeteDossierPage } from '@/lib/portail/dossierPage';
+import { useSegmentPage } from '@/lib/portail/useSegmentPage';
 import type { VuePatientSurLeFil } from '@/lib/protocol/vuePatientSurLeFil';
 
 function dateLocale(value: Date): string {
@@ -160,6 +162,7 @@ function clearDraft(idPatient: string | null): void {
 }
 
 export function PatientFoodObservationPanel({ idPatient }: { idPatient: string | null }) {
+  const segmentPage = useSegmentPage();
   const [initialDraft] = useState<PatientFoodObservationDraft | null>(() => readDraft(idPatient));
   const [draftRestored, setDraftRestored] = useState<boolean>(() => {
     if (!initialDraft) return false;
@@ -402,7 +405,8 @@ export function PatientFoodObservationPanel({ idPatient }: { idPatient: string |
     try {
       const res = await fetch('/api/portail/ja/observations', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        // Le segment de la page : la route refuse (409, T-51) un autre dossier ([[D-481]] DOC-14).
+        headers: { 'Content-Type': 'application/json', ...enTeteDossierPage(segmentPage) },
         credentials: 'same-origin',
         body: JSON.stringify({
           episode,

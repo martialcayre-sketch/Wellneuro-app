@@ -9,6 +9,8 @@ import { PatientInlineMessage } from '@/components/patient/ui/PatientInlineMessa
 import { PatientPageHeader } from '@/components/patient/ui/PatientPageHeader';
 import { PatientRegionAccuse } from '@/components/patient/ui/PatientRegionAccuse';
 import { LONGUEUR_MAX_CE_QUI_COMPTE } from '@/lib/patient/ceQuiCompte';
+import { enTeteDossierPage } from '@/lib/portail/dossierPage';
+import { useSegmentPage } from '@/lib/portail/useSegmentPage';
 import {
   ecrireBrouillonCeQuiCompte,
   effacerBrouillonCeQuiCompte,
@@ -157,6 +159,7 @@ function FormulaireCeQuiCompte({ idPatient, onDepose }: { idPatient: string | nu
   // requête part, et c'est la route qui refuse avec son message. Désactiver
   // l'envoi ici priverait le patient de la seule explication existante.
   const tropLong = texte.length > LONGUEUR_MAX_CE_QUI_COMPTE;
+  const segmentPage = useSegmentPage();
 
   const soumettre = useCallback(async () => {
     setEnvoi(true);
@@ -165,7 +168,8 @@ function FormulaireCeQuiCompte({ idPatient, onDepose }: { idPatient: string | nu
     try {
       const res = await fetch('/api/portail/ce-qui-compte', {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        // Le segment de la page : la route refuse (409, T-51) un autre dossier ([[D-481]] DOC-14).
+        headers: { 'content-type': 'application/json', ...enTeteDossierPage(segmentPage) },
         // Le corps ne porte QUE la parole et sa date déclarée. Pas
         // d'identifiant : la session le dit, et la route ne lirait pas
         // celui-ci de toute façon.
@@ -193,7 +197,7 @@ function FormulaireCeQuiCompte({ idPatient, onDepose }: { idPatient: string | nu
     } finally {
       setEnvoi(false);
     }
-  }, [texte, saisiLe, idPatient, onDepose]);
+  }, [texte, saisiLe, idPatient, onDepose, segmentPage]);
 
   // TANT QU'ON NE SAIT PAS, ON N'AFFIRME RIEN — ni le champ, ni la fermeture.
   // Ouvrir le champ puis le retirer une demi-seconde plus tard ferait

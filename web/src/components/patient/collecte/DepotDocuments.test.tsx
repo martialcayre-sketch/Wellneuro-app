@@ -6,7 +6,8 @@ const { replace, routeur } = vi.hoisted(() => {
   const replace = vi.fn();
   return { replace, routeur: { replace } };
 });
-vi.mock('next/navigation', () => ({ useRouter: () => routeur }));
+// `useParams` : lu par l'écran de la date de naissance (`useSegmentPage`, [[D-481]] DOC-14).
+vi.mock('next/navigation', () => ({ useRouter: () => routeur, useParams: () => ({ token: 'PAT_SEED_01' }) }));
 
 import { DepotDocuments } from './DepotDocuments';
 import { BLOCS_COLLECTE_G11 } from './textesDepot';

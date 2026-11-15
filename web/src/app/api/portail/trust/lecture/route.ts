@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { authentifierPatientPortail } from '@/lib/trust/portailAuth';
+import { authentifierPatientPortail, refusAutreDossier } from '@/lib/trust/portailAuth';
 import { getDocumentCourant } from '@/lib/trust/contenus/registre';
 import { CLE_CONDITIONS, conditionsUtilisationOuvertes } from '@/lib/trust/conditionsUtilisation';
 import { statutAge } from '@/lib/patient/gardeAge';
@@ -45,6 +45,9 @@ export async function POST(req: Request): Promise<NextResponse<TrustLectureRespo
   const auth = await authentifierPatientPortail(req);
   if (auth.erreur) return auth.erreur as NextResponse<TrustLectureResponse>;
   const { patient } = auth;
+  // Le dossier de la page ([[D-481]], DOC-12, étendu par DOC-14) : après 401/403, avant tout le reste.
+  const autreDossier = refusAutreDossier(req, patient.idPatient);
+  if (autreDossier) return autreDossier as NextResponse<TrustLectureResponse>;
   // Même borne que la page : hors dossier majeur, les conditions attendent le
   // circuit des mineurs (arbitrage du 2026-10-16).
   if (documentKey === CLE_CONDITIONS && statutAge(patient.dateNaissance, Date.now()) !== 'majeur') {

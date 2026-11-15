@@ -87,7 +87,8 @@ export function TransmissionCompteRendu({ token }: { token: string }) {
     try {
       const res = await fetch('/api/portail/trust/lecture', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        // Le segment de la page : la route refuse (409, T-51) un autre dossier ([[D-481]] DOC-14).
+        headers: { 'Content-Type': 'application/json', ...enTeteDossierPage(token) },
         body: JSON.stringify({ documentKey, type: 'pris_connaissance' }),
       });
       if (res.status === 401) {
@@ -95,7 +96,9 @@ export function TransmissionCompteRendu({ token }: { token: string }) {
         return;
       }
       if (!res.ok) {
-        setErreur('Votre lecture n’a pas pu être enregistrée. Réessayez.');
+        // Refus de la garde : T-51 à la place du texte fixe ([[D-488]] DOC-14).
+        const data = (await res.json().catch(() => null)) as { reason?: string } | null;
+        setErreur(estRefusAutreDossier(res.status, data) ? MESSAGE_AUTRE_DOSSIER : 'Votre lecture n’a pas pu être enregistrée. Réessayez.');
         return;
       }
       await charger();

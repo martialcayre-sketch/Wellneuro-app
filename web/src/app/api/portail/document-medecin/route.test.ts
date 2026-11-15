@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { EN_TETE_DOSSIER_PAGE, MESSAGE_AUTRE_DOSSIER } from '@/lib/portail/dossierPage';
 
 // « Pour votre médecin » au portail (D-307 §3, F38). Signature de session
 // réelle : seuls Prisma et le module du document sont simulés.
@@ -17,6 +18,18 @@ vi.mock('@/lib/documents/documentMedecinImprime', async (importOriginal) => ({
 
 import { signPatientSession } from '@/lib/patient-session';
 import { GET } from './route';
+
+/**
+ * La même requête sous le segment donné (`null` : en-tête absent), et sans
+ * cookie au besoin : la garde du dossier de la page ([[D-481]], DOC-14).
+ */
+function sousSegment(req: Request, segment: string | null, { sansCookie = false } = {}): Request {
+  const entetes = new Headers(req.headers);
+  if (segment === null) entetes.delete(EN_TETE_DOSSIER_PAGE);
+  else entetes.set(EN_TETE_DOSSIER_PAGE, segment);
+  if (sansCookie) entetes.delete('cookie');
+  return new Request(req, { headers: entetes });
+}
 import { POST as TELECHARGER } from './telechargement/route';
 
 const PATIENT = { idPatient: 'PAT_TEST', email: 'jennifer.martin@example.test' };
@@ -25,7 +38,9 @@ function requete(chemin: string, avecCookie = true, method = 'GET'): Request {
   const cookie = signPatientSession({ idPatient: PATIENT.idPatient, email: PATIENT.email });
   return new Request(`http://localhost${chemin}`, {
     method,
-    headers: avecCookie ? { cookie: `wn_portail=${encodeURIComponent(cookie)}` } : {},
+    headers: avecCookie
+      ? { cookie: `wn_portail=${encodeURIComponent(cookie)}`, [EN_TETE_DOSSIER_PAGE]: PATIENT.idPatient }
+      : {},
   });
 }
 
@@ -100,6 +115,28 @@ describe('POST /api/portail/document-medecin/telechargement', () => {
     prisma.patient.findUnique.mockResolvedValue(compte(true));
     expect((await TELECHARGER(telechargement())).status).toBe(403);
     expect(telechargerDocument).not.toHaveBeenCalled();
+  });
+
+  // La garde du dossier de la page ([[D-481]], DOC-14).
+  it('page ouverte sous un autre dossier, ou sans segment : 409 (T-51), rien d’écrit', async () => {
+    for (const segment of ['PAT_AUTRE', null]) {
+      const res = await TELECHARGER(sousSegment(telechargement(), segment));
+      expect(res.status).toBe(409);
+      expect(await res.json()).toEqual({ ok: false, reason: 'autre_dossier', error: MESSAGE_AUTRE_DOSSIER });
+    }
+    expect(telechargerDocument).not.toHaveBeenCalled();
+  });
+
+  it('sans session, le 401 passe avant la garde du dossier de la page', async () => {
+    const res = await TELECHARGER(sousSegment(telechargement(), 'PAT_AUTRE', { sansCookie: true }));
+    expect(res.status).toBe(401);
+  });
+
+  it('compte refusé (introuvable ou révoqué) : le 403 passe avant la garde du dossier de la page', async () => {
+    prisma.patient.findUnique.mockReset();
+    prisma.patient.findUnique.mockResolvedValue(null);
+    const res = await TELECHARGER(sousSegment(telechargement(), 'PAT_AUTRE'));
+    expect(res.status).toBe(403);
   });
 
   it('sert le fichier de CE patient, en pièce jointe, jamais en cache', async () => {
