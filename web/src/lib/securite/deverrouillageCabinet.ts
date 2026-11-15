@@ -45,6 +45,8 @@ export type CopieAssignation = {
 
 /** La ligne courante de l'instrument, lue sous verrou ; `null` = introuvable. */
 export type InstrumentCourant = {
+  actif: boolean;
+  statutRelecture: string;
   titre: string;
   definitionJson: unknown;
   poseQuestionSuicide: boolean | null;
@@ -82,12 +84,20 @@ function copieEgale(copie: CopieAssignation, courante: DesignationSuicideCopiee)
 /**
  * Vrai si la copie de l'assignation concorde avec la désignation que l'envoi
  * écrirait aujourd'hui depuis la ligne courante de l'instrument. Faux dès que
- * la désignation courante manque — instrument introuvable, déclaration autre
- * que « oui », désignation incohérente avec la définition — ou que la copie
- * de l'assignation est vide ou illisible.
+ * la désignation courante manque — instrument introuvable, désactivé ou non
+ * publié (brouillon, grille à relire : l'envoi ne l'écrirait pas), déclaration
+ * autre que « oui », désignation incohérente avec la définition — ou que la
+ * copie de l'assignation est vide ou illisible.
+ *
+ * Le statut est lu ICI, sans le drapeau : drapeau éteint, une modification
+ * du contenu repasse l'instrument en brouillon SANS effacer sa déclaration ;
+ * une désignation restée concordante laisserait sinon rouvrir la saisie sur
+ * un brouillon (contre-revue Codex de #2151, P1). [[D-524]] §2 nomme le
+ * retour en brouillon parmi les désignations absentes.
  */
 export function concordance(copie: CopieAssignation, instrument: InstrumentCourant | null): boolean {
-  if (!instrument || instrument.poseQuestionSuicide !== true) return false;
+  if (!instrument || !instrument.actif || instrument.statutRelecture !== 'valide') return false;
+  if (instrument.poseQuestionSuicide !== true) return false;
   const courante = copieDesignationSuicide(instrument);
   if (!courante) return false;
   return copieEgale(copie, courante);

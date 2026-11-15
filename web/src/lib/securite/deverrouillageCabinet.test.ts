@@ -19,6 +19,8 @@ const DEFINITION = {
 };
 
 const INSTRUMENT: InstrumentCourant = {
+  actif: true,
+  statutRelecture: 'valide',
   titre: 'Humeur cabinet',
   definitionJson: DEFINITION,
   poseQuestionSuicide: true,
@@ -96,6 +98,12 @@ describe('concordance — le constat manqué : toute discordance refuse', () => 
     expect(concordance(copieEnvoi(), { ...effacee, poseQuestionSuicide: false })).toBe(false);
     expect(concordance(copieEnvoi(), { ...INSTRUMENT, questionSuicideOptionNon: 7 })).toBe(false);
     expect(concordance(copieEnvoi(), { ...INSTRUMENT, definitionJson: null })).toBe(false);
+  });
+
+  it('instrument non publié ou désactivé, désignation pourtant intacte (drapeau éteint, la déclaration survit au brouillon) : refus', () => {
+    expect(concordance(copieEnvoi(), { ...INSTRUMENT, statutRelecture: 'brouillon' })).toBe(false);
+    expect(concordance(copieEnvoi(), { ...INSTRUMENT, statutRelecture: 'grille_a_relire' })).toBe(false);
+    expect(concordance(copieEnvoi(), { ...INSTRUMENT, actif: false })).toBe(false);
   });
 
   it('copie de l’assignation vide ou illisible (désignation inconnue à l’envoi) : refus', () => {

@@ -398,6 +398,8 @@ describe('PATCH /api/praticien/assignations — déverrouillage', () => {
       sections: [{ id: 'S', questions: [{ id: 'Q2', texte: 'Idées de mort ?', options: [{ v: 0, l: 'Jamais' }, { v: 3, l: 'Souvent' }] }] }],
     };
     const LIGNE = {
+      actif: true,
+      statut_relecture: 'valide',
       titre: 'Humeur cabinet',
       definition_json: DEFINITION,
       pose_question_suicide: true,
@@ -502,6 +504,18 @@ describe('PATCH /api/praticien/assignations — déverrouillage', () => {
       assignationCab(COPIE);
       ligneInstrument = [];
       await attendreRefus();
+    });
+
+    it('brouillon à désignation intacte (drapeau éteint, la déclaration survit) : refus — contre-revue Codex, P1', async () => {
+      vi.stubEnv('WN_ENABLE_DECLARATION_SUICIDE_CAB', '');
+      assignationCab(COPIE);
+      ligneInstrument = [{ ...LIGNE, statut_relecture: 'brouillon' }];
+      await attendreRefus();
+      vi.clearAllMocks();
+      assignationCab(COPIE);
+      ligneInstrument = [{ ...LIGNE, actif: false }];
+      await attendreRefus();
+      vi.unstubAllEnvs();
     });
 
     it('le refus ne relit pas le drapeau : éteint ou allumé, même refus', async () => {

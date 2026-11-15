@@ -423,17 +423,20 @@ export async function PATCH(req: Request): Promise<NextResponse<PatchAssignation
           // (`api/praticien/instruments`). Drapeau éteint, ce gel compte hors
           // verrou : une modification déjà passée à son comptage peut écrire
           // après ce commit. Résidu nommé au journal H59, hors de ce lot
-          // (revue `wn-reviewer`, P2-1). Introuvable : désignation absente,
-          // refus.
+          // (revue `wn-reviewer`, P2-1). Introuvable, désactivée ou non
+          // publiée : désignation absente, refus — le statut est lu ici,
+          // sans le drapeau (contre-revue Codex, P1).
           const rangees = await tx.$queryRaw<
             {
+              actif: boolean;
+              statut_relecture: string;
               titre: string;
               definition_json: unknown;
               pose_question_suicide: boolean | null;
               question_suicide_id: string | null;
               question_suicide_option_non: number | null;
             }[]
-          >`SELECT titre, definition_json, pose_question_suicide,
+          >`SELECT actif, statut_relecture, titre, definition_json, pose_question_suicide,
                    question_suicide_id, question_suicide_option_non
               FROM cabinet_instruments
              WHERE id_instrument = ${ass.idQuestionnaire}
@@ -441,6 +444,8 @@ export async function PATCH(req: Request): Promise<NextResponse<PatchAssignation
           const ligne = rangees[0];
           const instrument: InstrumentCourant | null = ligne
             ? {
+                actif: ligne.actif,
+                statutRelecture: ligne.statut_relecture,
                 titre: ligne.titre,
                 definitionJson: ligne.definition_json,
                 poseQuestionSuicide: ligne.pose_question_suicide,
