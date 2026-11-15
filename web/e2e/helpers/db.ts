@@ -1691,3 +1691,25 @@ export async function insererSignalementHorsRoute(
     return err instanceof Error ? err.message : String(err);
   }
 }
+
+/**
+ * Les choix et incidents TRUST d'un dossier fictif, par identifiant — le banc
+ * de reconnexion de PAT-6 ([[D-481]] DOC-11, Q3 a) les lit avant un envoi
+ * pour n'effacer ensuite QUE ce que son propre parcours a écrit.
+ */
+export async function idsEcrituresTrust(idPatient: string): Promise<{ choix: string[]; incidents: string[] }> {
+  const [choix, incidents] = await Promise.all([
+    prisma.trustChoiceEvent.findMany({ where: { idPatient }, select: { id: true } }),
+    prisma.trustPrivacyIncident.findMany({ where: { idPatient }, select: { id: true } }),
+  ]);
+  return { choix: choix.map(c => c.id), incidents: incidents.map(i => i.id) };
+}
+
+/** Efface les choix et incidents du dossier absents de `avant` : ceux du parcours seul. */
+export async function effacerEcrituresTrustNeuves(
+  idPatient: string,
+  avant: { choix: string[]; incidents: string[] },
+): Promise<void> {
+  await prisma.trustChoiceEvent.deleteMany({ where: { idPatient, id: { notIn: avant.choix } } });
+  await prisma.trustPrivacyIncident.deleteMany({ where: { idPatient, id: { notIn: avant.incidents } } });
+}

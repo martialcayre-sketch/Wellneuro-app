@@ -6,6 +6,7 @@ import { PatientField, patientInputClassName } from '@/components/patient/ui/Pat
 import { PatientInlineMessage } from '@/components/patient/ui/PatientInlineMessage';
 import { PatientRegionAccuse } from '@/components/patient/ui/PatientRegionAccuse';
 import { enTeteDossierPage, estRefusAutreDossier, MESSAGE_AUTRE_DOSSIER } from '@/lib/portail/dossierPage';
+import { LienReconnexion } from '@/components/patient/LienReconnexion';
 
 /**
  * « Signaler un problème » (TRUST LOT-03/04) — trois parcours structurés,
@@ -172,6 +173,10 @@ function FormulaireSignalement({
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState('');
   const [refusDossier, setRefusDossier] = useState(false);
+  // Refus 401 : T-36 sous « Session expirée. Reconnectez-vous. », dans un
+  // nouvel onglet (Q3 a du prototype PAT-6, [[D-481]] complément DOC-11). Le
+  // formulaire reste rempli ; le patient renvoie lui-même une fois reconnecté.
+  const [sessionExpiree, setSessionExpiree] = useState(false);
 
   // Champs effet indésirable.
   const [produit, setProduit] = useState('');
@@ -222,6 +227,7 @@ function FormulaireSignalement({
     setDescription('');
     setErreur('');
     setRefusDossier(false);
+    setSessionExpiree(false);
   };
 
   const annuler = () => {
@@ -232,6 +238,7 @@ function FormulaireSignalement({
   const envoyer = async (corps: Record<string, unknown>) => {
     setErreur('');
     setRefusDossier(false);
+    setSessionExpiree(false);
     setEnvoi(true);
     try {
       const res = await fetch('/api/portail/trust/signalement', {
@@ -246,6 +253,7 @@ function FormulaireSignalement({
       }
       if (!data.ok) {
         setErreur(data.error ?? 'Erreur. Réessayez.');
+        setSessionExpiree(res.status === 401);
         return;
       }
       onConfirme(
@@ -393,6 +401,7 @@ function FormulaireSignalement({
         </PatientField>
         </>}
         {erreur && <PatientInlineMessage tone="error">{erreur}</PatientInlineMessage>}
+        {erreur && sessionExpiree && <LienReconnexion nouvelOnglet />}
         <div className="flex flex-wrap gap-2">
           <PatientButton type="submit" variant="primary" loading={envoi} loadingLabel="Envoi…">
             Envoyer le signalement
@@ -436,6 +445,7 @@ function FormulaireSignalement({
           />
         </PatientField>
         {erreur && <PatientInlineMessage tone="error">{erreur}</PatientInlineMessage>}
+        {erreur && sessionExpiree && <LienReconnexion nouvelOnglet />}
         <div className="flex flex-wrap gap-2">
           <PatientButton type="submit" variant="primary" loading={envoi} loadingLabel="Envoi…">
             Signaler
@@ -476,6 +486,7 @@ function FormulaireSignalement({
         expliquant ce qui est possible et pourquoi.
       </p>
       {erreur && <PatientInlineMessage tone="error">{erreur}</PatientInlineMessage>}
+      {erreur && sessionExpiree && <LienReconnexion nouvelOnglet />}
       <div className="flex flex-wrap gap-2">
         <PatientButton type="submit" variant="primary" loading={envoi} loadingLabel="Envoi…">
           Envoyer la demande

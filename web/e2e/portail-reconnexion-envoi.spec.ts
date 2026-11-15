@@ -145,6 +145,10 @@ test.describe.serial('Portail — reconnexion à l’envoi, dans un nouvel ongle
   }) => {
     await page.goto(`/portail/${JETON}/dossier`);
     await expect(page.getByRole('heading', { name: 'Mon dossier, à deux voix' })).toBeVisible();
+    // Le titre paraît dès la phase de chargement : n'expirer qu'une fois la
+    // lecture aboutie, son bouton à l'écran. Sinon la lecture encore en vol
+    // reçoit le 401 et renvoie à l'entrée (vu sur WebKit au CI de #2146).
+    await expect(page.getByRole('button', { name: 'C’est bien ça' })).toBeVisible();
 
     await expirerSession(context);
     await page.getByRole('button', { name: 'C’est bien ça' }).click();
@@ -168,6 +172,10 @@ test.describe.serial('Portail — reconnexion à l’envoi, dans un nouvel ongle
   }) => {
     await page.goto(`/portail/${JETON}/dossier`);
     await expect(page.getByRole('heading', { name: 'Mon dossier, à deux voix' })).toBeVisible();
+    // Le titre paraît dès la phase de chargement : n'expirer qu'une fois la
+    // lecture aboutie, son bouton à l'écran. Sinon la lecture encore en vol
+    // reçoit le 401 et renvoie à l'entrée (vu sur WebKit au CI de #2146).
+    await expect(page.getByRole('button', { name: 'C’est bien ça' })).toBeVisible();
 
     await expirerSession(context);
     await page.getByRole('button', { name: 'C’est bien ça' }).click();
