@@ -40,7 +40,8 @@ const CLES_SENTRY_ADMISES = ['authToken', 'org', 'project', 'silent', 'sourcemap
 /** Un fichier qui peut déplacer la résolution d'un module, où qu'il soit sous `web/`. */
 const CONFIG_DE_RESOLUTION =
   /(^|\/)(package\.json|[jt]sconfig[^/]*\.json|\.babelrc[^/]*|babel\.config\.[^/]+|\.swcrc|next\.config\.[^/]+)$/i;
-const CLES_PACKAGE_ADMISES = ['dependencies', 'devDependencies', 'engines', 'name', 'overrides', 'private', 'scripts', 'version'];
+// `license` (UNLICENSED, réponse à 20261114-1825-d) : métadonnée seule, sans effet sur la résolution.
+const CLES_PACKAGE_ADMISES = ['dependencies', 'devDependencies', 'engines', 'license', 'name', 'overrides', 'private', 'scripts', 'version'];
 const CLES_TSCONFIG_ADMISES = [
   'allowJs', 'esModuleInterop', 'incremental', 'isolatedModules', 'jsx', 'lib', 'module', 'moduleResolution',
   'noEmit', 'paths', 'plugins', 'resolveJsonModule', 'skipLibCheck', 'strict', 'target',

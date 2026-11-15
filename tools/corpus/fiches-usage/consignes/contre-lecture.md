@@ -25,6 +25,11 @@ celle d'un autre statut, est un défaut. Quand la fiche n'a aucun analyte,
 les mots « cet examen » désignent la mesure de la fiche : ils sont FIDÈLES
 et n'ajoutent rien.
 
+La rubrique « population » nomme la seule population d'usage par sa
+désignation approuvée : elle est FIDÈLE même si aucun claim ne porte sur
+cette population. La phrase d'absence n'y est jamais admise : employée
+dans « population », elle est INFIDÈLE.
+
 L'objet de chaque rubrique, pour juger un débordement : question : la
 question d'usage ; population : la population en clair ;
 preanalytique_contexte : le préanalytique et le contexte requis ;
@@ -54,7 +59,9 @@ Il est INFIDÈLE s'il contient au moins un des défauts suivants :
 
 - une affirmation, une condition ou une conséquence qu'aucun claim ne porte ;
 - un nombre, un seuil, une dose, une durée ou une unité absent des claims,
-  y compris écrit en lettres ;
+  y compris écrit en lettres ; une valeur ou une unité reprise telle quelle
+  d'une désignation approuvée, au sein de cette seule désignation employée
+  pour nommer, n'en est pas un ;
 - une population élargie ou restreinte par rapport aux claims, ou par
   rapport à la désignation approuvée de la population d'usage ;
 - une hypothèse nommée qui n'est pas rattachée à la fiche, ou un sens tiré
@@ -68,7 +75,26 @@ Il est INFIDÈLE s'il contient au moins un des défauts suivants :
   n'omet rien ;
 - un sens déplacé : une association présentée comme une cause, une
   possibilité comme une certitude, une hypothèse comme un diagnostic ;
-- un médicament, une prescription, une donnée de patient ou un exemple de cas ;
+- un médicament nommé (spécialité ou nom commercial, principe actif ou
+  classe thérapeutique nommés en tant que médicaments) ou une posologie,
+  une prescription, une donnée de patient ou un exemple de cas ; la catégorie
+  « médicaments », citée parce qu'un claim la mentionne dans un fait
+  descriptif de sécurité ou de comparaison, sans spécialité nommée ni
+  schéma de prise, n'est pas un défaut ; un fait propre à une spécialité
+  généralisé à cette catégorie en est un ; nommer une forme de nutriment
+  (un sel, un composé) n'est pas, en soi, nommer un médicament, sauf quand
+  elle est nommée en tant que médicament ;
+- une quantité à prendre ou à consommer (dose, volume, nombre d'unités,
+  apport recommandé ou de référence), une fréquence ou un fractionnement
+  des prises, une durée de prise ou de traitement, ou toute autre valeur
+  qui n'est ni une teneur ni un seuil (par exemple une teneur maximale
+  recommandée pour un produit), même rapportés par un claim, hors une
+  valeur reprise d'une désignation approuvée comme dit plus haut ; ne sont pas
+  des défauts une teneur de composition (la quantité d'un nutriment
+  effectivement présente dans un aliment, une eau ou un produit) et un
+  seuil qui borne une observation ou un risque (la quantité au-delà de
+  laquelle un effet est observé, une limite supérieure de sécurité),
+  restitués avec toutes leurs conditions ;
 - une indication de demander le dosage des anticorps anti-LDL oxydées tirée
   d'un claim marqué [SOUS RÉSERVE D'INDICATION] ;
 - pour une rubrique : un texte qui ne traite pas la rubrique nommée ;
@@ -92,7 +118,20 @@ Il est INFIDÈLE s'il contient au moins un des défauts suivants :
 
 La phrase « Les sources retenues ne documentent pas ce point. » est FIDÈLE si
 aucun claim ne porte sur l'objet de la rubrique ; INFIDÈLE si un claim y
-porte.
+porte, et toujours INFIDÈLE dans « question » ou « population ». Un claim
+fourni qui ne porte pas sur l'objet de la rubrique n'a pas à y figurer,
+hors la condition de sécurité ou d'admissibilité restituée hors de sa
+rubrique comme dit plus haut : quand le marqueur est « oui », la rubrique
+qui accueille cette condition l'écrit à la place de la phrase d'absence,
+et la phrase d'absence seule y est une condition tue.
+
+Un fait qui ne peut s'écrire sans une quantité exclue ou sans un
+médicament nommé ne s'écrit pas du tout : son omission entière n'est pas une
+condition tue, et ce fait ne compte pas parmi ceux qui portent sur l'objet
+de la rubrique pour juger la phrase d'absence ; les autres faits du même
+claim restent jugés comme tels. Cette exemption ne
+vaut jamais pour une condition de sécurité ou d'admissibilité quand le
+marqueur est « oui » : son omission reste INFIDÈLE.
 
 Le CONTEXTE, quand il est fourni, sert à situer le texte : ne le juge pas.
 
