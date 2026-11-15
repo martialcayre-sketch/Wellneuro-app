@@ -11,5 +11,6 @@
 - **Un claim fourni n'a pas à être employé** : une rubrique n'écrit que les
   claims qui portent sur son objet. C'est la cause commune des refus hors
   objet, établie par une revue de structure en lecture seule.
+- **Approuvée par le responsable le 2026-11-15** (`fiche-usage-v8+cb4d89a4186ee36d`), après six passes de contre-revue Codex et la revue PR-Agent ; le principe actif et la classe thérapeutique restent interdits comme médicaments.
 - La structure signée, la base et les modèles par défaut ne changent pas ;
   pas de release-db.
