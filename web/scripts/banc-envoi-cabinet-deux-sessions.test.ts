@@ -41,7 +41,9 @@
 //      sans 40P01 ni 500. L'ordre fixe (`ORDER BY`) est une propriété
 //      éprouvée ici, pas une preuve générale d'absence d'interblocage ;
 //  10. ÉDITION DU TITRE SUR UNE LECTURE PÉRIMÉE (P1-1 de la passe Codex) :
-//      elle ne réinstalle pas la V1 lue avant une V2 publiée « non ».
+//      elle ne réinstalle pas la V1 lue avant une V2 publiée « non ». Depuis
+//      #2130 (réponse 20261114-1217-a), drapeau allumé, elle est refusée en
+//      409 : l'instrument a bougé depuis la lecture.
 // Chaque course constate d'abord que la session attendue est BLOQUÉE sur un
 // verrou (`pg_stat_activity`) : sans ce constat, une course « gagnée » ne
 // prouverait rien. Chaque appel est borné dans le temps.
@@ -638,8 +640,20 @@ async function main() {
     //     la publication concurrentes sont rejouées en SQL par le tiers, dans
     //     l'ordre de leurs routes : l'écrivain éprouvé ici est l'édition du
     //     titre, qui échappe au verrou et ne doit réécrire que ses champs.
+    //     Depuis #2130 (réponse 20261114-1217-a), drapeau allumé, l'édition
+    //     n'écrit que si `updated_at` n'a pas bougé depuis sa lecture : elle
+    //     est REFUSÉE (409), et rien n'est écrit, ni la V1 ni le titre.
+    //     L'attendu « 200 » d'avant ne tenait plus que par hasard : la pose
+    //     (`CURRENT_TIMESTAMP`) et le tiers (`now()`) tombaient parfois dans la
+    //     même milliseconde (`timestamp(3)`), et l'écart passait inaperçu. La
+    //     pose est donc reculée d'une seconde : la lecture précède sûrement
+    //     l'écriture du tiers.
     {
       const a = await poserInstrument(observateur, '10A', { statut: 'valide', declaration: 'oui' });
+      await observateur.query(
+        `UPDATE cabinet_instruments SET updated_at = updated_at - interval '1 second' WHERE id_instrument = $1`,
+        [a],
+      );
       await tiers.query('BEGIN');
       await tiers.query('SELECT 1 FROM cabinet_instruments WHERE id_instrument = $1 FOR UPDATE', [a]);
       const edition = patcher({ idInstrument: a, titre: `Banc NF-7 ${RUN} 10A renommé` });
@@ -665,13 +679,20 @@ async function main() {
       } finally {
         await tiers.query('ROLLBACK').catch(() => {});
       }
-      assert.equal((await borne(edition, 'édition du titre 10')).status, 200);
+      const issue = await borne(edition, 'édition du titre 10');
+      assert.equal(issue.status, 409);
+      assert.equal(issue.json.reason, 'conflit_statut');
       assert.deepEqual(
         await instrument(observateur, a),
         { statut_relecture: 'valide', pose_question_suicide: false, instructions: DEFINITION_V2.instructions },
         'l’édition du titre ne doit pas réinstaller la V1 lue avant',
       );
-      console.log('ok 10 — titre écrit sur une lecture périmée : la V2 publiée « non » reste, la V1 n’est pas réinstallée');
+      const { rows: [{ titre }] } = await observateur.query(
+        'SELECT titre FROM cabinet_instruments WHERE id_instrument = $1',
+        [a],
+      );
+      assert.equal(titre, `Banc NF-7 ${RUN} 10A`, 'le titre jugé sur la lecture périmée ne doit pas être écrit');
+      console.log('ok 10 — titre sur une lecture périmée : refusé (409), la V2 publiée « non » reste, ni la V1 ni le titre ne sont écrits');
     }
   } finally {
     try {
