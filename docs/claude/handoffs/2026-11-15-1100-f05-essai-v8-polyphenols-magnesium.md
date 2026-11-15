@@ -26,6 +26,8 @@ Un seul essai, sous la consigne `fiche-usage-v8+cb4d89a4186ee36d`, des neuf fich
 - Constat par conteneur (lecture seule, `one-off-7491`). `FU_MG_P3` n° 1 : structure `e59d35c3`, consigne v8, modèles `claude-sonnet-5` et `gpt-5.4`, 0 acte. Les cinq empreintes de rubrique sont égales à celles du brouillon local. Les quatre fiches déposées sous la v7 n'ont pas de version n° 2.
 - Quatre fiches refusées sur 7 rubriques : POLY P2, P4, P8, MG P4. Familles au journal (rang 01 du 2026-11-15).
 - Quatre `SyntaxError`, avant tout rapport : POLY P3, POLY P7, MG P5, MG P7. Les rapports sont hors dépôt, sous `~/.wellneuro/corpus/fiches-usage/*/2026-11-15T09-*-revue.json`.
+- Banc `scripts/lib/plan-journal.test.mjs` : 27/27. `check_no_secrets.sh --staged` : OK. CI de #2144 : 0.
+- PR-Agent ne tourne pas sur une PR de seuls fichiers de clôture (`paths-ignore` de `pr_agent.yml`). Recours D-448 : `wn-reviewer` GO, un P2 (classement de POLY P8), corrigé.
 
 ## Problèmes ouverts
 
@@ -33,7 +35,8 @@ Un seul essai, sous la consigne `fiche-usage-v8+cb4d89a4186ee36d`, des neuf fich
 - Question de la dose, sous une forme inverse : les « options » de MG P4 sont refusées parce que la quantité, que la v8 interdit d'écrire, est jugée indissociable du fait. À arbitrer avec la question clinique ouverte.
 - La limite de la règle des claims non employés : la phrase d'absence est écrite alors qu'un claim porte sur l'objet de la rubrique (MG P4).
 - Retour d'une famille de la v6 : la « question » ajoute un terme de mesure à la désignation de l'analyte (POLY P2, MG P4).
-- Rubriques encore hors objet : les « interprétations » de POLY P4 et de POLY P8.
+- Rubriques hors objet : les « interprétations » de POLY P4 (déjà sous la v7) et de POLY P8 (neuf sur cette rubrique).
+- Famille de la v7 non visée par la v8, qui demeure : un usage qui dépasse le statut (« précautions » de POLY P8).
 - Six fiches en `SyntaxError` au total (les deux P6, plus quatre neuves). L'outil ne garde pas la réponse brute, ce qui relève de l'outil.
 - Toujours en attente : le fer, le zinc, le volume d'eau de `FU_MG_P8`, les sept rubriques sans acte du rang 06.
 
