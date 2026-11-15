@@ -52,7 +52,7 @@
 Le nom des deux modèles et la version de la consigne sont enregistrés avec
 chaque version de fiche et chaque libellé : l'origine de chaque texte se
 retrace. Par défaut : `claude-sonnet-5` et `gpt-5.4`, sous la consigne
-`fiche-usage-v7` (`D-501` §10). La v2 avait remplacé la v1 avant tout envoi
+`fiche-usage-v8` (`D-501` §11). La v2 avait remplacé la v1 avant tout envoi
 (relue par Codex, puis approuvée par le responsable le 2026-11-12) ; la v3
 l'a remplacée après le pilote fer, où aucun texte n'avait été retenu ; la
 v4 précise la seule rubrique « question », refusée même quand elle ne
@@ -65,7 +65,14 @@ chaque rubrique, donné des deux côtés ; la v7 cible les refus communs au
 fer, au magnésium et aux polyphénols : un fait se restitue avec toutes ses
 conditions ou ne s'écrit pas, rien ne s'ajoute aux claims, un fait ne
 s'écrit que dans sa rubrique, et la réserve de la « question » est celle du
-statut de la fiche.
+statut de la fiche ; la v8 porte trois arbitrages du responsable (« j'adopte
+les quatre recommandations », après l'avis d'un relecteur) : la
+« population » nomme toujours la population d'usage, jamais la phrase
+d'absence ; une teneur de composition et un seuil qui borne une observation
+se restituent, mais une quantité à prendre, une fréquence ou une durée de
+prise ne s'écrivent pas ; la catégorie « médicaments » est admise dans un
+fait descriptif de sécurité ou de comparaison, jamais une spécialité ni sa
+posologie.
 
 Un libellé de population que les claims ne décrivent pas ne passe pas par
 l'IA : il vient d'une correspondance approuvée par le responsable, déposée
