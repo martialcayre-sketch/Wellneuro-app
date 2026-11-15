@@ -1,6 +1,7 @@
 {
   "name": "wellneuro-racine",
   "private": true,
+  "license": "UNLICENSED",
   "version": "0.0.0",
   "description": "Réexpéditeur de scripts. Le projet vit dans web/ ; ce fichier n'a aucune dépendance et ne doit jamais en recevoir.",
   "_pourquoi": "Les paliers de validation ne sont définis que dans web/package.json. Lancés depuis la racine du dépôt, ils rendaient 254 avec « missing script » — et une tâche de fond a rapporté ce 254 comme « exit code 0 ». La règle « T2 se lance depuis web/ » était écrite depuis des semaines et a mordu trois fois en deux jours, dont une à l'intérieur même du handoff qui la décrivait. Ce fichier la rend exécutable.",

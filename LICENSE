@@ -1,0 +1,31 @@
+© 2026 Wellneuro. Tous droits réservés.
+All rights reserved.
+
+Ce dépôt est public pour être lu, pas pour être réutilisé. Aucune licence
+n'est accordée : en l'absence d'un accord écrit, il est interdit de
+reproduire, modifier, distribuer, déployer ou exploiter tout ou partie de son
+contenu, y compris sous forme de service en ligne. Les conditions
+d'utilisation de GitHub permettent seulement de le consulter et d'en créer
+une bifurcation (« fork ») sur GitHub.
+
+Le contenu est fourni « en l'état », sans aucune garantie.
+
+## Contenus tiers
+
+Les contenus suivants ne relèvent pas de cette mention. Ils restent la
+propriété de leurs ayants droit, sous leurs propres conditions, et rien ici
+n'accorde de droits sur eux :
+
+- les textes des instruments d'évaluation (questionnaires, échelles et
+  inventaires publiés par leurs auteurs ou éditeurs), sous
+  `web/src/lib/questionnaires/` ;
+- les skills tiers et leurs fichiers, sous `.claude/skills/frontend-design/`,
+  `.claude/skills/supabase-postgres-best-practices/`,
+  `.claude/skills/ui-ux-pro-max/`, `.claude/skills/webapp-testing/` et
+  `.agents/skills/supabase-postgres-best-practices/`, chacun sous la licence
+  qu'il porte, le cas échéant ;
+- les données et extraits de référentiels publics (CIQUAL, NABM,
+  Compl'Alim…), y compris les fixtures sous `web/prisma/fixtures/nabm-test/`,
+  sous les conditions de leurs producteurs ;
+- les dépendances logicielles déclarées dans `web/package.json`, non
+  versionnées ici, chacune sous sa propre licence.
