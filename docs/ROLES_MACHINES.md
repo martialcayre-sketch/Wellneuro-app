@@ -434,6 +434,25 @@ Sa portée est celle du contrôle des registres, en plus étroite encore :
 Codes : `0` rien de dû, `1` actions dues ou mode dégradé, `2` anomalie,
 `3` usage.
 
+**L'instantané au cockpit** (lot `cockpit-v2`, accord du responsable du
+2026-11-15). Le panneau « Intégrateur, PR et CI » du cockpit croise deux
+sources. La file de l'intégrateur vient des registres : lignes `prete` non
+traitées et lignes `merge_fait`. L'état de chaque PR vient de l'instantané
+GitHub, que la page ne peut pas lire elle-même :
+
+- **qui le dépose** : l'intégrateur, à chaque tour où il prend un
+  instantané, et toute session qui en prend un ;
+- **comment** : `ArtifactData set`, collection `instantanes`, document
+  `github`, avec `file_path` = le fichier de sortie du bloc-notes. Le
+  document entier est remplacé, avec `if_version` = la dernière version lue ;
+  la première pose se fait sans ;
+- **quoi** : seulement un instantané complet, de code `0`, pris avec les
+  sondes. Un instantané partiel ou sans sondes reste au bloc-notes ;
+- **ce que la page en fait** : elle l'affiche avec son heure de prise, et le
+  dit périmé après trente minutes. Il ne recopie aucun texte libre, et sa
+  présence dans la page ne prouve aucun merge : l'étape 7 bis de `wn-merge`
+  reste la seule lecture qui autorise.
+
 ## Le risque concret, en une phrase
 
 Les tests E2E lancés via `npm run test:e2e` réinitialisent le patient fictif
