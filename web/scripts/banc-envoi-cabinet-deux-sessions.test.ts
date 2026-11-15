@@ -29,12 +29,12 @@
 //   6. ENVOI D'ABORD, PUBLICATION EN ATTENTE : l'envoi tient la ligne (déjà
 //      repassée en relecture, donc écartée) ; la publication attend la fin
 //      de l'envoi, puis passe ; l'instrument écarté n'est pas assigné ;
-//   7. DÉCLARATION D'ABORD : un publié non déclaré, déclaré entre la lecture
-//      de l'envoi et son verrou, ne part pas (la lecture l'avait écarté) ;
+//   7. (retirée) DÉCLARATION D'ABORD posait un publié NON déclaré : la base
+//      le refuse depuis la troisième migration de H59 (CHECK « valide ⇒
+//      déclaré », `nf7_valide_declare_v1_negatif.sql`) ;
 //   8. ENVOI D'ABORD, DÉCLARATION : « Déclarer » ne vise jamais une ligne que
-//      l'envoi verrouille (il n'agit que sur un publié NON déclaré, que
-//      l'envoi écarte dès sa lecture) — refus immédiat sur la ligne tenue,
-//      aucune attente sur une autre ;
+//      l'envoi verrouille (il n'agit que sur un publié NON déclaré, que la
+//      base refuse désormais) — refus immédiat sur la ligne tenue ;
 //   9. INTERBLOCAGES : plusieurs instruments présentés en ORDRES OPPOSÉS
 //      ([A, B] et [B, A]), deux patients puis un seul, contre deux
 //      modifications, dans les deux ordres — tout se termine dans le délai,
@@ -548,31 +548,11 @@ async function main() {
       await viderAssignations(observateur);
     }
 
-    // 7. DÉCLARATION D'ABORD : X, publié non déclaré, est déclaré entre la
-    //    lecture de l'envoi et son verrou.
-    {
-      const x = await poserInstrument(observateur, '7X', { statut: 'valide', declaration: null });
-      const b = await poserInstrument(observateur, '7B', { statut: 'valide', declaration: 'oui' });
-      const brouillon = await poserBrouillon(observateur, PATIENT_1, [x, b]);
-      await tenirBrouillon(tiers, brouillon);
-      const envoi = envoyer(brouillon);
-      try {
-        await attendreBlocage(observateur, MOTIF.reclamationBrouillon);
-        assert.equal((await borne(declarer(x, DECLARATION_OUI), 'déclaration 7')).status, 200);
-      } finally {
-        await tiers.query('COMMIT');
-      }
-      const issue = await borne(envoi, 'envoi 7');
-      assert.deepEqual([issue.status, issue.json.count], [200, 1]);
-      assert.deepEqual(await copies(observateur, PATIENT_1), { [b]: true }, 'X, écarté à la lecture, ne part pas');
-      assert.equal((await instrument(observateur, x)).pose_question_suicide, true);
-      console.log('ok 7 — déclaration d’abord : X, écarté à la lecture, ne part pas ; aucune copie NULL');
-      await viderAssignations(observateur);
-    }
+    // 7. (retirée) : un publié non déclaré n'existe plus en base (CHECK
+    //    « valide ⇒ déclaré », troisième migration de H59).
 
     // 8. ENVOI D'ABORD, DÉCLARATION : jamais sur une ligne tenue.
     {
-      const x = await poserInstrument(observateur, '8X', { statut: 'valide', declaration: null });
       const b = await poserInstrument(observateur, '8B', { statut: 'valide', declaration: 'oui' });
       const brouillon = await poserBrouillon(observateur, PATIENT_1, [b]);
       await tenirTable(tiers, 'assignations');
@@ -581,7 +561,6 @@ async function main() {
         await attendreBlocage(observateur, MOTIF.insertionAssignation); // B est tenu FOR SHARE
         const surB = await borne(declarer(b, DECLARATION_OUI), 'déclaration 8 (B)');
         assert.deepEqual([surB.status, surB.json.reason], [409, 'conflit_statut']);
-        assert.equal((await borne(declarer(x, DECLARATION_OUI), 'déclaration 8 (X)')).status, 200);
         assert.equal(await bloquees(observateur, MOTIF.ecritureInstrument), 0, 'aucune déclaration ne doit attendre');
       } finally {
         await tiers.query('COMMIT');
@@ -589,7 +568,7 @@ async function main() {
       const issue = await borne(envoi, 'envoi 8');
       assert.deepEqual([issue.status, issue.json.count], [200, 1]);
       assert.deepEqual(await copies(observateur, PATIENT_1), { [b]: true });
-      console.log('ok 8 — envoi d’abord : « Déclarer » refuse la ligne tenue (409) et n’attend sur aucune autre');
+      console.log('ok 8 — envoi d’abord : « Déclarer » refuse la ligne tenue (409), sans attendre');
       await viderAssignations(observateur);
     }
 
