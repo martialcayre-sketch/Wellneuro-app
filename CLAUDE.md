@@ -27,8 +27,13 @@ technologique sans demande explicite. État courant :
 - **UI en français** : tout texte visible par l'utilisateur.
 - **Changements minimaux** : pas de refactoring, renommage ou réorganisation
   non demandés.
-- **Pas de migration Prisma ni de modification de `schema.prisma`** sans
-  demande explicite dans la conversation.
+- **`schema.prisma` et migrations non destructives : sans approbation**
+  (`D-523`, autorisation permanente bornée) — le chemin vers la production
+  ne change pas (Codex P0, `wn-reviewer`, `release-db`, constat). Migration
+  destructive (DROP, TRUNCATE, DELETE/UPDATE sans WHERE, renommage,
+  changement de type, MERGE, `EXECUTE` dynamique, garde désarmée) ou
+  écrite par Bash :
+  confirmation du responsable.
 - **Pas de SQL destructif** sans confirmation explicite (DROP, DELETE sans
   WHERE, TRUNCATE).
 - **Pas de modification de la logique clinique ou des seuils** sans demande

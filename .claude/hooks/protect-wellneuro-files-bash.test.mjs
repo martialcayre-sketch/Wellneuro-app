@@ -132,6 +132,18 @@ test("Prisma : demande, motif Prisma (pas le motif clinique)", () => {
   assert.doesNotMatch(sortie, /DC-17/);
 });
 
+test("D-523 : une migration écrite par Bash demande toujours — son SQL ne se juge pas", () => {
+  for (const commande of [
+    "cp /tmp/m.sql web/prisma/migrations/20261114000000_x/migration.sql",
+    "npx prisma migrate diff --from-empty --to-schema-datamodel web/prisma/schema.prisma --script > web/prisma/migrations/20261114000000_x/migration.sql",
+  ]) {
+    const { verdict, sortie } = jugement(commande);
+    assert.equal(verdict, "demande", commande);
+    assert.match(sortie, /D-523/);
+    assert.match(sortie, /par Bash/);
+  }
+});
+
 test("table signée hors liste (marqueur sur disque) : demande", () => {
   const cible = "web/src/lib/clinical/catalogueConduitesV1.ts";
   assert.match(fs.readFileSync(path.join(racine, cible), "utf8"), /validationExterne: true/);
