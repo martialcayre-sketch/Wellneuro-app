@@ -448,10 +448,12 @@ GitHub, que la page ne peut pas lire elle-même :
   la première pose se fait sans ;
 - **quoi** : seulement un instantané complet, de code `0`, pris avec les
   sondes. Un instantané partiel ou sans sondes reste au bloc-notes ;
-- **ce que la page en fait** : elle l'affiche avec son heure de prise, et le
-  dit périmé après trente minutes. Il ne recopie aucun texte libre, et sa
-  présence dans la page ne prouve aucun merge : l'étape 7 bis de `wn-merge`
-  reste la seule lecture qui autorise.
+- **ce que la page en fait** : elle l'affiche avec son heure de prise. Elle
+  le dit périmé au-delà de trente minutes, le seuil du mode dégradé du
+  superviseur (ci-dessus), sans règle propre. L'instantané ne recopie aucun
+  texte libre de GitHub, et la page n'en ajoute aucun. Sa présence dans la
+  page ne prouve aucun merge : l'étape 7 bis de `wn-merge` reste la seule
+  lecture qui autorise.
 
 ## Le risque concret, en une phrase
 
