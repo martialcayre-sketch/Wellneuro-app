@@ -88,6 +88,19 @@ describe('DepotDocuments — dépôt refusé en 401 (Q2 a)', () => {
     expect(corps.get('categorie')).toBe('traitements_complements');
   });
 
+  it('401 au corps illisible : le message de D-488, puis T-36, jamais une autre phrase', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_url: string, init?: RequestInit) =>
+        init?.method === 'POST' ? new Response('', { status: 401 }) : new Response(JSON.stringify(PRET), { status: 200 }),
+      ),
+    );
+    await choisirEtDeposer();
+    const message = await screen.findByText(SESSION_EXPIREE);
+    const lien = screen.getByRole('link', { name: 'Me reconnecter' });
+    expect(message.compareDocumentPosition(lien) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it('un autre refus ne propose pas T-36', async () => {
     reponsesPost.push({ status: 413, corps: { ok: false, reason: 'trop_lourd', error: 'Fichier trop lourd.' } });
     await choisirEtDeposer();

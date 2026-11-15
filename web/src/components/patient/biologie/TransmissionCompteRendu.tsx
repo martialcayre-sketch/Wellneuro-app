@@ -16,6 +16,7 @@ import { PatientInlineMessage } from '@/components/patient/ui/PatientInlineMessa
 import { enTeteDossierPage, estRefusAutreDossier, MESSAGE_AUTRE_DOSSIER } from '@/lib/portail/dossierPage';
 import { PatientErrorState } from '@/components/patient/PatientErrorState';
 import { LienReconnexion } from '@/components/patient/LienReconnexion';
+import { MESSAGE_SESSION_EXPIREE } from '@/app/portail/[token]/textesEntree';
 import { DateNaissanceEcran } from '@/components/patient/DateNaissanceEcran';
 import { MESSAGE_CIRCUIT_MINEUR } from '@/lib/patient/gardeAge';
 
@@ -129,7 +130,7 @@ export function TransmissionCompteRendu({ token }: { token: string }) {
       // l'entrée et emporterait le fichier choisi (Q2 a). Aucun renvoi
       // automatique après la reconnexion.
       if (res.status === 401) {
-        setSessionExpiree(data?.error ?? 'Le document n’a pas pu être envoyé. Réessayez.');
+        setSessionExpiree(data?.error ?? MESSAGE_SESSION_EXPIREE);
         return;
       }
       // Rien n'est parti : la page ne relit pas la liste, qui serait celle de

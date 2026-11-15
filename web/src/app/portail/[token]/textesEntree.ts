@@ -16,6 +16,14 @@ export const BOUTON_VERS_SITUATION = 'Continuer vers votre situation';
  * connexion, dans le même onglet ([[D-481]], complément DOC-4, Q5a).
  */
 export const LIEN_RECONNEXION = 'Me reconnecter';
+/**
+ * Le message sous lequel T-36 paraît ([[D-488]], amendement DOC-11), servi
+ * par la route dans la réponse 401 (`lib/trust/portailAuth.ts`). Les pages
+ * l'affichent tel que la route le sert ; cette copie n'est que le repli d'un
+ * corps illisible, pour que T-36 ne paraisse jamais sous une autre phrase. Son
+ * égalité avec le texte de la route est tenue par un banc.
+ */
+export const MESSAGE_SESSION_EXPIREE = 'Session expirée. Reconnectez-vous.';
 export const DESTINATION_RECONNEXION = '/portail/connexion';
 
 /**

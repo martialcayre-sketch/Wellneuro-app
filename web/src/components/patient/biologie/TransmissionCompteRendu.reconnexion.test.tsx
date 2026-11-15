@@ -87,6 +87,21 @@ describe('TransmissionCompteRendu — dépôt refusé en 401 (Q2 a)', () => {
     expect(appels.filter(a => a.init?.method === 'POST')).toHaveLength(2);
   });
 
+  it('401 au corps illisible : le message de D-488, puis T-36, jamais une autre phrase', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_url: string, init?: RequestInit) =>
+        init?.method === 'POST'
+          ? ({ ok: false, status: 401, json: async () => { throw new SyntaxError('corps vide'); } } as unknown as Response)
+          : ({ ok: true, status: 200, json: async () => PRET } as Response),
+      ),
+    );
+    await choisirEtEnvoyer();
+    const message = await screen.findByText(SESSION_EXPIREE);
+    const lien = screen.getByRole('link', { name: 'Me reconnecter' });
+    expect(message.compareDocumentPosition(lien) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it('un autre refus ne propose pas T-36', async () => {
     depots.push({ status: 422, corps: { ok: false, error: 'Ce fichier n’est pas accepté.' } });
     await choisirEtEnvoyer();

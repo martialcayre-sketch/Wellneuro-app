@@ -11,7 +11,7 @@ Coder Q2a et Q3a du prototype PAT-6 ([[D-481]] complément DOC-11, Q2, Q3 et pr�
 
 ## Décisions prises
 
-- Q2a, U33 et U34 : un dépôt refusé en 401 ne fait plus `router.replace`. La page garde le fichier (et la catégorie sur U33), ne relit pas la liste (la relecture renverrait à l'entrée), et affiche sous le bouton le message de la route (`data.error`, « Session expirée. Reconnectez-vous. »), puis `LienReconnexion nouvelOnglet`. Repli si le corps est illisible : le message d'échec existant de l'écran. Le chargement et l'accusé de U34 gardent leur renvoi silencieux.
+- Q2a, U33 et U34 : un dépôt refusé en 401 ne fait plus `router.replace`. La page garde le fichier (et la catégorie sur U33), ne relit pas la liste (la relecture renverrait à l'entrée), et affiche sous le bouton le message de la route (`data.error`, « Session expirée. Reconnectez-vous. »), puis `LienReconnexion nouvelOnglet`. Repli si le corps est illisible : le même message, `MESSAGE_SESSION_EXPIREE` (`app/portail/[token]/textesEntree.ts`), pour que T-36 ne paraisse jamais sous une autre phrase (remarque PR-Agent de #2146) ; un banc tient son égalité avec le texte de `lib/trust/portailAuth.ts`. Le chargement et l'accusé de U34 gardent leur renvoi silencieux.
 - Q3a, U35 : `message` de `DeclarationsPatient` porte `reconnexion`, vrai seulement sur 401 ET `onSessionExpiree` passé (page de la fiche seule, via `DeclarationsDeLaFiche`) ; T-36 suit le message à l'ancre (Q5a), ou en tête si l'ancre a disparu. U07 ne change pas.
 - Q3a, U39 : `erreur.reconnexion` sur 401, T-36 dans l'accordéon du choix, sous le message. U40 : `sessionExpiree` sur 401, T-36 sous le message, dans les trois formulaires ; remis à faux au renvoi, à l'annulation et à la réinitialisation.
 - T-36 ne paraît qu'avec son message (correctif de PAT-5) ; les autres refus ne le proposent pas ; rien n'est renvoyé automatiquement.
@@ -22,6 +22,7 @@ Coder Q2a et Q3a du prototype PAT-6 ([[D-481]] complément DOC-11, Q2, Q3 et pr�
 - `web/src/components/patient/collecte/DepotDocuments.tsx`, `web/src/components/patient/biologie/TransmissionCompteRendu.tsx`.
 - `web/src/components/physio-traitements/DeclarationsPatient.tsx`, `web/src/components/patient/trust/MesChoix.tsx`, `web/src/components/patient/trust/SignalerProbleme.tsx`.
 - `web/src/components/patient/LienReconnexion.tsx` (commentaire seul).
+- `web/src/app/portail/[token]/textesEntree.ts` (`MESSAGE_SESSION_EXPIREE`, texte existant de D-488) et son banc `web/src/components/patient/LienReconnexion.messageSession.test.ts`.
 - Bancs neufs `*.reconnexion.test.tsx` sur les cinq composants.
 - `web/e2e/portail-reconnexion-transmissions.spec.ts` (neuf), `web/e2e/helpers/db.ts` (deux helpers).
 - `changelog.d/2026-11-14-refonte-lien-pat6-reconnexion.md`, ce handoff.
@@ -66,6 +67,19 @@ Coder Q2a et Q3a du prototype PAT-6 ([[D-481]] complément DOC-11, Q2, Q3 et pr�
   - E2E sur build de production : 410 passés, 34 sautés, aucun échec.
   - Les 12 cas de `portail-reconnexion-transmissions.spec.ts` sont verts, 6 sur Desktop Chromium et 6 sur iPhone 13 (WebKit). `portail-reconnexion-envoi.spec.ts` est vert sur les deux.
 - T1 complet (`npm run check`), après cette passe : 0. `check_no_secrets.sh` : 0.
+- Correctif de la remarque PR-Agent (repli `MESSAGE_SESSION_EXPIREE`), puis septième passe (`--fast`, le 2026-11-15 à 11 h 18, au calme au démarrage) : ROUGE dans Vitest sur 2 tests hors lot.
+  - `ProtocolMiniBuilder.test.tsx` : « Test timed out in 5000ms ».
+  - `export-dossier/masquage.test.ts` : borne de temps, 1 608 ms pour 1 500 ms permises.
+  - La charge est montée de 7,5 à 22,9 sans autre `wn-test-worktree.sh` ; la source était arrêtée au relevé suivant.
+  - Rejoués seuls, les deux fichiers sont verts (272 tests). Reprise au calme suivant, avec en plus aucun Vitest ni Playwright d'un autre worktree au démarrage.
+- Huitième passe (le 2026-11-15 à 11 h 25, calme au démarrage : `autres=0`, charge 5,2) : ROUGE dans Vitest, 9 tests hors lot, tous sensibles au temps (`ProtocolMiniBuilder`, `masquage`, `cockpit.guard`). Au relevé de 11 h 30, un Vitest ou Playwright d'un autre worktree tournait (`autres=1`), charge 35. Contention apparue en cours de passe ; reprise au calme suivant.
+- CI de la première tête (`66b96e38`) : `e2e` rouge sur un seul test, `portail-reconnexion-envoi.spec.ts:165` sur iPhone 13 (WebKit), « U25 : un AUTRE patient connecté », avec `locator.click: Test timeout of 120000ms exceeded`. Le journal d'appels montre une navigation vers `/portail/PAT_SEED_01`, l'entrée, avant le clic.
+  - Instruit comme un défaut du spec de PAT-5, sans relance ni tolérance. `DossierDeuxVoixView` rend le titre « Mon dossier, à deux voix » dès sa phase `chargement` (ligne 330). Le spec attendait ce titre, puis effaçait le cookie.
+  - Une lecture `GET /api/portail/dossier` encore en vol recevait alors le 401 et renvoyait à l'entrée (`window.location.href`). Le bouton « C’est bien ça » ne paraissait jamais.
+  - Correctif : dans les deux cas U25, attendre le bouton (l'état chargé) avant d'expirer la session. Le code de l'écran n'est pas touché.
+- Neuvième passe, avec les deux correctifs (repli `MESSAGE_SESSION_EXPIREE`, attente de l'état chargé dans `portail-reconnexion-envoi`), lancée le 2026-11-15 à 12 h 11 après deux minutes de calme (charge 2,5) : VERTE.
+  - Vitest : 1 039 fichiers, 17 947 tests.
+  - E2E : 410 passés, 34 sautés, 0 échec. Les deux specs de reconnexion sont verts sur Desktop Chromium et iPhone 13 (WebKit), dont les deux cas U25 corrigés.
 - U33 et U35 ne sont pas jouables en E2E : `WN_PORTAIL_DEPOT_DOCUMENTS` et `WN_PHYSIO_TRAITEMENTS` sont éteints dans l'environnement E2E (pages en `notFound`). Ils sont tenus par leurs bancs unitaires. Aucun constat à l'écran local n'a été fait.
 
 ## Problèmes ouverts
