@@ -46,8 +46,8 @@ if (LECTURES.has(nomCourt)) {
 
 decision(
   "deny",
-  `Outil MCP Prisma refusé (« ${nomCourt || "inconnu"} »). Une migration se ` +
-  "crée par `prisma migrate dev --create-only` sur une base locale, sur " +
-  "demande explicite, puis se relit en PR et s'applique par release-db " +
-  "approuvée (D-087) ; la base ne s'édite jamais en direct."
+  `Outil MCP Prisma refusé (« ${nomCourt || "inconnu"} »). Une migration ` +
+  "s'écrit par Write sous prisma/migrations/ (sans demande si elle n'est pas " +
+  "destructive, D-523), se relit en PR et s'applique par release-db après " +
+  "le merge contre-revu (D-520) ; la base ne s'édite jamais en direct."
 );

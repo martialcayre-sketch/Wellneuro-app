@@ -83,7 +83,7 @@ rejoué rend `BROUILLON_INCHANGE`.
 
 ## La consigne versionnée
 
-`versionConsigne` vaut `fiche-usage-v7+<empreinte des deux consignes>`,
+`versionConsigne` vaut `fiche-usage-v8+<empreinte des deux consignes>`,
 épinglée dans `lib/consigne.mjs` et gardée par `lib/consigne.test.mjs`.
 
 Depuis la v2 (`D-501`), le message d'une fiche porte ses cinq axes signés,
@@ -129,6 +129,16 @@ commentaire, de comparaison ou de conséquence aux claims, et les axes ne
 s'énoncent pas comme des faits. Un fait ne s'écrit que dans la rubrique dont
 il relève. La réserve de la « question » est celle du statut de la fiche, et
 une fiche sans analyte y désigne la mesure par « cet examen ».
+
+Depuis la v8 (`D-501` §11), la rubrique « population » nomme toujours la
+population d'usage par sa désignation, même sans claim, et ne prend jamais
+la phrase d'absence. Les quantités se jugent selon leur fonction : une
+teneur de composition et un seuil qui borne une observation se restituent
+avec leurs conditions ; une quantité à prendre, une fréquence, un
+fractionnement ou une durée de prise ne s'écrivent pas. Aucune spécialité
+ni posologie ; la catégorie « médicaments » est admise dans un fait
+descriptif de sécurité ou de comparaison. Un claim fourni n'a pas à être
+employé : une rubrique n'écrit que les claims qui portent sur son objet.
 
 ## Ce que l'outil ne voit pas
 

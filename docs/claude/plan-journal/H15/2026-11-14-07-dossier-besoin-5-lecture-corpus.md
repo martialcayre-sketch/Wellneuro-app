@@ -1,0 +1,27 @@
+- **Mise à jour (2026-11-14, dossier du besoin 5, étape 2 : lecture du corpus)** : forme opaque (`D-251` §4), identifiants, comptes et mécanismes seulement. Suite de l'ouverture (`2026-11-14-04`, #2132) ; T1 à T3 (`20261114-2045-b` A, `2046-b` A, `2047-b` C) sont closes et ne se reposent pas.
+  - **Lecture** : production, lecture seule, par identifiant, depuis cinq conteneurs `scalingo run -d` (transaction en lecture seule, annulée en fin de requête), par motifs sur le texte des claims actifs. Neuf axes : sommeil, rythme biologique, fatigue, activité physique et sédentarité, agenda, somnolence, mobilité, récupération, hygiène du sommeil, plus la règle du guide. Ont été lus en plus les pièces des instruments, les sources externes du registre et les seuils cités dans les passages. L'inventaire (claim, source, axe) vit au dossier privé et au bloc-notes de la session ; rien n'est étiqueté.
+  - **Constats** :
+    - aucun claim n'est étiqueté au besoin 5 ;
+    - les axes sont couverts largement, mais par des sources internes seulement (cours SIIN, documents du cabinet) ; les rares sources externes captées parlent d'autre chose ;
+    - les pièces SIIN de l'Epworth, de l'agenda, du chronotype et du questionnaire de mode de vie sont en base comme passages, sans claim. Celles du PSQI et du MFI-20 sont au registre, sans passage en base ;
+    - onze sources externes du registre n'ont aucun passage en base : validations, différence minimale, conditions d'usage et licences, documentation et normes, une recommandation sur l'insomnie, une mesure d'activité à item unique ;
+    - la publication primaire du seuil PSQI, que cite le commentaire de `R-SOM-01`, n'est ni au corpus, ni au registre ;
+    - aucun claim ne donne de seuil pour les instruments du repos ;
+    - les passages portent trois lectures concurrentes de l'Epworth, aucune sourcée au corpus. La grille servie reprend les trous de la pièce. Celle des sous-échelles de `Q_MOD_01` laisse un total sans bande sur quatre sous-échelles (déjà relevé dans `questions.ts`) ;
+    - le GPAQ et le NAP ne sont décrits que par un cours SIIN ; aucun document de l'OMS n'est au corpus. Le corpus distingue sédentarité et manque d'activité ;
+    - aucun claim ne fonde la règle de décision du guide ; quatre claims de cours en sont proches, sans la règle elle-même ;
+    - le niveau signé de l'agenda (`D-424`) fait foi contre celui du guide. Le rattachement de `R-SOM-01` et l'alignement de la convergence restent à J3-12f ;
+    - mobilité : aucun instrument au catalogue, aucune définition d'instrument au corpus. Le chronotype (`Q_SOM_05`) est servi, mais n'est pas lu par le score.
+  - **Manques posés en questions** (liste commune, file B, cliniques), avec l'avis de Codex joint (`D-505`, à l'aveugle : A, A, A, B, A). Ils ont été tranchés le 2026-11-14 dans la session du lot :
+    - `20261114-2305-b` (provenance des instruments du repos) : A. Ingérer les pièces manquantes ; tirer des claims des pièces et des sources externes du registre ; inscrire puis ingérer la publication primaire du PSQI ;
+    - `20261114-2306-b` (grille de lecture) : **B, contre la recommandation et l'avis de Codex** (A). Pour l'Epworth, la grille de la publication primaire, à inscrire et ingérer ; la grille de la pièce est rapportée comme lecture du cabinet. Pour le questionnaire de mode de vie, la grille de la pièce. L'alignement de la grille servie reste une décision distincte ;
+    - `20261114-2307-b` (questionnaire d'activité publié) : A. Le GPAQ de l'OMS est à chercher et ingérer ; le sous-score SIIN reste le support servi, avec ses limites ;
+    - `20261114-2308-b` (règle du guide) : B. Chercher une source externe qui fonde le déclenchement, l'association et la place « au socle » ; aucune règle n'est posée avant ; à défaut de source, « non évaluée » ;
+    - `20261114-2309-b` (fonctions corporelles au sens large) : **B, contre la recommandation et l'avis de Codex** (A). Fatigue et rythme sont sourcés sur les claims et les instruments déjà servis, le chronotype restant candidat ; un instrument publié de mobilité est à chercher. Les deux priorités écartées le restent tant que leurs conditions de retour ne sont pas remplies.
+  - **Suite** : l'étape 3, réunir les sources :
+    - pièces manquantes ;
+    - claims des pièces et des sources externes ;
+    - publications primaires du PSQI et de l'Epworth ;
+    - GPAQ de l'OMS, source de la règle, instrument de mobilité.
+
+    Chaque ingestion se fait sur accord, envoi par envoi. Viennent ensuite l'étiquetage et les positions. Aucun code : `BESOIN_SOURCES`, la convergence, les grilles servies et tout nouvel instrument relèvent chacun d'une décision distincte, appliquée par J3-12f après signature (`D-312` §3).
