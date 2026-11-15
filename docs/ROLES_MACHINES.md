@@ -455,6 +455,32 @@ GitHub, que la page ne peut pas lire elle-même :
   page ne prouve aucun merge : l'étape 7 bis de `wn-merge` reste la seule
   lecture qui autorise.
 
+**Les résumés des pages de suivi** (lot `cockpit-resumes-pages`, option
+retenue par le responsable le 2026-11-15). Chaque page de suivi a sa propre
+base, et une page ne lit pas la base d'un autre artefact. Le cockpit lit donc
+en direct la page de la file D, et reçoit des autres un résumé. Il affiche une
+carte par page, sous « Pages de suivi » :
+
+- **qui le dépose** : la session qui met à jour une page de suivi (file A,
+  file C, BioFlow, refonte Lien côté praticien ou côté patient), dans le même
+  geste que sa mise à jour ;
+- **comment** : `ArtifactData set` dans la base de la page de suivi de la
+  file D, collection `resumes`, document `file-a`, `file-c`, `bioflow`,
+  `lien-praticien` ou `lien-patient`. Le document entier est remplacé, avec
+  `if_version` = la dernière version lue ;
+- **quoi** : `titre`, `sous_titre`, `page` (le lien de la page), `forme`
+  (`items` ou `lots`), `compteurs` (`fait`, `en_cours`, `a_faire`,
+  `attente` ; un lot `merge` compte comme `fait`), `total`, `en_cours` (au
+  plus quatre libellés), `attente` (au plus trois), `dernier` (la dernière
+  entrée du journal, pour une page à lots), `source_maj` (la date de la
+  dernière mise à jour de la page), `maj_le` (ISO, lu sur l'horloge) et
+  `par`. Les libellés sont recopiés de la page tels quels, sans donnée
+  patient ;
+- **ce que la page en fait** : elle l'affiche avec l'heure du résumé et la
+  date de la page, et signale « résumé à rafraîchir » au-delà de
+  quarante-huit heures. Ce seuil est un choix d'affichage du lot, pas une
+  règle de cycle. Un résumé ne remplace pas la page : la carte y renvoie.
+
 ## Le risque concret, en une phrase
 
 Les tests E2E lancés via `npm run test:e2e` réinitialisent le patient fictif
