@@ -417,7 +417,9 @@ describe('POST /api/patient/submit — instruments du cabinet', () => {
       expect(notifierPraticienSignalSecurite).not.toHaveBeenCalled();
     });
 
-    it('table NON signée (état livré) : aucun courriel, même sur une réponse positive', async () => {
+    it('table NON signée (signature retirée) : aucun courriel, même sur une réponse positive', async () => {
+      // La table est signée depuis le 2026-11-15 ([[D-524]]) : l'état non signé se pose ici.
+      Object.assign(SAFETY_QUESTIONNAIRE_CABINET_METADATA, { validationExterne: false, dateValidation: null, shaPerimetre: null });
       const res = await postSubmit(requeteCabinet({ Q1: 0, Q2: 1 }));
       expect(res.status).toBe(200);
       expect(notifierPraticienSignalSecurite).not.toHaveBeenCalled();

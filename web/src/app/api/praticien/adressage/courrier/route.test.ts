@@ -590,6 +590,8 @@ describe('réponses de questionnaire — D-275 §2, LOT-3', () => {
 
     it('drapeau allumé mais cabinet NON signé : catalogue seul, aucune jointure, aucun CAB_ cité', async () => {
       simulerSignature();
+      // La table est signée depuis le 2026-11-15 ([[D-524]]) : l'état non signé se pose ici.
+      Object.assign(SAFETY_QUESTIONNAIRE_CABINET_METADATA, { validationExterne: false, dateValidation: null, shaPerimetre: null });
       process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB = 'true';
       tx.questionnaireReponse.findMany.mockResolvedValue([PASSATION]);
       tx.consultation.findFirst.mockResolvedValue({ id: 'cons_porteuse', anamnese: {} });

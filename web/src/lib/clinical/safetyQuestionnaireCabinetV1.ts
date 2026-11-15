@@ -83,14 +83,16 @@ export type SafetyQuestionnaireCabinetMetadata = {
 
 export const SAFETY_QUESTIONNAIRE_CABINET_METADATA: SafetyQuestionnaireCabinetMetadata = {
   version: 'safety-questionnaire-cabinet-nnpp2-v1',
-  // NON SIGNÉE : la signature suit sur sa surface de relecture ([[D-195]],
-  // [[D-515]] §3), dans la PR 4 du lot.
-  validationExterne: false,
-  dateValidation: null,
-  // Un CODE, pas une phrase ([[D-251]]).
-  sourceReference: 'D-515 §2',
+  // SIGNÉE le 2026-11-15 — déclaration écrite du responsable, après relecture
+  // de la surface produite avant la demande ([[D-195]]) et amendée par
+  // [[D-524]]. La signature n'autorise PAS l'allumage de
+  // `WN_ENABLE_DECLARATION_SUICIDE_CAB` ([[D-524]] §3).
+  validationExterne: true,
+  dateValidation: '2026-11-15T00:00:00.000Z',
+  // Un CODE, pas une phrase ([[D-251]]) : la décision et la surface relue.
+  sourceReference: 'D-515 §2 D-524 SURFACE_RELECTURE_SAF_QUEST_02_2026-11-14',
   // SURTOUT PAS la constante calculée — la comparaison serait tautologique.
-  shaPerimetre: null,
+  shaPerimetre: '67b9ef5436a97018c8db41f45c269b32db278e86db7cf45808f180cc30e88f1f',
 };
 
 export const SAFETY_QUESTIONNAIRE_CABINET_SHA256 = sha256(

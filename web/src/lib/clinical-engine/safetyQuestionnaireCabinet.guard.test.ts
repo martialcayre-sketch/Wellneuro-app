@@ -42,9 +42,10 @@ import { estFindingAdressable, estFindingQuestionnaire } from './safetyFindingSo
 // `SAF-QUEST-02` (lot de code de §6.2, PR 2). Chaque propriété de la décision,
 // avec sa contre-épreuve :
 //
-//   1. la table livrée n'est PAS signée : aucun constat, la règle en
-//      `candidate` sur les seuls dossiers qu'une réponse ou une limitation
-//      concerne ; un SHA périmé referme le verrou ;
+//   1. la table est signée le 2026-11-15 ([[D-524]]) sur le SHA déclaré ;
+//      signature retirée, aucun constat, la règle en `candidate` sur les
+//      seuls dossiers qu'une réponse ou une limitation concerne ; un SHA
+//      périmé referme le verrou ;
 //   2. §1 : seule la question désignée, sur une copie « oui », est lue — ni
 //      le catalogue, ni un `CAB_` « non » ou non déclaré, ni une désignation
 //      non chargée ;
@@ -126,15 +127,35 @@ function regles(sortie: ReturnType<typeof construireSafetyFindings>, ruleId: str
   return sortie.rules.filter(regle => regle.ruleId === ruleId);
 }
 
-describe('verrou de signature — livrée NON signée, sens inverse', () => {
-  it('la table livrée n’est pas signée : aucune règle validée', () => {
-    expect(SAFETY_QUESTIONNAIRE_CABINET_METADATA.validationExterne).toBe(false);
-    expect(SAFETY_QUESTIONNAIRE_CABINET_METADATA.shaPerimetre).toBeNull();
+/** L'état d'avant la signature du 2026-11-15 : le sens inverse du verrou reste éprouvé. */
+function retirerSignature(): void {
+  SAFETY_QUESTIONNAIRE_CABINET_METADATA.validationExterne = false;
+  SAFETY_QUESTIONNAIRE_CABINET_METADATA.dateValidation = null;
+  SAFETY_QUESTIONNAIRE_CABINET_METADATA.shaPerimetre = null;
+}
+
+describe('verrou de signature — signée le 2026-11-15 (D-524), sens inverse', () => {
+  it('la table livrée est signée sur le SHA déclaré par le responsable, le 2026-11-15', () => {
+    expect(SAFETY_QUESTIONNAIRE_CABINET_METADATA.validationExterne).toBe(true);
+    expect(SAFETY_QUESTIONNAIRE_CABINET_METADATA.dateValidation).toBe('2026-11-15T00:00:00.000Z');
+    expect(SAFETY_QUESTIONNAIRE_CABINET_METADATA.shaPerimetre)
+      .toBe('67b9ef5436a97018c8db41f45c269b32db278e86db7cf45808f180cc30e88f1f');
+    expect(SAFETY_QUESTIONNAIRE_CABINET_SHA256).toBe(SAFETY_QUESTIONNAIRE_CABINET_METADATA.shaPerimetre);
+    expect(tableSecuriteQuestionnaireCabinetSignee()).toBe(true);
+    expect(regleSecuriteQuestionnaireCabinetValidee()).toEqual(expect.objectContaining({
+      ruleId: REGLE_SECURITE_QUESTIONNAIRE_CABINET,
+      lifecycle: 'clinically_validated',
+    }));
+  });
+
+  it('non signée : aucune règle validée', () => {
+    retirerSignature();
     expect(tableSecuriteQuestionnaireCabinetSignee()).toBe(false);
     expect(regleSecuriteQuestionnaireCabinetValidee()).toBeNull();
   });
 
   it('non signée : aucun constat, la règle candidate seulement là où une réponse l’appelle', () => {
+    retirerSignature();
     const positif = construireSafetyFindings([], reponsesSecuriteDeclarees([CAB_SOUVENT]));
     expect(positif.findings).toEqual([]);
     expect(positif.limitations).toEqual([]);
@@ -146,6 +167,7 @@ describe('verrou de signature — livrée NON signée, sens inverse', () => {
   });
 
   it('non signée : une réponse illisible ou une désignation inconnue joint aussi la règle candidate', () => {
+    retirerSignature();
     for (const row of [
       passationCab('REP-I', { Q1: 2 }),
       passationCab('REP-D', { Q2: 3 }, { designationCabinet: designation({ questionSuicideCopie: null, questionSuicideId: null, questionSuicideOptionNon: null }) }),

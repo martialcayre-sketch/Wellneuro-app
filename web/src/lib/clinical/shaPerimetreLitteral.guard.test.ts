@@ -55,6 +55,9 @@ const TABLES = [
   // Enrôlée le jour de sa première signature ([[D-345]], 2026-10-23), dans le
   // même geste. Sa tautologie s'écrirait `shaPerimetre: shaPerimetreDeclencheurs(...)`.
   { fichier: 'declencheursComplementCibleV1.ts', constante: 'shaPerimetreDeclencheurs' },
+  // Enrôlée le jour de sa première signature (`SAF-QUEST-02`, [[D-515]] §3 et
+  // [[D-524]], 2026-11-15), dans le même geste, comme sa surface l'avait prévu.
+  { fichier: 'safetyQuestionnaireCabinetV1.ts', constante: 'SAFETY_QUESTIONNAIRE_CABINET_SHA256' },
 ] as const;
 
 describe('shaPerimetre — littéral figé dans les tables signées, jamais la constante', () => {

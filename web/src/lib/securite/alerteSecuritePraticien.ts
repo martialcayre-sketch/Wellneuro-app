@@ -52,8 +52,9 @@ import { baseLiensCourriel } from '@/lib/portail/urlPublique';
 // après une extinction, toute assignation `CAB_` envoyée drapeau allumé
 // continue de faire partir le courriel sur une réponse positive, alors que le
 // Fil, qui suit le drapeau courant, n'en montre plus la carte. Il reste la
-// ligne de journal du dossier. Question 20261114-1335-a, à trancher avant la
-// signature de `SAF-QUEST-02`.
+// ligne de journal du dossier. C'est voulu : option C de la question
+// 20261114-1335-a, actée par [[D-522]] (aucun message au patient sans
+// courriel ; une extinction complète passe par un lot dédié, §4).
 
 /**
  * Texte SIGNÉ par le responsable le 2026-10-10 ([[D-277]] §2). Ne pas

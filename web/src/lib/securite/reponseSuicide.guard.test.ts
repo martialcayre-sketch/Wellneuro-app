@@ -235,7 +235,9 @@ describe('[[D-515]] — instrument du cabinet : navigateur et serveur d’accord
     expect(serveur(designation, answers)).toBe(false);
   });
 
-  it('table NON signée (état livré) : ni désignation servie, ni message, ni courriel', () => {
+  it('table NON signée (signature retirée) : ni désignation servie, ni message, ni courriel', () => {
+    // La table est signée depuis le 2026-11-15 ([[D-524]]) : l'état non signé se pose ici.
+    Object.assign(SAFETY_QUESTIONNAIRE_CABINET_METADATA, { validationExterne: false, dateValidation: null, shaPerimetre: null });
     for (const designation of Object.values(DESIGNATIONS)) {
       expect(designationSuicideCabinetServie(ID_QUESTIONNAIRE, designation)).toBeNull();
       for (const choix of CHOIX) {
