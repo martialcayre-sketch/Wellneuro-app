@@ -27,10 +27,13 @@ const hook = path.join(
   "protect-wellneuro-files.mjs"
 );
 
-/** Verdict du hook pour un chemin : { verdict: 'passe'|'demande'|'refus', sortie }. */
-function jugement(filePath) {
+/**
+ * Verdict du hook pour un chemin : { verdict: 'passe'|'demande'|'refus', sortie }.
+ * `entree` complète `tool_input` (contenu d'un Write, fragments d'un Edit).
+ */
+function jugement(filePath, entree = {}) {
   const res = spawnSync("node", [hook], {
-    input: JSON.stringify({ tool_input: { file_path: filePath } }),
+    input: JSON.stringify({ tool_input: { file_path: filePath, ...entree } }),
     encoding: "utf8",
   });
   if (res.status === 2) return { verdict: "refus", sortie: res.stderr || "" };
@@ -58,26 +61,215 @@ for (const chemin of [
   });
 }
 
-// ── Ce qui doit demander — Prisma, verdict et motif inchangés ────────────────
-// Un cas par motif, là aussi.
+// ── Schéma et migrations — autorisation permanente bornée (D-523) ──────────
+// Le schéma et les migrations non destructives s'écrivent sans confirmation ;
+// une migration destructive demande, avec le motif Prisma (release-db, D-520),
+// jamais le motif clinique. Un cas par motif destructif.
+
+const MIGRATION = "web/prisma/migrations/20261114000000_x/migration.sql";
 
 for (const chemin of [
   "web/prisma/schema.prisma",
-  "web/prisma/migrations/20260822000000_x/migration.sql",
+  MIGRATION,
   "supabase/migrations/20260822000000_x.sql",
+  "web/prisma/migrations/migration_lock.toml",
 ]) {
-  test(`demande Prisma : ${chemin}`, () => {
-    const j = jugement(chemin);
-    assert.equal(j.verdict, "demande");
-    // Le motif Prisma reste le motif Prisma : release-db, migration additive —
-    // et jamais le motif clinique (la disjonction se teste dans les deux sens).
-    assert.match(j.sortie, /release-db/);
-    assert.doesNotMatch(j.sortie, /D-xxx/);
-    // D-520 : plus d'approbation humaine du run ; la porte est le merge contre-revu.
-    assert.doesNotMatch(j.sortie, /approuv|à la main/);
-    assert.match(j.sortie, /D-520/);
+  test(`silence D-523 (sans contenu destructif) : ${chemin}`, () => {
+    assert.equal(jugement(chemin).verdict, "passe");
   });
 }
+
+test("silence D-523 : schema.prisma, même un modèle retiré (la migration le portera)", () => {
+  const j = jugement("web/prisma/schema.prisma", { old_string: "model A {\n}", new_string: "" });
+  assert.equal(j.verdict, "passe");
+});
+
+for (const sql of [
+  'CREATE TABLE "x" ("id" TEXT NOT NULL, CONSTRAINT "x_pkey" PRIMARY KEY ("id"));',
+  'ALTER TABLE "patients" ADD COLUMN "y" TEXT;',
+  'CREATE INDEX "x_y_idx" ON "x"("y");',
+  'UPDATE "x" SET "y" = \'a\' WHERE "y" IS NULL;',
+  'DELETE FROM "x" WHERE "id" = \'a\';',
+  'DELETE FROM "x" WHERE "id" IN (SELECT "id" FROM "y");',
+  'ALTER TABLE "x" ADD CONSTRAINT "x_y_fkey" FOREIGN KEY ("y") REFERENCES "y"("id") ON DELETE SET NULL ON UPDATE CASCADE;',
+  'CREATE TRIGGER "t" BEFORE UPDATE ON "x" FOR EACH ROW EXECUTE FUNCTION f();',
+  'CREATE TRIGGER "t" BEFORE INSERT ON "x" FOR EACH ROW EXECUTE PROCEDURE f();',
+  'UPDATE "x" SET "y" = \'a; b\' WHERE "id" = 1;',
+  'UPDATE "x" AS p SET "y" = 1 WHERE p."id" = 2;',
+  'DELETE FROM "x" WHERE true AND "id" = 1;',
+  'CREATE TRIGGER "t" BEFORE UPDATE OF "y" ON "x" FOR EACH ROW EXECUTE FUNCTION f();',
+  'ALTER TABLE "x" ENABLE ROW LEVEL SECURITY;',
+  // Seconde passe (2026-11-14) : un mot cité en commentaire ou en chaîne ne
+  // demande plus — l'en-tête « aucun DROP » des migrations du dépôt reste muet.
+  '-- Migration additive : aucun DROP, aucun TRUNCATE.\nALTER TABLE "x" ADD COLUMN "z" TEXT;',
+  '/* TRUNCATE "x" */ ALTER TABLE "x" ADD COLUMN "z" TEXT;',
+  'COMMENT ON TABLE "x" IS \'jamais de DROP ici\';',
+  'GRANT EXECUTE ON FUNCTION f() TO app;',
+  'REVOKE EXECUTE ON FUNCTION f() FROM PUBLIC;',
+  'UPDATE "public"."x" SET "y" = 1 WHERE "id" = 2;',
+  'CREATE FUNCTION f() RETURNS trigger AS $$ BEGIN NEW."y" := now(); RETURN NEW; END $$ LANGUAGE plpgsql;',
+  'COMMENT ON TABLE "x" IS $$Table de l\'auteur$$;\nDELETE FROM "x" WHERE "id" = 1;',
+  'INSERT INTO "x" ("id") VALUES (1) ON CONFLICT DO NOTHING;',
+  'ALTER TABLE "x" ALTER COLUMN "y" DROP NOT NULL;',
+  'ALTER TABLE "x" ALTER COLUMN "y" DROP DEFAULT;',
+  'CREATE TEMP TABLE r (id int) ON COMMIT DROP;',
+  'CREATE TRIGGER "t" BEFORE UPDATE OR DELETE OR TRUNCATE ON "x" FOR EACH STATEMENT EXECUTE FUNCTION f();',
+  'CREATE TRIGGER "t" BEFORE TRUNCATE ON "x" FOR EACH STATEMENT EXECUTE FUNCTION f();',
+  'REVOKE UPDATE, DELETE, TRUNCATE ON "x" FROM app;',
+  'DO $$ BEGIN REVOKE EXECUTE ON FUNCTION f() FROM anon; END $$;',
+  'ALTER ROLE app NOBYPASSRLS NOSUPERUSER;',
+]) {
+  test(`silence D-523, migration non destructive : ${sql.slice(0, 50)}`, () => {
+    assert.equal(jugement(MIGRATION, { content: sql }).verdict, "passe");
+  });
+}
+
+
+// PR-Agent, #2137 : une migration de données de 20 000 littéraux se juge en
+// temps linéaire (le crochet a un délai).
+test("silence D-523 : migration de données volumineuse jugée vite", () => {
+  const lignes = Array.from({ length: 20000 }, (_, n) => `INSERT INTO "x" ("id", "v") VALUES (${n}, 'valeur ${n}');`);
+  const debut = Date.now();
+  assert.equal(jugement(MIGRATION, { content: lignes.join("\n") }).verdict, "passe");
+  assert.ok(Date.now() - debut < 2000, `trop lent : ${Date.now() - debut} ms`);
+});
+
+for (const [motif, sql] of [
+  ["DROP", 'ALTER TABLE "x" DROP COLUMN "y";'],
+  ["DROP", 'DROP TABLE "x";'],
+  ["DROP", 'drop index "x_y_idx";'],
+  ["TRUNCATE", 'TRUNCATE "x";'],
+  ["RENAME", 'ALTER TABLE "x" RENAME COLUMN "y" TO "z";'],
+  ["ALTER … TYPE", 'ALTER TABLE "x" ALTER COLUMN "y" TYPE VARCHAR(10);'],
+  ["ALTER … TYPE", 'ALTER TABLE "x" ALTER COLUMN "y" SET DATA TYPE INTEGER;'],
+  ["DELETE sans WHERE", 'DELETE FROM "x";'],
+  ["UPDATE sans WHERE", 'UPDATE "x" SET "y" = NULL;'],
+  ["UPDATE sans WHERE", 'UPDATE "x" SET "y" = 1 WHERE "id" = 2;\nUPDATE "x" SET "z" = 3;'],
+  // Sondes de la contre-revue Codex du 2026-11-14 (cinq P1).
+  ["DROP", "SELECT '--'; DROP SCHEMA IF EXISTS public CASCADE;"],
+  ["DELETE sans WHERE", "DELETE FROM t RETURNING 'where';"],
+  ["UPDATE sans WHERE", "UPDATE t AS p SET v = 'efface';"],
+  ["ALTER … TYPE", "ALTER TABLE t ALTER v TYPE varchar(1) USING v::varchar(1);"],
+  ["EXECUTE dynamique", "DO $$ BEGIN EXECUTE 'DR' || 'OP SCHEMA IF EXISTS public CASCADE'; END $$;"],
+  // WHERE seulement dans une sous-requête ou un commentaire : toutes les lignes.
+  ["UPDATE sans WHERE", 'UPDATE "x" SET "y" = (SELECT "z" FROM "w" WHERE "w"."id" = 1);'],
+  ["DELETE sans WHERE", 'DELETE FROM "x" -- where "id" = 1\n;'],
+  ["DELETE sans WHERE", 'DELETE FROM "x" USING "y";'],
+  // Sondes de wn-reviewer du 2026-11-14 (NO-GO, trois P1 et le P2 n° 5).
+  ["UPDATE sans WHERE", 'UPDATE u SET e = NULL RETURNING 1 AS "where";'],
+  ["UPDATE sans WHERE", "UPDATE u SET e = $q$where$q$;"],
+  ["DELETE sans WHERE", `CREATE TABLE "a'b"(id int);\nDELETE FROM u;\nCREATE TABLE "c'd"(id int);`],
+  ["DELETE sans WHERE", 'CREATE TABLE "a--b"(id int); DELETE FROM u;'],
+  ["DELETE sans WHERE", "SELECT E'\\''; DELETE FROM u; SELECT 1;"],
+  ["MERGE", "MERGE INTO u USING (SELECT 1) s ON true WHEN MATCHED THEN DELETE;"],
+  ["ALTER … TYPE", "ALTER TABLE u ALTER COLUMN age /* */ TYPE smallint;"],
+  ["ALTER … TYPE", 'ALTER TABLE u ALTER COLUMN "age" SET /*x*/ DATA TYPE smallint;'],
+  ["DELETE sans WHERE", "DELETE FROM u WHERE true;"],
+  ["UPDATE sans WHERE", "UPDATE u SET e = 1 WHERE 1 = 1;"],
+  ["DISABLE TRIGGER", "ALTER TABLE j DISABLE TRIGGER ALL;"],
+  ["DISABLE ROW LEVEL SECURITY", 'ALTER TABLE "j" DISABLE ROW LEVEL SECURITY;'],
+  ["CREATE RULE", "CREATE OR REPLACE RULE r AS ON DELETE TO j DO INSTEAD NOTHING;"],
+  ["session_replication_role", "SET session_replication_role = replica;"],
+  // Seconde passe du 2026-11-14 : wn-reviewer (cinq P1, deux P2) et Codex
+  // (onze P1). Ce que le lexeur ne lit pas avec certitude demande.
+  ["UPDATE sans WHERE", 'UPDATE "public"."Patient" SET note = NULL;'],
+  ["UPDATE sans WHERE", 'UPDATE ONLY "public"."Patient" AS p SET note = NULL;'],
+  ["UPDATE sans WHERE", "UPDATE t SET a = $é$ where $é$;"],
+  ["DELETE sans WHERE", "DELETE FROM accounts RETURNING $é$WHERE id = 1$é$;"],
+  ["DELETE sans WHERE", 'COMMENT ON TABLE "t" IS $$Table de l\'auteur$$;\nDELETE FROM "t";\nCOMMENT ON COLUMN "t"."a" IS \'x\';'],
+  ["DELETE sans WHERE", 'SELECT $$--$$; DELETE FROM "Patient";'],
+  ["DELETE sans WHERE", "DELETE FROM t /* /* */ WHERE id = 1 */;"],
+  ["DISABLE TRIGGER", "ALTER TABLE accounts DISABLE /* a /* b */ c */ TRIGGER USER;"],
+  ["DELETE dans une sous-instruction", 'WITH d AS (DELETE FROM "Patient" RETURNING id) SELECT id FROM d WHERE id > 0;'],
+  ["DELETE dans une sous-instruction", "WITH efface AS (DELETE FROM accounts RETURNING *) SELECT * FROM efface WHERE FALSE;"],
+  ["DELETE sans WHERE", "DELETE FROM accounts WHERE (TRUE);"],
+  ["UPDATE sans WHERE", "UPDATE t SET v = 1 WHERE 1 = 1 AND true;"],
+  ["DELETE sans WHERE", "DELETE FROM t WHERE id = 1 OR true;"],
+  ["UPDATE sans WHERE", "INSERT INTO t (id, v) VALUES (1, 2) ON CONFLICT (id) DO UPDATE SET v = excluded.v;"],
+  ["DELETE sans WHERE", "-- migration\rDELETE FROM accounts;"],
+  ["dans un corps", "DO $$DECLARE function text := 'DEL' || 'ETE FROM accounts'; BEGIN EXECUTE function; END;$$;"],
+  ["dans un corps", "CREATE FUNCTION purge() RETURNS void AS $f$ DELETE FROM t WHERE id = 1 $f$ LANGUAGE sql;"],
+  ["non lu avec certitude", 'ALTER TABLE accounts ALTER COLUMN U&"name" UESCAPE \'!\' TYPE varchar(1) USING name::varchar(1);'],
+  ["non lu avec certitude", 'SET U&"session\\005freplication_role" = replica;'],
+  ["non lu avec certitude", 'CREATE TABLE "x" (id int); /* commentaire non fermé DROP TABLE "y";'],
+  ["session_replication_role", 'SET "session_replication_role" = replica;'],
+  ["DROP", 'DROP TRIGGER IF EXISTS "t_append_only" ON "x";'],
+  ["DROP", 'ALTER TABLE "x" DROP CONSTRAINT "x_y_check";'],
+  ["TRUNCATE", 'TRUNCATE TABLE "x", "y";'],
+  // Troisième passe de wn-reviewer.
+  ["TRUNCATE dans un corps", `DO 'BEGIN TRUNCATE "Patient"; END';`],
+  ["corps non lexable", "DO $$ BEGIN RAISE NOTICE 'l''auteur; END $$; -- apostrophe orpheline\nSELECT $q$ l'auteur DELETE FROM t $q$;"],
+  ["dans un corps", `DO LANGUAGE plpgsql E'BEGIN DELETE FROM "Patient"; END';`],
+  ["dans un corps", `CREATE PROCEDURE p() LANGUAGE sql AS 'DELETE FROM "Patient"'; CALL p();`],
+  ["session_replication_role", "SELECT set_config('session_replication_role','replica',false);"],
+  ["TRUNCATE dans un corps", 'DO $$ BEGIN -- or\n TRUNCATE "Patient"; END $$;'],
+  ["TRUNCATE dans un corps", 'DO $$ BEGIN -- ,\n TRUNCATE "Patient"; END $$;'],
+  ["DROP dans un corps", 'DO $$ BEGIN -- on commit\n DROP TABLE "Patient"; END $$;'],
+  ["dans un corps", 'DO $$ BEGIN DELETE/**/FROM "Patient"; END $$;'],
+  ["dans un corps", 'DO $$ BEGIN UPDATE public . "Patient" SET nom = 1; END $$;'],
+  ["UPDATE sans WHERE", 'UPDATE "Patient" * AS p SET "nom" = 1;'],
+  ["UPDATE sans WHERE", 'UPDATE ONLY ("Patient") SET "nom" = 1;'],
+  ["ENABLE REPLICA", 'ALTER TABLE "Journal" ENABLE REPLICA TRIGGER "append_only";'],
+  ["ALTER … TYPE", "ALTER TYPE comp ALTER ATTRIBUTE a TYPE int;"],
+  ["DELETE sans WHERE", "DELETE FROM t WHERE true::boolean;"],
+  // PR-Agent, #2137.
+  ["GRANT à un rôle ouvert", 'GRANT SELECT, UPDATE ON "patients" TO anon;'],
+  ["GRANT à un rôle ouvert", 'GRANT ALL ON ALL TABLES IN SCHEMA public TO PUBLIC;'],
+  ["ALTER POLICY", 'ALTER POLICY "p" ON "patients" USING (true);'],
+  ["GRANT à un rôle ouvert", 'GRANT SELECT, UPDATE ON "Patient" TO "anon";'],
+  ["GRANT à un rôle ouvert", 'GRANT SELECT ON "public"."Patient" TO "authenticated";'],
+  // PR-Agent sur 3121d6c3 : contourner la RLS par le rôle ou le propriétaire.
+  ["BYPASSRLS ou SUPERUSER", "ALTER ROLE app BYPASSRLS;"],
+  ["BYPASSRLS ou SUPERUSER", "CREATE ROLE r WITH LOGIN SUPERUSER;"],
+  ["OWNER TO", 'ALTER TABLE "patients" OWNER TO app;'],
+  // Revue de tête de #2137 : beaucoup de blancs entre DO/AS et le littéral.
+  ["TRUNCATE dans un corps", `DO${" ".repeat(300)}'BEGIN TRUNCATE "Patient"; END';`],
+  ["TRUNCATE dans un corps", `DO${"\n".repeat(300)}'BEGIN TRUNCATE "Patient"; END';`],
+  ["TRUNCATE dans un corps", `DO LANGUAGE plpgsql${" ".repeat(300)}'BEGIN TRUNCATE "Patient"; END';`],
+  ["dans un corps", `CREATE FUNCTION f() RETURNS void LANGUAGE plpgsql AS${" ".repeat(300)}'BEGIN DELETE FROM "Patient"; END';`],
+  ["dans un corps", `CREATE FUNCTION f() RETURNS void LANGUAGE plpgsql AS${" ".repeat(300)}E'BEGIN DELETE FROM "Patient"; END';`],
+  // Quatrième passe de wn-reviewer.
+  ["non lu avec certitude", `DO E'BEGIN \\x54RUNCATE "Patient"; END';`],
+  ["non lu avec certitude", `DO E'BEGIN \\124RUNCATE "Patient"; END';`],
+  ["non lu avec certitude", `DO E'BEGIN \\u0044ELETE FROM "Patient"; END';`],
+  ["non lu avec certitude", `CREATE FUNCTION f() RETURNS void LANGUAGE sql AS E'\\x44ELETE FROM "Patient"'; SELECT f();`],
+  ["dans un corps", 'DO $$ DECLARE c refcursor; r record; BEGIN OPEN c FOR UPDATE "Patient" SET nom = 1 RETURNING *; FETCH c INTO r; END $$;'],
+  ["dans un corps", 'DO $$ DECLARE c CURSOR FOR UPDATE "Patient" SET nom = 1 RETURNING *; BEGIN OPEN c; END $$;'],
+  // Quatrième passe Codex.
+  ["dans un corps", "DO 'BEGIN RAISE NOTICE ''--''; DELETE FROM public.t; END;';"],
+  ["dans un corps", "DO E'BEGIN RAISE NOTICE \\'--\\'; DELETE FROM public.t; END;';"],
+  ["DELETE sans WHERE", "DELETE FROM public.t WHERE TRUE::pg_catalog.bool;"],
+  ["DELETE sans WHERE", "DELETE FROM public.t WHERE CAST(true AS boolean);"],
+  // Troisième passe Codex.
+  ["dans un corps", "DO 'BEGIN DELETE FROM public.accounts; END;';"],
+  ["dans un corps", "DO LANGUAGE plpgsql 'BEGIN UPDATE t SET a = 1; END';"],
+  ["dans un corps", "CREATE FUNCTION f() RETURNS void AS 'DELETE FROM t' LANGUAGE sql;"],
+  ["UPDATE sans WHERE", "UPDATE ONLY (public.accounts) SET active = false;"],
+  ["UPDATE sans WHERE", "UPDATE accounts * SET active = false;"],
+  ["dans un corps", `DO $${"a".repeat(150)}$\nDECLARE function text := 'DELETE FROM public.accounts';\nBEGIN EXECUTE function; END;\n$${"a".repeat(150)}$;`],
+]) {
+  test(`demande D-523, migration destructive (${motif}) : ${sql.slice(0, 50)}`, () => {
+    const j = jugement(MIGRATION, { content: sql });
+    assert.equal(j.verdict, "demande", j.sortie);
+    assert.match(j.sortie, new RegExp(motif.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+    assert.match(j.sortie, /D-523/);
+    // Le motif Prisma reste le motif Prisma : release-db, D-520 — jamais le
+    // motif clinique (la disjonction se teste dans les deux sens).
+    assert.match(j.sortie, /release-db/);
+    assert.match(j.sortie, /D-520/);
+    assert.doesNotMatch(j.sortie, /D-xxx/);
+    assert.doesNotMatch(j.sortie, /approuv|à la main/);
+  });
+}
+
+test("demande D-523 : un Edit qui pose un DROP, même sur un fichier absent du disque", () => {
+  const j = jugement(MIGRATION, { old_string: "absent", new_string: 'DROP TABLE "x";' });
+  assert.equal(j.verdict, "demande", j.sortie);
+});
+
+test("demande D-523 : supabase/migrations destructive", () => {
+  assert.equal(jugement("supabase/migrations/20260822000000_x.sql", { content: "TRUNCATE x;" }).verdict, "demande");
+});
 
 // ── Ce qui doit demander — fichiers cliniques (Socle LOT-02) ─────────────────
 // Un cas par motif, avec la casse RÉELLE des fichiers du dépôt : c'est la
@@ -166,8 +358,8 @@ for (const chemin of [
   });
 }
 
-test("évitement par segments refermé (Prisma) : web/prisma/./schema.prisma", () => {
-  const j = jugement("web/prisma/./schema.prisma");
+test("évitement par segments refermé (Prisma) : web/prisma/./migrations, contenu destructif", () => {
+  const j = jugement("web/prisma/./migrations/20261114000000_x/migration.sql", { content: 'DROP TABLE "x";' });
   assert.equal(j.verdict, "demande");
   assert.match(j.sortie, /release-db/);
 });

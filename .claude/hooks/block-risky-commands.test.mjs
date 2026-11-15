@@ -131,6 +131,70 @@ test("prisma migrate deploy demande une autorisation", () => {
   assert.equal(verdict("npx prisma migrate deploy"), "demande");
 });
 
+// D-523 : `migrate status` et `migrate diff` n'écrivent dans aucune base.
+test("prisma migrate status et diff passent en silence (D-523)", () => {
+  assert.equal(verdict("npx prisma migrate status"), "passe");
+  assert.equal(verdict("npx prisma@7 migrate status"), "passe");
+  assert.equal(verdict("cd web && npx prisma migrate diff --from-schema-datasource prisma/schema.prisma --to-schema-datamodel prisma/schema.prisma --script"), "passe");
+  assert.equal(verdict("npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script | head"), "passe");
+  assert.equal(verdict("npx prisma migrate status || echo absent"), "passe");
+  // PR-Agent, #2137 : un chemin qui contient « prisma » n'est pas un appel.
+  assert.equal(verdict("cat web/prisma/schema.prisma | sed -n 1,20p"), "passe");
+  assert.equal(verdict("git diff main -- web/prisma/migrations | awk '{print $1}'"), "passe");
+  assert.equal(verdict("ls web/prisma/migrations | sort"), "passe");
+  assert.equal(verdict("npx prisma migrate status 2>&1 | tail -5"), "passe");
+  assert.equal(verdict("x=$(ls web/prisma/migrations | tail -1)"), "passe");
+});
+
+// wn-reviewer, 2026-11-14 : une version épinglée ou une option avant la
+// sous-commande ne la masquent plus ; un diff qui rejoue les migrations dans
+// une base fantôme, ou qui suit une autre configuration, demande.
+test("prisma@x, --config et diff --from-migrations demandent (D-523)", () => {
+  for (const cmd of [
+    "npx prisma@7 migrate deploy",
+    "npx prisma@7.2.0 db push",
+    "npx prisma --config prisma.config.ts migrate deploy",
+    "npx prisma --schema prisma/schema.prisma db execute --file x.sql",
+    "npx prisma --config autre.ts migrate status",
+    "cd web && npx prisma migrate diff --from-migrations prisma/migrations --to-schema-datamodel prisma/schema.prisma --script",
+    "npx prisma migrate diff --shadow-database-url postgres://x --from-empty --to-schema-datamodel s",
+    "npx prisma migrate diff --config autre.ts --from-empty --to-schema-datamodel s",
+    // Seconde passe (Codex, wn-reviewer) : ce que le shell assemble ou cache.
+    'npx prisma migrate diff "--from-migrations" prisma/migrations --to-empty',
+    'npx prisma@6 migrate diff --from-"migrations" prisma/migrations --to-empty --"shadow-database-url" postgresql://u:p@db.example/app',
+    'npx prisma@6 migrate reset --force --schema "prisma/schema.prisma$(: migrate diff)"',
+    "npx prisma db push --schema=a migrate diff",
+    "npx prisma migrate deploy --schema=a migrate status",
+    "npx prisma migrate diff --from-empty --to-schema-datamodel s --script | psql $DATABASE_URL",
+    "npx prisma migrate diff --from-empty --to-schema-datamodel s --script | npx prisma db execute --stdin",
+    // Troisième passe Codex.
+    "npx prisma@7 migrate diff --from-empty --to-migrations prisma/migrations",
+    "npx prisma@7 migrate diff --from-empty --to-schema prisma/schema.prisma --script | env psql $DATABASE_URL",
+    "npx prisma migrate diff --from-empty --to-schema s --script | head | command psql",
+    // wn-reviewer, troisième passe : `-o` écrit une migration par Bash.
+    "cd web && npx prisma migrate diff --from-empty --to-schema prisma/schema.prisma --script -o prisma/migrations/2099_x/migration.sql",
+    "npx prisma migrate diff --from-empty --to-schema s --script --output m.sql",
+    // wn-reviewer, quatrième passe.
+    "npx prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --script | uniq - prisma/migrations/2099_x/migration.sql",
+    "npx prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --script | less -o prisma/migrations/2099_x/migration.sql",
+    "npx prisma migrate diff --from-empty --to-schema s --script | sort -o m.sql",
+    "psql -f <(npx prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --script)",
+    // PR-Agent, #2137 : une redirection avant le tube ne coupe plus le segment.
+    "npx prisma migrate diff --from-empty --to-schema s --script 2>&1 | psql $DATABASE_URL",
+    "npx prisma migrate diff --from-empty --to-schema s --script &> /dev/null | psql x",
+    "npx prisma migrate deploy 2>&1 | tail",
+  ]) {
+    assert.equal(verdict(cmd), "demande", cmd);
+  }
+});
+
+test("ce qui suit un migrate diff reste jugé : un deploy chaîné demande", () => {
+  assert.equal(verdict("npx prisma migrate diff --script && npx prisma migrate deploy"), "demande");
+  for (const cmd of ["npx prisma migrate dev", "npx prisma migrate reset --force", "npx prisma migrate resolve --applied x", "npx prisma db push", "npx prisma db execute --file x.sql"]) {
+    assert.equal(verdict(cmd), "demande", cmd);
+  }
+});
+
 test("un push forcé demande une autorisation", () => {
   assert.equal(verdict("git push --force-with-lease origin ma-branche"), "demande");
 });
@@ -149,7 +213,31 @@ test("l’enveloppe sûre tolère un `cd … &&` de tête et une redirection", (
 });
 
 test("l’enveloppe sûre couvre les scripts qui portent leur propre garde-fou", () => {
-  assert.equal(verdict("bash scripts/wn-local-migrate.sh"), "passe");
+  assert.equal(verdict("bash scripts/wn-dev-db.sh --migrate"), "passe");
+  assert.equal(verdict("bash scripts/wn-dev-db.sh --migrate --seed"), "passe");
+});
+
+// Limite déclarée de D-523 : une substitution entre guillemets doubles est
+// masquée avant le jugement, comme tout texte cité. Silence ASSUMÉ, épinglé
+// pour qu'un changement du masquage se voie (wn-reviewer, cinquième passe).
+test("limite D-523 : substitution entre guillemets doubles, silence assumé", () => {
+  assert.equal(verdict('psql -c "$(npx prisma migrate diff --from-empty --to-schema s --script)"'), "passe");
+});
+
+// wn-reviewer, 2026-11-14 : une enveloppe ne vaut que seule.
+test("l’enveloppe ne dispense pas une commande Prisma chaînée (D-523)", () => {
+  for (const cmd of [
+    "bash scripts/wn-dev-db.sh && npx prisma migrate deploy",
+    "bash scripts/wn-dev-db.sh; npx prisma db push",
+    "npm run test:worktree || npx prisma migrate reset --force",
+    "bash scripts/wn-dev-db.sh $(npx prisma migrate deploy)",
+    "bash scripts/wn-dev-db.sh\nnpx prisma migrate deploy",
+    "bash scripts/wn-dev-db.sh --migrate & npx prisma migrate deploy",
+    "npm run test:worktree & npx prisma migrate reset --force",
+    "bash scripts/wn-dev-db.sh <(npx prisma migrate deploy)",
+  ]) {
+    assert.equal(verdict(cmd), "demande", cmd);
+  }
 });
 
 // ── La dérogation ne doit pas devenir un passe-partout ───────────────────────
