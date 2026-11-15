@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { readPatientSession } from '@/lib/patient-session';
+import { refusAutreDossier } from '@/lib/trust/portailAuth';
 import {
   resolvePortailPatientFromSession,
   consultationCourante,
@@ -24,6 +25,9 @@ export async function POST(req: Request): Promise<NextResponse<PortailConsenteme
     if (!patient) {
       return NextResponse.json({ ok: false, reason: 'forbidden', error: 'Accès non reconnu ou révoqué.' }, { status: 403 });
     }
+    // Le dossier de la page ([[D-481]], DOC-12, étendu par DOC-14) : après 401/403, avant tout le reste.
+    const autreDossier = refusAutreDossier(req, patient.idPatient);
+    if (autreDossier) return autreDossier as NextResponse<PortailConsentementResponse>;
     const consultation = await consultationCourante(patient.idPatient);
     if (!consultation) {
       return NextResponse.json({ ok: false, reason: 'no_consultation', error: 'Aucune consultation en cours.' }, { status: 404 });

@@ -47,4 +47,27 @@ describe('TransmissionCompteRendu — garde du dossier de la page', () => {
     // Le fichier reste choisi.
     expect(bouton.disabled).toBe(false);
   });
+
+  it('accusé de lecture refusé en 409 : T-51 à la place du texte fixe, segment envoyé, aucune relecture ([[D-488]] DOC-14)', async () => {
+    const appels: { url: string; init?: RequestInit }[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        appels.push({ url, init });
+        if (init?.method === 'POST') {
+          return { ok: false, status: 409, json: async () => ({ ok: false, reason: 'autre_dossier', error: MESSAGE_AUTRE_DOSSIER }) } as Response;
+        }
+        return { ok: true, status: 200, json: async () => ({ ...PRET, accuseRequis: true, documentAccuse: 'usage_ia' }) } as Response;
+      }),
+    );
+    render(<TransmissionCompteRendu token="PAT_SEED_02" />);
+    fireEvent.click(await screen.findByRole('button', { name: 'J’en ai pris connaissance' }));
+
+    expect(await screen.findByText(MESSAGE_AUTRE_DOSSIER)).toBeTruthy();
+    expect(screen.queryByText('Votre lecture n’a pas pu être enregistrée. Réessayez.')).toBeNull();
+    const post = appels.find(a => a.init?.method === 'POST')!;
+    expect(post.url).toBe('/api/portail/trust/lecture');
+    expect((post.init!.headers as Record<string, string>)[EN_TETE_DOSSIER_PAGE]).toBe('PAT_SEED_02');
+    expect(appels.filter(a => a.init?.method !== 'POST')).toHaveLength(1);
+  });
 });

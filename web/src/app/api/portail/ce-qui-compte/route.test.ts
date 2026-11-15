@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { EN_TETE_DOSSIER_PAGE, MESSAGE_AUTRE_DOSSIER } from '@/lib/portail/dossierPage';
 
 // Bancs en style « SIGNATURE RÉELLE » : on ne mocke QUE Prisma, et on forge un
 // vrai cookie avec `signPatientSession` (patron
@@ -29,6 +30,18 @@ vi.mock('@/lib/prisma', () => ({ prisma }));
 import { signPatientSession } from '@/lib/patient-session';
 import { GET, POST } from './route';
 
+/**
+ * La même requête sous le segment donné (`null` : en-tête absent), et sans
+ * cookie au besoin : la garde du dossier de la page ([[D-481]], DOC-14).
+ */
+function sousSegment(req: Request, segment: string | null, { sansCookie = false } = {}): Request {
+  const entetes = new Headers(req.headers);
+  if (segment === null) entetes.delete(EN_TETE_DOSSIER_PAGE);
+  else entetes.set(EN_TETE_DOSSIER_PAGE, segment);
+  if (sansCookie) entetes.delete('cookie');
+  return new Request(req, { headers: entetes });
+}
+
 const PATIENT = { idPatient: 'PAT_TEST', email: 'sophie.nicola@example.test' };
 const TEXTE = 'Ce qui compte pour moi, c’est de tenir debout jusqu’au soir.';
 
@@ -58,6 +71,7 @@ function postRequest(
     headers: {
       'content-type': 'application/json',
       ...(cookie ? { cookie: `wn_portail=${encodeURIComponent(cookie)}` } : {}),
+      [EN_TETE_DOSSIER_PAGE]: PATIENT.idPatient,
       ...entetes,
     },
     body: brut ?? JSON.stringify(corps),
@@ -134,6 +148,28 @@ beforeEach(() => {
 });
 
 describe('POST /api/portail/ce-qui-compte — contrat d’accès', () => {
+  // La garde du dossier de la page ([[D-481]], DOC-14).
+  it('page ouverte sous un autre dossier, ou sans segment : 409 (T-51), rien d’écrit', async () => {
+    for (const segment of ['PAT_AUTRE', null]) {
+      const res = await POST(sousSegment(postRequest(cookieProprio(), { texte: TEXTE }), segment));
+      expect(res.status).toBe(409);
+      expect(await res.json()).toEqual({ ok: false, reason: 'autre_dossier', error: MESSAGE_AUTRE_DOSSIER });
+    }
+    expect(prisma.entreeCeQuiCompte.create).not.toHaveBeenCalled();
+  });
+
+  it('sans session, le 401 passe avant la garde du dossier de la page', async () => {
+    const res = await POST(sousSegment(postRequest(cookieProprio(), { texte: TEXTE }), 'PAT_AUTRE', { sansCookie: true }));
+    expect(res.status).toBe(401);
+  });
+
+  it('compte refusé (introuvable ou révoqué) : le 403 passe avant la garde du dossier de la page', async () => {
+    prisma.patient.findUnique.mockReset();
+    prisma.patient.findUnique.mockResolvedValue(null);
+    const res = await POST(sousSegment(postRequest(cookieProprio(), { texte: TEXTE }), 'PAT_AUTRE'));
+    expect(res.status).toBe(403);
+  });
+
   it('drapeau éteint : 503 AVANT toute autre chose (ni auth, ni base)', async () => {
     delete process.env.WN_CE_QUI_COMPTE;
     const res = await POST(postRequest(cookieProprio(), { texte: TEXTE }));
@@ -329,6 +365,7 @@ describe('POST /api/portail/ce-qui-compte — borne technique de transport', () 
       headers: {
         'content-type': 'application/json',
         cookie: `wn_portail=${encodeURIComponent(cookieProprio())}`,
+        [EN_TETE_DOSSIER_PAGE]: PATIENT.idPatient,
       },
       body: enorme,
     });

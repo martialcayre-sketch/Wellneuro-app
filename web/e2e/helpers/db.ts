@@ -1650,6 +1650,11 @@ export async function compterEcrituresTrust(idPatient: string) {
   return { choix, effets, incidents, droits };
 }
 
+/** Dépôts « ce qui compte » d'un dossier de fixture (garde du dossier de la page, [[D-481]] DOC-14). */
+export async function compterEntreesCeQuiCompte(idPatient: string): Promise<number> {
+  return prisma.entreeCeQuiCompte.count({ where: { idPatient } });
+}
+
 /**
  * Une ligne rattachée à `elementActionId`, écrite EN CONTOURNANT LA ROUTE.
  * Rend le message de l'erreur levée, ou `null` si la base a accepté — et, dans

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { enTeteDossierPage, estRefusAutreDossier } from '@/lib/portail/dossierPage';
 import type { PortailSessionResponse, PortailConsultationState } from '@/app/api/portail/session/route';
 import { MOTIFS_CONSULTATION } from '@/lib/consultation/motifs';
 import { FICHE_SECTIONS, FICHE_CHAMPS_REQUIS } from '@/lib/consultation/fiche';
@@ -199,7 +200,8 @@ function ConsentScreen({ token, email, onAccepted }: { token: string; email: str
     try {
       const res = await fetch('/api/portail/consentement', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        // T-51 paraît dans le message d'erreur existant ([[D-488]] DOC-14).
+        headers: { 'Content-Type': 'application/json', ...enTeteDossierPage(token) },
         body: JSON.stringify({ token, email }),
       });
       setSessionExpiree(res.status === 401);
@@ -278,12 +280,14 @@ function FicheForm({ token, idPatient, email, onDone }: {
     try {
       const res = await fetch('/api/portail/fiche', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        // T-51 paraît dans le message d'erreur existant ([[D-488]] DOC-14).
+        headers: { 'Content-Type': 'application/json', ...enTeteDossierPage(token) },
         body: JSON.stringify({ token, email, fiche: valeurs }),
       });
       setSessionExpiree(res.status === 401);
-      const data = (await res.json()) as { ok: boolean; error?: string };
-      if (!data.ok) { setError(data.error ?? 'Erreur. Réessayez.'); setSaveError('submission-incomplete'); }
+      const data = (await res.json()) as { ok: boolean; reason?: string; error?: string };
+      // Refus de la garde : T-51 seul, sans l'indicateur de brouillon ([[D-488]] DOC-14).
+      if (!data.ok) { setError(data.error ?? 'Erreur. Réessayez.'); if (!estRefusAutreDossier(res.status, data)) setSaveError('submission-incomplete'); }
       else { clearWizardDraft('fiche', idPatient); onDone(); }
     } catch {
       setError('Erreur réseau. Réessayez.');
@@ -520,14 +524,16 @@ function AnamneseForm({ token, idPatient, email, motifInitial, onDone }: {
     try {
       const res = await fetch('/api/portail/valider', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        // T-51 paraît dans le message d'erreur existant ([[D-488]] DOC-14).
+        headers: { 'Content-Type': 'application/json', ...enTeteDossierPage(token) },
         // Lignes datées ouvertes : un brouillon ancien ne fait pas revivre
         // les groupes remplacés.
         body: JSON.stringify({ token, email, anamnese: physioOuvert ? sansGroupesRemplaces(valeurs) : valeurs, motif }),
       });
       setSessionExpiree(res.status === 401);
-      const data = (await res.json()) as { ok: boolean; error?: string; premiereAssignation?: string | null };
-      if (!data.ok) { setError(data.error ?? 'Erreur. Réessayez.'); setSaveError('submission-incomplete'); }
+      const data = (await res.json()) as { ok: boolean; reason?: string; error?: string; premiereAssignation?: string | null };
+      // Refus de la garde : T-51 seul, sans l'indicateur de brouillon ([[D-488]] DOC-14).
+      if (!data.ok) { setError(data.error ?? 'Erreur. Réessayez.'); if (!estRefusAutreDossier(res.status, data)) setSaveError('submission-incomplete'); }
       else { clearWizardDraft('anamnese', idPatient); onDone(data.premiereAssignation ?? null); }
     } catch {
       setError('Erreur réseau. Réessayez.');

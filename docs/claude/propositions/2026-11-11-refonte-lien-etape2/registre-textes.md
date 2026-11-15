@@ -363,9 +363,20 @@ de la file D), hors du plan patient, préalable de Q2a et Q3a.
 Le renvoi à l'entrée d'une page ouverte sous un autre segment que celui de
 la session (Q9 a) se fait sans texte.
 
+## 2.11 Garde sur les routes d'écriture restantes — DOC-14
+
+Réponses du responsable du 2026-11-15 : `20261115-1110-d` (emplacements) et
+`20261115-1111-d` (inclusion de U30). Sources canoniques : [[D-488]],
+amendement DOC-14, et [[D-481]], complément DOC-14. Lot :
+`garde-portail-routes-restantes`.
+
+| Id | Texte | Où | Statut |
+|---|---|---|---|
+| T-51 | Inchangé | Emplacement neuf : à la place du message d'erreur existant, sous le geste refusé, sur U03, U04, U06, U07, U08, U20, U22, U23, U30, U34 (accusé), U38 et U41. Aucun texte pour les trois écritures sans geste. | **Accepté (D-488)** |
+
 ## 3. Récapitulatif
 
 | Plan | Textes à accepter avant le lot |
 |---|---|
 | Praticien | T-01 à T-05, T-07, T-10, T-12, T-13 (PRA-1) ; T-14, T-15 (PRA-3) ; T-16 (PRA-2a, inscrit par DOC-1) ; T-17 (PRA-2a), T-18, T-19 (PRA-2b), acceptés et inscrits dans D-488 par DOC-6 ; T-60 à T-66 (PRA-3b), acceptés et inscrits dans D-488 par DOC-8 ; T-67 à T-73 (PRA-4), acceptés et inscrits dans D-488 par DOC-13 |
-| Patient | T-21 à T-23, T-32 (PAT-1) ; T-31 (PAT-2) ; T-30 (PAT-3) ; T-33, T-34 (PAT-5), avec l'emplacement neuf de T-36 inscrit par DOC-9 (celui de la phrase vide de U28 retiré par DOC-10) ; T-36 à T-39 inscrits par DOC-5 ; emplacements neufs de T-36 et du message de session expirée inscrits par DOC-11 (PAT-6) ; T-40 à T-44, T-48 et nouvel emplacement T-36 inscrits par DOC-7 (PAT-4), T-49/T-50 inscrits pour Q5b ; T-51 et l'emplacement neuf de la mention de sécurité de U40 inscrits par DOC-12 (garde serveur, préalable de Q2a et Q3a) ; T-34 refusé, T-35 reste proposé, T-45 sans objet |
+| Patient | T-21 à T-23, T-32 (PAT-1) ; T-31 (PAT-2) ; T-30 (PAT-3) ; T-33, T-34 (PAT-5), avec l'emplacement neuf de T-36 inscrit par DOC-9 (celui de la phrase vide de U28 retiré par DOC-10) ; T-36 à T-39 inscrits par DOC-5 ; emplacements neufs de T-36 et du message de session expirée inscrits par DOC-11 (PAT-6) ; T-40 à T-44, T-48 et nouvel emplacement T-36 inscrits par DOC-7 (PAT-4), T-49/T-50 inscrits pour Q5b ; T-51 et l'emplacement neuf de la mention de sécurité de U40 inscrits par DOC-12 (garde serveur, préalable de Q2a et Q3a), puis emplacements neufs de T-51 inscrits par DOC-14 ; T-34 refusé, T-35 reste proposé, T-45 sans objet |

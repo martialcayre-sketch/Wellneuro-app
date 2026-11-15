@@ -516,8 +516,11 @@ test('route patient : transmission du carnet alimentaire au praticien', async ({
   expect((await liste.json()).ok).toBe(true);
 
   // Un corps incomplet est refusé par le contrat, sans 500.
+  // Le segment de la page (en-tête) : sans lui, la garde refuse en 409 avant
+  // le contrat ([[D-481]], DOC-14).
   const incomplet = await page.request.post('/api/portail/ja/observations', {
     data: { episode: {}, traces: [] },
+    headers: { 'x-wn-dossier-page': PATIENT.idPatient },
   });
   expect(incomplet.status()).toBe(400);
 });

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { enTeteDossierPage } from '@/lib/portail/dossierPage';
 import { PatientErrorState } from '@/components/patient/PatientErrorState';
 import { PatientButton } from '@/components/patient/ui/PatientButton';
 import { PatientCard } from '@/components/patient/ui/PatientCard';
@@ -100,7 +101,8 @@ export function ProtocolCheckinForm({ token }: { token: string }) {
     try {
       const res = await fetch('/api/portail/protocole/checkin', {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        // Le segment de la page : la route refuse (409, T-51) un autre dossier ([[D-481]] DOC-14).
+        headers: { 'content-type': 'application/json', ...enTeteDossierPage(token) },
         body: JSON.stringify({ pointEtape: pointOuvert, reponses }),
       });
       if (res.status === 401) {

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { readPatientSession } from '@/lib/patient-session';
+import { refusAutreDossier } from '@/lib/trust/portailAuth';
 import {
   resolvePortailPatientFromSession,
   consultationCourante,
@@ -47,6 +48,9 @@ export async function POST(req: Request): Promise<NextResponse<PortailFicheRespo
     if (!patient) {
       return NextResponse.json({ ok: false, reason: 'forbidden', error: 'Accès non reconnu ou révoqué.' }, { status: 403 });
     }
+    // Le dossier de la page ([[D-481]], DOC-12, étendu par DOC-14) : après 401/403, avant tout le reste.
+    const autreDossier = refusAutreDossier(req, patient.idPatient);
+    if (autreDossier) return autreDossier as NextResponse<PortailFicheResponse>;
     // Dossier clos (arbitrage du 2026-11-05) : `valider` le refuse déjà, une
     // fiche enregistrée ne mènerait plus à rien.
     if (!accepteNouvelEnvoi(patient)) {

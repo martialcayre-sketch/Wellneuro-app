@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { MESSAGE_CADENCE_PATIENT, cadenceAtteinte } from '@/lib/securite/cadenceEcritures';
 import { readPatientSession, isSessionValideForPatient } from '@/lib/patient-session';
+import { refusAutreDossier } from '@/lib/trust/portailAuth';
 import { evaluerReprise } from '@/lib/patient/reprise';
 import {
   accuseReponse,
@@ -143,6 +144,9 @@ export async function POST(req: Request): Promise<NextResponse<PackReevaluationR
   try {
     const patient = await patientDeLaSession(req);
     if (!patient) return refus();
+    // Le dossier de la page ([[D-481]], DOC-12, étendu par DOC-14) : après 401/403, avant tout le reste.
+    const autreDossier = refusAutreDossier(req, patient.idPatient);
+    if (autreDossier) return autreDossier as NextResponse<PackReevaluationResponse>;
 
     let corps: { idPack?: unknown; reponse?: unknown };
     try {

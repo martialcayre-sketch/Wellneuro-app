@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { PatientButton } from '@/components/patient/ui/PatientButton';
 import { PatientCard } from '@/components/patient/ui/PatientCard';
+import { enTeteDossierPage, estRefusAutreDossier, MESSAGE_AUTRE_DOSSIER } from '@/lib/portail/dossierPage';
+import { useSegmentPage } from '@/lib/portail/useSegmentPage';
 import type { PackReevaluationResponse, PropositionPack } from '@/app/api/portail/pack-reevaluation/route';
 
 /*
@@ -34,6 +36,7 @@ type Etat =
 
 export function PropositionPackReevaluation() {
   const [etat, setEtat] = useState<Etat>({ phase: 'chargement' });
+  const segmentPage = useSegmentPage();
 
   useEffect(() => {
     let vivant = true;
@@ -65,14 +68,18 @@ export function PropositionPackReevaluation() {
       try {
         const res = await fetch('/api/portail/pack-reevaluation', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          // Le segment de la page : la route refuse (409, T-51) un autre dossier ([[D-481]] DOC-14).
+          headers: { 'Content-Type': 'application/json', ...enTeteDossierPage(segmentPage) },
           body: JSON.stringify({ idPack: proposition.idPack, reponse }),
         });
         const payload = (await res.json()) as PackReevaluationResponse;
         if (!res.ok || !('accuse' in payload)) {
           // Le plafond horaire ([[D-327]]) a son texte : « Réessayez » tout de
           // suite serait faux. Les autres échecs gardent le texte d'avant.
-          const message = !payload.ok && payload.reason === 'cadence' ? payload.error : undefined;
+          // Le refus de la garde du dossier de la page dit T-51 ([[D-488]] DOC-14).
+          const message = !payload.ok && estRefusAutreDossier(res.status, payload)
+            ? MESSAGE_AUTRE_DOSSIER
+            : !payload.ok && payload.reason === 'cadence' ? payload.error : undefined;
           setEtat({ phase: 'erreur', proposition, message });
           return;
         }
@@ -81,7 +88,7 @@ export function PropositionPackReevaluation() {
         setEtat({ phase: 'erreur', proposition });
       }
     },
-    [],
+    [segmentPage],
   );
 
   if (etat.phase === 'chargement' || etat.phase === 'rien') return null;

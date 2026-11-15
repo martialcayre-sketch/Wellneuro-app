@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { EN_TETE_DOSSIER_PAGE, MESSAGE_AUTRE_DOSSIER } from '@/lib/portail/dossierPage';
 
 const { prisma } = vi.hoisted(() => ({
   prisma: {
@@ -39,6 +40,18 @@ import { EVENT_CODES } from '@/lib/observability/eventCodes';
 import { resolvePackQuestionnaireIds } from '@/lib/consultation/packRegistry';
 import { notifierPraticienSignalSecurite } from '@/lib/securite/alerteSecuritePraticien';
 import { POST } from './route';
+
+/**
+ * La même requête sous le segment donné (`null` : en-tête absent), et sans
+ * cookie au besoin : la garde du dossier de la page ([[D-481]], DOC-14).
+ */
+function sousSegment(req: Request, segment: string | null, { sansCookie = false } = {}): Request {
+  const entetes = new Headers(req.headers);
+  if (segment === null) entetes.delete(EN_TETE_DOSSIER_PAGE);
+  else entetes.set(EN_TETE_DOSSIER_PAGE, segment);
+  if (sansCookie) entetes.delete('cookie');
+  return new Request(req, { headers: entetes });
+}
 
 // `assignBasePack` et `packRegistry` sont VOLONTAIREMENT réels : c'est le
 // câblage qu'on veut prouver ici, pas la fonction en isolation (déjà couverte
@@ -82,6 +95,7 @@ function post(qidsDuPack: string[]): Request {
     headers: {
       'Content-Type': 'application/json',
       cookie: `wn_portail=${encodeURIComponent(signPatientSession(PATIENT))}`,
+      [EN_TETE_DOSSIER_PAGE]: PATIENT.idPatient,
     },
     body: JSON.stringify({ anamnese: { motif_principal: 'Fatigue persistante depuis six mois.' } }),
   });
@@ -207,6 +221,29 @@ describe('POST /api/portail/valider — instruments suspendus dans le pack de ba
   // La consultation est validée même si le pack part amputé : le patient a
   // rempli son anamnèse, la lui refaire refaire pour un défaut de catalogue
   // serait le punir d'une décision clinique qui n'est pas la sienne.
+  // La garde du dossier de la page ([[D-481]], DOC-14).
+  it('page ouverte sous un autre dossier, ou sans segment : 409 (T-51), rien d’écrit', async () => {
+    for (const segment of ['PAT_AUTRE', null]) {
+      const res = await POST(sousSegment(post(['Q_NEU_03', 'Q_FIB_03']), segment));
+      expect(res.status).toBe(409);
+      expect(await res.json()).toEqual({ ok: false, reason: 'autre_dossier', error: MESSAGE_AUTRE_DOSSIER });
+    }
+    expect(prisma.consultation.update).not.toHaveBeenCalled();
+    expect(prisma.assignation.create).not.toHaveBeenCalled();
+  });
+
+  it('sans session, le 401 passe avant la garde du dossier de la page', async () => {
+    const res = await POST(sousSegment(post(['Q_NEU_03', 'Q_FIB_03']), 'PAT_AUTRE', { sansCookie: true }));
+    expect(res.status).toBe(401);
+  });
+
+  it('compte refusé (introuvable ou révoqué) : le 403 passe avant la garde du dossier de la page', async () => {
+    prisma.patient.findUnique.mockReset();
+    prisma.patient.findUnique.mockResolvedValue(null);
+    const res = await POST(sousSegment(post(['Q_NEU_03', 'Q_FIB_03']), 'PAT_AUTRE'));
+    expect(res.status).toBe(403);
+  });
+
   it('valide quand même la consultation', async () => {
     await POST(post(['Q_NEU_03', 'Q_FIB_03']));
     expect(prisma.consultation.update).toHaveBeenCalledWith(
@@ -370,6 +407,7 @@ describe('POST /api/portail/valider — repli par nom du pack de base', () => {
       headers: {
         'Content-Type': 'application/json',
         cookie: `wn_portail=${encodeURIComponent(signPatientSession(PATIENT))}`,
+        [EN_TETE_DOSSIER_PAGE]: PATIENT.idPatient,
       },
       body: JSON.stringify({ anamnese: { motif_principal: 'Fatigue persistante depuis six mois.' } }),
     });
@@ -424,10 +462,18 @@ describe('POST /api/portail/valider — case « Idées noires ou suicidaires » 
       headers: {
         'Content-Type': 'application/json',
         cookie: `wn_portail=${encodeURIComponent(signPatientSession(PATIENT))}`,
+        [EN_TETE_DOSSIER_PAGE]: PATIENT.idPatient,
       },
       body: JSON.stringify({ anamnese: { motif_principal: 'Fatigue persistante depuis six mois.', signaux_alerte: signaux } }),
     });
   }
+
+  it('cochée, mais page ouverte sous un autre dossier : 409, personne n’est prévenu, rien n’est écrit ([[D-481]] DOC-14)', async () => {
+    const response = await POST(sousSegment(valider(['Idées noires ou suicidaires']), 'PAT_AUTRE'));
+    expect(response.status).toBe(409);
+    expect(notifierPraticienSignalSecurite).not.toHaveBeenCalled();
+    expect(prisma.consultation.update).not.toHaveBeenCalled();
+  });
 
   it('cochée : le praticien du dossier est prévenu, APRÈS l’enregistrement de l’anamnèse', async () => {
     const response = await POST(valider(['Idées noires ou suicidaires']));

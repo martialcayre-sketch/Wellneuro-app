@@ -7,6 +7,8 @@ import { PatientButton } from '@/components/patient/ui/PatientButton';
 import { PatientCard } from '@/components/patient/ui/PatientCard';
 import { PatientInlineMessage } from '@/components/patient/ui/PatientInlineMessage';
 import { PatientPageHeader } from '@/components/patient/ui/PatientPageHeader';
+import { enTeteDossierPage, estRefusAutreDossier, MESSAGE_AUTRE_DOSSIER } from '@/lib/portail/dossierPage';
+import { useSegmentPage } from '@/lib/portail/useSegmentPage';
 
 // LES CONDITIONS D'UTILISATION ET LEUR BOUTON ([[D-292]], `WN_PORTAIL_CONDITIONS`).
 //
@@ -26,6 +28,7 @@ export function AccuseConditions({
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState('');
   const conditions = getDocumentCourant('conditions_utilisation');
+  const segmentPage = useSegmentPage();
 
   const accuser = async () => {
     setErreur('');
@@ -33,12 +36,14 @@ export function AccuseConditions({
     try {
       const res = await fetch('/api/portail/trust/lecture', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        // Le segment de la page : la route refuse (409, T-51) un autre dossier ([[D-481]] DOC-14).
+        headers: { 'Content-Type': 'application/json', ...enTeteDossierPage(segmentPage) },
         body: JSON.stringify({ documentKey: 'conditions_utilisation', type: 'pris_connaissance' }),
       });
-      const data = (await res.json().catch(() => null)) as { ok?: boolean } | null;
+      const data = (await res.json().catch(() => null)) as { ok?: boolean; reason?: string } | null;
       if (!res.ok || !data?.ok) {
-        setErreur('Votre lecture n’a pas pu être enregistrée. Réessayez.');
+        // Refus de la garde : T-51 à la place du texte fixe ([[D-488]] DOC-14).
+        setErreur(estRefusAutreDossier(res.status, data) ? MESSAGE_AUTRE_DOSSIER : 'Votre lecture n’a pas pu être enregistrée. Réessayez.');
         setEnvoi(false);
         return;
       }

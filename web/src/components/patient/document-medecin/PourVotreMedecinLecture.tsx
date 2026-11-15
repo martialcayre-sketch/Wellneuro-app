@@ -6,6 +6,7 @@ import type { PortailDocumentMedecinResponse } from '@/app/api/portail/document-
 import { PatientCard } from '@/components/patient/ui/PatientCard';
 import { patientButtonClassName } from '@/components/patient/ui/PatientButton';
 import { PatientErrorState } from '@/components/patient/PatientErrorState';
+import { enTeteDossierPage } from '@/lib/portail/dossierPage';
 import {
   AUCUN_DOCUMENT_MEDECIN,
   BOUTON_TELECHARGER,
@@ -42,7 +43,12 @@ export function PourVotreMedecinLecture({ token }: { token: string }) {
   async function telecharger() {
     setTelechargement({ enCours: true, erreur: null });
     try {
-      const res = await fetch('/api/portail/document-medecin/telechargement', { method: 'POST', cache: 'no-store' });
+      const res = await fetch('/api/portail/document-medecin/telechargement', {
+        method: 'POST',
+        cache: 'no-store',
+        // T-51 paraît dans le message d'erreur existant ([[D-488]] DOC-14).
+        headers: enTeteDossierPage(token),
+      });
       if (res.status === 401) {
         router.replace(`/portail/${token}`);
         return;

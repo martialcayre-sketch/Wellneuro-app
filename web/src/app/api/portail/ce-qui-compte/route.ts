@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { MESSAGE_CADENCE_PATIENT, cadenceAtteinte } from '@/lib/securite/cadenceEcritures';
-import { authentifierPatientPortail } from '@/lib/trust/portailAuth';
+import { authentifierPatientPortail, refusAutreDossier } from '@/lib/trust/portailAuth';
 import { isCeQuiCompteEnabled } from '@/lib/patient/featureFlag';
 import { fenetreDeDepot, preparerEntree, type FenetreDepot, type RefusEntree } from '@/lib/patient/ceQuiCompte';
 import { estAncreDeCycle } from '@/lib/protocol/cycles';
@@ -261,6 +261,9 @@ export async function POST(req: Request): Promise<NextResponse<PortailCeQuiCompt
     const auth = await authentifierPatientPortail(req);
     if (auth.erreur) return auth.erreur as NextResponse<PortailCeQuiCompteResponse>;
     const patient = auth.patient;
+    // Le dossier de la page ([[D-481]], DOC-12, étendu par DOC-14) : après 401/403, avant tout le reste.
+    const autreDossier = refusAutreDossier(req, patient.idPatient);
+    if (autreDossier) return autreDossier as NextResponse<PortailCeQuiCompteResponse>;
 
     // DOSSIER CLOS : LE DÉPÔT RESTE AUTORISÉ, délibérément.
     //

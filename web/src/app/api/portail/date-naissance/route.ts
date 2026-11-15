@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { authentifierPatientPortail } from '@/lib/trust/portailAuth';
+import { authentifierPatientPortail, refusAutreDossier } from '@/lib/trust/portailAuth';
 import { statutAge, type StatutAge } from '@/lib/patient/gardeAge';
 import { accepteNouvelEnvoi, RAISON_DOSSIER_CLOS } from '@/lib/patient/cycleDeVie';
 
@@ -22,6 +22,9 @@ export async function POST(req: Request): Promise<NextResponse<PortailDateNaissa
   const auth = await authentifierPatientPortail(req);
   if (auth.erreur) return auth.erreur as NextResponse<PortailDateNaissanceResponse>;
   const { patient } = auth;
+  // Le dossier de la page ([[D-481]], DOC-12, étendu par DOC-14) : après 401/403, avant tout le reste.
+  const autreDossier = refusAutreDossier(req, patient.idPatient);
+  if (autreDossier) return autreDossier as NextResponse<PortailDateNaissanceResponse>;
 
   // UN DOSSIER CLOS NE RECUEILLE PLUS RIEN, sa date non plus.
   if (!accepteNouvelEnvoi(patient)) {
