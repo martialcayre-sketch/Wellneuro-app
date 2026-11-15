@@ -8,7 +8,9 @@ import { sourcesCitees } from '@/lib/bibliotheque-options/bibliothequeBesoin2V1'
 //
 // Une position d'expert citée par une table signée (`WN-PE-NNNN@vN.M`) doit
 // exister, être la version courante de sa position, et son dernier acte être
-// une signature d'empreinte égale (`web/prisma/checks/
+// une signature d'empreinte égale, et chacun de ses claims d'appui être tenu
+// par le corpus — présent sur sa paire, `VALIDE`, actif, non remplacé, sans
+// `prescriptif` exigé ([[D-525]]) — (`web/prisma/checks/
 // positions_citees_tables_signees_v1.sql`, préflight de release-db). Comme
 // pour les claims, la liste est écrite deux fois — dans la table signée, en
 // TypeScript, et dans le contrat — et le prédicat deux fois — dans le contrat
@@ -135,8 +137,45 @@ describe('positions citées — les deux écritures du prédicat', () => {
     expect(blocContrat).toContain('OR s.id IS NOT NULL');
     expect(blocContrat).toContain("OR dernier.acte IS DISTINCT FROM 'signee'");
     expect(blocContrat).toContain(
-      'OR dernier.empreinte IS DISTINCT FROM public.positions_expert_empreinte_contenu(v.contenu);',
+      'OR dernier.empreinte IS DISTINCT FROM public.positions_expert_empreinte_contenu(v.contenu)',
     );
+  });
+
+  // [[D-525]] : chaque claim d'appui de la version épinglée, sur sa paire
+  // exacte, présent, `VALIDE`, actif et non remplacé — dans toute rubrique.
+  it('le prédicat contrôle chaque claim d’appui sur sa paire, et ses trois propriétés', () => {
+    expect(blocContrat).toContain('CROSS JOIN LATERAL unnest(v.claims_appui) AS appui(cle)');
+    expect(blocContrat).toContain('LEFT JOIN public.rag_corpus_claims c');
+    expect(blocContrat).toContain("ON c.claim_id = split_part(appui.cle, '@', 1)");
+    expect(blocContrat).toContain("AND c.version_claim = split_part(appui.cle, '@', 2)");
+    expect(blocContrat).toContain('WHERE c.claim_id IS NULL');
+    expect(blocContrat).toContain("OR c.statut IS DISTINCT FROM 'VALIDE'");
+    expect(blocContrat).toContain('OR c.active IS NOT TRUE');
+    expect(blocContrat).toContain('OR c.superseded_at IS NOT NULL');
+  });
+
+  // D-525 §1 : la signature de la position porte seule le caractère
+  // prescriptif ; l'exiger d'un appui serait un autre régime, à décider.
+  it('le prédicat n’exige pas `prescriptif` d’un appui', () => {
+    const sansCommentaires = blocContrat.replace(/--[^\n]*/g, ' ');
+    expect(sansCommentaires).not.toMatch(/prescriptif/i);
+  });
+
+  // Le négatif éprouve chaque propriété d'un appui (D-525) : un cas par
+  // motif, que le prédicat rend.
+  it('le négatif porte un cas par motif de refus d’un appui', () => {
+    const negatif = lire(NEGATIF);
+    for (const motif of [
+      'absent du corpus',
+      'statut REJETE',
+      'active = false',
+      'remplacé (superseded_at)',
+    ]) {
+      expect(negatif).toContain(`: ${motif}');`);
+    }
+    // La version d'un appui compte : un identifiant présent au corpus sous
+    // une autre version est absent.
+    expect(negatif).toContain("'appui WN-CL-9999-001@v2.0 : absent du corpus'");
   });
 });
 
