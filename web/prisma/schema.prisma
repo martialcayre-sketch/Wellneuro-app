@@ -2101,6 +2101,8 @@ model CabinetInstrument {
   // la question, valeur entière de son option « non ») sert le volet D-277 ;
   // CHECK de cohérence `cabinet_instruments_designation_suicide_coherente`
   // (désignation entière ou absente, jamais sans « oui »), non modélisé ici.
+  // Depuis la troisième migration de H59 (après l'allumage), CHECK
+  // `cabinet_instruments_valide_declare` : `valide` exige une déclaration.
   poseQuestionSuicide      Boolean? @map("pose_question_suicide")
   questionSuicideId        String?  @map("question_suicide_id")
   questionSuicideOptionNon Int?     @map("question_suicide_option_non")

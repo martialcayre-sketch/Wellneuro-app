@@ -11,9 +11,10 @@
 --   3. `assignations` : la copie se pose sur un instrument du cabinet,
 --      « oui » comme « non », et reste NULL ailleurs. Toute copie sur un
 --      questionnaire hors cabinet est refusée ;
---   4. le CHECK « valide ⇒ déclaré » n'est PAS posé : un instrument `valide`
---      sans déclaration s'écrit encore, puisque le drapeau du lot 2 est
---      éteint (20261111-0029-a).
+--   4. (levée) le CHECK « valide ⇒ déclaré » n'était pas posé par ce lot,
+--      le drapeau du lot 2 étant éteint (20261111-0029-a). Il l'est depuis
+--      la troisième migration de H59, après l'allumage, et s'éprouve par
+--      `nf7_valide_declare_v1_negatif.sql`.
 --
 -- Tout se déroule dans une transaction annulée à la fin. Identités
 -- synthétiques seulement.
@@ -87,7 +88,11 @@ BEGIN
   FROM pg_constraint c
   JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = ANY (c.conkey)
   WHERE c.conrelid = 'public.cabinet_instruments'::regclass AND c.contype = 'c'
-    AND a.attname IN ('pose_question_suicide', 'question_suicide_id', 'question_suicide_option_non');
+    AND a.attname IN ('pose_question_suicide', 'question_suicide_id', 'question_suicide_option_non')
+    -- Troisième migration de H59 : « valide ⇒ déclaré » nomme aussi
+    -- `pose_question_suicide` ; elle est éprouvée par
+    -- `nf7_valide_declare_v1_negatif.sql`.
+    AND c.conname <> 'cabinet_instruments_valide_declare';
   IF nb <> 1 THEN
     RAISE EXCEPTION 'NF-7: % contrainte(s) CHECK sur la déclaration de cabinet_instruments ; une seule attendue (cohérence ; le CHECK « valide ⇒ déclaré » n''est pas de ce lot).', nb;
   END IF;
@@ -137,9 +142,7 @@ BEGIN
   PERFORM pg_temp.doit_refuser('mise à jour qui remet la déclaration à NULL sous une désignation',
     'UPDATE cabinet_instruments SET pose_question_suicide = NULL WHERE id = ''nf7_i4''', ARRAY['23514'], CI);
 
-  -- ── 4. Pas de CHECK « valide ⇒ déclaré » dans ce lot ─────────────────────
-  PERFORM pg_temp.doit_accepter('instrument valide non déclaré',
-    I || '(''nf7_i5'', ''CAB_NF7_5'', ''contrat@test.invalid'', ''Contrat'', ' || J || ', ''valide'', now(), NULL, NULL, NULL)');
+  -- ── 4. (levée) « valide ⇒ déclaré » : voir `nf7_valide_declare_v1_negatif.sql`
 
   -- ── 3. assignations ──────────────────────────────────────────────────────
   INSERT INTO patients (id, id_patient, email, prenom, nom, praticien_email, updated_at)
@@ -167,7 +170,7 @@ BEGIN
   PERFORM pg_temp.doit_refuser('mise à jour qui pose une copie sur le catalogue',
     'UPDATE assignations SET pose_question_suicide = true WHERE id = ''nf7_a1''', ARRAY['23514'], CA);
 
-  RAISE NOTICE 'NF-7: quatre colonnes nullables sans défaut ; une contrainte par table, définition exacte ; déclaration NULL, « non », « oui » admises ; désignation seulement entière et sous « oui » ; copie d''assignation seulement sur CAB_ ; pas de CHECK « valide ⇒ déclaré ».';
+  RAISE NOTICE 'NF-7: quatre colonnes nullables sans défaut ; une contrainte par table, définition exacte ; déclaration NULL, « non », « oui » admises ; désignation seulement entière et sous « oui » ; copie d''assignation seulement sur CAB_.';
 END;
 $$;
 

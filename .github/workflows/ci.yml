@@ -1415,12 +1415,21 @@ jobs:
       # NF-7, lot 1 (D-303, H59 ; réponses 20261111-0027-a à 0029-a) : la
       # déclaration « question sur le suicide » des instruments du cabinet,
       # NULL = non déclaré ; désignation seulement entière et sous « oui » ;
-      # copie d'assignation seulement sur un CAB_ ; pas encore de CHECK
-      # « valide ⇒ déclaré » (après l'allumage du drapeau). Transaction annulée.
+      # copie d'assignation seulement sur un CAB_ ; le CHECK « valide ⇒
+      # déclaré » est éprouvé à l'étape suivante. Transaction annulée.
       - name: NF-7 cabinet suicide declaration negative tests
         if: steps.scope.outputs.docs_only != 'true'
         working-directory: web
         run: npx prisma db execute --file prisma/checks/nf7_declaration_suicide_cabinet_v1_negatif.sql
+
+      # NF-7, troisième migration de H59 (D-515 §6 étape 4 ; réponses
+      # 20261111-0028-a et 0029-a), après l'allumage du drapeau : un instrument
+      # `valide` porte une déclaration (« oui » ou « non ») ; NULL admis hors
+      # `valide`. Transaction annulée.
+      - name: NF-7 valid implies declared negative tests
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/nf7_valide_declare_v1_negatif.sql
 
       # D-515 §4 (H59, lot D-277 ; réponses 20261112-2025-a, 20261113-1807-a) :
       # copie de la désignation sur l'assignation — trois colonnes toutes
