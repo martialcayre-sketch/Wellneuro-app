@@ -8,6 +8,7 @@ import {
   claimsDuTerme,
   contexteDeRubrique,
   designationsDeLaFiche,
+  lireRedactionFiche,
   lireReponseFiche,
   lireReponseLibelle,
   MARQUE_RESERVE,
@@ -141,6 +142,26 @@ test('v3 : la réponse du rédacteur — rubriques, ou refus motivé', () => {
   assert.throws(() => lireReponseFiche({ refus: ' ' }, FICHE.rubriques), /refus sans motif/);
   assert.deepEqual(lireReponseFiche({ rubriques: { question: 'Q.', limites: 'L.' } }, FICHE.rubriques), { rubriques: { question: 'Q.', limites: 'L.' } });
   assert.throws(() => lireReponseFiche({ rubriques: { question: 'Q.' } }, FICHE.rubriques), /manquantes : limites/);
+});
+
+test('une réponse illisible du rédacteur garde son texte brut et son code d’arrêt, sans le citer dans la raison', () => {
+  const lisible = { texte: '```json\n{"rubriques": {"question": "Q.", "limites": "L."}}\n```', arret: 'end_turn', jetonsSortie: 40 };
+  assert.deepEqual(lireRedactionFiche(lisible, FICHE.rubriques), { rubriques: { question: 'Q.', limites: 'L.' } });
+  assert.deepEqual(lireRedactionFiche({ texte: '{"refus": "Contradiction."}' }, FICHE.rubriques), { refus: 'Contradiction.' });
+
+  const tronque = { texte: '{"rubriques": {"question": "Texte synthétique coupé', arret: 'max_tokens', jetonsSortie: 16000 };
+  const r = lireRedactionFiche(tronque, FICHE.rubriques);
+  assert.deepEqual(r, {
+    illisible: { raison: 'SyntaxError', arret: 'max_tokens', jetonsSortie: 16000, reponseBrute: tronque.texte },
+  });
+  assert.doesNotMatch(r.illisible.raison, /synthétique/);
+
+  const nonConforme = lireRedactionFiche({ texte: '{"rubriques": {"question": "Q."}}', arret: 'end_turn' }, FICHE.rubriques);
+  assert.match(nonConforme.illisible.raison, /manquantes : limites/);
+  assert.equal(nonConforme.illisible.jetonsSortie, null);
+
+  // Un code d'arrêt hors forme ne part pas au terminal.
+  assert.equal(lireRedactionFiche({ texte: '', arret: 'Texte libre !' }, FICHE.rubriques).illisible.arret, null);
 });
 
 test('la réponse du rédacteur pour un libellé — objet JSON, ou libellé nu sur une ligne', () => {

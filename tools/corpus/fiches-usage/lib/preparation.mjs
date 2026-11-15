@@ -24,7 +24,7 @@
 // d'indication ([[D-465]] §3, [[D-498]]) porte une marque dans la liste.
 // Depuis la v3 ([[D-501]] §5), ils reçoivent aussi les désignations approuvées.
 
-import { ErreurOutil, parseJsonLache } from '../../fiches/lib/assemblage.mjs';
+import { ErreurOutil, erreurSansTexte, parseJsonLache } from '../../fiches/lib/assemblage.mjs';
 
 /** La clé d'un claim épinglé dans l'instantané local. */
 export const cleClaim = c => `${c.claimId}::${c.versionClaim}`;
@@ -143,6 +143,25 @@ export function lireReponseFiche(reponse, attendues) {
     return { refus: reponse.refus.trim() };
   }
   return { rubriques: rubriquesRedigees(reponse, attendues) };
+}
+
+/**
+ * La réponse du rédacteur pour une fiche, lue depuis son TEXTE BRUT
+ * (`{ texte, arret, jetonsSortie }`). Une réponse illisible (JSON invalide,
+ * rubriques non conformes) ne lève plus : elle rend de quoi écrire un rapport
+ * qui garde le texte brut et le code d'arrêt du modèle, hors dépôt. Sans eux,
+ * six `SyntaxError` n'avaient laissé aucune trace (journal F05, 2026-11-15).
+ * La raison se donne sans texte, et le code d'arrêt, imprimé au terminal, n'est
+ * gardé que s'il a la forme d'un code.
+ */
+export function lireRedactionFiche(brute, attendues) {
+  try {
+    return lireReponseFiche(parseJsonLache(brute.texte), attendues);
+  } catch (e) {
+    const arret = typeof brute.arret === 'string' && /^[a-z_]{1,40}$/u.test(brute.arret) ? brute.arret : null;
+    const jetonsSortie = Number.isInteger(brute.jetonsSortie) ? brute.jetonsSortie : null;
+    return { illisible: { raison: erreurSansTexte(e), arret, jetonsSortie, reponseBrute: String(brute.texte ?? '') } };
+  }
 }
 
 /**

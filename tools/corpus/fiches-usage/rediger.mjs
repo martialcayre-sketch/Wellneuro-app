@@ -37,7 +37,7 @@ import {
   claimsDuTerme,
   contexteDeRubrique,
   designationsDeLaFiche,
-  lireReponseFiche,
+  lireRedactionFiche,
   lireReponseLibelle,
   messageContreLecture,
   messageRedactionFiche,
@@ -92,10 +92,12 @@ async function redigerTexte(anthropic, consigne, message) {
     system: consigne,
     messages: [{ role: 'user', content: message }],
   });
-  return rep.content.filter(b => b.type === 'text').map(b => b.text).join('\n');
+  return {
+    texte: rep.content.filter(b => b.type === 'text').map(b => b.text).join('\n'),
+    arret: rep.stop_reason,
+    jetonsSortie: rep.usage?.output_tokens,
+  };
 }
-
-const rediger = async (anthropic, consigne, message) => parseJsonLache(await redigerTexte(anthropic, consigne, message));
 
 /** Un verdict, ou un échec TECHNIQUE — qui n'est ni un accord ni un refus. */
 async function contreLire(openai, consigne, entree) {
@@ -155,7 +157,19 @@ async function redigerFiche(ficheId, outils) {
   const axes = axesDeLaFiche(fiche);
   console.log(`${ficheId} : ${fiche.rubriques.length} rubrique(s), ${cites.length} claim(s).`);
 
-  const reponse = lireReponseFiche(await rediger(anthropic, consignes.redaction, message), fiche.rubriques);
+  const reponse = lireRedactionFiche(await redigerTexte(anthropic, consignes.redaction, message), fiche.rubriques);
+  if (reponse.illisible) {
+    // Texte brut gardé hors dépôt, comme les rubriques d'un rapport ; le terminal n'en voit que le chemin.
+    const { raison, arret, jetonsSortie, reponseBrute } = reponse.illisible;
+    const fichier = await ecrire(ficheId, h, 'revue', {
+      etape: 'rédaction',
+      exclusions: [{ id: ficheId, motif: 'reponse_illisible', raison }],
+      arret,
+      jetonsSortie,
+      reponseBrute,
+    });
+    return { id: ficheId, issue: 'echec', motif: `reponse_illisible, arrêt ${arret ?? 'inconnu'}`, fichier };
+  }
   if (reponse.refus) {
     const fichier = await ecrire(ficheId, h, 'revue', { etape: 'rédaction', exclusions: [{ id: ficheId, motif: 'refus_redacteur', raison: reponse.refus }] });
     return { id: ficheId, issue: 'echec', motif: 'refus_redacteur', fichier };
@@ -214,7 +228,7 @@ async function redigerLibelle(termeId, outils) {
   const message = messageRedactionLibelle(termeId, nature, fiches, cites);
   console.log(`${termeId} : ${fiches.length} fiche(s) citante(s), ${cites.length} claim(s).`);
 
-  const reponse = lireReponseLibelle(await redigerTexte(anthropic, consignes.redaction, message));
+  const reponse = lireReponseLibelle((await redigerTexte(anthropic, consignes.redaction, message)).texte);
   if (typeof reponse?.libelle !== 'string' || !/\S/u.test(reponse.libelle)) throw new ErreurOutil(`${termeId} : réponse sans « libelle ».`);
   const libelle = reponse.libelle.trim();
   const verdict = await contreLire(openai, consignes.contreLecture, {
