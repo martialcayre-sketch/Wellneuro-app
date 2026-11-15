@@ -32,6 +32,14 @@ import {
   verrouillerPatient,
 } from '@/lib/assignations/dedup';
 import { MESSAGE_ASSIGNATION_ANNULEE } from '@/lib/praticien/relanceAssignation';
+import { estInstrumentCabinet } from '@/lib/instruments';
+import {
+  MESSAGE_INSTRUMENT_MODIFIE,
+  RAISON_INSTRUMENT_MODIFIE,
+  concordance,
+  deverrouillageAJuger,
+  type InstrumentCourant,
+} from '@/lib/securite/deverrouillageCabinet';
 
 type CreateAssignationPayload = {
   emailPatient?: string;
@@ -289,7 +297,10 @@ export type PatchAssignationResponse = {
     // [[D-422]] §2 : mêmes raisons et mêmes messages que la relance.
     | typeof RAISON_ASSIGNATION_ANNULEE
     | typeof RAISON_DOSSIER_CLOS
-    | typeof RAISON_DOSSIER_DESACTIVE;
+    | typeof RAISON_DOSSIER_DESACTIVE
+    // [[D-524]] §2 : la copie de désignation d'un `CAB_` « oui » ne concorde
+    // plus avec l'instrument courant.
+    | typeof RAISON_INSTRUMENT_MODIFIE;
 };
 
 const RAISON_ASSIGNATION_ANNULEE = 'assignation_annulee';
@@ -382,6 +393,15 @@ export async function PATCH(req: Request): Promise<NextResponse<PatchAssignation
         { status: 409 }
       );
     }
+    // [[D-524]] §2 (réponse 20261114-2145-a) : une assignation d'un
+    // instrument du cabinet dont la copie de déclaration vaut « oui » ne se
+    // déverrouille que si sa copie de désignation concorde avec celle que
+    // l'envoi écrirait aujourd'hui ; sinon le patient répondrait sur une
+    // définition que la règle `SAF-QUEST-02` ne lit pas. Le refus ne relit PAS
+    // le drapeau : une copie « oui » survit à une extinction, et le courriel
+    // d'un `CAB_` ne le relit pas non plus ([[D-522]]) — fail-closed. La copie
+    // de l'envoi n'est jamais réécrite ([[D-515]] §4).
+    const aJuger = estInstrumentCabinet(ass.idQuestionnaire) && deverrouillageAJuger(ass);
     // `updateMany` qui RÉPÈTE les deux gardes d'état : une annulation ou une
     // clôture passée entre la lecture et l'écriture laisserait sinon une
     // annulée `deverrouille` et un succès sans effet — même patron que la
@@ -390,8 +410,46 @@ export async function PATCH(req: Request): Promise<NextResponse<PatchAssignation
     // transaction ; sans verrou, le filtre relationnel lirait encore le suivi
     // ouvert pendant qu'elle s'achève (revue Copilot de #1825).
     const ecrire = () =>
-      prisma.$transaction(async tx => {
+      prisma.$transaction(async (tx): Promise<number | typeof RAISON_INSTRUMENT_MODIFIE> => {
         await verrouillerPatient(tx, ass.idPatient);
+        if (aJuger) {
+          // SOUS VERROU, comme l'envoi : `FOR SHARE` sur la ligne de
+          // l'instrument fait attendre toute modification concurrente (son
+          // `UPDATE`, ou son `FOR UPDATE` drapeau allumé) jusqu'au commit.
+          // Soit la modification a commité avant, et la ligne relue est la
+          // nouvelle (refus) ; soit le déverrouillage commite avant, et le
+          // gel du contenu, drapeau allumé, recompte les envois sous son
+          // `FOR UPDATE` et voit l'assignation rouverte
+          // (`api/praticien/instruments`). Drapeau éteint, ce gel compte hors
+          // verrou : une modification déjà passée à son comptage peut écrire
+          // après ce commit. Résidu nommé au journal H59, hors de ce lot
+          // (revue `wn-reviewer`, P2-1). Introuvable : désignation absente,
+          // refus.
+          const rangees = await tx.$queryRaw<
+            {
+              titre: string;
+              definition_json: unknown;
+              pose_question_suicide: boolean | null;
+              question_suicide_id: string | null;
+              question_suicide_option_non: number | null;
+            }[]
+          >`SELECT titre, definition_json, pose_question_suicide,
+                   question_suicide_id, question_suicide_option_non
+              FROM cabinet_instruments
+             WHERE id_instrument = ${ass.idQuestionnaire}
+               FOR SHARE`;
+          const ligne = rangees[0];
+          const instrument: InstrumentCourant | null = ligne
+            ? {
+                titre: ligne.titre,
+                definitionJson: ligne.definition_json,
+                poseQuestionSuicide: ligne.pose_question_suicide,
+                questionSuicideId: ligne.question_suicide_id,
+                questionSuicideOptionNon: ligne.question_suicide_option_non,
+              }
+            : null;
+          if (!concordance(ass, instrument)) return RAISON_INSTRUMENT_MODIFIE;
+        }
         const { count: lignes } = await tx.assignation.updateMany({
           where: {
             idAssignation,
@@ -407,7 +465,14 @@ export async function PATCH(req: Request): Promise<NextResponse<PatchAssignation
     // un second essai, un seul — jamais « introuvable » pour une ligne qui
     // existe (revue PR-Agent de #1825).
     for (let essai = 0; essai < 2; essai += 1) {
-      if ((await ecrire()) > 0) return NextResponse.json({ success: true });
+      const issue = await ecrire();
+      if (issue === RAISON_INSTRUMENT_MODIFIE) {
+        return NextResponse.json(
+          { success: false, reason: RAISON_INSTRUMENT_MODIFIE, error: MESSAGE_INSTRUMENT_MODIFIE },
+          { status: 409 }
+        );
+      }
+      if (issue > 0) return NextResponse.json({ success: true });
       const relue = await lire();
       if (!relue) {
         return NextResponse.json({ success: false, reason: 'not_found', error: 'Assignation introuvable.' }, { status: 404 });
