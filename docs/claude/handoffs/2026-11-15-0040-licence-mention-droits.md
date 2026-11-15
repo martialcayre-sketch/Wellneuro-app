@@ -32,12 +32,17 @@ Mettre en œuvre la réponse du responsable à `20261114-1825-d` : aucune licenc
 - `LICENSE` (neuf).
 - `package.json`, `web/package.json`, `web/package-lock.json` (une ligne chacun).
 - `docs/claude/propositions/2026-11-14-orchestration-5-licence/examen-bundle-navigateur.md` (neuf).
+- `web/src/lib/bio-parcours/resolutionImports.guard.test.ts` : `license` ajouté à la liste des clés de `web/package.json` admises par le verrou de résolution. C'est une métadonnée sans effet sur la résolution, contrairement aux clés que le verrou vise (`imports`, `exports`, `browser`). Le CI l'avait rougi deux fois (`typage-tests`, Vitest SIIN 57).
 - `changelog.d/2026-11-15-licence-mention-droits.md`, ce handoff.
 
 ## Validations exécutées
 
 - Les trois fichiers JSON sont relus par `json.loads` après l'édition.
-- T1 complet (`npm run check`) et `check_no_secrets.sh --staged` : voir la PR.
+- Premier commit : T1 complet vert et `check_no_secrets.sh --staged` OK.
+- En local, `npm run test:siin57` montrait deux rouges :
+  - le verrou de résolution, corrigé ;
+  - `FichePatientPanel.test.tsx`, qui ne rougit que sous la charge de la suite complète et passe isolé. Le CI ne l'a pas désigné.
+- Après la correction, les deux fichiers passent : 188/188.
 
 ## Problèmes ouverts
 

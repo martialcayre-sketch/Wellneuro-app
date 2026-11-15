@@ -10,4 +10,5 @@ Réponse du responsable à `20261114-1825-d` : aucune licence, rendue explicite.
   - les dépendances.
 - `"license": "UNLICENSED"` dans `package.json`, `web/package.json` et l'entrée racine de `web/package-lock.json` ; `private: true` est gardé.
 - Examen du bundle livré au navigateur (réserve de l'avis Codex) : le minificateur de Next.js retire tous les commentaires de licence, et aucune mention tierce n'est servie (`docs/claude/propositions/2026-11-14-orchestration-5-licence/examen-bundle-navigateur.md`). Le remède, un fichier de mentions tierces généré au build, est inscrit au carnet (`licences-tierces-bundle`).
+- Le verrou de résolution des imports (`resolutionImports.guard.test.ts`) admet la clé `license` : c'est une métadonnée sans effet sur la résolution.
 - Aucune concession de droits, aucun code applicatif.
