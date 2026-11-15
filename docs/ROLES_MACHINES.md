@@ -87,6 +87,33 @@ question et la réponse.
   cette session qui juge la question complète ; le responsable peut la
   renvoyer au guichet. Elle écrit la ligne, puis la réponse. Le guichet
   prépare, il n'autorise pas : aucune approbation intermédiaire.
+- **Réponse depuis le cockpit** (question `20261115-1525-d`). Le cockpit est
+  une seconde page du même artefact que la page de suivi : il lit la même
+  base. Il n'écrit jamais dans une question. Chaque réponse confirmée y crée
+  une ligne neuve dans la collection `reponses`, jamais réécrite par la page :
+  - identifiant `<question>--<horodatage UTC>-<suffixe>` ;
+  - champs `question`, `file`, `lot`, `nature`, `reponse` (le `lib` retenu),
+    `note`, `le` (ISO), `par` (identifiant opaque du compte), `source`
+    (`cockpit`) et `etat` : `envoyee`, puis `reportee` ou `ecartee`.
+
+  Le bouton n'est offert que sur une question `ordinaire`, `ouverte` ou
+  `en_seance`. Une question `clinique` ou `migration` montre ses options et
+  se tranche en séance (voir « Autorité »).
+
+  **Le report.** Au démarrage et avant « prête », la session lit, en plus de
+  sa boîte, les lignes `reponses` de sa file encore `envoyee`. Le guichet
+  lit celles de toutes les files. Pour chaque question visée, la plus
+  récente l'emporte. La session écrit la réponse dans la question, avec
+  `if_version` : `statut: repondue`, `reponse`, `reponse_note` (la `note`),
+  `reponse_le` (le `le` de la ligne) et `reponse_par: responsable, par le
+  cockpit`. Elle passe ensuite chaque ligne lue à `reportee`, avec
+  `reportee_le` et `reportee_par`. Une ligne plus ancienne de la même
+  question passe aussi à `reportee`, avec le motif « remplacée ».
+
+  Une ligne visant une question déjà `repondue` ou `close`, ou qui n'est
+  pas `ordinaire`, passe à `ecartee` avec son motif. La session le signale
+  au responsable. Une réponse du cockpit n'a pas d'autre autorité qu'une
+  réponse donnée en session.
 - **Le guichet.** C'est la session existante « Questions générales et
   audits ». Il prépare une séance par jour (D-466), avant la journée en
   autonomie, d'au plus huit questions, sans heure fixe. Elle ne bloque pas
