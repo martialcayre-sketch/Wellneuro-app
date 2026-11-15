@@ -225,7 +225,11 @@ describe('NF-7 — ni constat ni courriel sur un CAB_ ([[D-493]])', () => {
 //   — le producteur `SAF-QUEST-02`, qui la VÉRIFIE sans la compléter
 //     (`safetyFindings.ts`, `lireCopieDesignation`) ;
 //   — la table `SAF-QUEST-02`, qui nomme sa source en code dans son SHA
-//     (`safetyQuestionnaireCabinetV1.ts`).
+//     (`safetyQuestionnaireCabinetV1.ts`) ;
+//   — le juge du déverrouillage ([[D-524]] §2, `deverrouillageCabinet.ts`),
+//     qui COMPARE la copie à celle que le constructeur écrirait aujourd'hui,
+//     et refuse sans jamais l'écrire ; lui et sa route sont gardés en
+//     lecture seule ci-dessous.
 // Un fichier de plus s'inscrit ici en connaissance de cause ; un écrivain de
 // plus serait une copie qui bouge après l'envoi.
 describe('D-515 §4 — la copie de la désignation n’a qu’un écrivain', () => {
@@ -241,7 +245,24 @@ describe('D-515 §4 — la copie de la désignation n’a qu’un écrivain', ()
       'lib/clinical-engine/safetyFindings.ts',
       'lib/clinical/safetyQuestionnaireCabinetV1.ts',
       'lib/securite/declarationSuicideCabinet.ts',
+      'lib/securite/deverrouillageCabinet.ts',
     ]);
+  });
+
+  it('le juge du déverrouillage ne fait que lire, et sa route n’écrit que le statut des réponses ([[D-524]] §2)', () => {
+    const juge = sansCommentaires(readFileSync(path.join(RACINE_SRC, 'lib/securite/deverrouillageCabinet.ts'), 'utf8'));
+    expect(juge).toMatch(/export function concordance\(/);
+    expect(juge).toMatch(/copieDesignationSuicide\(instrument\)/);
+    expect(juge).not.toMatch(/\.(create|createMany|upsert|update|updateMany|delete|deleteMany)\(|\$executeRaw|\$queryRaw|prisma/);
+    const route = sansCommentaires(readFileSync(path.join(RACINE_SRC, 'app/api/praticien/assignations/route.ts'), 'utf8'));
+    // La route ne nomme pas la copie ; les deux colonnes de la désignation n'y
+    // paraissent qu'en LECTURE de la ligne de l'instrument (`ligne.…`), jamais
+    // en valeur écrite ; aucun UPDATE brut.
+    expect(route).not.toMatch(NOMME_LA_COPIE);
+    expect(route).not.toMatch(/questionSuicide(Id|OptionNon)\s*:(?!\s*ligne\.)/);
+    expect(route).toMatch(/questionSuicideId:\s*ligne\.question_suicide_id/);
+    expect(route).not.toMatch(/\$executeRaw|UPDATE\s/i);
+    expect(route).toMatch(/data: \{ statutReponses: 'deverrouille' \}/);
   });
 
   it('les deux routes du patient passent leur assignation par `designationDeLAssignation`, sans nommer la copie', () => {
@@ -277,7 +298,9 @@ describe('D-515 §4 — la copie de la désignation n’a qu’un écrivain', ()
       .map(fichier => path.relative(RACINE_SRC, fichier))
       .filter(fichier => fichier !== CONSTRUCTEUR)
       .sort();
-    expect(appelants).toEqual(['app/api/praticien/file-envoi/envoyer/route.ts']);
+    // Le juge du déverrouillage ([[D-524]] §2) l'appelle pour COMPARER, jamais
+    // pour écrire : le banc ci-dessus le garde en lecture seule.
+    expect(appelants).toEqual(['app/api/praticien/file-envoi/envoyer/route.ts', 'lib/securite/deverrouillageCabinet.ts']);
   });
 
   it('et son propre fichier ne le nomme qu’une fois : sa déclaration', () => {

@@ -388,6 +388,169 @@ describe('PATCH /api/praticien/assignations — déverrouillage', () => {
     expect(await response.json()).toMatchObject({ success: true });
     expect(prisma.assignation.updateMany).toHaveBeenCalledTimes(1);
   });
+
+  // [[D-524]] §2 (réponse 20261114-2145-a) : un `CAB_` dont la copie dit
+  // « oui » ne se déverrouille que si sa copie concorde avec la désignation
+  // que l'envoi écrirait aujourd'hui, lue SOUS VERROU (`FOR SHARE`). Le refus
+  // ne relit pas le drapeau. Les deux sens : constat manqué, constat de trop.
+  describe('instrument du cabinet — concordance de la copie (D-524 §2)', () => {
+    const DEFINITION = {
+      sections: [{ id: 'S', questions: [{ id: 'Q2', texte: 'Idées de mort ?', options: [{ v: 0, l: 'Jamais' }, { v: 3, l: 'Souvent' }] }] }],
+    };
+    const LIGNE = {
+      actif: true,
+      statut_relecture: 'valide',
+      titre: 'Humeur cabinet',
+      definition_json: DEFINITION,
+      pose_question_suicide: true,
+      question_suicide_id: 'Q2',
+      question_suicide_option_non: 0,
+    };
+    const COPIE = {
+      poseQuestionSuicide: true,
+      questionSuicideId: 'Q2',
+      questionSuicideOptionNon: 0,
+      questionSuicideCopie: { instrument: 'Humeur cabinet', enonce: 'Idées de mort ?', options: [{ v: 0, l: 'Jamais' }, { v: 3, l: 'Souvent' }] },
+    };
+    let ligneInstrument: unknown[] = [LIGNE];
+
+    function assignationCab(copie: Record<string, unknown>) {
+      prisma.assignation.findFirst.mockResolvedValue({
+        idAssignation: 'ASS_1', idQuestionnaire: 'CAB_HUMEUR', idPatient: 'PAT_1', statut: 'En attente',
+        statutReponses: 'verrouille', ...copie, patient: suiviOuvert,
+      });
+    }
+    function requetesInstrument(): string[] {
+      return prisma.$queryRaw.mock.calls
+        .map(appel => (appel[0] as TemplateStringsArray).join('?'))
+        .filter(sql => sql.includes('cabinet_instruments'));
+    }
+
+    beforeEach(() => {
+      ligneInstrument = [LIGNE];
+      prisma.$queryRaw.mockImplementation((sql: TemplateStringsArray) =>
+        Promise.resolve(sql.join('?').includes('cabinet_instruments') ? ligneInstrument : [{ id: 1 }]),
+      );
+    });
+
+    async function attendreRefus() {
+      const response = await PATCH(patchRequest());
+      expect(response.status).toBe(409);
+      expect(await response.json()).toEqual({
+        success: false,
+        reason: 'instrument_modifie',
+        error: 'La copie de l’instrument prise à l’envoi ne correspond plus à l’instrument, ou elle manque : ce questionnaire ne peut pas être débloqué. Envoyez l’instrument de nouveau, après avoir annulé cette assignation si elle n’a pas encore de réponse.',
+      });
+      expect(prisma.assignation.updateMany).not.toHaveBeenCalled();
+    }
+
+    it('second essai de la boucle : l’instrument est relu sous verrou, et une discordance survenue entre-temps refuse', async () => {
+      assignationCab(COPIE);
+      // Premier essai : concordance, mais zéro ligne écrite (l'état a bougé).
+      prisma.assignation.updateMany.mockResolvedValueOnce({ count: 0 });
+      // Puis l'instrument change avant le second essai.
+      const q = { id: 'Q2', texte: 'Idées de mort ?', options: [{ v: 0, l: 'Jamais' }, { v: 1, l: 'Parfois' }, { v: 3, l: 'Souvent' }] };
+      const discordante = [{ ...LIGNE, definition_json: { sections: [{ id: 'S', questions: [q] }] } }];
+      let lectures = 0;
+      prisma.$queryRaw.mockImplementation((sql: TemplateStringsArray) => {
+        if (!sql.join('?').includes('cabinet_instruments')) return Promise.resolve([{ id: 1 }]);
+        lectures += 1;
+        return Promise.resolve(lectures === 1 ? [LIGNE] : discordante);
+      });
+      const response = await PATCH(patchRequest());
+      expect(response.status).toBe(409);
+      expect(await response.json()).toMatchObject({ reason: 'instrument_modifie' });
+      expect(lectures).toBe(2);
+      expect(prisma.assignation.updateMany).toHaveBeenCalledTimes(1);
+    });
+
+    it('copie concordante : déverrouillée, l’instrument lu sous verrou FOR SHARE, la copie jamais réécrite', async () => {
+      assignationCab(COPIE);
+      const response = await PATCH(patchRequest());
+      expect(response.status).toBe(200);
+      const [sql] = requetesInstrument();
+      expect(sql).toMatch(/FOR SHARE/);
+      expect(prisma.assignation.updateMany).toHaveBeenCalledTimes(1);
+      expect(prisma.assignation.updateMany.mock.calls[0][0].data).toEqual({ statutReponses: 'deverrouille' });
+      expect(prisma.assignation.update).not.toHaveBeenCalled();
+    });
+
+    it('options renumérotées : refus', async () => {
+      assignationCab(COPIE);
+      const q = { id: 'Q2', texte: 'Idées de mort ?', options: [{ v: 1, l: 'Jamais' }, { v: 3, l: 'Souvent' }] };
+      ligneInstrument = [{ ...LIGNE, definition_json: { sections: [{ id: 'S', questions: [q] }] }, question_suicide_option_non: 1 }];
+      await attendreRefus();
+    });
+
+    it('identifiant de la question changé : refus', async () => {
+      assignationCab(COPIE);
+      const q = { id: 'Q7', texte: 'Idées de mort ?', options: [{ v: 0, l: 'Jamais' }, { v: 3, l: 'Souvent' }] };
+      ligneInstrument = [{ ...LIGNE, definition_json: { sections: [{ id: 'S', questions: [q] }] }, question_suicide_id: 'Q7' }];
+      await attendreRefus();
+    });
+
+    it('option ajoutée : refus', async () => {
+      assignationCab(COPIE);
+      const q = { id: 'Q2', texte: 'Idées de mort ?', options: [{ v: 0, l: 'Jamais' }, { v: 1, l: 'Parfois' }, { v: 3, l: 'Souvent' }] };
+      ligneInstrument = [{ ...LIGNE, definition_json: { sections: [{ id: 'S', questions: [q] }] } }];
+      await attendreRefus();
+    });
+
+    it('désignation absente — brouillon à déclaration effacée, instrument introuvable : refus', async () => {
+      assignationCab(COPIE);
+      ligneInstrument = [{ ...LIGNE, pose_question_suicide: null, question_suicide_id: null, question_suicide_option_non: null }];
+      await attendreRefus();
+      vi.clearAllMocks();
+      assignationCab(COPIE);
+      ligneInstrument = [];
+      await attendreRefus();
+    });
+
+    it('brouillon à désignation intacte (drapeau éteint, la déclaration survit) : refus — contre-revue Codex, P1', async () => {
+      vi.stubEnv('WN_ENABLE_DECLARATION_SUICIDE_CAB', '');
+      assignationCab(COPIE);
+      ligneInstrument = [{ ...LIGNE, statut_relecture: 'brouillon' }];
+      await attendreRefus();
+      vi.clearAllMocks();
+      assignationCab(COPIE);
+      ligneInstrument = [{ ...LIGNE, actif: false }];
+      await attendreRefus();
+      vi.unstubAllEnvs();
+    });
+
+    it('le refus ne relit pas le drapeau : éteint ou allumé, même refus', async () => {
+      for (const valeur of ['', 'true']) {
+        vi.stubEnv('WN_ENABLE_DECLARATION_SUICIDE_CAB', valeur);
+        vi.clearAllMocks();
+        assignationCab(COPIE);
+        ligneInstrument = [];
+        await attendreRefus();
+      }
+      vi.unstubAllEnvs();
+    });
+
+    it('un CAB_ « non » ou non déclaré : inchangé, l’instrument n’est pas lu', async () => {
+      for (const pose of [false, null]) {
+        vi.clearAllMocks();
+        assignationCab({ poseQuestionSuicide: pose, questionSuicideId: null, questionSuicideOptionNon: null, questionSuicideCopie: null });
+        ligneInstrument = [];
+        const response = await PATCH(patchRequest());
+        expect(response.status).toBe(200);
+        expect(requetesInstrument()).toEqual([]);
+        expect(prisma.assignation.updateMany).toHaveBeenCalledTimes(1);
+      }
+    });
+
+    it('le catalogue : inchangé, aucun instrument du cabinet lu', async () => {
+      prisma.assignation.findFirst.mockResolvedValue({
+        idAssignation: 'ASS_1', idQuestionnaire: 'Q_SOM_06', idPatient: 'PAT_1', statut: 'En attente',
+        poseQuestionSuicide: true, patient: suiviOuvert,
+      });
+      const response = await PATCH(patchRequest());
+      expect(response.status).toBe(200);
+      expect(requetesInstrument()).toEqual([]);
+    });
+  });
 });
 
 // ── L'ÉCHÉANCE DU SECOND RIDEAU (`WN_ECHEANCE_OBLIGATOIRE`) ─────────────────

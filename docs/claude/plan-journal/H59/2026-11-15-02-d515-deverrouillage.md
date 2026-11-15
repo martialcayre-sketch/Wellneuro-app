@@ -1,0 +1,6 @@
+- **Mise à jour (2026-11-15, lot D-277, `h59-d515-deverrouillage`)** : le déverrouillage d'une assignation `CAB_` « oui » est refusé (409) quand sa copie ne concorde plus avec `copieDesignationSuicide(définition courante)`, ou quand la désignation courante manque (`D-524` §2). L'instrument est lu sous `FOR SHARE`, et le refus ne relit pas le drapeau. Sans migration ; aucun texte ni code du SHA de `SAF-QUEST-02` retouché.
+  - **Reste** :
+    - le recomptage, par conteneur, des `CAB_` à copie NULL (`D-515` §6, étape 3) ;
+    - l'allumage par le responsable, après ce lot mergé et déployé, puis la troisième migration de H59.
+    - le résidu drapeau éteint : le gel du contenu compte les envois hors verrou, et une modification déjà passée à son comptage peut écrire après un déverrouillage concordant ; il suppose une extinction après allumage, à fermer avec le lot d'extinction complète (`D-522`, revue `wn-reviewer`, P2-1).
+    - candidat au carnet : un `CAB_` « non » ou non déclaré, en brouillon ou désactivé, se déverrouille encore (hors de `D-524`, revue `wn-reviewer`, P3-1).

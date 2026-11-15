@@ -43,7 +43,17 @@
 //  10. ÉDITION DU TITRE SUR UNE LECTURE PÉRIMÉE (P1-1 de la passe Codex) :
 //      elle ne réinstalle pas la V1 lue avant une V2 publiée « non ». Depuis
 //      #2130 (réponse 20261114-1217-a), drapeau allumé, elle est refusée en
-//      409 : l'instrument a bougé depuis la lecture.
+//      409 : l'instrument a bougé depuis la lecture ;
+//  11. MODIFICATION D'ABORD, DÉVERROUILLAGE ([[D-524]] §2) : une assignation
+//      `CAB_` « oui » verrouillée ; la modification du contenu tient la
+//      ligne, le déverrouillage (`api/praticien/assignations`, PATCH) attend
+//      son `FOR SHARE`, puis lit la ligne nouvelle — déclaration effacée,
+//      désignation absente — et refuse (409) ; l'assignation reste
+//      verrouillée, sa copie intacte ;
+//  12. DÉVERROUILLAGE D'ABORD : il tient la ligne (`FOR SHARE`) et
+//      déverrouille une copie qui concorde (200) ; la modification attend,
+//      recompte sous son `FOR UPDATE` l'assignation rouverte et refuse (409),
+//      contenu intact.
 // Chaque course constate d'abord que la session attendue est BLOQUÉE sur un
 // verrou (`pg_stat_activity`) : sans ce constat, une course « gagnée » ne
 // prouverait rien. Chaque appel est borné dans le temps.
@@ -150,6 +160,7 @@ async function borne<T>(p: Promise<T>, libelle: string): Promise<T> {
 
 let POST_ENVOYER: Handler;
 let PATCH_INSTRUMENTS: Handler;
+let PATCH_ASSIGNATIONS: Handler;
 
 async function appeler(handler: Handler, url: string, method: string, corps: unknown): Promise<Issue> {
   const res = await handler(
@@ -166,6 +177,10 @@ function envoyer(idBrouillon: string): Promise<Issue> {
 
 function patcher(corps: Record<string, unknown>): Promise<Issue> {
   return suivre(appeler(PATCH_INSTRUMENTS, 'http://localhost/api/praticien/instruments', 'PATCH', corps));
+}
+
+function deverrouiller(idAssignation: string): Promise<Issue> {
+  return suivre(appeler(PATCH_ASSIGNATIONS, 'http://localhost/api/praticien/assignations', 'PATCH', { idAssignation }));
 }
 
 const modifier = (id: string) => patcher({ idInstrument: id, definition: DEFINITION_V2 });
@@ -229,6 +244,38 @@ async function poserBrouillon(c: pg.Client, idPatient: string, qids: string[]): 
   return id;
 }
 
+/**
+ * Une assignation `CAB_` « oui », VERROUILLÉE (réponses transmises), dont la
+ * copie de la désignation est celle que l'envoi a prise sur la V1 de
+ * `poserInstrument` ([[D-515]] §4). Elle ne compte plus comme envoi en cours :
+ * le contenu de l'instrument redevient modifiable ([[D-524]] §2).
+ */
+async function poserAssignationCabVerrouillee(c: pg.Client, idInstrument: string, suffixe: string): Promise<string> {
+  const id = `ASS_BANC_NF7_${RUN}_${suffixe}`;
+  const copie = {
+    instrument: `Banc NF-7 ${RUN} ${suffixe}`,
+    enonce: DEFINITION_V1.sections[0].questions[0].texte,
+    options: OPTIONS,
+  };
+  await c.query(
+    `INSERT INTO assignations
+       (id, id_assignation, id_patient, email_patient, id_questionnaire, titre, statut, statut_reponses, updated_at,
+        pose_question_suicide, question_suicide_id, question_suicide_option_non, question_suicide_copie)
+     VALUES ($1, $2, $3, $4, $5, $6, 'Complété', 'verrouille', CURRENT_TIMESTAMP, true, 'Q1', 0, $7)`,
+    [id.toLowerCase(), id, PATIENT_1, `${PATIENT_1.toLowerCase()}@example.test`, idInstrument, copie.instrument, JSON.stringify(copie)],
+  );
+  return id;
+}
+
+async function etatAssignation(c: pg.Client, idAssignation: string) {
+  const { rows } = await c.query(
+    `SELECT statut_reponses, pose_question_suicide, question_suicide_id, question_suicide_option_non, question_suicide_copie
+     FROM assignations WHERE id_assignation = $1`,
+    [idAssignation],
+  );
+  return rows[0] as Record<string, unknown>;
+}
+
 async function effacerFixtures(c: pg.Client) {
   const patients = [PATIENT_1, PATIENT_2];
   await c.query('BEGIN');
@@ -277,6 +324,7 @@ const MOTIF = {
   insertionAssignation: 'INSERT INTO "public"."assignations"',
   reclamationBrouillon: 'UPDATE "public"."envoi_brouillons"',
   verrouPatient: 'FROM patients WHERE id_patient = $1 FOR UPDATE',
+  ecritureAssignation: 'UPDATE "public"."assignations"',
 };
 
 async function bloquees(observateur: pg.Client, motif: string): Promise<number> {
@@ -327,6 +375,9 @@ async function main() {
   ));
   ({ PATCH: PATCH_INSTRUMENTS } = await jiti.import<{ PATCH: Handler }>(
     path.join(WEB, 'src/app/api/praticien/instruments/route.ts'),
+  ));
+  ({ PATCH: PATCH_ASSIGNATIONS } = await jiti.import<{ PATCH: Handler }>(
+    path.join(WEB, 'src/app/api/praticien/assignations/route.ts'),
   ));
   const { prisma } = await jiti.import<typeof import('../src/lib/prisma')>(path.join(WEB, 'src/lib/prisma.ts'));
 
@@ -693,6 +744,68 @@ async function main() {
       );
       assert.equal(titre, `Banc NF-7 ${RUN} 10A`, 'le titre jugé sur la lecture périmée ne doit pas être écrit');
       console.log('ok 10 — titre sur une lecture périmée : refusé (409), la V2 publiée « non » reste, ni la V1 ni le titre ne sont écrits');
+    }
+
+    // 11. MODIFICATION D'ABORD, DÉVERROUILLAGE ([[D-524]] §2) : la
+    //     modification tient la ligne (FOR UPDATE), son écriture est retenue
+    //     par le tiers ; le déverrouillage attend son FOR SHARE, puis lit la
+    //     ligne nouvelle (déclaration effacée) et refuse.
+    {
+      const a = await poserInstrument(observateur, '11A', { statut: 'valide', declaration: 'oui' });
+      const ass = await poserAssignationCabVerrouillee(observateur, a, '11A');
+      const avant = await etatAssignation(observateur, ass);
+      await tenirTable(tiers, 'cabinet_instruments');
+      const modification = modifier(a);
+      let deverrouillage: Promise<Issue> | null = null;
+      try {
+        await attendreBlocage(observateur, MOTIF.ecritureInstrument);
+        deverrouillage = deverrouiller(ass);
+        await attendreBlocage(observateur, MOTIF.partage);
+      } finally {
+        await tiers.query('COMMIT');
+      }
+      assert.equal((await borne(modification, 'modification 11')).status, 200);
+      const issue = await borne(deverrouillage!, 'déverrouillage 11');
+      assert.deepEqual([issue.status, issue.json.reason], [409, 'instrument_modifie']);
+      assert.deepEqual(await etatAssignation(observateur, ass), avant, 'l’assignation reste verrouillée, sa copie intacte');
+      assert.equal(avant.statut_reponses, 'verrouille');
+      console.log('ok 11 — modification d’abord : le déverrouillage attend, lit la désignation effacée et refuse (409)');
+      await viderAssignations(observateur);
+    }
+
+    // 12. DÉVERROUILLAGE D'ABORD : il tient la ligne (FOR SHARE), son
+    //     écriture est retenue par le tiers ; la modification attend son
+    //     FOR UPDATE, puis recompte l'assignation rouverte et refuse.
+    {
+      const a = await poserInstrument(observateur, '12A', { statut: 'valide', declaration: 'oui' });
+      const ass = await poserAssignationCabVerrouillee(observateur, a, '12A');
+      const avant = await etatAssignation(observateur, ass);
+      await tenirTable(tiers, 'assignations');
+      const deverrouillage = deverrouiller(ass);
+      let modification: Promise<Issue> | null = null;
+      try {
+        await attendreBlocage(observateur, MOTIF.ecritureAssignation);
+        modification = modifier(a);
+        await attendreBlocage(observateur, MOTIF.verrouModification);
+      } finally {
+        await tiers.query('COMMIT');
+      }
+      const issueDeverrouillage = await borne(deverrouillage, 'déverrouillage 12');
+      assert.deepEqual([issueDeverrouillage.status, issueDeverrouillage.json.success], [200, true]);
+      const issueModif = await borne(modification!, 'modification 12');
+      assert.deepEqual([issueModif.status, issueModif.json.reason], [409, 'envoi_en_cours']);
+      assert.deepEqual(
+        await etatAssignation(observateur, ass),
+        { ...avant, statut_reponses: 'deverrouille' },
+        'seul le statut des réponses change : la copie n’est jamais réécrite',
+      );
+      assert.deepEqual(await instrument(observateur, a), {
+        statut_relecture: 'valide',
+        pose_question_suicide: true,
+        instructions: DEFINITION_V1.instructions,
+      });
+      console.log('ok 12 — déverrouillage d’abord : copie concordante rouverte (200), la modification recompte et refuse (409), contenu intact');
+      await viderAssignations(observateur);
     }
   } finally {
     try {
