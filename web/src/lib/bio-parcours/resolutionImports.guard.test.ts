@@ -98,7 +98,10 @@ const CLES_TSCONFIG_ADMISES = [
 const EMPREINTE_NEXT_CONFIG = '19a1dab2af4f1a7cfa0fafe0c252aa76ce8b3dc460d33539b0dbc57990986d21';
 // Le plugin que `webpack` installe s'exécute dans la compilation client : une
 // édition pourrait y réécrire une résolution (`normalModuleFactory`). Figé.
-const EMPREINTE_PLUGIN_LICENCES = 'f2555ec7022904ee8f84209d0cec6443f177dc07132e2ade133487a7a85c9c4c';
+const EMPREINTE_PLUGIN_LICENCES = 'b8c067980c2fe1957e719a670bd91e18fb89b3121997040dc8f1d659137db7e3';
+// Le module que le plugin importe s'exécute avec lui : figé de même. Données
+// seules (textes de licence, lot `licences-hors-graphe`) — il le reste.
+const EMPREINTE_LICENCES_HORS_GRAPHE = 'ead0885c73c4b576130b5c330564d0fbe661d408bb64332762521e065801dcbc';
 
 /** La chaîne de lancement de production, figée (voir le banc « chaîne de lancement »). */
 const EMPREINTES_LANCEMENT: Record<string, string> = {
@@ -261,6 +264,10 @@ describe('résolution des imports — configurations verrouillées (bancs de gar
     // ni aucun crochet de résolution.
     const empreintePlugin = createHash('sha256').update(lire('web/scripts/licences-tierces.mjs')).digest('hex');
     expect(empreintePlugin).toBe(EMPREINTE_PLUGIN_LICENCES);
+    // Son module de données : AVANT d'ajuster, vérifier qu'il n'exporte que
+    // des littéraux (aucun import, aucune fonction).
+    const empreinteHorsGraphe = createHash('sha256').update(lire('web/scripts/licences-hors-graphe.mjs')).digest('hex');
+    expect(empreinteHorsGraphe).toBe(EMPREINTE_LICENCES_HORS_GRAPHE);
   });
 
   // VERROU : un alias propre à Next (`webpack`, `turbopack.resolveAlias`) ou un

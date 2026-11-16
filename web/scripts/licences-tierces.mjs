@@ -19,8 +19,11 @@
 // déclarée, MIT ou ISC seulement ; sans l'un ni l'autre, IL REND LE BUILD
 // ROUGE : on ne sert pas une liste dont on sait qu'elle est incomplète.
 
+import { createHash } from 'node:crypto';
 import fs from 'node:fs';
+import { createRequire } from 'node:module';
 import path from 'node:path';
+import { POLICES_OFL, POLYFILLS_NEXT as POLYFILLS_RECONNUS, TEXTE_OFL } from './licences-hors-graphe.mjs';
 
 const NOM_PLUGIN = 'PluginLicencesTierces';
 const SEGMENT_NODE_MODULES = `${path.sep}node_modules${path.sep}`;
@@ -173,8 +176,13 @@ function cle(paquet) {
   return `${paquet.nom}@${paquet.version ?? '?'}`;
 }
 
-/** Le texte servi à `/licences-tierces.txt`, trié et sans doublon. */
-export function composerMentions(paquets, nonCouverts = {}) {
+/**
+ * Le texte servi à `/licences-tierces.txt`, trié et sans doublon.
+ * `horsGraphe` : ce qui est livré hors du graphe des modules (lot
+ * `licences-hors-graphe`) — `polyfills` [{ fichier, next, composants }] et
+ * `polices` [{ nom, droits }], déjà reconnus par le plugin.
+ */
+export function composerMentions(paquets, horsGraphe = {}) {
   const uniques = new Map();
   for (const p of paquets) if (!uniques.has(cle(p))) uniques.set(cle(p), p);
   const tries = [...uniques.values()].sort((a, b) => cle(a).localeCompare(cle(b), 'en'));
@@ -206,17 +214,27 @@ export function composerMentions(paquets, nonCouverts = {}) {
     }
     for (const f of [...p.textesLicence, ...p.notices]) lignes.push('', `--- ${f.nom} ---`, '', f.texte);
   }
-  // NON COUVERTS, ET DITS (revue wn-reviewer du lot) : le fichier de polyfills
-  // de Next (core-js et d'autres, compilés dans un seul fichier sans leurs
-  // licences) et les polices de `next/font` (licence SIL OFL-1.1, droits dans
-  // les fichiers de police). Lot de suite au carnet : `licences-hors-graphe`.
-  const { polyfills = [], polices = [] } = nonCouverts;
-  if (polyfills.length > 0 || polices.length > 0) {
-    lignes.push('', trait, 'Composants livrés que ce fichier ne couvre pas encore', trait);
-    if (polyfills.length > 0) {
-      lignes.push('', `Polyfills de Next.js (${polyfills.join(', ')}) : core-js et d'autres polyfills, compilés par Next.js.`);
+  // HORS DU GRAPHE (lot `licences-hors-graphe`) : le fichier de polyfills de
+  // Next, qui compile plusieurs composants sans leurs licences, et les polices
+  // de `next/font`, dont les droits ne sont que dans les fichiers de police.
+  const { polyfills = [], polices = [] } = horsGraphe;
+  for (const { fichier, next, composants } of polyfills) {
+    lignes.push(
+      '',
+      trait,
+      `Fichier de polyfills de Next.js (${fichier})`,
+      trait,
+      '',
+      `Copié tel quel depuis next@${next} (next/dist/build/polyfills/polyfill-nomodule.js), il compile les composants suivants.`,
+    );
+    for (const c of composants) {
+      lignes.push('', trait, `${c.nom}@${c.version}`, `Licence déclarée : ${c.licence}`, trait, '', c.texte);
     }
-    if (polices.length > 0) lignes.push('', `Polices servies par next/font : ${polices.join(', ')}.`);
+  }
+  if (polices.length > 0) {
+    lignes.push('', trait, 'Polices servies par next/font (SIL Open Font License, version 1.1)', trait);
+    for (const { nom, droits } of polices) lignes.push('', nom, droits);
+    lignes.push('', '--- SIL Open Font License 1.1 ---', '', TEXTE_OFL);
   }
   return `${lignes.join('\n')}\n`;
 }
@@ -228,7 +246,7 @@ const MOTIF_POLICE_NEXT = `${path.sep}next${path.sep}font${path.sep}`;
  * Ce que les morceaux émis livrent : les dossiers des paquets, les fichiers
  * VENDUS SANS MANIFESTE (du code sous `<paquet>/dist/compiled/` que rien ne
  * distingue de son hôte : il serait attribué en silence à l'hôte, à tort) et
- * les polices de `next/font` (non couvertes, dites en fin de fichier).
+ * les polices de `next/font` (reconnues par leur nom, `POLICES_OFL`).
  */
 export function dossiersLivres(compilation, cache = new Map()) {
   const dossiers = new Set();
@@ -256,8 +274,8 @@ export function dossiersLivres(compilation, cache = new Map()) {
  * Les fichiers JavaScript servis sous `static/` qui ne viennent d'AUCUN morceau
  * (un `CopyFilePlugin`, par exemple) : leurs composants échappent au graphe.
  * Deux formes sont connues : les manifestes générés par Next (son propre code,
- * couvert par l'entrée `next`), et le fichier de polyfills de Next, dit non
- * couvert en fin de fichier. Toute autre rend le build rouge.
+ * couvert par l'entrée `next`), et le fichier de polyfills de Next, reconnu
+ * par son empreinte (`POLYFILLS_RECONNUS`). Toute autre rend le build rouge.
  */
 const MANIFESTES_NEXT = /(^|\/)_(build|ssg)Manifest\.js$/;
 const POLYFILLS_NEXT = /^static\/chunks\/polyfills-[0-9a-f]+\.js$/;
@@ -278,27 +296,45 @@ export function fichiersHorsMorceaux(compilation) {
  * Les composants livrés hors du graphe des modules, par défaut : le runtime
  * webpack (son code d'amorçage n'a pas de fichier source) et Tailwind CSS (son
  * « preflight », dérivé de modern-normalize, part dans le CSS par `@tailwind
- * base`). Chemins tirés du compilateur, sans `import.meta` : les bancs de garde
- * des imports le refusent.
+ * base`). Dossiers RÉSOLUS depuis le dossier du projet (`compiler.context`),
+ * sans `import.meta` (les bancs de garde des imports le refusent) : dans un
+ * worktree dont `web/node_modules` ne porte que des caches, `next` se résout
+ * ailleurs, et un chemin écrit en dur rougissait le build (signal de la file A,
+ * 2026-11-16). Un paquet introuvable garde son chemin attendu : le build rougit
+ * en le nommant.
  */
 function horsGrapheParDefaut(contexte) {
-  return [
-    path.join(contexte, 'node_modules', 'next', 'dist', 'compiled', 'webpack'),
-    path.join(contexte, 'node_modules', 'tailwindcss'),
-  ];
+  const resoudre = createRequire(path.join(contexte, 'package.json'));
+  const dossierDe = (nom) => {
+    try {
+      return path.dirname(resoudre.resolve(`${nom}/package.json`));
+    } catch {
+      return path.join(contexte, 'node_modules', nom);
+    }
+  };
+  return [path.join(dossierDe('next'), 'dist', 'compiled', 'webpack'), dossierDe('tailwindcss')];
+}
+
+/** L'empreinte SHA-256 d'un fichier émis par la compilation. */
+function empreinteFichier(compilation, nom) {
+  return createHash('sha256').update(compilation.getAsset(nom).source.source()).digest('hex');
 }
 
 export class PluginLicencesTierces {
   /**
-   * @param {{ sortie?: string, horsGraphe?: string[] }} [options]
+   * @param {{ sortie?: string, horsGraphe?: string[], polyfills?: object, polices?: object }} [options]
    *   `sortie` : chemin absolu du fichier écrit (défaut : `public/
    *   licences-tierces.txt` sous le dossier du projet, `compiler.context`) ;
    *   `horsGraphe` : dossiers des composants livrés hors du graphe des modules
-   *   (défaut : `horsGrapheParDefaut`).
+   *   (défaut : `horsGrapheParDefaut`) ; `polyfills` et `polices` : tables des
+   *   fichiers de polyfills et des polices reconnus (défaut :
+   *   `licences-hors-graphe.mjs`).
    */
-  constructor({ sortie, horsGraphe } = {}) {
+  constructor({ sortie, horsGraphe, polyfills, polices } = {}) {
     this.sortie = sortie ?? null;
     this.horsGraphe = horsGraphe ?? null;
+    this.polyfills = polyfills ?? POLYFILLS_RECONNUS;
+    this.polices = polices ?? POLICES_OFL;
   }
 
   apply(compiler) {
@@ -323,6 +359,20 @@ export class PluginLicencesTierces {
           const horsMorceaux = fichiersHorsMorceaux(compilation);
           const inconnus = horsMorceaux.filter((nom) => !MANIFESTES_NEXT.test(nom) && !POLYFILLS_NEXT.test(nom));
           if (inconnus.length > 0) refus.push(`fichier(s) de code servi(s) hors des morceaux : ${inconnus.join(', ')}`);
+          const polyfills = horsMorceaux
+            .filter((nom) => POLYFILLS_NEXT.test(nom))
+            .map((fichier) => ({ fichier, empreinte: empreinteFichier(compilation, fichier) }));
+          const polyfillsInconnus = polyfills.filter((p) => !Object.hasOwn(this.polyfills, p.empreinte));
+          if (polyfillsInconnus.length > 0) {
+            refus.push(
+              `fichier(s) de polyfills de Next d'empreinte inconnue (${polyfillsInconnus.map((p) => `${p.fichier} : ${p.empreinte}`).join(', ')}) : ` +
+                'réénumérer ses composants depuis la source de @next/polyfill-nomodule (licences-hors-graphe.mjs)',
+            );
+          }
+          const policesInconnues = [...polices].filter((nom) => !Object.hasOwn(this.polices, nom)).sort();
+          if (policesInconnues.length > 0) {
+            refus.push(`police(s) next/font sans mention de droits (licences-hors-graphe.mjs) : ${policesInconnues.join(', ')}`);
+          }
           if (refus.length === 0) {
             for (const d of horsGraphe) dossiers.add(d);
             const muets = [...dossiers].map(lirePaquet).filter(sansLicence);
@@ -339,12 +389,12 @@ export class PluginLicencesTierces {
             }
             return;
           }
-          const nonCouverts = {
-            polyfills: horsMorceaux.filter((nom) => POLYFILLS_NEXT.test(nom)),
-            polices: [...polices].sort(),
+          const horsDuGraphe = {
+            polyfills: polyfills.map(({ fichier, empreinte }) => ({ fichier, ...this.polyfills[empreinte] })),
+            polices: [...polices].sort().map((nom) => ({ nom, droits: this.polices[nom].droits })),
           };
           fs.mkdirSync(path.dirname(sortie), { recursive: true });
-          fs.writeFileSync(sortie, composerMentions([...dossiers].map(lirePaquet), nonCouverts));
+          fs.writeFileSync(sortie, composerMentions([...dossiers].map(lirePaquet), horsDuGraphe));
         },
       );
     });
