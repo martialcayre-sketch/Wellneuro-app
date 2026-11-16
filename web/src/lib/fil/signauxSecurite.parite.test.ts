@@ -18,7 +18,11 @@ const { prisma } = vi.hoisted(() => ({
   },
 }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
-vi.mock('@/lib/praticien/appartenance', () => ({ filtrePatientsDuPraticien: () => ({}) }));
+// Une sentinelle, pas `{}` : le test du filtre exige que le périmètre du
+// praticien soit bien étalé dans `patient`, avec l'e-mail de la session.
+vi.mock('@/lib/praticien/appartenance', () => ({
+  filtrePatientsDuPraticien: (email: string) => ({ praticienSentinelle: email }),
+}));
 vi.mock('@/lib/clinical-engine/adressagesSignalAlertePrisma', () => ({
   lireCouverturesAdressage: vi.fn(async () => undefined),
   lireCouverturesAdressageGroupees: vi.fn(async () => undefined),
@@ -41,6 +45,7 @@ import {
   SAFETY_QUESTIONNAIRE_CABINET_METADATA,
   SAFETY_QUESTIONNAIRE_CABINET_SHA256,
 } from '@/lib/clinical/safetyQuestionnaireCabinetV1';
+import { QUESTIONNAIRES_SECURITE } from '@/lib/clinical/safetyQuestionnaireV1';
 import { lireSignauxSecuriteOuverts } from './signauxSecurite';
 
 const POSITIF = {
@@ -175,5 +180,30 @@ describe('parité cockpit ↔ Fil — un instrument du cabinet ([[D-515]])', () 
     poserDossier(ANAMNESE_C1_FIXTURE, [CAB_POSITIF]);
     expect(constatsDuCockpit(ANAMNESE_C1_FIXTURE, [jointe(CAB_POSITIF)])).toEqual([]);
     expect(await lireSignauxSecuriteOuverts('praticien@wellneuro.fr')).toEqual([]);
+  });
+});
+
+// LE `OR` CATALOGUE ∪ CABINET, FIGÉ ([[D-528]], lacune relevée par la revue
+// de #2166). Les faux `findMany` de ce banc rendent ce qu'on leur pose, quel
+// que soit le `where` : retirer la branche du catalogue ou celle du cabinet
+// laisserait vertes les parités ci-dessus, et le Fil cesserait en silence de
+// lire une source. Ce test exige le `where` entier : les deux branches, et le
+// périmètre du praticien de la session.
+describe('lecture des passations de sécurité — le filtre exige le catalogue ET le cabinet', () => {
+  it('questionnaireReponse.findMany reçoit le OR des deux branches, borné aux dossiers suivis du praticien', async () => {
+    expect(QUESTIONNAIRES_SECURITE.length).toBeGreaterThan(0);
+    poserDossier(ANAMNESE_C1_FIXTURE, []);
+    prisma.assignation.findMany.mockResolvedValue([]);
+
+    await lireSignauxSecuriteOuverts('praticien@wellneuro.fr');
+
+    expect(prisma.questionnaireReponse.findMany).toHaveBeenCalledTimes(1);
+    expect(prisma.questionnaireReponse.findMany.mock.calls[0][0].where).toEqual({
+      OR: [
+        { idQuestionnaire: { in: [...QUESTIONNAIRES_SECURITE] } },
+        { idQuestionnaire: { startsWith: 'CAB_' } },
+      ],
+      patient: { actif: true, suiviClotureLe: null, praticienSentinelle: 'praticien@wellneuro.fr' },
+    });
   });
 });

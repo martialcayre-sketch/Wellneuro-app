@@ -291,7 +291,7 @@ test('actions : lot `bloque` à relire quand toutes ses questions ont une répon
   assert.deepEqual(types([question({ statut: 'repondue' })]), [], 'une question absente de l\'export');
   const a = types([question({ statut: 'repondue' }), q2({ statut: 'close' })]);
   assert.deepEqual(a.map((x) => x.type), ['lot_bloque_a_relire']);
-  assert.match(a[0].detail, /relire la source de chaque réponse et son autorité \(clinique ou migration/);
+  assert.match(a[0].detail, /relire la source de chaque réponse et son autorité \(clinique : responsable dans la session qui agit ou par le cockpit, ou décision mergée ; migration : responsable dans la session qui agit, ou décision mergée\)/);
   assert.deepEqual(actionsDues({ lots: [lot({ id: 'h00-4', etat: 'bloque', motif: 'geste du responsable' })] }, T0), [], 'bloqué sans question : rien de calculable');
 });
 
