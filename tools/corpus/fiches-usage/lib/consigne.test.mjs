@@ -1,4 +1,4 @@
-// La consigne « fiche-usage-v10 » est épinglée : un octet changé sans bump de
+// La consigne « fiche-usage-v11 » est épinglée : un octet changé sans bump de
 // version rougit ici, et l'outil refuse de tourner ([[D-314]] §4).
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
@@ -253,4 +253,28 @@ test('v10 : limite de sécurité exprimée en apport, mention sans valeur, recom
   assert.match(contreLecture, /prolongé\s+en\s+danger\s+au-delà\s+ou\s+en\s+conseil\s+en\s+deçà,\s+il\s+en\s+est\s+un/);
   // Le reste du statut ne bouge pas : « non_valide » garde sa règle.
   assert.match(redaction, /« non_valide » :\s+le texte dit que l'usage n'est pas validé/);
+});
+
+// [[D-501]] §14 : cinq refus stables de l'essai v10 (20261116-2250-b). Le
+// moment de prise est une quantité de prise ; la forme attribuée et réservée
+// vaut dans toute rubrique ; une limite de la littérature n'est pas une limite
+// de l'examen ; un argument de causalité n'est pas une surveillance ; un
+// résultat ne s'interprète pas dans « resultats_consequences », et sous
+// « preuves_limitees » aucune conséquence décisionnelle ne s'y écrit. Des deux côtés.
+test('v11 : moment de prise, réserve en toute rubrique, objets de limites, surveillance_arret et resultats_consequences', () => {
+  const { redaction, contreLecture } = lireConsignes();
+  for (const c of [redaction, contreLecture]) {
+    assert.match(c, /une\s+durée\s+de\s+prise\s+ou\s+de\s+traitement,\s+un\s+moment\s+de\s+prise\s+\(le\s+soir,\s+au\s+repas,\s+à\s+jeun\)/);
+    assert.match(c, /«\s+precautions\s+»\s+comprise/);
+    assert.match(c, /Une\s+limite\s+de\s+la\s+littérature\s+sur\s+un\s+supplément,\s+une\s+option\s+ou\s+un\s+traitement/);
+    assert.match(c, /n'est\s+pas\s+une\s+limite\s+de\s+l'examen\s+ni\s+de\s+son\s+marqueur/);
+    assert.match(c, /Un\s+claim\s+porte\s+sur\s+l'objet\s+de\s+«\s+surveillance_arret\s+»\s+quand\s+il\s+dit\s+quoi\s+surveiller/);
+    assert.match(c, /un\s+argument\s+de\s+causalité\s+\(l'évolution\s+d'un\s+effet\s+après\s+l'arrêt\s+puis\s+la\s+reprise/);
+    assert.match(c, /ce\s+dont\s+il\s+témoigne,\s+ce\s+qu'il\s+reflète\s+ou\s+traduit/);
+    assert.match(c, /une\s+conséquence\s+décisionnelle\s+\(orienter\s+vers\s+une\s+complémentation,\s+une\s+prise\s+en\s+charge\s+ou\s+un\s+autre\s+examen\)/);
+  }
+  assert.match(redaction, /ne\s+s'écrit\s+que\s+sous\s+elle/);
+  assert.match(redaction, /complémentation,\s+une\s+prise\s+en\s+charge\s+ou\s+un\s+autre\s+examen\)\s+ne\s+s'y\s+écrit\s+pas/);
+  assert.match(contreLecture, /complémentation,\s+une\s+prise\s+en\s+charge\s+ou\s+un\s+autre\s+examen\)\s+y\s+est\s+un\s+défaut/);
+  assert.match(contreLecture, /durée\s+de\s+prise\s+ou\s+de\s+traitement,\s+un\s+moment\s+de\s+prise\)\.\s+Elle\s+est\s+INFIDÈLE/);
 });

@@ -41,7 +41,18 @@ Les DÉSIGNATIONS APPROUVÉES servent seulement à nommer (voir plus bas).
   basse, abaissée ou élevée) porte sur l'objet de « resultats_consequences ».
   Un claim qui énonce une limite de l'examen ou de son marqueur (sa
   fiabilité, sa validité, ce qu'il ne permet pas de mesurer ou de conclure,
-  un manque de données) porte sur l'objet de « limites ».
+  un manque de données) porte sur l'objet de « limites ». Une limite de la
+  littérature sur un supplément, une option ou un traitement (son
+  efficacité, son absence d'effet, la qualité de ses études) n'est pas une
+  limite de l'examen ni de son marqueur : elle ne porte pas sur l'objet de
+  « limites ». Un claim porte sur l'objet de « surveillance_arret » quand il
+  dit quoi surveiller, quand ou comment, ou à quel critère arrêter ; un
+  argument de causalité (l'évolution d'un effet après l'arrêt puis la
+  reprise d'un produit) n'en relève pas. Dans « resultats_consequences », un
+  résultat se nomme sans être interprété : dire ce dont il témoigne, ce
+  qu'il reflète ou traduit relève de « interpretations » ; sous le statut
+  « preuves_limitees », une conséquence décisionnelle (orienter vers une
+  complémentation, une prise en charge ou un autre examen) ne s'y écrit pas.
   Avant d'écrire la phrase d'absence, examine chacun des
   claims fournis : elle s'écrit si, et seulement si, aucun ne porte sur
   l'objet de la rubrique. Si l'un y porte, rédige à partir de lui, même
@@ -84,7 +95,8 @@ Les DÉSIGNATIONS APPROUVÉES servent seulement à nommer (voir plus bas).
   claim, même attribués à leur source : une quantité à prendre ou à
   consommer (dose, volume, nombre d'unités, apport recommandé ou de
   référence), une fréquence ou un fractionnement des prises, une durée de
-  prise ou de traitement ; chacune est, ci-après, une quantité de prise.
+  prise ou de traitement, un moment de prise (le soir, au repas, à jeun) ;
+  chacune est, ci-après, une quantité de prise.
   Une mention de dose ou d'apport sans valeur chiffrée (« à doses élevées »,
   l'absence d'apport conseillé) n'est pas une quantité de prise : elle se
   restitue telle que son claim la porte, comme une condition ou une limite
@@ -151,7 +163,10 @@ telle limite qu'un claim établit lui-même se restitue, comme toute limite.
   recommandé, indispensable, systématique ou à pratiquer), ce fait s'écrit
   attribué à la source du claim (« Selon <source>, … »), avec toutes ses
   conditions, et la même phrase se termine par « , mais cet usage n'est pas
-  établi. » Hors de cette phrase attribuée et réservée, rien ne présente
+  établi. » Cette forme vaut dans toute rubrique où ce fait s'écrit,
+  « precautions » comprise : un claim qui dit l'examen indispensable ou à
+  pratiquer, avant, pendant ou après une prise, ne s'écrit que sous elle.
+  Hors de cette phrase attribuée et réservée, rien ne présente
   l'usage comme recommandé. « non_valide » :
   le texte dit que l'usage n'est pas validé ; il ne déclenche ni examen ni
   décision.

@@ -52,7 +52,7 @@
 Le nom des deux modèles et la version de la consigne sont enregistrés avec
 chaque version de fiche et chaque libellé : l'origine de chaque texte se
 retrace. Par défaut : `claude-sonnet-5` et `gpt-5.4`, sous la consigne
-`fiche-usage-v10` (`D-501` §13). La v2 avait remplacé la v1 avant tout envoi
+`fiche-usage-v11` (`D-501` §14). La v2 avait remplacé la v1 avant tout envoi
 (relue par Codex, puis approuvée par le responsable le 2026-11-12) ; la v3
 l'a remplacée après le pilote fer, où aucun texte n'avait été retenu ; la
 v4 précise la seule rubrique « question », refusée même quand elle ne
@@ -84,7 +84,14 @@ s'écrit comme une limite de sécurité, attribué et avec ses conditions, et
 une mention de dose sans valeur chiffrée n'est pas une quantité de prise ;
 sous le statut « preuves limitées », la recommandation qu'un claim fait
 lui-même de l'usage s'écrit attribuée à sa source et suivie, dans la même
-phrase, de la réserve « mais cet usage n'est pas établi ».
+phrase, de la réserve « mais cet usage n'est pas établi » ; la v11 cible
+cinq refus restés stables sur deux passages de la v10, sans règle clinique
+neuve : le moment de prise rejoint les quantités de prise ; la forme
+attribuée et réservée vaut dans toute rubrique ; une limite de la
+littérature n'est pas une limite de l'examen ; un argument de causalité
+n'est pas une surveillance ; un résultat ne s'interprète pas dans
+« resultats_consequences », où, sous « preuves limitées », aucune
+conséquence décisionnelle ne s'écrit.
 
 Un libellé de population que les claims ne décrivent pas ne passe pas par
 l'IA : il vient d'une correspondance approuvée par le responsable, déposée
