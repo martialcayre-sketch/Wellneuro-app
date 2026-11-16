@@ -79,7 +79,10 @@ export default function ConditionsPage() {
 
   return (
     <div className="w-full max-w-2xl space-y-4">
-      <div className="flex items-center justify-between gap-3">
+      {/* `flex-wrap` : au zoom (320 px, confort 112,5 %), le lien de retour passe
+          sous le titre au lieu de pousser la page hors de l'écran (PAT-7c,
+          WCAG 1.4.10). */}
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
         <PatientPageHeader title="Informations, confidentialité et droits" />
         {/* Vers l'accueil de l'espace, qui choisit l'étape (consentement, fiche,
             parcours) : arrivé par le lien de l'e-mail, le patient n'y est pas
