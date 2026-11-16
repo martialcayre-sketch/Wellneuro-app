@@ -227,15 +227,77 @@ for (const { motif, raison } of refusStructure) {
 // passe. Modificateurs retenus, constatés par `zsh -fc` : `:f`, `:F` et `:g`
 // ne jouent que devant un autre (`:fe…` de `feat/x`, `:gh…` de
 // `gh-pages`) ; `:w` et `:x` ne s'appliquent pas à un paramètre.
-function sansLitterauxInertes(commande) {
-  const corps = commande.replace(
-    // UN seul groupe pour le délimiteur : une référence arrière vers un groupe
-    // vide vaut « » en JS, et `(?:\2|\3|\4)` acceptait toute ligne vide
-    // comme fin du corps (P1 de wn-reviewer).
-    // Un délimiteur n'est pas qu'un mot : `<<'FIN-PR'` (Codex).
-    /(<<-?\s*(?:'|"|\\)([^\s'"<>|;&()]+)['"]?[^\n]*\n)[\s\S]*?^\s*\2\s*$/gm,
-    "$1 <<corps-masqué> ",
+//
+// Les heredocs se lisent en UN passage, dans l'ordre (partie 3, routés de
+// #2184) : tout corps est masqué de la commande, qu'il soit cité ou nu, et
+// seul le corps d'un heredoc nu est gardé à part pour être lu brut.
+// - Un corps nu laissé dans la commande ouvrait, par l'apostrophe de
+//   « l'ajout », une chaîne qui masquait la suite (`git push` compris :
+//   faux négatif, PR-Agent).
+// - Un `<<EOF` nu DANS le corps d'un heredoc cité est du texte : le passage
+//   unique le consomme avec ce corps, sans le relire comme heredoc.
+// - Dans un corps nu, `\$` est littéral (constaté par `zsh -f`) : les
+//   échappements sont retirés avant la lecture.
+// - Lecture LIGNE PAR LIGNE, comme zsh : tous les heredocs ouverts sur une
+//   ligne, dans l'ordre (`cat <<'A' <<B`), puis leurs corps à la suite ; une
+//   regex qui avalait la fin de la ligne d'ouverture ne voyait que le premier
+//   (P2 de wn-reviewer).
+// - `<<<` est une chaîne, pas un heredoc. Le terminateur est la ligne EXACTE
+//   (tabulations de tête admises sous `<<-` seulement) : `  EOF` ne clôt rien
+//   pour zsh, et le clore plus tôt démasquait une apostrophe (P3).
+// - Le délimiteur est un MOT shell entier, citations retirées : `<<'FIN-PR'`
+//   (Codex), `<<"E"OF` et `<<'E'OF` terminent sur `EOF`, et une citation
+//   n'importe où dans le mot rend le corps inerte.
+// - Un heredoc CITÉ qui atteint la fin de la commande sans terminateur n'en
+//   est pas un pour ce crochet : un `<<'FIN'` cité dans un message de commit
+//   ou un commentaire masquait toute la suite (P1 de wn-reviewer). Ses lignes
+//   retournent à la structure. Un heredoc NU non terminé reste lu brut.
+//   Entre guillemets doubles, `\` n'échappe que `$`, `` ` ``, `"` et `\`
+//   (`<<"E\\OF"` termine sur `E\OF`, Codex).
+const OUVERTURE_HEREDOC = /(?<!<)<<(?!<)(-?)\s*((?:'[^'\n]*'|"(?:\\[^\n]|[^"\\\n])*"|\\[^\n]|[^\s'"\\<>|;&()])+)/g;
+function delimiteurSansCitation(mot) {
+  return mot.replace(/'([^']*)'|"((?:\\[^\n]|[^"\\\n])*)"|\\(.)/g, (_m, simple, double, echappe) =>
+    simple ?? (double !== undefined ? double.replace(/\\([$`"\\])/g, "$1") : echappe),
   );
+}
+function lireHeredocs(commande) {
+  const lignes = commande.split("\n");
+  const structure = [];
+  const corpsNus = [];
+  let i = 0;
+  while (i < lignes.length) {
+    const ligne = lignes[i];
+    i += 1;
+    structure.push(ligne);
+    let consomme = false;
+    for (const [, tiret, mot] of ligne.matchAll(OUVERTURE_HEREDOC)) {
+      const cite = /['"\\]/.test(mot);
+      const delimiteur = delimiteurSansCitation(mot);
+      const depart = i;
+      const corps = [];
+      let termine = false;
+      while (i < lignes.length) {
+        const l = lignes[i];
+        i += 1;
+        if ((tiret ? l.replace(/^\t+/, "") : l) === delimiteur) {
+          termine = true;
+          break;
+        }
+        corps.push(l);
+      }
+      if (cite && !termine) {
+        i = depart;
+        continue;
+      }
+      consomme = true;
+      if (!cite) corpsNus.push(corps.join("\n").replace(/\\[^\n]/g, "  "));
+    }
+    if (consomme) structure.push(" <<corps-masqué> ");
+  }
+  return { structure: structure.join("\n"), corpsNus: corpsNus.join("\n") };
+}
+const heredocs = lireHeredocs(original);
+function sansLitterauxInertes(corps) {
   let sortie = "";
   let guillemets = false;
   for (let i = 0; i < corps.length; i += 1) {
@@ -257,15 +319,8 @@ function sansLitterauxInertes(commande) {
 }
 // Le corps d'un heredoc à délimiteur NU est lu brut, à part : ses apostrophes
 // sont du texte, que zsh développe (`cat <<FIN\n'$NEW:refs'\nFIN`, Codex).
-function corpsDeHeredocsNus(commande) {
-  const corps = [];
-  const re = /<<-?\s*([^\s'"\\<>|;&()]+)[^\n]*\n([\s\S]*?)^\s*\1\s*$/gm;
-  let m;
-  while ((m = re.exec(commande))) corps.push(m[2]);
-  return corps.join("\n");
-}
 const MODIFICATEUR_ZSH = /\$(?:[A-Za-z_][A-Za-z0-9_]*|\d):[fFg]?[aAcehlPqQrstu&]/;
-if (MODIFICATEUR_ZSH.test(sansLitterauxInertes(original)) || MODIFICATEUR_ZSH.test(corpsDeHeredocsNus(original))) {
+if (MODIFICATEUR_ZSH.test(sansLitterauxInertes(heredocs.structure)) || MODIFICATEUR_ZSH.test(heredocs.corpsNus)) {
   console.error(
     "Commande bloquée par WellNeuro : un `$VAR:x` non accolé — zsh lit `:r`, `:h`, `:t`, `:e`… " +
     "comme un modificateur de paramètre (`\"$NEW:refs/heads/x\"` devient `<sha>efs/heads/x`). " +

@@ -145,6 +145,27 @@ for (const cmd of [
   "cat > /tmp/f <<'EOF'\na\n\nb c'est\nEOF\ngit push origin \"$NEW:refs/heads/x\"",
   // Codex : les apostrophes d'un heredoc nu sont du texte, zsh y développe.
   "cat <<FIN\n'$NEW:refs/heads/x'\nFIN",
+  // Routé de #2184 (PR-Agent) : l'apostrophe du corps nu masquait le push.
+  "git commit -F - <<EOF\nl'ajout\nEOF\ngit push origin \"$NEW:refs/heads/x\"",
+  // Un heredoc nu après un heredoc cité reste lu.
+  "cat <<'A'\nl'ajout\nA\ncat <<B\n$NEW:refs/heads/x\nB",
+  // `\\$` littéral, puis un `$` développé dans le même corps.
+  "cat <<FIN\n\\$NEW:refs\n$NEW:refs/heads/x\nFIN",
+  // P2 de wn-reviewer : deux heredocs sur une ligne, cité puis nu.
+  "cat <<'A' <<B\nx\nA\nl'ajout\n$NEW:refs/heads/x\nB",
+  // P3 de wn-reviewer : `<<<` n'ouvre pas de heredoc.
+  "cat <<<'true'\ngit push origin \"$NEW:refs/heads/x\"\ntrue",
+  // P3 de wn-reviewer : `  EOF` indenté ne clôt pas un `<<EOF`.
+  "cat <<EOF\n  EOF\nl'ajout\n$NEW:refs/heads/x\nEOF",
+  // P1 de wn-reviewer (écart) : un `<<'X'` cité sans terminateur n'est pas un heredoc.
+  "git commit -m \"doc: heredoc <<'FIN' cite\"\ngit push origin \"$NEW:refs/heads/x\"",
+  "git commit -m 'doc: <<\"EOF\" cite'\ngit push origin \"$NEW:refs/heads/x\"",
+  "# voir <<'EOF'\ngit push origin \"$NEW:refs/heads/x\"",
+  // Le délimiteur est un mot entier : `<<"E"OF` termine sur `EOF`.
+  "cat <<\"E\"OF\nx\nEOF\ngit push origin \"$NEW:refs/heads/x\"",
+  "cat <<'E'OF\nx\nEOF\ngit push origin \"$NEW:refs/heads/x\"",
+  // Codex : entre guillemets doubles, `\\\\` se réduit, `<<"E\\\\OF"` termine sur `E\\OF`.
+  "cat <<\"E\\\\OF\"\nl'ajout\nE\\OF\ngit push origin \"$NEW:refs/heads/x\"",
 ]) {
   test(`un $VAR:x non accolé est refusé : ${cmd}`, () => assert.equal(verdict(cmd), "refus"));
 }
@@ -165,6 +186,12 @@ for (const cmd of [
   "gh pr create --body-file - <<'CORPS'\nPremier paragraphe.\n\nNe jamais écrire \"$NEW:refs/heads/x\" en zsh.\nCORPS",
   "git commit -m \"$(cat <<'EOF'\nfix: titre\n\nCorps qui cite \"$NEW:refs/heads/x\" et l'ajout.\n\nCo-Authored-By: X\nEOF\n)\"",
   "gh pr create --body-file - <<'CORPS'\nNe jamais écrire \"$NEW:refs/heads/x\" en zsh.\nCORPS",
+  // Routé de #2184 : `\\$` est littéral dans un heredoc nu (constaté par zsh -f).
+  "cat <<FIN\n\\$NEW:refs/heads/x\nFIN",
+  // Routé de #2184 : un heredoc nu cité dans le corps d'un heredoc cité est du texte.
+  "cat > f.md <<'FIN'\nexemple :\ncat <<EOF\n$NEW:refs/heads/x\nEOF\nFIN",
+  // `<<-` admet des tabulations devant le terminateur.
+  "cat <<-'FIN'\n\t$NEW:refs/heads/x\n\tFIN",
 ]) {
   test(`accolé, inerte ou sans modificateur, passe : ${cmd.split("\n")[0]}`, () =>
     assert.equal(verdict(cmd), "passe"));
