@@ -126,26 +126,35 @@ export function CourrierComplementLecture({ token }: { token: string }) {
 
   if (etat.statut === 'chargement') {
     return (
-      <PatientCard padding="sm">
-        <p className="text-sm text-muted-foreground">Chargement du courrier…</p>
-      </PatientCard>
+      <div className="space-y-6">
+        <h1 className="text-2xl font-semibold text-foreground">{TITRE_COURRIER_COMPLEMENT}</h1>
+        <PatientCard padding="sm">
+          <p className="text-sm text-muted-foreground">Chargement du courrier…</p>
+        </PatientCard>
+      </div>
     );
   }
 
   if (etat.statut === 'erreur') {
     return (
-      <PatientCard padding="sm">
-        <PatientErrorState message={etat.message} onReessayer={etat.definitif ? undefined : () => void charger()} />
-      </PatientCard>
+      <div className="space-y-6">
+        <h1 className="text-2xl font-semibold text-foreground">{TITRE_COURRIER_COMPLEMENT}</h1>
+        <PatientCard padding="sm">
+          <PatientErrorState message={etat.message} onReessayer={etat.definitif ? undefined : () => void charger()} />
+        </PatientCard>
+      </div>
     );
   }
 
   const { courriers } = etat;
   if (courriers.length === 0) {
     return (
-      <PatientCard padding="sm">
-        <p className="text-base text-foreground">{AUCUN_COURRIER_COMPLEMENT}</p>
-      </PatientCard>
+      <div className="space-y-6">
+        <h1 className="text-2xl font-semibold text-foreground">{TITRE_COURRIER_COMPLEMENT}</h1>
+        <PatientCard padding="sm">
+          <p className="text-base text-foreground">{AUCUN_COURRIER_COMPLEMENT}</p>
+        </PatientCard>
+      </div>
     );
   }
 

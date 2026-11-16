@@ -40,7 +40,9 @@ export function ConsentScreen({ idAssignation, email, onAccepted }: {
 
   return (
     <PatientCard>
-      <PatientPageHeader title="Avant de commencer" />
+      {/* `h2` : l'écran est rendu sous le titre du questionnaire, seul `h1` de
+          la page (PAT-7b, `heading-hierarchy`). */}
+      <PatientPageHeader title="Avant de commencer" as="h2" />
 
       <div className="space-y-4 text-sm text-muted-foreground leading-relaxed">
         <p>
