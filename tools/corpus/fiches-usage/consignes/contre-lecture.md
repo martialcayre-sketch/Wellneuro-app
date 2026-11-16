@@ -197,7 +197,9 @@ médicament, il tait une condition de son claim : le texte est INFIDÈLE. Un
 fait auquel son claim attache une quantité de prise ne peut pas s'écrire
 sans elle. Empêché seulement par un médicament nommé, ou par une quantité
 exclue qui n'est pas une quantité de prise, ce fait ne compte pas parmi
-ceux qui portent sur l'objet de la rubrique pour juger la phrase d'absence.
+ceux qui portent sur l'objet de la rubrique pour juger la phrase d'absence ;
+une conséquence décisionnelle qui ne s'écrit pas dans
+« resultats_consequences » sous « preuves_limitees » n'y compte pas non plus.
 Empêché par une quantité de prise, même s'il l'est aussi par un médicament
 nommé ou une autre quantité exclue, il y compte : la phrase d'absence est alors
 INFIDÈLE, et seule la phrase de quantité convient si aucun fait qui porte

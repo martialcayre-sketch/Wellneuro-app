@@ -275,7 +275,10 @@ test('v11 : moment de prise, réserve en toute rubrique, objets de limites, surv
   }
   assert.match(redaction, /ne\s+s'écrit\s+que\s+sous\s+elle/);
   // Contre-revue Codex (D-505), P1 : la condition de sécurité reste restituable.
+  // Contre-passe, P2 : la conséquence décisionnelle exclue ne compte pas pour
+  // la phrase d'absence, comme un fait empêché par un médicament nommé.
   for (const c of [redaction, contreLecture]) {
+    assert.match(c, /conséquence\s+décisionnelle\s+qui\s+ne\s+s'écrit\s+pas\s+dans\s+«\s+resultats_consequences\s+»\s+sous\s+«\s+preuves_limitees\s+»\s+n'y\s+compte\s+pas\s+non\s+plus/);
     assert.match(c, /sauf\s+une\s+condition\s+de\s+sécurité\s+ou\s+d'admissibilité\s+que\s+le\s+marqueur\s+«\s+oui\s+»\s+impose\s+d'y\s+restituer/);
   }
   assert.match(redaction, /complémentation,\s+une\s+prise\s+en\s+charge\s+ou\s+un\s+autre\s+examen\)\s+ne\s+s'y\s+écrit\s+pas,/);

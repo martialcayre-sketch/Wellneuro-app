@@ -117,7 +117,9 @@ Les DÉSIGNATIONS APPROUVÉES servent seulement à nommer (voir plus bas).
   de sa dose, de son volume, de sa fréquence ou de sa durée de prise) ne
   peut pas s'écrire sans elle. Empêché seulement par un médicament nommé,
   ou par une quantité exclue qui n'est pas une quantité de prise, ce fait ne
-  compte pas parmi ceux qui portent sur l'objet de la rubrique. Empêché par
+  compte pas parmi ceux qui portent sur l'objet de la rubrique ; une
+  conséquence décisionnelle qui ne s'écrit pas dans « resultats_consequences »
+  sous « preuves_limitees » n'y compte pas non plus. Empêché par
   une quantité de prise, même s'il l'est aussi par un médicament nommé ou
   une autre quantité exclue, il y compte : la rubrique ne prend jamais la phrase
   d'absence ; si aucun fait qui porte sur son objet ne peut s'écrire, elle
