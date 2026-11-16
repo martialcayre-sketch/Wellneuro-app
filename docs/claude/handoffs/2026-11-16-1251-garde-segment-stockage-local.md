@@ -15,6 +15,8 @@ Le crochet `useSegmentPage` rend le segment `[token]` du portail aux composants 
 
 - La garde borne les emplois au lieu de chercher les clés fautives. Le segment est lié une fois, puis n'apparaît que dans `enTeteDossierPage(x)` ou dans un tableau de dépendances (`, [ … ] )`). Une clé construite ailleurs à partir d'une copie, ou un argument passé à un assembleur de clé, rougit donc aussi. Chercher `Storage` sur la même ligne ne l'aurait pas vu.
 - Les composants sont découverts (`readdirSync` récursif sur `src/`, hors `*.test.*` et hors le crochet). Un nouvel emploi est gardé sans inscription. Plancher : le panneau du Journal Alimentaire doit être trouvé, seul composant qui écrit en `sessionStorage` et lit aussi le segment.
+- Tableau de dépendances = dernier argument d'un appel `useEffect`, `useLayoutEffect`, `useInsertionEffect`, `useCallback`, `useMemo` ou `useImperativeHandle`, borné par comptage des parenthèses. Première version : tout tableau en dernier argument d'un appel quelconque, d'où un faux négatif (`stocker('cle', [x])`) relevé par PR-Agent sur la tête 51ad405d. Corrigé, et trois cas ajoutés au banc du banc.
+- `origin/main` a avancé de #2162 (docs H15, aucun fichier commun) après le premier commit : fusionné dans la branche sur arbitrage du responsable (D-518), avant la correction.
 - Les lignes de commentaire sont retirées avant l'analyse. Un appel non lié (`cle(useSegmentPage())`) ou un segment lié deux fois rend `null` et rougit.
 - Pas de garde sur les lectures directes de `useParams` : hors de la fiche. `app/portail/[token]/page.tsx` reste couvert par le banc existant.
 
@@ -25,7 +27,8 @@ Le crochet `useSegmentPage` rend le segment `[token]` du portail aux composants 
 
 ## Validations exécutées
 
-- `npx vitest run src/lib/portail-identite-locale.guard.test.ts` : 12 tests verts, dont six composants découverts.
+- `npx vitest run src/lib/portail-identite-locale.guard.test.ts` : 12 tests verts, dont six composants découverts ; 13 après la correction PR-Agent.
+- CI de la première tête (51ad405d) : `wn-attendre-ci` code 0 ; PR-Agent code 0, une remarque (faux négatif), corrigée.
 - Mutation : clé `wellneuro:x:${segmentPage}` ajoutée dans `PatientFoodObservationPanel.tsx` ⇒ le cas du composant rougit (1 échec sur 12). Fichier restauré par `git checkout`.
 - `npm run check` (T1 complet) : `code=0`.
 - Pas de T2 : changement limité à un fichier de test, sans UI ni API.

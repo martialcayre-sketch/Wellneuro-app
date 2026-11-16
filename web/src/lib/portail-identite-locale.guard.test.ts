@@ -83,6 +83,34 @@ function sansCommentaires(source: string): string {
     .join('\n');
 }
 
+/**
+ * Efface `nom` des seuls tableaux de dépendances : le DERNIER argument d'un
+ * appel à un crochet React qui en prend. Un tableau passé en dernier argument
+ * à une autre fonction (`stocker('cle', [x])`) n'est pas une dépendance, et le
+ * nom y reste visible (faux négatif relevé par PR-Agent sur #2168).
+ */
+function sansDependances(code: string, nom: string): string {
+  const mot = new RegExp(`\\b${nom}\\b`, 'g');
+  const plages: Array<[number, number]> = [];
+  for (const appel of code.matchAll(/\buse(?:Effect|LayoutEffect|InsertionEffect|Callback|Memo|ImperativeHandle)\(/g)) {
+    const debut = appel.index + appel[0].length;
+    let profondeur = 1;
+    let i = debut;
+    for (; i < code.length && profondeur > 0; i++) {
+      if ('([{'.includes(code[i])) profondeur++;
+      else if (')]}'.includes(code[i])) profondeur--;
+    }
+    const corps = code.slice(debut, i - 1);
+    const deps = /,\s*\[[^[\]]*\]\s*,?\s*$/.exec(corps);
+    if (deps) plages.push([debut + deps.index, debut + corps.length]);
+  }
+  let resultat = code;
+  for (const [a, b] of plages.reverse()) {
+    resultat = resultat.slice(0, a) + resultat.slice(a, b).replace(mot, '') + resultat.slice(b);
+  }
+  return resultat;
+}
+
 /** Emplois du segment hors de l'en-tête et des dépendances ; `null` si le segment n'est pas lié une seule fois. */
 function emploisHorsEnTete(source: string): string[] | null {
   const code = sansCommentaires(source).replace(/^import .*$/gm, '');
@@ -90,12 +118,9 @@ function emploisHorsEnTete(source: string): string[] | null {
   const appels = code.match(/useSegmentPage\(/g) ?? [];
   if (liaisons.length !== 1 || appels.length !== 1) return null;
   const nom = liaisons[0][1];
-  const mot = new RegExp(`\\b${nom}\\b`, 'g');
-  const reste = code
+  const reste = sansDependances(code, nom)
     .replace(liaisons[0][0], '')
-    .replace(new RegExp(`enTeteDossierPage\\(${nom}\\)`, 'g'), '')
-    // Tableau de dépendances : dernier argument d'un useEffect/useCallback/useMemo.
-    .replace(/,\s*\[[^[\]]*\]\s*,?\s*\)/g, deps => deps.replace(mot, ''));
+    .replace(new RegExp(`enTeteDossierPage\\(${nom}\\)`, 'g'), '');
   const dansLaLigne = new RegExp(`\\b${nom}\\b`);
   return reste.split('\n').filter(ligne => dansLaLigne.test(ligne));
 }
@@ -140,5 +165,33 @@ describe('le segment lu par useSegmentPage ne sert que l’en-tête du dossier',
     // Une copie dans une autre variable, puis un appel non lié, rougissent aussi.
     expect(emploisHorsEnTete('const s = useSegmentPage();\nconst cle = s;')).toEqual(['const cle = s;']);
     expect(emploisHorsEnTete('cle(useSegmentPage());')).toBeNull();
+  });
+
+  it('seul le tableau de dépendances d’un crochet React est admis', () => {
+    // Un tableau en dernier argument d'une autre fonction n'est pas une dépendance.
+    expect(emploisHorsEnTete("const s = useSegmentPage();\nstocker('cle', [s]);")).toEqual(["stocker('cle', [s]);"]);
+    expect(emploisHorsEnTete("const s = useSegmentPage();\nsessionStorage.setItem('k', [s]);")).toEqual([
+      "sessionStorage.setItem('k', [s]);",
+    ]);
+    // Ni dans le corps du crochet : seul son DERNIER argument est effacé.
+    const dansLeCorps = [
+      'const s = useSegmentPage();',
+      'const f = useCallback(() => {',
+      "  stocker('cle', [s]);",
+      '}, [s]);',
+    ].join('\n');
+    expect(emploisHorsEnTete(dansLeCorps)).toEqual(["  stocker('cle', [s]);"]);
+    // Les formes admises : en-tête, dépendances sur une ou plusieurs lignes.
+    const admis = [
+      'const s = useSegmentPage();',
+      'const f = useCallback(async () => {',
+      "  await fetch('/api', { headers: { ...enTeteDossierPage(s) } });",
+      '}, [a, s]);',
+      'const g = useCallback(',
+      '  () => enTeteDossierPage(s),',
+      '  [s],',
+      ');',
+    ].join('\n');
+    expect(emploisHorsEnTete(admis)).toEqual([]);
   });
 });
