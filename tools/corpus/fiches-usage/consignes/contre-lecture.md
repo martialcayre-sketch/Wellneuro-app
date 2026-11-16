@@ -104,8 +104,9 @@ Il est INFIDÈLE s'il contient au moins un des défauts suivants :
   même exprimé en quantité consommée par prise ou par jour : restitué en
   constat, attribué à sa source, avec sa population, ses exceptions et ses
   réserves, il n'est pas un défaut ; présenté comme une quantité à prendre,
-  une recommandation, une garantie de sécurité que la source ne donne pas,
-  ou prolongé en danger au-delà ou en conseil en deçà, il en est un ; une
+  une recommandation, une garantie de sécurité générale, détachée de sa
+  population, de ses exceptions ou de ses réserves, ou prolongé en danger
+  au-delà ou en conseil en deçà, il en est un ; une
   mention de dose ou d'apport sans valeur chiffrée (« à doses élevées »,
   l'absence d'apport conseillé) n'est pas une quantité de prise, et
   restituée telle que son claim la porte, elle n'est pas un défaut ;

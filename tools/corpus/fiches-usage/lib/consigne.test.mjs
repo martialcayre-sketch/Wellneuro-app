@@ -232,6 +232,10 @@ test('v10 : limite de sécurité exprimée en apport, mention sans valeur, recom
     assert.match(c, /même\s+exprimé\s+en\s+quantité\s+consommée\s+par\s+prise\s+ou\s+par\s+jour/);
     assert.match(c, /attribué\s+à\s+sa\s+source,\s+avec\s+sa\s+population,\s+ses\s+exceptions\s+et\s+ses\s+réserves/);
     assert.match(c, /mention\s+de\s+dose\s+ou\s+d'apport\s+sans\s+valeur\s+chiffrée/);
+    // Contre-revue Codex (D-505), P1 : aucune garantie de sécurité générale,
+    // même portée par la source, détachée de ses conditions.
+    assert.match(c, /garantie\s+de\s+sécurité\s+générale,\s+détachée\s+de\s+(cette|sa)\s+population/);
+    assert.doesNotMatch(c, /que\s+la\s+source\s+ne\s+donne\s+pas/);
     assert.match(c, /n'est\s+pas\s+une\s+quantité\s+de\s+prise/);
     // La recommandation d'un claim : attribuée, toutes conditions, réserve fixe.
     assert.match(c, /«\s+Selon\s+<source>,\s+…\s+»/);
@@ -244,9 +248,9 @@ test('v10 : limite de sécurité exprimée en apport, mention sans valeur, recom
   // La clause de doute ne vise plus qu'une valeur chiffrée (revue D-448 de #2186).
   assert.match(redaction, /Toute autre valeur chiffrée, ou en cas de doute sur une\s+valeur chiffrée/);
   assert.match(redaction, /Hors de cette phrase attribuée et réservée, rien ne présente\s+l'usage comme recommandé/);
-  assert.match(redaction, /n'en tire ni qu'au-delà\s+l'apport est dangereux, ni qu'en deçà il est conseillé/);
+  assert.match(redaction, /n'en\s+tire\s+ni\s+qu'au-delà\s+l'apport\s+est\s+dangereux,\s+ni\s+qu'en\s+deçà\s+il\s+est\s+conseillé/);
   assert.match(contreLecture, /sans l'attribution ou sans cette réserve, elle en est un/);
-  assert.match(contreLecture, /prolongé en danger au-delà ou en conseil en deçà, il en est un/);
+  assert.match(contreLecture, /prolongé\s+en\s+danger\s+au-delà\s+ou\s+en\s+conseil\s+en\s+deçà,\s+il\s+en\s+est\s+un/);
   // Le reste du statut ne bouge pas : « non_valide » garde sa règle.
   assert.match(redaction, /« non_valide » :\s+le texte dit que l'usage n'est pas validé/);
 });

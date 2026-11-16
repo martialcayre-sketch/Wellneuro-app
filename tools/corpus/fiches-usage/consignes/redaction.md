@@ -77,8 +77,9 @@ Les DÉSIGNATIONS APPROUVÉES servent seulement à nommer (voir plus bas).
   exprimé en quantité consommée par prise ou par jour : écris-le en
   constat, attribué à sa source, avec sa population, ses exceptions et ses
   réserves ; jamais comme une quantité à prendre, une recommandation ou une
-  garantie de sécurité que la source ne donne pas, et n'en tire ni qu'au-delà
-  l'apport est dangereux, ni qu'en deçà il est conseillé.
+  garantie de sécurité générale, détachée de cette population, de ces
+  exceptions ou de ces réserves, et n'en tire ni qu'au-delà l'apport est
+  dangereux, ni qu'en deçà il est conseillé.
   Ne s'écrivent pas, même rapportés par un
   claim, même attribués à leur source : une quantité à prendre ou à
   consommer (dose, volume, nombre d'unités, apport recommandé ou de
