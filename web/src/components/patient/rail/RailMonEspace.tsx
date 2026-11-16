@@ -41,14 +41,16 @@ import { AGRANDIR_LE_MENU, MASQUER_LE_MENU, REDUIRE_LE_MENU } from './textesRail
  * qu’étirer le `main` : rien ne change.
  */
 
-const CLASSE_LIEN = 'flex min-h-11 items-center rounded-md px-3 text-rail-foreground hover:bg-rail-surface';
+// `py-1` sans drapeau aussi (PAT-7a, D-460 §5) : une entrée de deux lignes
+// dépasse `min-h-11` et touchait sa voisine.
+const CLASSE_LIEN = 'flex min-h-11 items-center rounded-md px-3 py-1 text-rail-foreground hover:bg-rail-surface';
 
 function formeRail(etat: Exclude<EtatRail, 'escamote'>): FormeListe {
   return {
     classe: `hidden ${etat === 'reduit' ? 'w-nav-rail-compact px-2' : 'w-nav-rail px-3'} shrink-0 self-start space-y-4 rounded-lg border border-rail-border bg-rail py-4 text-rail-foreground lg:sticky lg:top-4 lg:my-8 lg:block lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto print:hidden`,
     prefixeId: 'rail-mon-espace',
     classeLien: CLASSE_LIEN,
-    classeLienActif: 'flex min-h-11 items-center rounded-md bg-rail-surface px-3 font-semibold text-rail-foreground shadow-nav-active',
+    classeLienActif: 'flex min-h-11 items-center rounded-md bg-rail-surface px-3 py-1 font-semibold text-rail-foreground shadow-nav-active',
     classeIntertitre: 'px-3 text-sm font-semibold text-rail-muted-foreground',
     classeActifIcones: '',
   };

@@ -135,7 +135,7 @@ export function MonParcoursAccueil({
                   <LienDuHub
                     href={tache.href}
                     aria-describedby={tache.appui ? idAppui(tache.cle) : undefined}
-                    className="text-base text-foreground underline underline-offset-2"
+                    className="inline-flex min-h-11 items-center text-base text-foreground underline underline-offset-2"
                   >
                     {tache.cta}
                   </LienDuHub>

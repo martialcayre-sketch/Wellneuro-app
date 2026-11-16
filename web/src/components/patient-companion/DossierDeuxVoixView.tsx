@@ -1180,7 +1180,7 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
           )}
           <a
             href={`/portail/${token}/ce-qui-compte`}
-            className="inline-flex text-sm text-primary hover:underline print:hidden"
+            className="inline-flex min-h-11 items-center text-sm text-primary hover:underline print:hidden"
           >
             Déposer ce qui compte pour moi aujourd’hui
           </a>
@@ -1258,7 +1258,7 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
                   garde structurelle qui le tient. */}
               <a
                 href={`/portail/${token}/comprehension`}
-                className="inline-flex text-sm text-primary hover:underline print:hidden"
+                className="inline-flex min-h-11 items-center text-sm text-primary hover:underline print:hidden"
               >
                 Répondre à ce texte
               </a>
