@@ -287,7 +287,7 @@ export function actionsDues({ messages = [], lots = [], questions = [], absentes
       const lues = l.questions.map((id) => questionParId.get(id));
       if (lues.every((q) => q && (q.statut === 'repondue' || q.statut === 'close'))) {
         const reservee = lues.some((q) => q.nature !== 'ordinaire');
-        actions.push({ type: 'lot_bloque_a_relire', collection: 'lots', id: l.id, cible: court(l.file), age_h: null, detail: `ses ${lues.length} question(s) ont une réponse — relire la source de chaque réponse et son autorité${reservee ? ' (clinique ou migration : responsable dans la session qui agit, ou décision mergée)' : ''} avant de repasser à \`pret\`` });
+        actions.push({ type: 'lot_bloque_a_relire', collection: 'lots', id: l.id, cible: court(l.file), age_h: null, detail: `ses ${lues.length} question(s) ont une réponse — relire la source de chaque réponse et son autorité${reservee ? ' (clinique : responsable dans la session qui agit ou par le cockpit, ou décision mergée ; migration : responsable dans la session qui agit, ou décision mergée)' : ''} avant de repasser à \`pret\`` });
       }
     }
   }
