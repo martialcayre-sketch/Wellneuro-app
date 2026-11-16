@@ -213,6 +213,56 @@ for (const { motif, raison } of refusStructure) {
   }
 }
 
+// MODIFICATEURS ZSH (lot `autonomie-pieges-restes`, partie 2). Le shell de ces
+// sessions est zsh : dans `$VAR:r…`, `:r` est un modificateur (« retire
+// l'extension »), comme `:h`, `:t`, `:e`, `:a`, `:l`, `:u`, `:q`… `git push
+// origin "$NEW:refs/heads/x"` part en `<sha>efs/heads/x` et échoue sans
+// nommer le shell (mémoire zsh-modificateur-parametre-git-refspec). Les
+// guillemets doubles n'y changent rien : zsh y développe aussi. On masque
+// donc seulement ce qui est réellement inerte — chaîne entre apostrophes
+// HORS guillemets doubles (« l'ajout » dans un message de commit n'en ouvre
+// pas), caractère échappé par `\`, corps d'un heredoc à délimiteur cité
+// (`<<'FIN'` ; un `<<FIN` nu développe, il reste lu) — et non la commande
+// masquée ci-dessus, qui efface les guillemets doubles. `${VAR}:refs/…`
+// passe. Modificateurs retenus, constatés par `zsh -fc` : `:f`, `:F` et `:g`
+// ne jouent que devant un autre (`:fe…` de `feat/x`, `:gh…` de
+// `gh-pages`) ; `:w` et `:x` ne s'appliquent pas à un paramètre.
+function sansLitterauxInertes(commande) {
+  const corps = commande.replace(
+    // UN seul groupe pour le délimiteur : une référence arrière vers un groupe
+    // vide vaut « » en JS, et `(?:\2|\3|\4)` acceptait toute ligne vide
+    // comme fin du corps (P1 de wn-reviewer).
+    /(<<-?\s*(?:'|"|\\)(\w+)['"]?[^\n]*\n)[\s\S]*?^\s*\2\s*$/gm,
+    "$1 <<corps-masqué> ",
+  );
+  let sortie = "";
+  let guillemets = false;
+  for (let i = 0; i < corps.length; i += 1) {
+    const c = corps[i];
+    if (c === "\\") {
+      sortie += "  ";
+      i += 1;
+    } else if (c === "'" && !guillemets) {
+      const fin = corps.indexOf("'", i + 1);
+      const j = fin === -1 ? corps.length : fin;
+      sortie += " ".repeat(j + 1 - i);
+      i = j;
+    } else {
+      if (c === '"') guillemets = !guillemets;
+      sortie += c;
+    }
+  }
+  return sortie;
+}
+if (/\$(?:[A-Za-z_][A-Za-z0-9_]*|\d):[fFg]?[aAcehlPqQrstu&]/.test(sansLitterauxInertes(original))) {
+  console.error(
+    "Commande bloquée par WellNeuro : un `$VAR:x` non accolé — zsh lit `:r`, `:h`, `:t`, `:e`… " +
+    "comme un modificateur de paramètre (`\"$NEW:refs/heads/x\"` devient `<sha>efs/heads/x`). " +
+    "Écrire `${NEW}:refs/heads/x`."
+  );
+  process.exit(2);
+}
+
 // SONDAGE — n'est plus refusé depuis le 2026-10-24 : le responsable autorise,
 // pour toutes les sessions, le contrôle en boucle (CI, revue CodeRabbit,
 // déploiement). `wn-attendre-ci.mjs` en tâche de fond reste la forme préférée
