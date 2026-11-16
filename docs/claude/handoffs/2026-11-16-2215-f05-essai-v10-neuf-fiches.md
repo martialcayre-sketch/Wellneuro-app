@@ -13,10 +13,12 @@ Jouer l'essai arbitré (`20261116-2212-b`) sous la v10, déposer et constater le
 
 - `20261116-2155-b` : texte v10 approuvé tel quel (#2189, mergée).
 - `20261116-2212-b` : périmètre de l'essai, les neuf fiches sans version, une fois.
+- `20261116-2220-b` : rejouer une fois, tel quel, les six refusées.
 
 ## Fichiers modifiés
 
 - `docs/claude/plan-journal/F05/2026-11-16-08-textes-essai-v10-neuf-fiches.md`
+- `docs/claude/plan-journal/F05/2026-11-16-09-textes-rejeu-v10-et-validations.md`
 - ce handoff.
 
 ## Validations exécutées
@@ -24,16 +26,18 @@ Jouer l'essai arbitré (`20261116-2212-b`) sous la v10, déposer et constater le
 - `rediger.mjs`, une passe sur neuf fiches : 3 brouillons, 6 échecs de contre-lecture, aucun échec technique.
 - `deposer.mjs --validate` sur les 3 brouillons : conforme. Dépôt sur `app.wellneuro.fr` : n° 1 chacun.
 - Constat par conteneur, lecture seule (one-off-6930) : POLY P3, POLY P4 et MG P7 sont au n° 1 sous v10, avec 0 acte ; MG P6 est au n° 1 sous v9, avec 0 acte.
+- Rejeu des six : 1 acceptée (POLY P2), déposée, constatée au n° 1 avec 0 acte (one-off-3438). Les cinq autres sont refusées sur la même rubrique qu'au premier passage.
+- Validations du responsable constatées (one-off-1199, one-off-3438) : MG P6, MG P7, POLY P3 et POLY P4, un acte `validee` par rubrique, avec relecture intégrale.
 
 ## Problèmes ouverts
 
-- Validation à l'écran, par le responsable, de POLY P3, POLY P4, MG P7 (n° 1) et de MG P6 (n° 1).
-- Six fiches refusées (POLY P2, P6, P7, P8 ; MG P4, P5). La suite dépend d'un arbitrage : consigne v11 ciblée, rejeu tel quel, ou arrêt des essais. Les motifs sont au journal, rang 08.
+- Validation à l'écran de POLY P2 (n° 1), par le responsable.
+- Cinq fiches toujours refusées (POLY P6, P7, P8 ; MG P4, P5), sur des rubriques stables. Une v11 ciblée est à proposer au responsable ; les motifs sont au journal, rangs 08 et 09.
 - D-501 §11 : amendement du volume d'eau (`20261116-1352-b`), à faire par une PR de décision.
 
 ## Prochaine action exacte
 
-Poser au responsable la question de la suite des six refus, puis déclarer cette PR « prête » après le CI et PR-Agent.
+Revue `wn-reviewer` (D-448, PR-Agent n'ayant pas tourné), puis déclarer cette PR « prête ». Ensuite, poser au responsable la question de la v11 ciblée.
 
 ## Interdits encore actifs
 
