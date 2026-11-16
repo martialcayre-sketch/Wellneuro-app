@@ -23,7 +23,7 @@ Cadrer chaque reste de D-534 §3 qui tient la porte 24 : OF-2, la part sommeil, 
 
   La ligne D/33 du plan §4 porte pourtant encore « unité à vérifier ». Le dépôt ne dit pas qui a vérifié.
   - Question `20261116-2244-d` (file D), trois options : « le constat du 2026-11-04 vaut » / « je revérifie » / « sort de J2-base ».
-  - Message `autre` à la boîte D (`20261116-2241-a`).
+  - Message `autre` à la boîte D : document `20261116-2241-a` de la collection `messages`, distinct de la question hex de même identifiant dans `questions`. Ce message a été écrit à 21:41Z, après les six questions, créées ensemble à 21:40Z (leurs identifiants sont des minutes consécutives).
   - La vérification du responsable n'est pas consignée à sa place.
 - Aucun lot `pret` n'est inscrit. D-534 n'est pas réécrite.
 
@@ -35,8 +35,10 @@ Cadrer chaque reste de D-534 §3 qui tient la porte 24 : OF-2, la part sommeil, 
 
 ## 5. Validations exécutées
 
-- Les citations de l'agent ont été relues en principal : plan, lignes 153, 1331, 1365 et 2380 ; journal H59 du 2026-11-09 ; `OBSERVABILITE_PRODUCTION.md`, lignes 143 à 175 ; commit 4d4cfb1d9.
-- T1 complet et revue : voir la PR.
+- Les citations de l'agent ont été relues en principal : plan, lignes 153, 1331, 1365 et 2380 ; journal H59 du 2026-11-09 ; `OBSERVABILITE_PRODUCTION.md`, lignes 146 à 175 ; commit 4d4cfb1d9.
+- T1 complet : code 0. CI de la première tête (618175569) : code 0.
+- `wn-reviewer` sur 618175569 : GO, sans P0 à P2. Les quatre P3 de forme sont corrigés : « hex » désigne aussi une empreinte, OF-2 est nommé aussi en H70, l'identifiant du message est désambiguïsé, la plage de lignes est rectifiée.
+- `main` avait avancé et la branche portait déjà son commit. Le responsable a arbitré le 2026-11-16 (D-518 §2) : `git merge origin/main` autorisé pour ce lot.
 
 ## 6. Problèmes ouverts
 
