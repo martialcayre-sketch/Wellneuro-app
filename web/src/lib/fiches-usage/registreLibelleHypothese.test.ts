@@ -50,6 +50,14 @@ describe('le registre des libellés d’hypothèse — une liste explicite (D-47
     expect(termesHorsRegistre('Valeur hors  plage synthétique')).toEqual(['hors plage']);
     expect(termesHorsRegistre('Car­ence synthétique')).toEqual(['carence']);
     expect(termesHorsRegistre('Défi​cit synthétique')).toEqual(['déficit']);
+    expect(termesHorsRegistre('Car‎ence synthétique')).toEqual(['carence']);
+    expect(termesHorsRegistre('Mala‮die synthétique')).toEqual(['maladie']);
+    expect(termesHorsRegistre('Syn⁣drome synthétique')).toEqual(['syndrome']);
+  });
+
+  it('replie les formes de compatibilité (pleine chasse, ligatures)', () => {
+    expect(termesHorsRegistre('Ｃａｒｅｎｃｅ synthétique')).toEqual(['carence']);
+    expect(termesHorsRegistre('Déﬁcit synthétique')).toEqual(['déficit']);
   });
 
   it('un mot qui contient un terme y tombe : « relevé » sous « élevé » (D-535 §2)', () => {

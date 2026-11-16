@@ -47,14 +47,17 @@ const TERMES_DU_REGISTRE: readonly string[] = [
   ...FORMULATIONS_DIAGNOSTIQUES_D535,
 ];
 
-// Caractères invisibles (trait d'union conditionnel, largeur nulle) supprimés ;
-// espaces de toute sorte et tirets ramenés à une espace : « hors-plage », une
-// espace insécable ou un « car­ence » coupé ne passent pas la liste.
-const INVISIBLES = /[­​-‍⁠﻿]/g;
+// Formes de compatibilité repliées (NFKC : pleine chasse, ligatures) ;
+// caractères de format supprimés (`\p{Cf}` : trait d'union conditionnel,
+// largeur nulle, marques directionnelles) ; espaces de toute sorte et tirets
+// ramenés à une espace : « hors-plage », une espace insécable ou un « car­ence »
+// coupé ne passent pas la liste.
+const INVISIBLES = /\p{Cf}/gu;
 const SEPARATEURS = /[\s‐-―-]+/gu;
 
 function replier(texte: string): string {
   return texte
+    .normalize('NFKC')
     .normalize('NFD')
     .replace(/\p{M}/gu, '')
     .replace(INVISIBLES, '')
