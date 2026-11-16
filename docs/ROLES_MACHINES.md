@@ -113,11 +113,15 @@ question et la réponse.
   question passe aussi à `reportee`, avec le motif « remplacée ».
 
   Une ligne visant une question déjà `repondue` ou `close`, ou une question
-  `migration`, passe à `ecartee` avec son motif. Une ligne `clinique`
-  reportée suit le chemin clinique ordinaire : décision `D-xxx` et fragment
-  `changelog.d/` avant tout code, dont la réponse est la source (`D-531`). La session le signale
-  au responsable. Une réponse du cockpit n'a pas d'autre autorité qu'une
-  réponse donnée en session.
+  `migration`, passe à `ecartee` avec son motif, et la session signale cet
+  écartement au responsable. Avant de reporter une ligne `clinique`, la
+  session vérifie que `par` est le compte du responsable : l'action
+  `profiles` de la base le nomme, compte du propriétaire et non invité ;
+  sinon la ligne passe à `ecartee` et l'écartement est signalé. Une ligne
+  `clinique` reportée suit le chemin clinique ordinaire : décision `D-xxx`
+  et fragment `changelog.d/` avant tout code, dont la réponse est la source
+  (`D-531`). Une réponse du cockpit n'a pas d'autre autorité qu'une réponse
+  donnée en session.
 
   **Qui peut écrire.** La page est privée : seul le compte du responsable
   l'ouvre, et donc écrit dans sa base. Les sessions écrivent sous ce même
