@@ -1,8 +1,7 @@
 // Instrument du cabinet déclaré « oui », désignation COPIÉE à l'envoi
 // ([[D-515]], lot de code §6.2, PR 3 ; inversé à la signature, PR 4).
-// `WN_ENABLE_DECLARATION_SUICIDE_CAB` est allumé pour le serveur des E2E
-// seulement (`playwright.config.ts`), jamais en production avant le geste du
-// responsable.
+// Sans drapeau depuis [[D-528]] : le serveur des E2E sert ce que sert la
+// production.
 //
 // CE QUE CE SPEC PROUVE, TABLE `SAF-QUEST-02` SIGNÉE (2026-11-15, [[D-524]]) :
 // le serveur sert la désignation copiée (question et valeur « non ») ; le

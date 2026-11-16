@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { ANAMNESE_SECTIONS } from '@/lib/consultation/anamnese';
 import { QUESTIONNAIRE_CATALOGUE } from '@/lib/questions';
 import { SAFETY_SIGNALS_V1 } from '@/lib/clinical/safetySignalsV1';
@@ -140,7 +140,8 @@ describe('le texte signé du message au patient ([[D-277]] §1)', () => {
 // courriel soit appelé, ni l'inverse. Le banc rejoue le trajet exact : la
 // chaîne choisie dans le formulaire, le `parseFloat` qu'il transmet
 // (`GenericQuestionnaire`, `numericAnswers`), et la désignation telle que la
-// base la rend — sur chaque combinaison de drapeau, de signature et de copie.
+// base la rend — sur chaque combinaison de signature et de copie (sans
+// drapeau depuis [[D-528]]).
 describe('[[D-515]] — instrument du cabinet : navigateur et serveur d’accord avec SAF-QUEST-02', () => {
   const ID_QUESTIONNAIRE = 'CAB_BANC_SUICIDE';
   const OPTIONS = [{ v: 0, l: 'Jamais' }, { v: 1, l: 'Parfois' }, { v: 3, l: 'Souvent' }];
@@ -203,12 +204,8 @@ describe('[[D-515]] — instrument du cabinet : navigateur et serveur d’accord
     return transmissionAppelleAlerteSecurite(ID_QUESTIONNAIRE, transmises(answers), designation);
   }
 
-  beforeEach(() => {
-    process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB = 'true';
-  });
   afterEach(() => {
     Object.assign(SAFETY_QUESTIONNAIRE_CABINET_METADATA, ETAT_LIVRE);
-    delete process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB;
   });
 
   for (const [nom, designation] of Object.entries(DESIGNATIONS)) {
@@ -248,56 +245,35 @@ describe('[[D-515]] — instrument du cabinet : navigateur et serveur d’accord
     }
   });
 
-  it('drapeau éteint, même signée : ni désignation servie, ni message', () => {
+  // Contre-revue Codex de la PR 3, P1 : le message est décidé à l'ouverture
+  // de la page (GET), le courriel à la transmission (POST). Un message lu doit
+  // toujours être suivi du courriel. Sans drapeau ([[D-528]]), les deux lisent
+  // la même copie et la même signature : les quatre combinaisons
+  // ouverture/transmission du drapeau n'existent plus, l'invariant demeure.
+  it('table signée : un message lu est toujours suivi du courriel', () => {
     signer();
-    delete process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB;
     for (const designation of Object.values(DESIGNATIONS)) {
-      expect(designationSuicideCabinetServie(ID_QUESTIONNAIRE, designation)).toBeNull();
-      expect(navigateur(designation, { Q2: '1' })).toEqual({ sousLaQuestion: false, auResume: false });
+      for (const choix of CHOIX) {
+        const answers = { Q2: choix };
+        const lu = navigateur(designation, answers);
+        const courriel = serveur(designation, answers);
+        const n = parseFloat(choix);
+        const attendu = Number.isFinite(n) && n !== designation.questionSuicideOptionNon;
+        expect(courriel, `courriel ${JSON.stringify(choix)}`).toBe(attendu);
+        if (lu.sousLaQuestion || lu.auResume) expect(courriel, `message lu sans courriel ${JSON.stringify(choix)}`).toBe(true);
+      }
     }
   });
 
-  // Contre-revue Codex de la PR 3, P1 : le message est décidé à l'ouverture
-  // de la page (GET), le courriel à la transmission (POST). Le drapeau peut
-  // changer entre les deux. Dans tous les cas, un message lu doit être suivi
-  // du courriel ; un courriel sans message (drapeau allumé entre-temps) est
-  // le sens admis. Le courriel ne lit donc pas le drapeau courant : la copie
-  // « oui » n'est écrite que drapeau allumé.
-  for (const auGet of [true, false]) {
-    for (const auPost of [true, false]) {
-      it(`table signée, drapeau ${auGet ? 'allumé' : 'éteint'} à l’ouverture puis ${auPost ? 'allumé' : 'éteint'} à la transmission : un message lu est toujours suivi du courriel`, () => {
-        signer();
-        for (const designation of Object.values(DESIGNATIONS)) {
-          for (const choix of CHOIX) {
-            const answers = { Q2: choix };
-            if (auGet) process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB = 'true';
-            else delete process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB;
-            const lu = navigateur(designation, answers);
-            if (auPost) process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB = 'true';
-            else delete process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB;
-            const courriel = serveur(designation, answers);
-            const n = parseFloat(choix);
-            const attendu = Number.isFinite(n) && n !== designation.questionSuicideOptionNon;
-            expect(courriel, `courriel ${JSON.stringify(choix)}`).toBe(attendu);
-            if (lu.sousLaQuestion || lu.auResume) expect(courriel, `message lu sans courriel ${JSON.stringify(choix)}`).toBe(true);
-          }
-        }
-      });
-    }
-  }
-
   for (const [nom, designation] of Object.entries(NON_LUES)) {
-    for (const drapeau of [true, false]) {
-      it(`table signée, drapeau ${drapeau ? 'allumé' : 'éteint'}, ${nom} : ni désignation servie, ni message, ni courriel`, () => {
-        signer();
-        if (!drapeau) delete process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB;
-        expect(designationSuicideCabinetServie(ID_QUESTIONNAIRE, designation)).toBeNull();
-        for (const choix of CHOIX) {
-          expect(navigateur(designation, { Q2: choix })).toEqual({ sousLaQuestion: false, auResume: false });
-          expect(serveur(designation, { Q2: choix }), JSON.stringify(choix)).toBe(false);
-        }
-      });
-    }
+    it(`table signée, ${nom} : ni désignation servie, ni message, ni courriel`, () => {
+      signer();
+      expect(designationSuicideCabinetServie(ID_QUESTIONNAIRE, designation)).toBeNull();
+      for (const choix of CHOIX) {
+        expect(navigateur(designation, { Q2: choix })).toEqual({ sousLaQuestion: false, auResume: false });
+        expect(serveur(designation, { Q2: choix }), JSON.stringify(choix)).toBe(false);
+      }
+    });
   }
 
   it('table signée : un questionnaire du catalogue ne reçoit pas de désignation, et une copie passée n’y change rien', () => {

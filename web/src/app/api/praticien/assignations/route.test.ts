@@ -506,8 +506,7 @@ describe('PATCH /api/praticien/assignations — déverrouillage', () => {
       await attendreRefus();
     });
 
-    it('brouillon à désignation intacte (drapeau éteint, la déclaration survit) : refus — contre-revue Codex, P1', async () => {
-      vi.stubEnv('WN_ENABLE_DECLARATION_SUICIDE_CAB', '');
+    it('brouillon ou désactivé à désignation intacte : refus — contre-revue Codex, P1', async () => {
       assignationCab(COPIE);
       ligneInstrument = [{ ...LIGNE, statut_relecture: 'brouillon' }];
       await attendreRefus();
@@ -515,18 +514,6 @@ describe('PATCH /api/praticien/assignations — déverrouillage', () => {
       assignationCab(COPIE);
       ligneInstrument = [{ ...LIGNE, actif: false }];
       await attendreRefus();
-      vi.unstubAllEnvs();
-    });
-
-    it('le refus ne relit pas le drapeau : éteint ou allumé, même refus', async () => {
-      for (const valeur of ['', 'true']) {
-        vi.stubEnv('WN_ENABLE_DECLARATION_SUICIDE_CAB', valeur);
-        vi.clearAllMocks();
-        assignationCab(COPIE);
-        ligneInstrument = [];
-        await attendreRefus();
-      }
-      vi.unstubAllEnvs();
     });
 
     it('un CAB_ « non » ou non déclaré : inchangé, l’instrument n’est pas lu', async () => {

@@ -275,14 +275,13 @@ describe('GET /api/patient/questionnaire — propriété session', () => {
 
 // NF-7 ([[D-303]] §3, réponses 20261111-0027-a et 0028-a) : le verdict
 // `encartUrgenceCabinet` se lit sur la COPIE de la déclaration prise à l'envoi,
-// sans repli sur l'instrument. Présent seulement drapeau allumé, sur un `CAB_`
-// dont la copie vaut `true`. Drapeau éteint : la réponse d'avant NF-7.
+// sans repli sur l'instrument. Présent seulement sur un `CAB_` dont la copie
+// vaut `true` ([[D-528]] : sans drapeau).
 describe('GET /api/patient/questionnaire — encart d’un instrument du cabinet (NF-7)', () => {
   const CAB = { ...assignation, idQuestionnaire: 'CAB_1', poseQuestionSuicide: true };
 
   beforeEach(() => {
     vi.clearAllMocks();
-    delete process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB;
     process.env.NEXTAUTH_SECRET = 'secret-de-test-non-production';
     prisma.assignation.findUnique.mockResolvedValue(CAB);
     prisma.patient.findUnique.mockResolvedValue({
@@ -304,27 +303,17 @@ describe('GET /api/patient/questionnaire — encart d’un instrument du cabinet
     });
   });
 
-  afterEach(() => {
-    delete process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB;
-  });
-
   async function lire() {
     const response = await GET(requeteProprietaire());
     expect(response.status).toBe(200);
     return response.json();
   }
 
-  it('drapeau éteint : aucun verdict, même sur une copie à vrai', async () => {
-    expect('encartUrgenceCabinet' in (await lire())).toBe(false);
-  });
-
-  it('drapeau allumé, copie à vrai : l’encart est dû, quelle que soit la déclaration courante de l’instrument', async () => {
-    process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB = 'true';
+  it('copie à vrai : l’encart est dû, quelle que soit la déclaration courante de l’instrument', async () => {
     expect((await lire()).encartUrgenceCabinet).toBe(true);
   });
 
-  it('drapeau allumé, copie à « non » ou non déclarée : aucun verdict, sans repli sur l’instrument', async () => {
-    process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB = 'true';
+  it('copie à « non » ou non déclarée : aucun verdict, sans repli sur l’instrument', async () => {
     prisma.cabinetInstrument.findUnique.mockResolvedValue({
       idInstrument: 'CAB_1', titre: 'x', definitionJson: { sections: [] }, scoringJson: null,
       statutRelecture: 'valide', actif: true, poseQuestionSuicide: true,
@@ -335,8 +324,7 @@ describe('GET /api/patient/questionnaire — encart d’un instrument du cabinet
     }
   });
 
-  it('drapeau allumé : un questionnaire du catalogue ne reçoit jamais ce verdict', async () => {
-    process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB = 'true';
+  it('un questionnaire du catalogue ne reçoit jamais ce verdict', async () => {
     prisma.assignation.findUnique.mockResolvedValue({ ...assignation, poseQuestionSuicide: true });
     expect('encartUrgenceCabinet' in (await lire())).toBe(false);
   });
@@ -344,7 +332,7 @@ describe('GET /api/patient/questionnaire — encart d’un instrument du cabinet
 
 // [[D-515]] (PR 3 du lot de code) : la désignation COPIÉE, servie pour le
 // message de [[D-277]] §1, aux seules conditions du courriel au praticien —
-// drapeau allumé, copie « oui » lisible, `SAF-QUEST-02` signée. La règle
+// copie « oui » lisible, `SAF-QUEST-02` signée. La règle
 // elle-même est confrontée au courriel dans `reponseSuicide.guard.test.ts` ;
 // ce banc tient que la route la sert, et rien d'autre.
 describe('GET /api/patient/questionnaire — désignation servie d’un instrument du cabinet (D-515)', () => {
@@ -368,7 +356,6 @@ describe('GET /api/patient/questionnaire — désignation servie d’un instrume
 
   beforeEach(() => {
     vi.clearAllMocks();
-    process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB = 'true';
     process.env.NEXTAUTH_SECRET = 'secret-de-test-non-production';
     prisma.assignation.findUnique.mockResolvedValue(CAB);
     prisma.patient.findUnique.mockResolvedValue({
@@ -386,7 +373,6 @@ describe('GET /api/patient/questionnaire — désignation servie d’un instrume
 
   afterEach(() => {
     Object.assign(SAFETY_QUESTIONNAIRE_CABINET_METADATA, ETAT_LIVRE);
-    delete process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB;
   });
 
   async function lire() {
@@ -410,13 +396,6 @@ describe('GET /api/patient/questionnaire — désignation servie d’un instrume
     expect('designationSuicideCabinet' in corps).toBe(false);
   });
 
-  it('table signée, drapeau éteint : ni encart ni désignation', async () => {
-    signer();
-    delete process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB;
-    const corps = await lire();
-    expect('encartUrgenceCabinet' in corps).toBe(false);
-    expect('designationSuicideCabinet' in corps).toBe(false);
-  });
 
   it('table signée, désignation inconnue (§7) ou copie « non » : pas de désignation servie', async () => {
     signer();

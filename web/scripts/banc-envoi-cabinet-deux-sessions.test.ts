@@ -2,8 +2,8 @@
 // modification, sa publication et sa déclaration (NF-7, H59 ; [[D-303]],
 // [[D-493]], arbitrages P2-1 et P2-3 du 2026-11-12, lot 3 = #2021).
 //
-// POURQUOI CE FICHIER EXISTE. Drapeau `WN_ENABLE_DECLARATION_SUICIDE_CAB`
-// allumé, l'envoi lit les lignes `cabinet_instruments` du brouillon sous
+// POURQUOI CE FICHIER EXISTE. L'envoi lit les lignes `cabinet_instruments`
+// du brouillon sous
 // `FOR SHARE`, et la modification du contenu prend un `FOR UPDATE` puis
 // recompte les envois sous ce verrou. Les tests des routes ne figent ces
 // verrous que comme chaînes SQL, et la passe Codex de #2021 (P1-1) a montré
@@ -32,9 +32,8 @@
 //   7. (retirée) DÉCLARATION D'ABORD posait un publié NON déclaré : la base
 //      le refuse depuis la troisième migration de H59 (CHECK « valide ⇒
 //      déclaré », `nf7_valide_declare_v1_negatif.sql`) ;
-//   8. ENVOI D'ABORD, DÉCLARATION : « Déclarer » ne vise jamais une ligne que
-//      l'envoi verrouille (il n'agit que sur un publié NON déclaré, que la
-//      base refuse désormais) — refus immédiat sur la ligne tenue ;
+//   8. (retirée) ENVOI D'ABORD, DÉCLARATION : le geste « Déclarer » est
+//      retiré avec le drapeau (réponse 20261116-0826-a, [[D-528]]) ;
 //   9. INTERBLOCAGES : plusieurs instruments présentés en ORDRES OPPOSÉS
 //      ([A, B] et [B, A]), deux patients puis un seul, contre deux
 //      modifications, dans les deux ordres — tout se termine dans le délai,
@@ -42,7 +41,7 @@
 //      éprouvée ici, pas une preuve générale d'absence d'interblocage ;
 //  10. ÉDITION DU TITRE SUR UNE LECTURE PÉRIMÉE (P1-1 de la passe Codex) :
 //      elle ne réinstalle pas la V1 lue avant une V2 publiée « non ». Depuis
-//      #2130 (réponse 20261114-1217-a), drapeau allumé, elle est refusée en
+//      #2130 (réponse 20261114-1217-a), elle est refusée en
 //      409 : l'instrument a bougé depuis la lecture ;
 //  11. MODIFICATION D'ABORD, DÉVERROUILLAGE ([[D-524]] §2) : une assignation
 //      `CAB_` « oui » verrouillée ; la modification du contenu tient la
@@ -83,7 +82,6 @@ if (process.env.WN_NF7_ENVOI_BANC_BASE !== cible.pathname.slice(1)) {
 const PRATICIEN = 'praticien@wellneuro.fr';
 // Posés AVANT l'import du client Prisma et des routes.
 process.env.DB_POOL_MAX = '10'; // une connexion sérialiserait tout
-process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB = 'true'; // les verrous n'existent que drapeau allumé
 process.env.WN_BANC_PRATICIEN_EMAIL = PRATICIEN;
 delete process.env.SMTP_URL; // aucun courriel : la correspondance s'écrit « Non_envoye »
 
@@ -187,8 +185,6 @@ const modifier = (id: string) => patcher({ idInstrument: id, definition: DEFINIT
 const demanderRelecture = (id: string) => patcher({ idInstrument: id, action: 'demander_relecture' });
 const publier = (id: string, declaration: Record<string, unknown>) =>
   patcher({ idInstrument: id, action: 'publier', ...declaration });
-const declarer = (id: string, declaration: Record<string, unknown>) =>
-  patcher({ idInstrument: id, action: 'declarer', ...declaration });
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -551,26 +547,8 @@ async function main() {
     // 7. (retirée) : un publié non déclaré n'existe plus en base (CHECK
     //    « valide ⇒ déclaré », troisième migration de H59).
 
-    // 8. ENVOI D'ABORD, DÉCLARATION : jamais sur une ligne tenue.
-    {
-      const b = await poserInstrument(observateur, '8B', { statut: 'valide', declaration: 'oui' });
-      const brouillon = await poserBrouillon(observateur, PATIENT_1, [b]);
-      await tenirTable(tiers, 'assignations');
-      const envoi = envoyer(brouillon);
-      try {
-        await attendreBlocage(observateur, MOTIF.insertionAssignation); // B est tenu FOR SHARE
-        const surB = await borne(declarer(b, DECLARATION_OUI), 'déclaration 8 (B)');
-        assert.deepEqual([surB.status, surB.json.reason], [409, 'conflit_statut']);
-        assert.equal(await bloquees(observateur, MOTIF.ecritureInstrument), 0, 'aucune déclaration ne doit attendre');
-      } finally {
-        await tiers.query('COMMIT');
-      }
-      const issue = await borne(envoi, 'envoi 8');
-      assert.deepEqual([issue.status, issue.json.count], [200, 1]);
-      assert.deepEqual(await copies(observateur, PATIENT_1), { [b]: true });
-      console.log('ok 8 — envoi d’abord : « Déclarer » refuse la ligne tenue (409), sans attendre');
-      await viderAssignations(observateur);
-    }
+    // 8. (retirée) : le geste « Déclarer » n'existe plus (réponse
+    //    20261116-0826-a, [[D-528]]).
 
     // 9. INTERBLOCAGES : ordres opposés, deux patients puis un seul, contre
     //    deux modifications, dans les deux ordres.
@@ -670,7 +648,7 @@ async function main() {
     //     la publication concurrentes sont rejouées en SQL par le tiers, dans
     //     l'ordre de leurs routes : l'écrivain éprouvé ici est l'édition du
     //     titre, qui échappe au verrou et ne doit réécrire que ses champs.
-    //     Depuis #2130 (réponse 20261114-1217-a), drapeau allumé, l'édition
+    //     Depuis #2130 (réponse 20261114-1217-a), l'édition
     //     n'écrit que si `updated_at` n'a pas bougé depuis sa lecture : elle
     //     est REFUSÉE (409), et rien n'est écrit, ni la V1 ni le titre.
     //     L'attendu « 200 » d'avant ne tenait plus que par hasard : la pose

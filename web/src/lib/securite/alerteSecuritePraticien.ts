@@ -42,19 +42,12 @@ import { baseLiensCourriel } from '@/lib/portail/urlPublique';
 // ne part pas ; le message au patient non plus
 // (`designationSuicideCabinetServie`).
 //
-// LE DRAPEAU COURANT N'EST PAS LU (contre-revue Codex de la PR 3, P1). Le
-// message est décidé à l'ouverture de la page, drapeau allumé ; un drapeau
-// éteint avant la transmission ne doit pas laisser le patient sur une
-// promesse non tenue. La copie « oui » n'existe que si le drapeau était
-// allumé à l'envoi.
-//
-// CONSÉQUENCE DURABLE, À SAVOIR (revue `wn-reviewer` de l'écart, P2-1) :
-// après une extinction, toute assignation `CAB_` envoyée drapeau allumé
-// continue de faire partir le courriel sur une réponse positive, alors que le
-// Fil, qui suit le drapeau courant, n'en montre plus la carte. Il reste la
-// ligne de journal du dossier. C'est voulu : option C de la question
-// 20261114-1335-a, actée par [[D-522]] (aucun message au patient sans
-// courriel ; une extinction complète passe par un lot dédié, §4).
+// PLUS DE DRAPEAU ([[D-528]]). Le drapeau `WN_ENABLE_DECLARATION_SUICIDE_CAB`
+// est retiré : le message au patient, le courriel, la carte du Fil et le
+// constat lisent la même copie, sans condition de drapeau. L'écart que
+// [[D-522]] décrivait après une extinction (courriel sans carte) ne peut plus
+// naître d'une variable d'environnement ; une extinction passe par un lot de
+// code déployé, préparé comme le voulait [[D-522]] §4.
 
 /**
  * Texte SIGNÉ par le responsable le 2026-10-10 ([[D-277]] §2). Ne pas
@@ -81,8 +74,7 @@ export function lienFilDuJour(): string {
  * Cette transmission de questionnaire appelle-t-elle le courriel ? Exactement
  * quand elle produit un constat `SAF-QUEST-01` — ou, pour un instrument du
  * cabinet dont la désignation copiée est passée, quand `SAF-QUEST-02`
- * produirait un constat drapeau allumé (table signée seulement, drapeau
- * courant non relu : voir plus haut).
+ * produirait un constat (table signée seulement).
  */
 export function transmissionAppelleAlerteSecurite(
   idQuestionnaire: string,
@@ -96,7 +88,7 @@ export function transmissionAppelleAlerteSecurite(
     scoresJson: { rawAnswers: reponses },
     statutValidite: null,
     ...(designationCabinet ? { designationCabinet } : {}),
-  }], { courrielMalgreDrapeau: true }).some(reponse => (
+  }]).some(reponse => (
     (!reponse.cabinet || tableSecuriteQuestionnaireCabinetSignee())
     && (
       reponse.lecture.kind === 'hors_options'

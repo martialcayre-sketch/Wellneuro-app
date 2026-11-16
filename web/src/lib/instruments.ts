@@ -19,7 +19,6 @@ import {
   interditTouteBande,
   type OptionCabinet,
 } from '@/lib/echelles-cabinet';
-import { declarationSuicideCabinetActive } from '@/lib/securite/declarationSuicideCabinet';
 
 export const PREFIXE_CABINET = 'CAB_';
 
@@ -183,9 +182,8 @@ export async function listeInstrumentsCabinet(praticienEmail: string): Promise<C
 
 /**
  * Ids assignables pour un praticien : catalogue ∪ instruments CAB publiés —
- * et, drapeau NF-7 allumé, déclarés (P2-1, arbitrage du 2026-11-12 : un
- * `valide` non déclaré partirait sans encart). Même prédicat que
- * `cabinetEnvoyable`.
+ * donc déclarés, le CHECK `cabinet_instruments_valide_declare` le garantit en
+ * base ([[D-528]]). Même prédicat que `cabinetEnvoyable`.
  */
 export async function idsAssignablesPour(praticienEmail: string): Promise<Set<string>> {
   const ids = new Set(IDS_ASSIGNABLES);
@@ -194,7 +192,6 @@ export async function idsAssignablesPour(praticienEmail: string): Promise<Set<st
       praticienEmail: { equals: praticienEmail, mode: 'insensitive' },
       actif: true,
       statutRelecture: 'valide',
-      ...(declarationSuicideCabinetActive() ? { poseQuestionSuicide: { not: null } } : {}),
     },
     select: { idInstrument: true },
   });

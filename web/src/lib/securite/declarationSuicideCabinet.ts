@@ -22,16 +22,12 @@
 
 import { contientTermePrescriptif } from '@/lib/documents/vocabulaire';
 
-/**
- * `WN_ENABLE_DECLARATION_SUICIDE_CAB` (20261111-0029-a), éteint par défaut.
- * Convention des drapeaux produit (`docs/FEATURE_FLAGS.md`, section A) : seule
- * la valeur exacte `true` l'allume. Éteint, rien ne change : la publication
- * n'exige rien, l'envoi ne copie rien, l'écran patient n'affiche l'encart que
- * sur les quatre questionnaires du catalogue.
- */
-export function declarationSuicideCabinetActive(): boolean {
-  return process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB === 'true';
-}
+// PLUS DE DRAPEAU ([[D-528]], réponse 20261116-0825-a) : le drapeau
+// `WN_ENABLE_DECLARATION_SUICIDE_CAB`, allumé le 2026-11-15, est retiré après
+// la pose du CHECK « valide ⇒ déclaré » (20261111-0029-a). La déclaration est
+// exigée à chaque publication, effacée sous verrou à chaque modification des
+// questions, copiée à chaque envoi, et lue par `SAF-QUEST-02` sans condition
+// de drapeau. Une extinction passe par un lot de code déployé ([[D-528]]).
 
 export type DeclarationSuicideCabinet =
   | { poseQuestionSuicide: false; questionSuicideId: null; questionSuicideOptionNon: null }
@@ -241,43 +237,22 @@ export function libellesCitablesRefuses(instrument: {
   return erreurs;
 }
 
-// ── P2-1 (arbitrage du 2026-11-12) : la déclaration conditionne l'envoi ─────
+// ── Un instrument du cabinet envoyable : actif et publié ───────────────────
 //
-// Drapeau allumé, un instrument `valide` sans déclaration (NULL, publié
-// drapeau éteint) reste VISIBLE dans la bibliothèque mais ne part plus : il
-// partirait sans encart. Le praticien le déclare par le geste « Déclarer »,
-// sans toucher aux questions ni au statut. Sans migration ni reprise en base ;
-// seule la déclaration est enregistrée par l'application. Le CHECK « valide ⇒
-// déclaré » (troisième migration, 0029-a) reste prévu après l'allumage.
-//
-// CE FILTRE NE REMPLACE PAS LA REPRISE AVANT UN RALLUMAGE : une déclaration
-// devenue périmée drapeau éteint peut être non NULL, et elle passe ce filtre
-// (`docs/FEATURE_FLAGS.md`).
-
-/** Motif affiché sur un instrument publié non déclaré, drapeau allumé (texte arbitré). */
-export const MOTIF_DECLARATION_REQUISE = 'Déclaration requise avant un nouvel envoi';
+// Publié veut dire déclaré : le CHECK `cabinet_instruments_valide_declare`
+// (#2156) refuse en base tout instrument `valide` sans déclaration. Le geste
+// « Déclarer » d'un publié non déclaré (P2-1) est retiré avec le drapeau :
+// son état d'entrée n'existe plus (réponse 20261116-0826-a, [[D-528]]).
 
 /**
- * Vrai si cet instrument publié attend sa déclaration avant de pouvoir partir :
- * drapeau allumé, `valide`, déclaration NULL. Drapeau éteint : jamais.
- */
-export function declarationRequiseAvantEnvoi(row: {
-  statutRelecture: string;
-  poseQuestionSuicide: boolean | null;
-}): boolean {
-  return declarationSuicideCabinetActive() && row.statutRelecture === 'valide' && row.poseQuestionSuicide === null;
-}
-
-/**
- * Un instrument du cabinet peut-il partir AUJOURD'HUI : actif, publié et —
- * drapeau allumé — déclaré. Même prédicat que le filtre `where` de
- * `idsAssignablesPour`, pour les lectures qui ont déjà la ligne en main
- * (file d'envoi, bibliothèque, verrou de l'envoi).
+ * Un instrument du cabinet peut-il partir AUJOURD'HUI : actif et publié. Même
+ * prédicat que le filtre `where` de `idsAssignablesPour`, pour les lectures
+ * qui ont déjà la ligne en main (file d'envoi, bibliothèque, verrou de
+ * l'envoi).
  */
 export function cabinetEnvoyable(row: {
   actif: boolean;
   statutRelecture: string;
-  poseQuestionSuicide: boolean | null;
 }): boolean {
-  return row.actif && row.statutRelecture === 'valide' && !declarationRequiseAvantEnvoi(row);
+  return row.actif && row.statutRelecture === 'valide';
 }
