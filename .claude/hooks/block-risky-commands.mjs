@@ -291,15 +291,19 @@ function lireCommande(commande) {
   let structure = "";
   let enAttente = [];
   let i = 0;
+  // Début de mot au sens de zsh, tenu au fil des caractères : ni un `\x`
+  // échappé, ni le `)` qui ferme `$(…)` ou `$((…))` n'en ouvrent un (P2 de
+  // wn-reviewer) ; le `)` d'un sous-shell, si. Une ligne continuée par `\`
+  // garde le début de mot de la précédente (`echo x\` puis `#` : mot `x#`,
+  // Codex).
+  let debut = true;
+  let continuee = false;
   while (i < lignes.length) {
     const ligne = lignes[i];
     i += 1;
     let commentaire = false;
     let suite = false;
-    // Début de mot au sens de zsh, tenu au fil des caractères : ni un `\x`
-    // échappé, ni le `)` qui ferme `$(…)` ou `$((…))` n'en ouvrent un (P2 de
-    // wn-reviewer) ; le `)` d'un sous-shell, si.
-    let debut = true;
+    if (!continuee) debut = true;
     for (let j = 0; j < ligne.length; j += 1) {
       const c = ligne[j];
       const haut = pile.at(-1);
@@ -322,7 +326,10 @@ function lireCommande(commande) {
           }
           structure += " ";
         }
-      } else if (haut.t === "arith") {
+      } else if (haut.t === "arith" && !/['"\\`$]/.test(c)) {
+        // Citations, échappements et substitutions d'une expression
+        // arithmétique se lisent comme ailleurs : leurs parenthèses ne
+        // comptent pas (`$(( $(printf '))') ))`, Codex).
         if (c === "(") haut.p += 1;
         else if (c === ")" && haut.p > 0) haut.p -= 1;
         else if (c === ")") {
@@ -336,7 +343,7 @@ function lireCommande(commande) {
         structure += c;
       } else if (c === "\\") {
         if (j === ligne.length - 1) suite = true;
-        debut = false;
+        else debut = false;
         structure += "  ";
         j += 1;
       } else if (c === "$" && ligne.startsWith("((", j + 1)) {
@@ -398,7 +405,8 @@ function lireCommande(commande) {
         debut = false;
         if (m) {
           enAttente.push({ tiret: m[1], mot: m[2] });
-          structure += m[0];
+          // Le délimiteur n'est jamais développé : `<<'$NEW:r'` est inerte (Codex).
+          structure += "<<" + " ".repeat(m[0].length - 2);
           j += m[0].length - 1;
         } else structure += c;
       } else {
@@ -406,6 +414,7 @@ function lireCommande(commande) {
         structure += c;
       }
     }
+    continuee = suite;
     structure += "\n";
     // Les corps commencent après la première fin de ligne lue en contexte de
     // code, hors continuation par `\`.

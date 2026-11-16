@@ -71,6 +71,17 @@ Partie 4 du lot :
     + `$#`). Il est artificiel et assumé en P3.
   - Après correction : crochets 644/644 ; T1 complet `code=0` (après l'avance `--ff-only` sur
     `1e97979a`, puis sur `3332d627`, qui ne touche que de la documentation).
+- Contre-revue Codex P0 sur le diff poussé `53336617` : avis conforme (code 0), aucun P0 ni P1. Trois
+  P2, chacun constaté par `zsh -f`, corrigés dans le commit suivant et ajoutés au banc :
+  - les parenthèses écrites dans une chaîne, à l'intérieur d'une arithmétique, étaient comptées :
+    `$(( $(printf '))') ))` fermait trop tôt. Citations et substitutions s'y lisent désormais comme
+    ailleurs ;
+  - le début de mot était remis à zéro à chaque ligne physique. Avec `echo x\` puis `#"`, le `#` fait
+    partie du mot `x#`. Une ligne continuée garde désormais le début de mot de la précédente ;
+  - un délimiteur était recopié dans la structure. Or `<<'$NEW:r'` est inerte : un délimiteur n'est
+    jamais développé, il est désormais blanchi.
+  - Après correction : crochets 648/648 ; fuzz différentiel de 60 000 commandes, 0 faux négatif face à
+    `main` ; T1 complet `code=0`.
 
 ## Problèmes ouverts
 

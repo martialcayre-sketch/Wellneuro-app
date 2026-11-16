@@ -186,6 +186,11 @@ for (const cmd of [
   "echo \\)#\"\nl'a $NEW:r\"",
   "echo $((1))#\"\nl'a $NEW:r\"",
   "(echo a)# l'a\necho \"$NEW:r\"",
+  // Codex sur #2202 : parenthèses citées dans une arithmétique ; `#` après une
+  // continuation (`x\` puis `#` : mot `x#`) ; continuation après un blanc.
+  "echo $(( $(printf '%s' '))' >/dev/null; echo 1) ))\necho \"$NEW:r\"",
+  "echo x\\\n#\"\nl'a $NEW:r\"",
+  "echo x \\\n# l'a\necho \"$NEW:r\"",
 ]) {
   test(`un $VAR:x non accolé est refusé : ${cmd}`, () => assert.equal(verdict(cmd), "refus"));
 }
@@ -217,6 +222,8 @@ for (const cmd of [
   "# l'ajout\necho '$NEW:refs/heads/x'",
   "echo $'l\\'ajout $NEW:refs/heads/x'",
   "cat <<FIN\nfoo\\\\\nFIN\necho '$NEW:refs/heads/x'",
+  // Codex sur #2202 : un délimiteur n'est jamais développé.
+  "cat <<'$NEW:r'\ntexte\n$NEW:r",
 ]) {
   test(`accolé, inerte ou sans modificateur, passe : ${cmd.split("\n")[0]}`, () =>
     assert.equal(verdict(cmd), "passe"));
