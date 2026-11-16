@@ -1,23 +1,22 @@
 import { readFileSync, readdirSync } from 'fs';
 import path from 'path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { transmissionAppelleAlerteSecurite } from './alerteSecuritePraticien';
 import {
-  declarationSuicideCabinetActive,
   copieDesignationSuicide,
   ERREURS_DECLARATION_SUICIDE,
   lireDeclarationSuicide,
   questionsDesignables,
 } from './declarationSuicideCabinet';
 
-// BANC DE [[D-303]] §4 — « AUCUN INSTRUMENT `valide` N'EST SANS DÉCLARATION »,
-// une fois `WN_ENABLE_DECLARATION_SUICIDE_CAB` allumé (NF-7, H59, lot 2).
+// BANC DE [[D-303]] §4 — « AUCUN INSTRUMENT `valide` N'EST SANS DÉCLARATION »
+// (NF-7, H59, lot 2 ; sans drapeau depuis [[D-528]]).
 //
-// La base ne le tient pas encore : son CHECK « valide ⇒ déclaré » viendra en
-// troisième migration, après l'allumage (réponse 20261111-0029-a). D'ici là, la
-// garde est dans le code, et elle n'a qu'un point de passage : l'action
-// `publier` de `api/praticien/instruments`, qui exige la déclaration drapeau
-// allumé (banc de comportement : `instruments/route.test.ts`, bloc NF-7).
+// La base le tient depuis #2156 : CHECK `cabinet_instruments_valide_declare`.
+// Le code n'a qu'un point de passage : l'action `publier` de
+// `api/praticien/instruments`, qui exige la déclaration (banc de comportement :
+// `instruments/route.test.ts`, bloc NF-7). Une violation du CHECK y resterait
+// une erreur technique, jamais un refus ordinaire (réponse 20261116-0827-a).
 //
 // CE BANC TIENT QUE CE POINT DE PASSAGE RESTE LE SEUL. Un second écrivain de
 // `statutRelecture: 'valide'` (un import qui publierait d'office, un seed, un
@@ -81,28 +80,19 @@ function occurrences(): string[] {
 }
 
 describe('NF-7 — un seul passage vers `valide`, et il exige la déclaration ([[D-303]] §4)', () => {
-  // Trois occurrences : l'écriture de `publier`, le filtre des assignables, et
-  // la garde `where` du geste « Déclarer » (lot 3, P2-1), qui LIT le statut
-  // sans l'écrire — le troisième bloc ci-dessous le tient.
-  it('trois occurrences, et trois seulement : `publier`, le filtre des assignables, la garde de « Déclarer »', () => {
+  // Deux occurrences : l'écriture de `publier` et le filtre des assignables.
+  // Le geste « Déclarer » et sa garde `where` sont retirés (réponse
+  // 20261116-0826-a, [[D-528]]).
+  it('deux occurrences, et deux seulement : `publier` et le filtre des assignables', () => {
     expect(occurrences().sort()).toEqual([
-      'app/api/praticien/instruments/route.ts',
       'app/api/praticien/instruments/route.ts',
       'lib/instruments.ts',
     ]);
   });
 
-  it('« Déclarer » (P2-1) n’écrit que la déclaration lue, jamais le statut', () => {
+  it('l’action `declarer` n’existe plus', () => {
     const route = readFileSync(path.join(RACINE_SRC, 'app/api/praticien/instruments/route.ts'), 'utf8');
-    const debut = route.indexOf("if (action === 'declarer'");
-    expect(debut).toBeGreaterThan(-1);
-    const corps = route.slice(debut, route.indexOf('if (action !== null)', debut));
-    expect(corps).toMatch(/lireDeclarationSuicide\(body,\s*instrument\.definitionJson\)/);
-    expect(corps).toMatch(/updateMany\(\{\s*where:\s*\{\s*idInstrument,\s*actif:\s*true,\s*statutRelecture:\s*'valide',\s*poseQuestionSuicide:\s*null,\s*updatedAt:\s*instrument\.updatedAt,?\s*\},\s*data:\s*lue\.declaration,?\s*\}\)/);
-    // Un seul passage `statutRelecture: 'valide'` dans ce bloc : celui du `where`.
-    expect(passagesDans(corps)).toBe(1);
-    // Ni `update` nu ni autre écriture.
-    expect(corps).not.toMatch(/\.(update|create|upsert)\(/);
+    expect(route).not.toMatch(/['"]declarer['"]/);
   });
 
   it('le lecteur voit une écriture répartie sur deux lignes, et ignore les commentaires', () => {
@@ -113,9 +103,9 @@ describe('NF-7 — un seul passage vers `valide`, et il exige la déclaration ([
 
   it('l’écriture de `publier` porte la déclaration lue, et le filtre ne fait que lire', () => {
     const route = readFileSync(path.join(RACINE_SRC, 'app/api/praticien/instruments/route.ts'), 'utf8');
-    expect(route).toMatch(/const data = \{\s*statutRelecture:\s*'valide',\s*\.\.\.declaration\s*\}/);
-    // Drapeau allumé, l'écriture est gardée sur le statut et la date relus.
-    expect(route).toMatch(/updateMany\(\{\s*where:\s*\{\s*idInstrument,\s*statutRelecture:\s*'grille_a_relire',\s*updatedAt:\s*instrument\.updatedAt\s*\}/);
+    // L'écriture est gardée sur le statut et la date relus, et porte la
+    // déclaration lue.
+    expect(route).toMatch(/updateMany\(\{\s*where:\s*\{\s*idInstrument,\s*statutRelecture:\s*'grille_a_relire',\s*updatedAt:\s*instrument\.updatedAt\s*\},\s*data:\s*\{\s*statutRelecture:\s*'valide',\s*\.\.\.lue\.declaration\s*\}/);
     expect(route).toMatch(/lireDeclarationSuicide\(body,\s*instrument\.definitionJson\)/);
     // Le filtre `where` de `idsAssignablesPour` : une lecture, pas une écriture.
     const instruments = readFileSync(path.join(RACINE_SRC, 'lib/instruments.ts'), 'utf8');
@@ -128,20 +118,14 @@ describe('NF-7 — un seul passage vers `valide`, et il exige la déclaration ([
   });
 });
 
-describe('NF-7 — le drapeau', () => {
-  afterEach(() => {
-    delete process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB;
-  });
-
-  it('éteint par défaut ; seule la valeur exacte `true` l’allume', () => {
-    delete process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB;
-    expect(declarationSuicideCabinetActive()).toBe(false);
-    for (const valeur of ['1', 'TRUE', 'oui', ' true', '']) {
-      process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB = valeur;
-      expect(declarationSuicideCabinetActive(), JSON.stringify(valeur)).toBe(false);
-    }
-    process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB = 'true';
-    expect(declarationSuicideCabinetActive()).toBe(true);
+describe('NF-7 — plus de drapeau ([[D-528]])', () => {
+  it('aucun fichier de `web/src` hors bancs ne lit `WN_ENABLE_DECLARATION_SUICIDE_CAB`', () => {
+    const lecteurs = sources(RACINE_SRC)
+      .filter(fichier => /WN_ENABLE_DECLARATION_SUICIDE_CAB|declarationSuicideCabinetActive/.test(
+        sansCommentaires(readFileSync(fichier, 'utf8')),
+      ))
+      .map(fichier => path.relative(RACINE_SRC, fichier));
+    expect(lecteurs).toEqual([]);
   });
 });
 

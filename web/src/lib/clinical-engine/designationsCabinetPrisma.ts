@@ -1,6 +1,5 @@
 import type { Prisma } from '@/generated/prisma';
 import { prisma } from '../prisma';
-import { declarationSuicideCabinetActive } from '../securite/declarationSuicideCabinet';
 import type { DesignationCabinetLue, PassationSecuriteRow } from './safetyFindings';
 
 // LA DÉSIGNATION COPIÉE, JOINTE AUX PASSATIONS DU CABINET — [[D-515]] §4, lot
@@ -15,23 +14,18 @@ import type { DesignationCabinetLue, PassationSecuriteRow } from './safetyFindin
 // la lettre passent tous par cette fonction. Elle LIT, sans rien écrire — la
 // copie est figée à l'envoi et rien ne la réécrit.
 //
-// DRAPEAU ÉTEINT, RIEN N'EST JOINT ([[D-515]] §6) : les lignes reviennent
-// telles quelles, et `SAF-QUEST-02` ne lit aucune passation du cabinet. Ni
-// constat, ni règle candidate, ni limitation : l'empreinte des cartes ne
-// bouge pas.
+// PLUS DE DRAPEAU ([[D-528]]) : la jointure a lieu à chaque lecture. Le
+// drapeau `WN_ENABLE_DECLARATION_SUICIDE_CAB`, qui la coupait, est retiré.
 
 /** Les questionnaires du cabinet — la seule famille que `SAF-QUEST-02` lit. */
 export const PREFIXE_INSTRUMENT_CABINET = 'CAB_';
 
 /**
  * Le filtre des passations qu'un chargeur doit lire en plus du catalogue :
- * les instruments du cabinet, drapeau allumé seulement. `null` drapeau éteint —
- * l'appelant ne lit alors que ce qu'il lisait avant ce lot.
+ * les instruments du cabinet ([[D-528]] : sans condition de drapeau).
  */
-export function wherePassationsCabinet(): Prisma.QuestionnaireReponseWhereInput | null {
-  return declarationSuicideCabinetActive()
-    ? { idQuestionnaire: { startsWith: PREFIXE_INSTRUMENT_CABINET } }
-    : null;
+export function wherePassationsCabinet(): Prisma.QuestionnaireReponseWhereInput {
+  return { idQuestionnaire: { startsWith: PREFIXE_INSTRUMENT_CABINET } };
 }
 
 type Client = Pick<Prisma.TransactionClient, 'assignation'>;
@@ -75,7 +69,6 @@ export async function joindreDesignationsCabinet<T extends PassationSecuriteRow 
   rows: readonly T[],
   client: Client = prisma,
 ): Promise<T[]> {
-  if (!declarationSuicideCabinetActive()) return [...rows];
   const ids = [...new Set(
     rows
       .filter(row => row.idQuestionnaire.startsWith(PREFIXE_INSTRUMENT_CABINET) && row.idAssignation)

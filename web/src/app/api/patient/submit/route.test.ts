@@ -389,7 +389,6 @@ describe('POST /api/patient/submit — instruments du cabinet', () => {
     }
 
     beforeEach(() => {
-      process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB = 'true';
       prisma.assignation.findUnique.mockResolvedValue(DESIGNEE);
       vi.mocked(notifierPraticienSignalSecurite).mockResolvedValue({ statut: 'Envoye' });
       sendMailAck.mockResolvedValue({});
@@ -397,7 +396,6 @@ describe('POST /api/patient/submit — instruments du cabinet', () => {
 
     afterEach(() => {
       Object.assign(SAFETY_QUESTIONNAIRE_CABINET_METADATA, ETAT_LIVRE);
-      delete process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB;
     });
 
     it('table signée : une valeur autre que la valeur « non » copiée prévient le praticien', async () => {
@@ -423,17 +421,6 @@ describe('POST /api/patient/submit — instruments du cabinet', () => {
       const res = await postSubmit(requeteCabinet({ Q1: 0, Q2: 1 }));
       expect(res.status).toBe(200);
       expect(notifierPraticienSignalSecurite).not.toHaveBeenCalled();
-    });
-
-    // Contre-revue Codex de la PR 3, P1 : la copie « oui » n'est écrite que
-    // drapeau allumé, et le patient a pu lire le message avant l'extinction.
-    // Le courriel part donc quand même.
-    it('table signée, drapeau éteint après l’envoi : le courriel part quand même', async () => {
-      signer();
-      delete process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB;
-      const res = await postSubmit(requeteCabinet({ Q1: 0, Q2: 1 }));
-      expect(res.status).toBe(200);
-      expect(notifierPraticienSignalSecurite).toHaveBeenCalledTimes(1);
     });
   });
 });

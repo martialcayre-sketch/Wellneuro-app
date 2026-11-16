@@ -490,6 +490,7 @@ describe('transaction — ce que la route ne fait JAMAIS hors de `tx` (P1-2)', (
 
 describe('réponses de questionnaire — D-275 §2, LOT-3', () => {
   const ETAT_LIVRE = { ...SAFETY_QUESTIONNAIRE_METADATA };
+  const ETAT_CABINET_LIVRE = { ...SAFETY_QUESTIONNAIRE_CABINET_METADATA };
   const PASSATION = {
     idReponse: 'REP-1',
     idQuestionnaire: 'Q_NEU_01',
@@ -503,12 +504,21 @@ describe('réponses de questionnaire — D-275 §2, LOT-3', () => {
     SAFETY_QUESTIONNAIRE_METADATA.sourceReference = 'Signature simulée par le banc.';
     SAFETY_QUESTIONNAIRE_METADATA.shaPerimetre = SAFETY_QUESTIONNAIRE_SHA256;
   }
+  /**
+   * Le catalogue seul : `SAF-QUEST-02`, signée le 2026-11-15, est lue sans
+   * drapeau depuis [[D-528]] ; ces deux cas ne portent que sur `SAF-QUEST-01`.
+   */
+  function sansCabinet(): void {
+    Object.assign(SAFETY_QUESTIONNAIRE_CABINET_METADATA, { validationExterne: false, dateValidation: null, shaPerimetre: null });
+  }
   afterEach(() => {
     Object.assign(SAFETY_QUESTIONNAIRE_METADATA, ETAT_LIVRE);
+    Object.assign(SAFETY_QUESTIONNAIRE_CABINET_METADATA, ETAT_CABINET_LIVRE);
   });
 
   it('table signée : lit les passations DANS la transaction, et couvre le constat de questionnaire', async () => {
     simulerSignature();
+    sansCabinet();
     tx.questionnaireReponse.findMany.mockResolvedValue([PASSATION]);
     tx.consultation.findFirst.mockResolvedValue({ id: 'cons_porteuse', anamnese: {} });
     const res = await POST(postRequest({ idPatient: 'PAT1', medecinLibelle: 'Dr Nicola' }));
@@ -527,6 +537,7 @@ describe('réponses de questionnaire — D-275 §2, LOT-3', () => {
 
   it('table non signée : aucune passation lue, aucune réponse citée', async () => {
     SAFETY_QUESTIONNAIRE_METADATA.validationExterne = false;
+    sansCabinet();
     tx.questionnaireReponse.findMany.mockResolvedValue([PASSATION]);
     await POST(postRequest({ idPatient: 'PAT1', medecinLibelle: 'Dr Nicola' }));
     expect(tx.questionnaireReponse.findMany).not.toHaveBeenCalled();
@@ -559,13 +570,11 @@ describe('réponses de questionnaire — D-275 §2, LOT-3', () => {
     }
     afterEach(() => {
       Object.assign(SAFETY_QUESTIONNAIRE_CABINET_METADATA, ETAT_CABINET);
-      delete process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB;
     });
 
-    it('signée, drapeau allumé : les CAB_ sont lus, joints dans la transaction, et le constat couvert', async () => {
+    it('signée : les CAB_ sont lus, joints dans la transaction, et le constat couvert', async () => {
       simulerSignature();
       signerCabinet();
-      process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB = 'true';
       tx.questionnaireReponse.findMany.mockResolvedValue([CAB]);
       tx.assignation.findMany.mockResolvedValue([ASSIGNATION]);
       tx.consultation.findFirst.mockResolvedValue({ id: 'cons_porteuse', anamnese: {} });
@@ -588,11 +597,10 @@ describe('réponses de questionnaire — D-275 §2, LOT-3', () => {
       expect(reponses).toEqual([expect.objectContaining({ idReponse: 'REP-CAB', cabinet: { enonce: 'Idées de mort ?' } })]);
     });
 
-    it('drapeau allumé mais cabinet NON signé : catalogue seul, aucune jointure, aucun CAB_ cité', async () => {
+    it('cabinet NON signé : catalogue seul, aucune jointure, aucun CAB_ cité', async () => {
       simulerSignature();
       // La table est signée depuis le 2026-11-15 ([[D-524]]) : l'état non signé se pose ici.
       Object.assign(SAFETY_QUESTIONNAIRE_CABINET_METADATA, { validationExterne: false, dateValidation: null, shaPerimetre: null });
-      process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB = 'true';
       tx.questionnaireReponse.findMany.mockResolvedValue([PASSATION]);
       tx.consultation.findFirst.mockResolvedValue({ id: 'cons_porteuse', anamnese: {} });
       await POST(postRequest({ idPatient: 'PAT1', medecinLibelle: 'Dr Nicola' }));
@@ -604,22 +612,9 @@ describe('réponses de questionnaire — D-275 §2, LOT-3', () => {
       expect(reponses.some((reponse: { cabinet?: unknown }) => reponse.cabinet)).toBe(false);
     });
 
-    it('signée mais drapeau éteint : la requête est celle d’avant, aucune jointure', async () => {
-      simulerSignature();
-      signerCabinet();
-      tx.questionnaireReponse.findMany.mockResolvedValue([PASSATION]);
-      tx.consultation.findFirst.mockResolvedValue({ id: 'cons_porteuse', anamnese: {} });
-      await POST(postRequest({ idPatient: 'PAT1', medecinLibelle: 'Dr Nicola' }));
-      expect(tx.questionnaireReponse.findMany).toHaveBeenCalledWith(expect.objectContaining({
-        where: { idPatient: 'PAT1', idQuestionnaire: { in: ['Q_NEU_01', 'Q_NEU_02', 'Q_NEU_03', 'Q_NEU_12'] } },
-      }));
-      expect(tx.assignation.findMany).not.toHaveBeenCalled();
-    });
-
     it('catalogue non signé, cabinet signé : seuls les CAB_ sont lus', async () => {
       SAFETY_QUESTIONNAIRE_METADATA.validationExterne = false;
       signerCabinet();
-      process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB = 'true';
       tx.questionnaireReponse.findMany.mockResolvedValue([]);
       tx.consultation.findFirst.mockResolvedValue({ id: 'cons_porteuse', anamnese: {} });
       await POST(postRequest({ idPatient: 'PAT1', medecinLibelle: 'Dr Nicola' }));

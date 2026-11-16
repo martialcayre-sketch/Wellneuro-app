@@ -9,7 +9,6 @@ import { estInstrumentCabinet, idsAssignablesPour, resolveDefinition } from '@/l
 import {
   cabinetEnvoyable,
   copieDesignationSuicide,
-  declarationSuicideCabinetActive,
   type DesignationSuicideCopiee,
 } from '@/lib/securite/declarationSuicideCabinet';
 import { buildGoogleConnexionUrl } from '@/lib/consultation/email';
@@ -194,8 +193,9 @@ export async function POST(request: Request) {
         // NF-7 ([[D-303]] §3, réponse 20261111-0027-a) : la déclaration
         // « question sur le suicide » d'un instrument du cabinet est COPIÉE sur
         // l'assignation à l'envoi. L'écran patient lit cette copie, jamais la
-        // déclaration courante de l'instrument. Drapeau éteint, ou instrument
-        // du catalogue : rien n'est écrit, rien n'est verrouillé.
+        // déclaration courante de l'instrument ([[D-528]] : à chaque envoi,
+        // sans condition de drapeau). Instrument du catalogue : rien n'est
+        // écrit, rien n'est verrouillé.
         //
         // P2-3 (arbitrage du 2026-11-12) : l'éligibilité (actif, publié,
         // déclaré) et la déclaration copiée restent vraies JUSQU'AU COMMIT.
@@ -215,13 +215,10 @@ export async function POST(request: Request) {
         // contenu, qui l'efface, attend donc la fin de cet envoi. Introuvable
         // ou incohérente, elle n'est pas copiée : les trois colonnes restent
         // vides, et la désignation est inconnue ([[D-515]] §7).
-        const copierDeclaration = declarationSuicideCabinetActive();
         const declarations = new Map<string, boolean>();
         const designations = new Map<string, DesignationSuicideCopiee>();
         let retenusEnvoi = aInserer;
-        const idsCabinet = copierDeclaration
-          ? aInserer.map(i => i.idQuestionnaire).filter(estInstrumentCabinet).sort()
-          : [];
+        const idsCabinet = aInserer.map(i => i.idQuestionnaire).filter(estInstrumentCabinet).sort();
         if (idsCabinet.length > 0) {
           const lignes = await tx.$queryRaw<
             {
@@ -287,7 +284,7 @@ export async function POST(request: Request) {
           // Désignation absente : les trois colonnes ne sont pas écrites, donc
           // NULL en base (jamais `Prisma.JsonNull`, que le CHECK refuserait).
           const declaration =
-            copierDeclaration && estInstrumentCabinet(item.idQuestionnaire)
+            estInstrumentCabinet(item.idQuestionnaire)
               ? {
                 poseQuestionSuicide: declarations.get(item.idQuestionnaire),
                 ...designations.get(item.idQuestionnaire),

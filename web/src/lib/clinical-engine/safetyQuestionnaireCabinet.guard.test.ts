@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 // La jointure reçoit son client en argument : le client réel n'est jamais lu.
 vi.mock('@/lib/prisma', () => ({ prisma: {} }));
@@ -55,21 +55,15 @@ import { estFindingAdressable, estFindingQuestionnaire } from './safetyFindingSo
 //   4. §7 : désignation inconnue ⇒ limitation, sans constat ;
 //   5. `SAF-QUEST-01` reçoit les seules réponses du catalogue : sa sortie ne
 //      change pas, et `SAF-QUEST-02` vient après elle ;
-//   6. drapeau éteint, la jointure ne lit rien et ne joint rien ;
+//   6. la jointure lit la seule assignation des passations du cabinet
+//      (sans drapeau depuis [[D-528]]) ;
 //   7. la lettre : sans réponse du cabinet, au caractère près ; avec, sa
 //      propre version d'ancrage, la mention, et un verdict d'ancrage à jour.
 
 const ETAT_LIVRE = { ...SAFETY_QUESTIONNAIRE_CABINET_METADATA };
 
-// Drapeau ALLUMÉ par défaut dans ce banc : la règle n'existe que sous lui.
-// Les cas « éteint » l'éteignent explicitement.
-beforeEach(() => {
-  process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB = 'true';
-});
-
 afterEach(() => {
   Object.assign(SAFETY_QUESTIONNAIRE_CABINET_METADATA, ETAT_LIVRE);
-  delete process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB;
   delete process.env.WN_ENABLE_VALIDITE_PASSATIONS;
 });
 
@@ -207,14 +201,6 @@ describe('§1 — seule la question désignée d’une copie « oui » est lue',
       passationCab('REP-Z', { Q2: 3 }, { designationCabinet: undefined }),
     ];
     expect(reponsesSecuriteDeclarees(rows)).toEqual([]);
-  });
-
-  it('drapeau éteint : une désignation jointe n’est pas lue non plus (contre-revue Codex, P2)', () => {
-    simulerSignature();
-    delete process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB;
-    expect(reponsesSecuriteDeclarees([CAB_SOUVENT])).toEqual([]);
-    const sortie = construireSafetyFindings([], reponsesSecuriteDeclarees([CAB_SOUVENT, BDI_PLANS]));
-    expect(regles(sortie, REGLE_SECURITE_QUESTIONNAIRE_CABINET)).toEqual([]);
   });
 
   it('une désignation jointe à un questionnaire hors cabinet n’est pas lue par SAF-QUEST-02', () => {
@@ -370,23 +356,21 @@ describe('SAF-QUEST-01 inchangée, SAF-QUEST-02 après elle', () => {
   });
 });
 
-describe('jointure — drapeau éteint, rien n’est lu ni joint', () => {
+describe('jointure — la seule assignation des passations du cabinet ([[D-528]] : sans drapeau)', () => {
   const ROWS: (PassationSecuriteRow & { idAssignation: string | null })[] = [
     { ...BDI_PLANS, idAssignation: 'ASG-1' },
     { idReponse: 'REP-C', idQuestionnaire: 'CAB_HUMEUR', dateReponse: new Date(0), scoresJson: {}, idAssignation: 'ASG-2' },
     { idReponse: 'REP-D', idQuestionnaire: 'CAB_HUMEUR', dateReponse: new Date(0), scoresJson: {}, idAssignation: null },
   ];
 
-  it('éteint : aucune requête, les lignes reviennent telles quelles', async () => {
-    delete process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB;
+  it('aucune passation du cabinet rattachée : aucune requête, les lignes reviennent telles quelles', async () => {
     const findMany = vi.fn();
-    expect(wherePassationsCabinet()).toBeNull();
-    expect(await joindreDesignationsCabinet(ROWS, { assignation: { findMany } } as never)).toEqual(ROWS);
+    const catalogueSeul = [ROWS[0], ROWS[2]];
+    expect(await joindreDesignationsCabinet(catalogueSeul, { assignation: { findMany } } as never)).toEqual(catalogueSeul);
     expect(findMany).not.toHaveBeenCalled();
   });
 
-  it('allumé : la seule assignation d’une passation du cabinet est lue, et sa copie jointe telle quelle', async () => {
-    process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB = 'true';
+  it('la seule assignation d’une passation du cabinet est lue, et sa copie jointe telle quelle', async () => {
     expect(wherePassationsCabinet()).toEqual({ idQuestionnaire: { startsWith: 'CAB_' } });
     const findMany = vi.fn().mockResolvedValue([{
       idAssignation: 'ASG-2', titre: 'Humeur du cabinet', poseQuestionSuicide: true,

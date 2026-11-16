@@ -48,6 +48,7 @@ mergés.
 | `socle-commun.md` | DOC-0, COM-0 et COM-1 (décor, après DOC-2), seuls lots communs ; règles des deux sessions |
 | `plan-praticien.md` | plan de l'Observatoire, PRA-1 à PRA-6 |
 | `plan-patient.md` | plan du Jardin, PAT-1 à PAT-7 |
+| `pat7-constat-partiel.md` | PAT-7 en partie (2026-11-16) : constat à l'écran local des écrans patient livrés, lots nommés proposés |
 
 ## 3. Les deux plans en parallèle
 

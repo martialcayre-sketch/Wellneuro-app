@@ -88,6 +88,13 @@ describe('Rayon compléments — garde-fou du drapeau', () => {
 });
 
 describe('Rayon Analyses biologiques — la page unique de la biologie (D-324 §6)', () => {
+  // PRA-4 Q1 (a) : sous le h1 d'`EnTeteRayon`, les blocs de la page en h2.
+  it('h1 du rayon, puis « Du présumé au mesuré » en h2, sans saut', () => {
+    render(<AnalysesBiologiquesPage />);
+    expect(screen.getByRole('heading', { level: 1, name: 'Analyses biologiques' })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 2, name: 'Du présumé au mesuré' })).toBeTruthy();
+  });
+
   it('drapeau éteint : catalogue non monté, bannière SANS code de chantier', () => {
     render(<AnalysesBiologiquesPage />);
 

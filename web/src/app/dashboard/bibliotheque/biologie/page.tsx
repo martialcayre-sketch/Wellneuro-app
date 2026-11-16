@@ -66,7 +66,7 @@ export default function AnalysesBiologiquesPage() {
       )}
 
       <div className="rounded-xl border border-border bg-surface p-5 shadow-card">
-        <h3 className="font-display text-lg font-semibold text-foreground">Du présumé au mesuré</h3>
+        <h2 className="font-display text-lg font-semibold text-foreground">Du présumé au mesuré</h2>
         <p className="mt-2 text-base text-muted-foreground">
           Les signaux estimés de la fiche pré-rempliront la demande d&apos;analyses
           correspondante ; au retour du résultat, la fiche affichera « estimé » à côté

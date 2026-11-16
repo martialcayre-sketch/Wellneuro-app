@@ -258,6 +258,11 @@ zoom 200 % et confort 112,5 %, clavier et lecteur d'écran, mouvement réduit
 l'étape 1). Relecture `ui-ux-pro-max`. Comparaison aux prototypes. Les
 écarts restants deviennent des lots nommés.
 
+**Ouvert en partie le 2026-11-16** (liste commune `20261116-0826-d`), sur
+les écrans déjà livrés, sans l'en-tête de U10 (après PAT-3b) : constat et
+lots nommés proposés PAT-7a à PAT-7d dans
+[`pat7-constat-partiel.md`](pat7-constat-partiel.md).
+
 ## 4. Coordination avec le plan praticien
 
 - Aucune dépendance entre PAT-n et PRA-n.

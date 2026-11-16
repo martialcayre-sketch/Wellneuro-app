@@ -76,8 +76,8 @@ function itemDe(id: string, cabinetParId: Map<string, InfoCabinet>): FileEnvoiIt
   const info = cabinetParId.get(id);
   // Un instrument du cabinet dépublié ou désactivé reste LISTÉ, marqué
   // indisponible — jamais supprimé silencieusement : c'est l'envoi qui le
-  // filtrera, et l'écran doit le dire avant. Drapeau NF-7 allumé, un publié
-  // non déclaré l'est aussi (P2-1) : même prédicat que l'envoi.
+  // filtrera, et l'écran doit le dire avant. Même prédicat que l'envoi
+  // (`cabinetEnvoyable` : actif et publié, donc déclaré, [[D-528]]).
   const indisponible = !info || !cabinetEnvoyable(info);
   return { id, titre: info?.titre || id, ...(indisponible ? { indisponible: true } : {}) };
 }

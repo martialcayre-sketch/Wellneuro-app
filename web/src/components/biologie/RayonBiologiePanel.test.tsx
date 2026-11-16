@@ -206,6 +206,22 @@ describe('RayonBiologiePanel — consultation documentaire', () => {
     expect(document.body.textContent).not.toMatch(/score global/i);
   });
 
+  // PRA-4 Q1 (a) : la liste en h2 sous le h1 du rayon ; dans le tiroir, son
+  // titre en h2, le libellé en h3, les sections en h4 — aucun niveau sauté.
+  it('cascade des titres sans saut, liste et tiroir', async () => {
+    mockFetch(CATALOGUE);
+    render(<RayonBiologiePanel />);
+    expect(await screen.findByRole('heading', { level: 2, name: /^Analytes \(/ })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: /^Ferritine/ }));
+
+    expect(await screen.findByRole('heading', { level: 2, name: 'Fiche analyte' })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 3, name: 'Ferritine' })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 4, name: 'Référentiels de valeurs' })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 4, name: 'Remboursement' })).toBeTruthy();
+    expect(screen.queryByRole('heading', { level: 5 })).toBeNull();
+  });
+
   it('la validation médicale requise est un badge visible en liste', async () => {
     mockFetch(CATALOGUE);
     render(<RayonBiologiePanel />);

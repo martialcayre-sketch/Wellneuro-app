@@ -263,8 +263,9 @@ export async function POST(req: Request) {
         // elles, et la lettre ne doit pas affirmer le contraire.
         //
         // [[D-515]] §5 : les réponses aux instruments du cabinet, sous la même
-        // condition pour leur propre table (`SAF-QUEST-02`), drapeau allumé.
-        // Catalogue seul, la requête est celle d'avant ce lot.
+        // condition pour leur propre table (`SAF-QUEST-02`) ([[D-528]] : sans
+        // condition de drapeau). Catalogue seul, la requête est celle d'avant
+        // ce lot.
         const catalogue = tableSecuriteQuestionnaireSignee();
         const cabinet = tableSecuriteQuestionnaireCabinetSignee() ? wherePassationsCabinet() : null;
         const familles = cabinet

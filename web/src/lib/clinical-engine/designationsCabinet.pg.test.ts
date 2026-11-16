@@ -24,7 +24,7 @@
 // dans la base éphémère.
 
 import { randomBytes } from 'node:crypto';
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import pg from 'pg';
 
 const URL_BASE = process.env.DATABASE_URL ?? '';
@@ -66,7 +66,6 @@ describe.skipIf(!ACTIF)('D-515 §4 — la désignation copiée, sur base réelle
   let observateur: pg.Client;
 
   beforeAll(async () => {
-    vi.stubEnv('WN_ENABLE_DECLARATION_SUICIDE_CAB', 'true');
     observateur = new pg.Client({ connectionString: URL_BASE });
     await observateur.connect();
     ({ prisma } = await import('@/lib/prisma'));
@@ -88,7 +87,6 @@ describe.skipIf(!ACTIF)('D-515 §4 — la désignation copiée, sur base réelle
   });
 
   afterAll(async () => {
-    vi.unstubAllEnvs();
     await observateur?.end();
     await prisma?.$disconnect();
   });
