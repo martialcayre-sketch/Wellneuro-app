@@ -86,9 +86,9 @@ export function EtiquetageLotPanel({ onConclu }: { onConclu?: () => void }) {
   const n = liste?.lignes.length ?? 0;
 
   return (
-    <section className="rounded-2xl border border-border bg-card p-5">
+    <section className="rounded-2xl border border-border bg-surface p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h3 className="font-display text-xl font-bold text-foreground">Étiquetage en lot</h3>
+        <h2 className="font-display text-xl font-bold text-foreground">Étiquetage en lot</h2>
         <Button variant="outline" aria-expanded={ouvert} onClick={() => setOuvert((o) => !o)}>
           {ouvert ? 'Fermer' : 'Étiqueter une liste'}
         </Button>
@@ -120,7 +120,7 @@ export function EtiquetageLotPanel({ onConclu }: { onConclu?: () => void }) {
             }}
             rows={8}
             disabled={etat === 'envoi'}
-            className="rounded-lg border border-border bg-background px-3 py-2 font-mono text-sm"
+            className="rounded-lg border border-border bg-surface px-3 py-2 font-mono text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
           />
           <div>
             <Button variant="outline" disabled={!texte.trim() || etat === 'envoi'} onClick={verifier}>
@@ -131,7 +131,7 @@ export function EtiquetageLotPanel({ onConclu }: { onConclu?: () => void }) {
           {liste && etat !== 'saisie' ? (
             <div className="flex flex-col gap-3">
               {liste.erreurs.length > 0 ? (
-                <div role="alert" className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                <div role="alert" className="rounded-lg bg-status-danger/10 px-3 py-2 text-sm text-status-danger">
                   <p className="font-medium">
                     {liste.erreurs.length} ligne{liste.erreurs.length > 1 ? 's' : ''} à corriger avant
                     l’envoi :
@@ -178,7 +178,7 @@ export function EtiquetageLotPanel({ onConclu }: { onConclu?: () => void }) {
               ) : null}
 
               {erreur ? (
-                <div role="alert" className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                <div role="alert" className="rounded-lg bg-status-danger/10 px-3 py-2 text-sm text-status-danger">
                   <p>{erreur}</p>
                   {refus.length > 0 ? (
                     <ul className="mt-1 list-disc pl-5">

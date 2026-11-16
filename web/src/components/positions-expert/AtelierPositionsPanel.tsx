@@ -34,7 +34,13 @@ import {
 type Retour = { type: 'succes' | 'erreur'; texte: string };
 type ReponseEcriture = { ok: true } | { ok: false; error: string; claims?: string[] };
 
-const CHAMP = 'w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm text-foreground';
+// Q5 de D-481 (complément DOC-13) : 44 px et focus visible, comme `ui/Input` ;
+// `ui/Select` sert d'autres écrans et n'est pas changé par ce lot.
+const CHAMP =
+  'w-full min-h-11 bg-surface border border-border rounded-lg px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring';
+const CLASSE_SELECT =
+  'min-h-11 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring';
+const ANNEAU_CASE = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring';
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
@@ -155,9 +161,9 @@ export function AtelierPositionsPanel() {
       {peutDecider && <FormulaireVersion atelier={atelier} envoi={bloque} soumettre={soumettre} />}
 
       <section aria-labelledby="titre-positions" className="flex flex-col gap-4">
-        <h3 id="titre-positions" className="font-display text-lg font-semibold text-foreground">
+        <h2 id="titre-positions" className="font-display text-lg font-semibold text-foreground">
           Positions
-        </h3>
+        </h2>
         {atelier.positions.length === 0 && <p className="text-sm text-muted-foreground">Aucune position versée.</p>}
         {atelier.positions.map(p => (
           // Clé = la VERSION courante : une version neuve remonte la carte, et
@@ -214,9 +220,9 @@ function FormulaireVersion({ atelier, envoi, soumettre }: { atelier: AtelierPosi
 
   return (
     <section aria-labelledby="titre-verser" className="flex flex-col gap-3 rounded-lg border border-border p-4">
-      <h3 id="titre-verser" className="font-display text-lg font-semibold text-foreground">
+      <h2 id="titre-verser" className="font-display text-lg font-semibold text-foreground">
         Verser une version
-      </h3>
+      </h2>
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="flex flex-col gap-1 text-sm">
           Identifiant de position (WN-PE-NNNN)
@@ -228,7 +234,7 @@ function FormulaireVersion({ atelier, envoi, soumettre }: { atelier: AtelierPosi
         </label>
         <label className="flex flex-col gap-1 text-sm">
           Dossier de preuve
-          <Select value={dossier} onChange={e => setDossier(e.target.value as DossierPosition | '')}>
+          <Select className={CLASSE_SELECT} value={dossier} onChange={e => setDossier(e.target.value as DossierPosition | '')}>
             <option value="">Choisir…</option>
             {DOSSIERS_POSITION.map(d => (
               <option key={d} value={d}>
@@ -239,7 +245,7 @@ function FormulaireVersion({ atelier, envoi, soumettre }: { atelier: AtelierPosi
         </label>
         <label className="flex flex-col gap-1 text-sm">
           Fiche d’usage fondée
-          <Select value={ficheId} onChange={e => setFicheId(e.target.value)}>
+          <Select className={CLASSE_SELECT} value={ficheId} onChange={e => setFicheId(e.target.value)}>
             <option value="">Aucune fiche</option>
             {atelier.structure.fiches.map(f => (
               <option key={f} value={f}>
@@ -343,8 +349,8 @@ function CartePosition({
         <div className="flex flex-col gap-2 border-t border-border pt-3">
           {signable && (
             <div className="flex flex-col gap-2">
-              <label className="flex items-start gap-2 text-sm">
-                <input type="checkbox" checked={relu} onChange={e => setRelu(e.target.checked)} className="mt-1" />
+              <label className="flex min-h-11 items-start gap-2 py-2 text-sm">
+                <input type="checkbox" checked={relu} onChange={e => setRelu(e.target.checked)} className={`mt-1 ${ANNEAU_CASE}`} />
                 J’ai relu l’intégralité de cette version : énoncé, périmètre, population, limites et claims d’appui.
               </label>
               <div>
@@ -371,7 +377,7 @@ function CartePosition({
       )}
 
       <details className="text-sm">
-        <summary className="cursor-pointer text-muted-foreground">Historique ({position.versions.length} version(s))</summary>
+        <summary className="min-h-11 cursor-pointer rounded-sm py-2 text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring">Historique ({position.versions.length} version(s))</summary>
         <ul className="mt-2 flex flex-col gap-2">
           {position.versions.map(ver => (
             <li key={ver.id}>
@@ -413,9 +419,9 @@ function SectionArbitrages({
 
   return (
     <section aria-labelledby="titre-arbitrages" className="flex flex-col gap-4">
-      <h3 id="titre-arbitrages" className="font-display text-lg font-semibold text-foreground">
+      <h2 id="titre-arbitrages" className="font-display text-lg font-semibold text-foreground">
         Arbitrages des conflits de sources
-      </h3>
+      </h2>
       <p className="text-sm text-muted-foreground">
         Un arbitrage vaut pour sa fiche seule, jamais pour le claim en général. Le conflit reste affiché avec ses
         deux claims ; tant qu’un couple n’est pas arbitré, l’escalade au praticien reste seule.
@@ -457,7 +463,7 @@ function SectionArbitrages({
       ))}
       {autres.length > 0 && (
         <div className="flex flex-col gap-3">
-          <h4 className="font-semibold text-foreground">Arbitrages enregistrés hors des listes curées du jour</h4>
+          <h3 className="font-semibold text-foreground">Arbitrages enregistrés hors des listes curées du jour</h3>
           {autres.map(k => (
             <CoupleArbitrage
               key={`${k.conflitId}|${k.ficheId}|${k.tete?.id ?? 'non-arbitre'}`}
@@ -567,15 +573,16 @@ function CoupleArbitrage({
             <fieldset className="flex flex-col gap-1 text-sm">
               <legend className="font-medium">Position retenue{tete ? ' (remplace l’arbitrage en vigueur)' : ''}</legend>
               {claims.map(cl => (
-                <label key={cl} className="flex items-center gap-2">
-                  <input type="radio" name={`retenu-${conflitId}-${ficheId}`} checked={retenu === `claim|${cl}`} onChange={() => setRetenu(`claim|${cl}`)} />
+                <label key={cl} className="flex min-h-11 items-center gap-2">
+                  <input type="radio" className={ANNEAU_CASE} name={`retenu-${conflitId}-${ficheId}`} checked={retenu === `claim|${cl}`} onChange={() => setRetenu(`claim|${cl}`)} />
                   Claim {cl}
                 </label>
               ))}
               {positions.map(p => (
-                <label key={p.courante.id} className="flex items-center gap-2">
+                <label key={p.courante.id} className="flex min-h-11 items-center gap-2">
                   <input
                     type="radio"
+                    className={ANNEAU_CASE}
                     name={`retenu-${conflitId}-${ficheId}`}
                     checked={retenu === `position|${p.courante.id}`}
                     onChange={() => setRetenu(`position|${p.courante.id}`)}
@@ -605,7 +612,7 @@ function CoupleArbitrage({
       )}
       {couple && couple.historique.length > 0 && (
         <details className="text-sm">
-          <summary className="cursor-pointer text-muted-foreground">Historique du couple ({couple.historique.length})</summary>
+          <summary className="min-h-11 cursor-pointer rounded-sm py-2 text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring">Historique du couple ({couple.historique.length})</summary>
           <ul className="mt-2 ml-4 list-disc">
             {couple.historique.map(a => (
               <li key={a.id}>

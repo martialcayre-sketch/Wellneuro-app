@@ -3,6 +3,7 @@
 import { BESOINS as BESOINS_GUIDE } from '@/lib/equilibre/constants';
 import { RUBRIQUES_FICHE_USAGE } from '@/lib/fiches-usage/vocabulaire';
 import { nomRubrique } from '@/components/fiches-usage/libelles';
+import { CLASSE_CHAMP } from './habillageAtelier';
 
 // Saisie des clés de lien d'un claim ([[D-321]]) : les besoins qu'il sert (12
 // cases, aucune cochée d'office) et la rubrique de la chaîne d'usage (aucune
@@ -54,9 +55,10 @@ export function ClesLienChamps({
       </legend>
       <div className="grid grid-cols-1 gap-1 sm:grid-cols-2">
         {BESOINS_GUIDE.map((besoin) => (
-          <label key={besoin.id} className="flex items-center gap-2 text-sm text-foreground">
+          <label key={besoin.id} className="flex min-h-11 items-center gap-2 text-sm text-foreground">
             <input
               type="checkbox"
+              className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
               checked={saisie.besoins.includes(besoin.id)}
               disabled={disabled}
               onChange={() => basculer(besoin.id)}
@@ -71,7 +73,7 @@ export function ClesLienChamps({
           value={saisie.rubrique}
           disabled={disabled}
           onChange={(event) => onChange({ ...saisie, rubrique: event.target.value })}
-          className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm"
+          className={CLASSE_CHAMP}
         >
           <option value="">— Choisir une rubrique —</option>
           {RUBRIQUES_FICHE_USAGE.map((rubrique) => (
