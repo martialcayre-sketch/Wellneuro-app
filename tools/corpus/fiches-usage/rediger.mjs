@@ -28,10 +28,11 @@ import os from 'node:os';
 import path from 'node:path';
 import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
-import { enParallele, ErreurOutil, erreurSansTexte, parseJsonLache } from '../fiches/lib/assemblage.mjs';
+import { enParallele, ErreurOutil, erreurSansTexte } from '../fiches/lib/assemblage.mjs';
 import { CLAIMS_PAR_DEFAUT, chargerClaimsLocaux } from '../fiches/lib/entrees.mjs';
 import { consignesVerifiees } from './lib/consigne.mjs';
 import {
+  JETONS_SORTIE_CONTRE_LECTURE,
   axesDeLaFiche,
   claimsDeLaFiche,
   claimsDuTerme,
@@ -39,6 +40,7 @@ import {
   designationsDeLaFiche,
   lireRedactionFiche,
   lireReponseLibelle,
+  lireVerdictContreLecture,
   messageContreLecture,
   messageRedactionFiche,
   messageRedactionLibelle,
@@ -60,9 +62,8 @@ const { verifierDc03 } = await import('@/lib/bio-parcours/verifierDc03');
 export const SORTIES = path.join(os.homedir(), '.wellneuro', 'corpus', 'fiches-usage');
 const MODELE_REDACTION = process.env.WN_FICHES_USAGE_CLAUDE_MODEL || 'claude-sonnet-5';
 const MODELE_CONTRE_LECTURE = process.env.WN_FICHES_USAGE_OPENAI_MODEL || 'gpt-5.4';
-/** CHIFFRES TECHNIQUES (`DC-20`) : appels simultanés au relecteur, plafond de sa réponse. */
+/** CHIFFRE TECHNIQUE (`DC-20`) : appels simultanés au relecteur ; son plafond de sortie est `JETONS_SORTIE_CONTRE_LECTURE`. */
 const CONTRE_LECTURES_SIMULTANEES = 4;
-const JETONS_MAX_CONTRE_LECTURE = 4096;
 
 function lireArguments() {
   const a = process.argv.slice(2);
@@ -103,21 +104,14 @@ async function contreLire(openai, consigne, entree) {
     rep = await openai.responses.create({
       model: MODELE_CONTRE_LECTURE,
       reasoning: { effort: 'medium' },
-      max_output_tokens: JETONS_MAX_CONTRE_LECTURE,
+      max_output_tokens: JETONS_SORTIE_CONTRE_LECTURE,
       instructions: consigne,
       input: [{ role: 'user', content: [{ type: 'input_text', text: messageContreLecture(entree) }] }],
     });
   } catch (e) {
     return { fidele: false, technique: true, raison: `contre-lecture en échec : ${erreurSansTexte(e)}` };
   }
-  if (rep.status && rep.status !== 'completed') return { fidele: false, technique: true, raison: `contre-lecture inachevée (${rep.status})` };
-  try {
-    const v = parseJsonLache(rep.output_text || '');
-    if (typeof v?.fidele !== 'boolean') throw new Error('verdict sans « fidele »');
-    return { fidele: v.fidele, raison: String(v.raison || '') };
-  } catch {
-    return { fidele: false, technique: true, raison: 'verdict illisible' };
-  }
+  return lireVerdictContreLecture(rep);
 }
 
 async function ecrire(id, horodatage, suffixe, donnees) {
