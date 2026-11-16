@@ -177,8 +177,8 @@ export function lireReponseFiche(reponse, attendues) {
  * La raison se donne sans texte, et le code d'arrêt, imprimé au terminal, n'est
  * gardé que s'il a la forme d'un code.
  *
- * Une réponse arrêtée sur `max_tokens` est incomplète par définition : elle ne
- * se lit pas, et sa raison le dit, au lieu d'une `SyntaxError` qui masquait la
+ * Une réponse arrêtée sur `max_tokens` n'est pas tenue pour complète, même si
+ * elle se parse : elle ne se lit pas, et sa raison le dit, au lieu d'une `SyntaxError` qui masquait la
  * cause (cinq fiches de l'essai v9, réponse vide).
  */
 export function lireRedactionFiche(brute, attendues) {
@@ -189,7 +189,7 @@ export function lireRedactionFiche(brute, attendues) {
   if (arret === 'max_tokens') {
     return illisible(
       /\S/u.test(reponseBrute)
-        ? 'réponse coupée par le budget de sortie (max_tokens)'
+        ? 'réponse arrêtée par le budget de sortie (max_tokens)'
         : 'réponse vide : budget de sortie épuisé avant tout texte (max_tokens)',
     );
   }

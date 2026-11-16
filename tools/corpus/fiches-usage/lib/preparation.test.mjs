@@ -155,7 +155,7 @@ test('une réponse illisible du rédacteur garde son texte brut et son code d’
   const tronque = { texte: '{"rubriques": {"question": "Texte synthétique coupé', arret: 'max_tokens', jetonsSortie: 16000 };
   const r = lireRedactionFiche(tronque, FICHE.rubriques);
   assert.deepEqual(r, {
-    illisible: { raison: 'réponse coupée par le budget de sortie (max_tokens)', arret: 'max_tokens', jetonsSortie: 16000, reponseBrute: tronque.texte },
+    illisible: { raison: 'réponse arrêtée par le budget de sortie (max_tokens)', arret: 'max_tokens', jetonsSortie: 16000, reponseBrute: tronque.texte },
   });
   assert.doesNotMatch(r.illisible.raison, /synthétique/);
 
@@ -184,7 +184,7 @@ test('une réponse VIDE arrêtée sur max_tokens se dit comme telle, plus comme 
   }
   // Même un objet lisible ne passe pas s'il est arrêté sur max_tokens : la réponse est incomplète.
   const complet = lireRedactionFiche({ texte: '{"rubriques": {"question": "Q.", "limites": "L."}}', arret: 'max_tokens' }, FICHE.rubriques);
-  assert.equal(complet.illisible.raison, 'réponse coupée par le budget de sortie (max_tokens)');
+  assert.equal(complet.illisible.raison, 'réponse arrêtée par le budget de sortie (max_tokens)');
 });
 
 test('la requête de rédaction : 64 000 jetons de sortie, raisonnement adaptatif, effort non fixé', () => {

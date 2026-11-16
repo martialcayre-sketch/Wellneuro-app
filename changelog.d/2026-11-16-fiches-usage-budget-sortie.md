@@ -11,8 +11,8 @@
 - **Raison dédiée** : une réponse arrêtée sur `max_tokens` ne se lit plus et
   ne se rapporte plus comme une `SyntaxError`. Le rapport hors dépôt dit
   « réponse vide : budget de sortie épuisé avant tout texte (max_tokens) »
-  ou « réponse coupée par le budget de sortie (max_tokens) ».
+  ou « réponse arrêtée par le budget de sortie (max_tokens) ».
 - **Ce qui ne change pas** : la consigne (`fiche-usage-v9+26ec769b7e28a398`,
   empreinte vérifiée), le modèle, la structure signée, la contre-lecture et
   les champs du brouillon. Le banc `lib/preparation.test.mjs` couvre la
-  réponse vide, la réponse coupée, la requête et son câblage en streaming.
+  réponse vide, la réponse arrêtée avec du texte, la requête et son câblage en streaming.
