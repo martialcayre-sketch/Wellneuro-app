@@ -1,8 +1,8 @@
 # Registre sanitaire du corpus clinique
 
-`source_registry.json` contient 668 notices normalisées : 391 issues du pack WN
+`source_registry.json` contient 670 notices normalisées : 391 issues du pack WN
 Ultimate v2 (`NNFC1_Annee1`, `NNPP2_Annee2`), 116 instruments du cabinet
-(`INSTRUMENTS_CABINET`), et 161 sources externes (`SOURCES_EXTERNES` — BP-07 :
+(`INSTRUMENTS_CABINET`), et 163 sources externes (`SOURCES_EXTERNES` — BP-07 :
 avis d'agence, recommandation, essai, règlement, `WN-SRC-0508` à `0511`, puis
 pour la position P5 v0.3 une recommandation de l'OMS, `WN-SRC-0555` ; besoin 2 :
 trois avis d'agence, un rapport d'évaluation, une recommandation de pratique,
@@ -22,7 +22,7 @@ résumé des caractéristiques du produit et une fiche du NIH, `WN-SRC-0571` à
 `0521` et `0524` ; porte 4 (D-403) : deux recommandations de pratique sur le
 sommeil, sources de contexte de deux bornes déclarées techniques, et les
 repères de consommation de l'Assurance Maladie, `WN-SRC-0574` à `0576`, sans
-extrait ingéré ; besoin 2, vitamines B9 et B12 : deux fiches du NIH, un avis de
+extrait ingéré (sauf `0575`, versé au besoin 5) ; besoin 2, vitamines B9 et B12 : deux fiches du NIH, un avis de
 l'EFSA, une recommandation de pratique du NICE, une fiche des CDC et un
 document de la HAS, `WN-SRC-0577` à `0582`, les lignes des vitamines B9 et B12
 de la DGCCRF étant lues dans `0521` ; point d'étape (D-407 à D-413, m16) : huit
@@ -69,7 +69,10 @@ publications primaires d'instruments et d'une étude primaire, `WN-SRC-0666` à
 `0668`, puis le guide d'analyse d'un questionnaire d'activité physique de
 l'OMS, `WN-SRC-0669`, et des lignes directrices de l'OMS sur l'activité
 physique et la sédentarité, `WN-SRC-0670`, et l'article de développement d'un
-instrument de santé musculo-squelettique, `WN-SRC-0671` ;
+instrument de santé musculo-squelettique, `WN-SRC-0671`, enfin, fournis par le
+responsable le 2026-11-16, les textes intégraux de `0575`, `0666` et `0667`,
+versés sur leur notice, et deux publications d'instruments, `WN-SRC-0697` et
+`0698` ;
 besoin 9, sensations-émotions fondamentales et gestion du stress : publications
 et traductions des instruments servis, recommandations de méthode sur deux
 biomarqueurs, une monographie communautaire, une revue systématique, une
