@@ -1,9 +1,10 @@
-# Handoff — 2026-11-16 — besoin 5 : D-529 proposée, section du guide réécrite (D-312 §3, H15), lot de la file B
+# Handoff — 2026-11-16 — besoin 5 : D-529 acceptée, section du guide réécrite (D-312 §3, H15), lot de la file B
 
 ## Branche et état Git
 
 - Branche `worktree-b-besoin5-decision-guide`, tirée d'`origin/main` 6a32a9d5 (#2167), avancée sans commit propre par
-  `--ff-only` sur e6412209 (#2162). Worktree `.claude/worktrees/b-besoin5-decision-guide`, créé pour ce lot.
+  `--ff-only` sur 35846ccd ; poussée en `docs/besoin5-decision-guide` (#2171, e34f44d8), puis `origin/main` fusionnée
+  par commit de fusion, sur arbitrage du responsable (D-518 §2). Worktree `.claude/worktrees/b-besoin5-decision-guide`, créé pour ce lot.
 - Session concurrente (file B) : `git` et `gh` en direct, pas de `/wn-*`.
 
 ## Objectif
@@ -23,9 +24,17 @@ positions signées, sous forme opaque, par une décision au gabarit de `D-526` ;
   recommandation de la session. Lignes passées à `repondue`.
 - Sur la réponse à `1310-b`, P10 et P25 sont amendées au dossier privé (onglet « Positions v0.2 », rev 31), cases
   décochées : **à re-signer** par le responsable. Note d'amendement en tête de l'onglet.
-- Motif de la part (§6.3) : aucune note écrite par le responsable ; le motif d'exemple de l'option A est repris, marqué
-  « à confirmer à l'acceptation ».
-- Statut de `D-529` : **proposé**. Rang du journal H15 : `03` du 2026-11-16 (`01` et `02` déjà sur `main`).
+- Motif de la part (§6.3) : aucune note écrite par le responsable ; le motif d'exemple de l'option A est repris, puis
+  confirmé par lui en acceptant `D-529`.
+- `wn-reviewer` (P0, diff local) : GO avec corrections. P2-2 (renvoi à D-438 §1 et §2) et P2-3 (phrase sur la
+  convergence) sont corrigés. P1-1 et P2-1 sont levés par l'acceptation ; la re-signature de P10 et P25 reste due avant
+  « prête ».
+- Contre-revue Codex P0 (`D-505`) sur e34f44d8 : un constat P1 (forme opaque). Corrigé pour les paraphrases du §1 et du
+  §3.2 ; écarté pour les poids de produit, déjà publics. Rendu et verdict en commentaire de #2171.
+- `main` a avancé au-delà de la tête poussée : `origin/main` est fusionnée dans la branche (commit de fusion, sans rebase
+  ni force-push), sur arbitrage du responsable (D-518 §2).
+- **`D-529` acceptée** par le responsable le 2026-11-16 (« J'accepte, motif tel quel »), après la contre-revue Codex.
+  Rang du journal H15 : `03` du 2026-11-16 (`01` et `02` déjà sur `main`).
 
 ## Fichiers modifiés
 
@@ -41,14 +50,16 @@ positions signées, sous forme opaque, par une décision au gabarit de `D-526` ;
 
 - Avis Codex à l'aveugle sur les trois questions : code 0, conformes (paquets dans le scratchpad de session, empreintes
   sur les lignes de la liste commune).
-- T1 rapide, T1 complet et revue `wn-reviewer` (P0, avant le push) : résultats dans la PR.
-- Contre-revue Codex P0 (`D-505`) sur le diff poussé : rendu déposé sur la PR.
+- `npm run check:rapide` (16 étapes vertes, 3 sautées) et `npm run check` (T1 complet, anti-secrets compris) : verts
+  avant le premier push ; rejoués avant le second (résultat dans la PR).
+- `wn-reviewer` (P0, avant le push) : GO avec corrections ; faits de code vérifiés, bancs du journal et des décisions
+  verts (103 sur 103).
+- Contre-revue Codex P0 (`D-505`) sur e34f44d8 : code 0, conforme ; rendu déposé sur la PR.
 - Pas de T2 : documentation seule.
 
 ## Problèmes ouverts
 
-- Acceptation de `D-529` par le responsable, avec confirmation ou réécriture du motif du §6.3.
-- Re-signature de P10 et de P25 au dossier privé.
+- Re-signature de P10 et de P25 au dossier privé, par le responsable ; constat de la session avant « prête ».
 - Pièces attendues du responsable : une source sur l'insomnie chronique (PDF de 0575), textes intégraux du PSQI et de
   l'Epworth, publication primaire du MFI-20, validations du MFI et du questionnaire de Horne, licence et version
   française de l'instrument de mobilité.
@@ -57,11 +68,9 @@ positions signées, sous forme opaque, par une décision au gabarit de `D-526` ;
 
 ## Prochaine action exacte
 
-PR de documentation ; CI (`wn-attendre-ci.mjs`, seul `0` vaut) ; PR-Agent prouvée, sinon `wn-reviewer` (`D-448`) ; un
-verdict par remarque ; boîte B relue ; « prête @<sha> » sur la PR et au registre ; la ligne du carnet reçoit `pr`.
-Avant « prête » : acceptation de `D-529` et re-signature de P10 et P25 par le responsable, comme pour `D-526`
-(constat P1-1 de `wn-reviewer`) ; passer alors le statut à « accepté » dans la décision, le fragment de changelog et le
-fragment du journal.
+PR #2171 : CI (`wn-attendre-ci.mjs`, seul `0` vaut) ; PR-Agent prouvée, sinon `wn-reviewer` (`D-448`) ; un verdict par
+remarque ; constat de la re-signature de P10 et P25 au dossier privé ; boîte B relue ; « prête @<sha> » sur la PR et au
+registre ; la ligne du carnet reçoit `pr`. Au merge : questions `20261116-1310-b` à `1312-b` à close.
 
 ## Interdits encore actifs
 

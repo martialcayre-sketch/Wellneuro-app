@@ -156,7 +156,7 @@ cerveau) et les phases de repos (qui restaurent).
 - **Population visée et « non évalué »** : `D-529` §4.
 - **Motif de la part de pondération** : mouvement et repos à parts égales,
   aucune pondération sourcée ; poids du repos selon `D-438` (`D-529` §6.3,
-  motif à confirmer à l'acceptation).
+  motif confirmé par le responsable).
 - **Application** : lot J3-12f.
 
 ### 6. Le besoin de respirer (oxygénation)
