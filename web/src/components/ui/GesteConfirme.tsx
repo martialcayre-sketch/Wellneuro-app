@@ -56,10 +56,16 @@ export function GesteConfirme({
   // l'action, l'appelant désactive le déclencheur, qui ne peut pas recevoir
   // le focus : on attend qu'il redevienne actif. S'il a disparu (la ligne est
   // partie avec le succès), il n'y a plus rien à rendre.
+  //
+  // Le focus n'est rendu que s'il est perdu (retombé sur la page). Si le
+  // clavier est allé ailleurs pendant l'attente — un motif saisi après
+  // « Annuler », déclencheur encore inactif —, le lui reprendre volerait la
+  // saisie (constat wn-reviewer, PRA-4 PR 4).
   useEffect(() => {
     if (!ouverte && rendreFocus.current && !desactive && declencheurRef.current) {
       rendreFocus.current = false;
-      declencheurRef.current.focus();
+      const actif = document.activeElement;
+      if (actif === null || actif === document.body) declencheurRef.current.focus();
     }
   }, [ouverte, desactive]);
 
