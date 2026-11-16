@@ -232,7 +232,8 @@ function sansLitterauxInertes(commande) {
     // UN seul groupe pour le délimiteur : une référence arrière vers un groupe
     // vide vaut « » en JS, et `(?:\2|\3|\4)` acceptait toute ligne vide
     // comme fin du corps (P1 de wn-reviewer).
-    /(<<-?\s*(?:'|"|\\)(\w+)['"]?[^\n]*\n)[\s\S]*?^\s*\2\s*$/gm,
+    // Un délimiteur n'est pas qu'un mot : `<<'FIN-PR'` (Codex).
+    /(<<-?\s*(?:'|"|\\)([^\s'"<>|;&()]+)['"]?[^\n]*\n)[\s\S]*?^\s*\2\s*$/gm,
     "$1 <<corps-masqué> ",
   );
   let sortie = "";
@@ -254,7 +255,17 @@ function sansLitterauxInertes(commande) {
   }
   return sortie;
 }
-if (/\$(?:[A-Za-z_][A-Za-z0-9_]*|\d):[fFg]?[aAcehlPqQrstu&]/.test(sansLitterauxInertes(original))) {
+// Le corps d'un heredoc à délimiteur NU est lu brut, à part : ses apostrophes
+// sont du texte, que zsh développe (`cat <<FIN\n'$NEW:refs'\nFIN`, Codex).
+function corpsDeHeredocsNus(commande) {
+  const corps = [];
+  const re = /<<-?\s*([^\s'"\\<>|;&()]+)[^\n]*\n([\s\S]*?)^\s*\1\s*$/gm;
+  let m;
+  while ((m = re.exec(commande))) corps.push(m[2]);
+  return corps.join("\n");
+}
+const MODIFICATEUR_ZSH = /\$(?:[A-Za-z_][A-Za-z0-9_]*|\d):[fFg]?[aAcehlPqQrstu&]/;
+if (MODIFICATEUR_ZSH.test(sansLitterauxInertes(original)) || MODIFICATEUR_ZSH.test(corpsDeHeredocsNus(original))) {
   console.error(
     "Commande bloquée par WellNeuro : un `$VAR:x` non accolé — zsh lit `:r`, `:h`, `:t`, `:e`… " +
     "comme un modificateur de paramètre (`\"$NEW:refs/heads/x\"` devient `<sha>efs/heads/x`). " +

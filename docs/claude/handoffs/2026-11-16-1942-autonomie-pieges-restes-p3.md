@@ -70,6 +70,18 @@ qu'ils sont mécaniques et vérifiables.
 
   Le délimiteur tient maintenant dans un seul groupe, et trois bancs sont ajoutés (85/85). Le GO était
   conditionné à ce correctif.
+- Contre-revue Codex P0 sur le diff poussé `b9a51210` : avis conforme (code 0), aucun P0, huit P2.
+  - Sept sont corrigés dans le commit suivant, chacun avec son banc :
+    - délimiteur `<<'FIN-PR'` ;
+    - apostrophes d'un heredoc nu ;
+    - corps `AS '…'` ;
+    - `$$` cité dans un commentaire avant la balise ;
+    - présence des migrations gelées ;
+    - directives lues dans le prologue ;
+    - départs `.js` et `.jsx`.
+  - Un est écarté avec motif : les apostrophes d'un `$(…)` entre guillemets doubles produisent un refus
+    prudent, qu'une reformulation en `${NEW}` lève. Ce n'est pas un faux négatif.
+  - Bancs : 87/87 pour le crochet, 16/16 pour les migrations, 6/6 pour le banc client.
 
 ## Problèmes ouverts
 
@@ -79,8 +91,8 @@ qu'ils sont mécaniques et vérifiables.
     - `"$a[1]:r"` et `$?:h` ;
     - une apostrophe dans un commentaire `# c'est`, ou dans le corps d'un heredoc nu, qui masque la suite ;
     - les apostrophes d'un `$(…)` entre guillemets doubles, prises pour du texte : c'est un refus prudent ;
-  - dans le banc des triggers : `'now'::timestamptz`, `EXECUTE '… now()'`, `"now"()`, un corps `AS '…'`, et
-    un `BEGIN ATOMIC` suivi d'un trigger (double compte).
+  - dans le banc des triggers : `'now'::timestamptz`, `EXECUTE '… now()'`, `"now"()`, et un `BEGIN ATOMIC`
+    suivi d'un trigger (double compte).
 - Restent au lot, pour les parties suivantes :
   - `prisma generate` à la création d'un worktree ;
   - les quatre pièges E2E ;

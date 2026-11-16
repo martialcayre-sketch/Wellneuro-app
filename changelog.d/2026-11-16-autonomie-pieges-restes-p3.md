@@ -36,5 +36,13 @@ des contrôles. Une session qui ne lit pas la mémoire ne peut plus les reposer 
   `:fe` (`feat/…`) et `:gh` (`gh-pages`). Le remède est
   `${NEW}:refs/heads/x`.
 - `migrations-now-trigger` lit aussi `CURRENT_DATE`, `RETURNS
-  pg_catalog.trigger` et un commentaire glissé avant la balise du corps. Son
-  gel est strict : une baisse rougit aussi.
+  pg_catalog.trigger`, un commentaire glissé avant la balise du corps et un
+  corps entre apostrophes (`AS '…'`). Son gel est strict : une baisse rougit
+  aussi, et une migration gelée introuvable également.
+- Après la contre-revue Codex :
+  - le crochet lit brut le corps d'un heredoc à délimiteur nu, dont les
+    apostrophes sont du texte ;
+  - il accepte un délimiteur cité qui n'est pas qu'un mot (`<<'FIN-PR'`) ;
+  - le banc client lit les directives dans le prologue du module
+    (`'use strict'; 'use client';`, commentaires sautés) et part aussi des
+    fichiers `.js` et `.jsx`.

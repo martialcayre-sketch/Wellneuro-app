@@ -69,8 +69,26 @@ function importsDe(fichier: string): { voisins: string[]; natifs: string[] } {
   return resultat;
 }
 
+/**
+ * Les directives du PROLOGUE d'un module : les chaînes nues en tête, avant
+ * toute instruction, commentaires sautés. `'use strict'; 'use client';` est
+ * client ; un `'use server'` cité dans un commentaire ou plus bas ne l'est pas
+ * (Codex).
+ */
+export function directives(source: string): string[] {
+  const trouvees: string[] = [];
+  let reste = source;
+  for (;;) {
+    reste = reste.replace(/^(?:\s+|\/\/[^\n]*|\/\*[\s\S]*?\*\/)*/, '');
+    const m = /^(['"])([^'"\n]*)\1\s*;?/.exec(reste);
+    if (!m) return trouvees;
+    trouvees.push(m[2]);
+    reste = reste.slice(m[0].length);
+  }
+}
+
 function estServeur(fichier: string): boolean {
-  return /^\s*['"]use server['"]/m.test(readFileSync(fichier, 'utf8'));
+  return directives(readFileSync(fichier, 'utf8')).includes('use server');
 }
 
 /**
@@ -104,7 +122,8 @@ function fichiersSources(dossier: string): string[] {
       trouves.push(...fichiersSources(complet));
       continue;
     }
-    if (/\.(ts|tsx)$/.test(entree) && !/\.test\.(ts|tsx)$/.test(entree)) trouves.push(complet);
+    // `.js`/`.jsx` aussi : un départ client JavaScript serait sinon invisible (Codex).
+    if (/\.(ts|tsx|js|jsx|mjs)$/.test(entree) && !/\.test\.(ts|tsx|js|jsx|mjs)$/.test(entree)) trouves.push(complet);
   }
   return trouves;
 }
@@ -114,7 +133,19 @@ function lisible(p: string): string {
 }
 
 describe('bundle client — aucun module natif de Node ne part au navigateur', () => {
-  const clients = fichiersSources(RACINE).filter(f => /^\s*['"]use client['"]/m.test(readFileSync(f, 'utf8')));
+  const clients = fichiersSources(RACINE).filter(f => directives(readFileSync(f, 'utf8')).includes('use client'));
+
+  it('lit les directives du prologue seulement (Codex)', () => {
+    expect(directives("'use strict'; 'use client';\nimport x from 'y';")).toEqual(['use strict', 'use client']);
+    expect(directives("/* entête */\n// note\n\"use server\";\nexport async function f() {}")).toEqual(['use server']);
+    expect(directives("/*\n'use server'\n*/\nimport fs from 'node:fs';")).toEqual([]);
+    expect(directives("import x from 'y';\n'use client';")).toEqual([]);
+  });
+
+  it('la lecture du prologue retrouve tous les clients de l’ancienne lecture par ligne', () => {
+    const parLigne = fichiersSources(RACINE).filter(f => /^\s*['"]use client['"]/m.test(readFileSync(f, 'utf8')));
+    expect(clients.length).toBe(parLigne.length);
+  });
 
   it('des composants clients existent bien — anti-vacuité', () => {
     expect(clients.length).toBeGreaterThan(10);

@@ -143,6 +143,8 @@ for (const cmd of [
   "cat <<FIN\n$NEW:refs/heads/x\nFIN",
   // P1 de wn-reviewer : une ligne vide ne clôt pas un heredoc cité.
   "cat > /tmp/f <<'EOF'\na\n\nb c'est\nEOF\ngit push origin \"$NEW:refs/heads/x\"",
+  // Codex : les apostrophes d'un heredoc nu sont du texte, zsh y développe.
+  "cat <<FIN\n'$NEW:refs/heads/x'\nFIN",
 ]) {
   test(`un $VAR:x non accolé est refusé : ${cmd}`, () => assert.equal(verdict(cmd), "refus"));
 }
@@ -157,6 +159,8 @@ for (const cmd of [
   "rsync -a dist/ $HOTE:www/",
   'docker run -v $PWD:/app image "code=$?"',
   'gh pr comment 1 --body "voir \\$NEW:refs/heads/x"',
+  // Codex : un délimiteur cité n'est pas qu'un mot.
+  "cat <<'FIN-PR'\n$NEW:refs/heads/x\nFIN-PR",
   // P1 de wn-reviewer : corps de plusieurs paragraphes.
   "gh pr create --body-file - <<'CORPS'\nPremier paragraphe.\n\nNe jamais écrire \"$NEW:refs/heads/x\" en zsh.\nCORPS",
   "git commit -m \"$(cat <<'EOF'\nfix: titre\n\nCorps qui cite \"$NEW:refs/heads/x\" et l'ajout.\n\nCo-Authored-By: X\nEOF\n)\"",

@@ -23,8 +23,8 @@
 //
 // HORS CHAMP, à dessein : les `DEFAULT CURRENT_TIMESTAMP` que Prisma écrit, et
 // les `INSERT … CURRENT_TIMESTAMP` des catalogues, qui ne comparent rien. Les
-// fonctions qui ne sont pas des triggers non plus. Limite : un corps de trigger
-// écrit entre apostrophes (`AS '…'`) n'est pas lu ; aucune migration n'en a.
+// fonctions qui ne sont pas des triggers non plus. Un corps de trigger écrit
+// entre apostrophes (`AS '…'`) est lu comme un corps dollar.
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -64,11 +64,28 @@ export function corpsDeTriggers(sql) {
     const a = as.exec(masque);
     if (!a) continue;
     if (!/\bRETURNS\s+(?:pg_catalog\s*\.\s*)?"?trigger\b/i.test(masque.slice(h.index, a.index))) continue;
-    // La balise est masquée en blancs : on la relit dans le texte d'origine.
-    // Les blancs se sautent sur le texte masqué, où un commentaire glissé entre
-    // `AS` et la balise est déjà blanc (P3 de wn-reviewer).
+    // La balise est masquée en blancs : on la relit dans le texte d'origine,
+    // après les blancs et les commentaires glissés entre `AS` et elle, sautés
+    // explicitement — un `$$` cité dans ce commentaire n'ouvre rien (P3 de
+    // wn-reviewer, P2 de Codex).
     let ouverture = a.index + a[0].length;
-    while (sql[ouverture] !== "$" && /\s/.test(masque[ouverture] ?? "")) ouverture += 1;
+    for (;;) {
+      while (/\s/.test(sql[ouverture] ?? "")) ouverture += 1;
+      if (sql.startsWith("--", ouverture)) {
+        const fin = sql.indexOf("\n", ouverture);
+        ouverture = fin === -1 ? sql.length : fin;
+      } else if (sql.startsWith("/*", ouverture)) {
+        const fin = sql.indexOf("*/", ouverture + 2);
+        ouverture = fin === -1 ? sql.length : fin + 2;
+      } else break;
+    }
+    // Corps entre apostrophes (`AS '…'`, apostrophe doublée) : lu aussi (Codex).
+    if (sql[ouverture] === "'") {
+      let j = ouverture + 1;
+      while (j < sql.length && !(sql[j] === "'" && sql[j + 1] !== "'")) j += sql[j] === "'" ? 2 : 1;
+      corps.push(masquerSql(sql.slice(ouverture + 1, j).replace(/''/g, "'"), "contexte"));
+      continue;
+    }
     const balise = /^\$([A-Za-z_][A-Za-z0-9_]*)?\$/.exec(sql.slice(ouverture));
     if (!balise) continue;
     const debut = ouverture + balise[0].length;
@@ -106,6 +123,14 @@ test("parseur : commentaire avant la balise, RETURNS pg_catalog.trigger, CURRENT
   assert.equal(compterInstantsDeSession(sql), 2);
 });
 
+test("parseur : corps entre apostrophes, et `$$` cité dans un commentaire avant la balise (Codex)", () => {
+  const apostrophes =
+    "CREATE FUNCTION f() RETURNS trigger LANGUAGE plpgsql AS 'BEGIN NEW.a := now(); NEW.b := ''x''; RETURN NEW; END;';";
+  assert.equal(compterInstantsDeSession(apostrophes), 1);
+  const dollarCite = "CREATE FUNCTION f() RETURNS trigger LANGUAGE plpgsql\nAS -- corps $$\n$$ BEGIN NEW.a := now(); RETURN NEW; END; $$;";
+  assert.equal(compterInstantsDeSession(dollarCite), 1);
+});
+
 test("parseur : la forme retenue, les commentaires et les chaînes ne comptent pas", () => {
   assert.equal(compterInstantsDeSession(trigger("  NEW.cree_le := clock_timestamp() AT TIME ZONE 'UTC';")), 0);
   assert.equal(compterInstantsDeSession(trigger("  -- jamais now() ici\n  RAISE EXCEPTION 'now() refusé';")), 0);
@@ -132,6 +157,10 @@ test("migrations : les corps de trigger sont bien lus — anti-vacuité", () => 
 });
 
 test("migrations : aucun now() nu dans un trigger hors du gel, aucun compte gelé en hausse", () => {
+  // Chaque migration gelée existe encore : sinon son compte ne serait jamais
+  // comparé (Codex).
+  const presentes = new Set(lireMigrations());
+  assert.deepEqual(Object.keys(GEL).filter((nom) => !presentes.has(nom)), [], "migration gelée introuvable");
   const fautes = [];
   for (const nom of lireMigrations()) {
     const n = compterInstantsDeSession(fs.readFileSync(path.join(MIGRATIONS, nom, "migration.sql"), "utf8"));
