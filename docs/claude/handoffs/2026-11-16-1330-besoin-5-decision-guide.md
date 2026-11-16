@@ -23,16 +23,18 @@ positions signées, sous forme opaque, par une décision au gabarit de `D-526` ;
   (`D-505`, A, A, A, confiance moyenne), tranchées par le responsable le 2026-11-16 : A, A, A, avec Codex et la
   recommandation de la session. Lignes passées à `repondue`.
 - Sur la réponse à `1310-b`, P10 et P25 sont amendées au dossier privé (onglet « Positions v0.2 », rev 31), cases
-  décochées : **à re-signer** par le responsable. Note d'amendement en tête de l'onglet.
+  décochées, puis **re-signées** par le responsable le 2026-11-16 (constat de la session au dossier privé, rev 33).
+  Note d'amendement en tête de l'onglet.
 - Motif de la part (§6.3) : aucune note écrite par le responsable ; le motif d'exemple de l'option A est repris, puis
   confirmé par lui en acceptant `D-529`.
 - `wn-reviewer` (P0, diff local) : GO avec corrections. P2-2 (renvoi à D-438 §1 et §2) et P2-3 (phrase sur la
-  convergence) sont corrigés. P1-1 et P2-1 sont levés par l'acceptation ; la re-signature de P10 et P25 reste due avant
-  « prête ».
+  convergence) sont corrigés. P1-1 et P2-1 sont levés par l'acceptation ; la re-signature de P10 et P25, due avant
+  « prête », est constatée le 2026-11-16.
 - Contre-revue Codex P0 (`D-505`) sur e34f44d8 : un constat P1 (forme opaque). Corrigé pour les paraphrases du §1 et du
   §3.2 ; écarté pour les poids de produit, déjà publics. Rendu et verdict en commentaire de #2171.
 - `main` a avancé au-delà de la tête poussée : `origin/main` est fusionnée dans la branche (commit de fusion, sans rebase
-  ni force-push), sur arbitrage du responsable (D-518 §2) ; une seconde fois après #2170, sur un second accord.
+  ni force-push), sur arbitrage du responsable (D-518 §2) ; puis quatre autres fois (après #2170, #2175, #2182 et
+  D-534), chaque fois sur accord du responsable. Les ajouts du besoin 9 dans la même cellule du plan sont gardés.
 - PR-Agent sur a691af18 : un paragraphe dupliqué au §7 de `D-529`, corrigé ; titre et corps de la PR alignés sur
   « acceptée » ; « positions signées » du plan écarté avec motif (« prête » attend le constat de la re-signature).
 - **`D-529` acceptée** par le responsable le 2026-11-16 (« J'accepte, motif tel quel »), après la contre-revue Codex.
@@ -61,7 +63,6 @@ positions signées, sous forme opaque, par une décision au gabarit de `D-526` ;
 
 ## Problèmes ouverts
 
-- Re-signature de P10 et de P25 au dossier privé, par le responsable ; constat de la session avant « prête ».
 - Pièces attendues du responsable : une source sur l'insomnie chronique (PDF de 0575), textes intégraux du PSQI et de
   l'Epworth, publication primaire du MFI-20, validations du MFI et du questionnaire de Horne, licence et version
   française de l'instrument de mobilité.
@@ -71,7 +72,7 @@ positions signées, sous forme opaque, par une décision au gabarit de `D-526` ;
 ## Prochaine action exacte
 
 PR #2171 : CI (`wn-attendre-ci.mjs`, seul `0` vaut) ; PR-Agent prouvée, sinon `wn-reviewer` (`D-448`) ; un verdict par
-remarque ; constat de la re-signature de P10 et P25 au dossier privé ; boîte B relue ; « prête @<sha> » sur la PR et au
+remarque ; re-signature de P10 et P25 constatée (fait) ; boîte B relue ; « prête @<sha> » sur la PR et au
 registre ; la ligne du carnet reçoit `pr`. Au merge : questions `20261116-1310-b` à `1312-b` à close.
 
 ## Interdits encore actifs

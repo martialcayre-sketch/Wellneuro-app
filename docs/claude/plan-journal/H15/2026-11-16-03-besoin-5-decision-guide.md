@@ -6,4 +6,4 @@
     - `20261116-1312-b` (A) : la source de couverture du besoin reste celle servie. Le motif, repris de l'option retenue, est confirmé par le responsable à l'acceptation.
   - **Fait établi dans le code** : outre les deux lignes, sept lignes rattachées au besoin partent du questionnaire de mode de vie ou d'une plainte, d'une attente ou d'un antécédent déclarés. Elles ne lisent aucune bande de l'Epworth, du PSQI ou du GPAQ, et la décision ne les touche pas. Aucune ligne ne lit l'Epworth, la fatigue générale, l'indice de l'agenda ni le sous-score d'activité physique.
   - **Contre-revue de `D-529`** par Codex (`D-505`) : un constat P1 sur la forme opaque, corrigé pour deux paraphrases de position, écarté pour les poids de produit déjà publics.
-  - **Suite** : re-signature des deux positions amendées par le responsable. J3-12f appliquera la section avec les autres sections signées à sa date.
+  - **Suite** : les deux positions amendées ont été re-signées par le responsable le même jour. J3-12f appliquera la section avec les autres sections signées à sa date.
