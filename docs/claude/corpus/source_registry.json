@@ -14802,9 +14802,9 @@
     "practitionerReviewRequired": true,
     "lifecycleStatus": "raw",
     "vigilance": "Élevée",
-    "requiredAction": "Source de contexte de la borne « plein score » de l'efficacité de l'indice de l'agenda du sommeil (D-403, B-Q2-E2) ; aucun extrait ingéré",
-    "comment": "Efficacité « > 85 % » comme cible de la restriction de sommeil dans l'insomnie chronique de l'adulte (PMC2576317) : cible thérapeutique, non norme de bon sommeil ; la borne reste un paramètre technique déclaré par le responsable.",
-    "auditDate": "2026-11-01"
+    "requiredAction": "Texte intégral fourni par le responsable le 2026-11-16 ; extraits ciblés ingérés (besoin 5, lot LOT_074_2026-11-16) ; claims en attente de signature ; reste la source de contexte de la borne « plein score » de l'efficacité de l'indice de l'agenda du sommeil (D-403, B-Q2-E2)",
+    "comment": "Efficacité « > 85 % » comme cible de la restriction de sommeil dans l'insomnie chronique de l'adulte (PMC2576317) : cible thérapeutique, non norme de bon sommeil ; la borne reste un paramètre technique déclaré par le responsable. Texte intégral lu : recommandations d'évaluation, tableau des questionnaires, mesures de l'agenda du sommeil, objectifs de traitement et restriction de sommeil.",
+    "auditDate": "2026-11-16"
   },
   {
     "sourceId": "WN-SRC-0576",
@@ -16990,9 +16990,9 @@
     "practitionerReviewRequired": true,
     "lifecycleStatus": "raw",
     "vigilance": "Élevée",
-    "requiredAction": "Extraits ciblés ingérés (besoin 5, mouvements, fonctions corporelles et repos, lot LOT_063_2026-11-15) ; claims en attente de signature ; texte intégral à verser sur la même notice",
-    "comment": "Source externe, publication primaire de l'instrument, résumé indexé par PubMed (PMID 2748771) ; texte intégral sous abonnement, non lu. Droits de l'éditeur (Elsevier) ; résumé mot pour mot, usage interne, autorisation à vérifier.",
-    "auditDate": "2026-11-15"
+    "requiredAction": "Extraits ciblés ingérés (besoin 5) : résumé (lot LOT_063_2026-11-15), puis texte intégral fourni par le responsable le 2026-11-16 (lot LOT_074_2026-11-16) ; claims du texte intégral en attente de signature",
+    "comment": "Source externe, publication primaire de l'instrument, résumé indexé par PubMed (PMID 2748771) ; texte intégral fourni par le responsable le 2026-11-16 (scan sans couche de texte, lu par OCR et relu sur l'image). Droits de l'éditeur (Elsevier) ; résumé et extraits mot pour mot, usage interne, autorisation à vérifier.",
+    "auditDate": "2026-11-16"
   },
   {
     "sourceId": "WN-SRC-0667",
@@ -17018,9 +17018,9 @@
     "practitionerReviewRequired": true,
     "lifecycleStatus": "raw",
     "vigilance": "Élevée",
-    "requiredAction": "Extraits ciblés ingérés (besoin 5, mouvements, fonctions corporelles et repos, lot LOT_063_2026-11-15) ; claims en attente de signature ; texte intégral à verser sur la même notice",
-    "comment": "Source externe, publication primaire de l'instrument, résumé indexé par PubMed (PMID 1798888) ; texte intégral sous abonnement, non lu. Retenue pour l'origine et l'objet de l'échelle seulement (question 20261115-0949-b). Droits de l'éditeur (Sleep Research Society, Oxford University Press) ; résumé mot pour mot, usage interne, autorisation à vérifier.",
-    "auditDate": "2026-11-15"
+    "requiredAction": "Extraits ciblés ingérés (besoin 5) : résumé (lot LOT_063_2026-11-15), puis texte intégral fourni par le responsable le 2026-11-16 (lot LOT_074_2026-11-16) ; claims du texte intégral en attente de signature",
+    "comment": "Source externe, publication primaire de l'instrument, résumé indexé par PubMed (PMID 1798888) ; texte intégral fourni par le responsable le 2026-11-16 (scan sans couche de texte, lu par OCR et relu sur l'image). Retenue pour l'origine et l'objet de l'échelle seulement (question 20261115-0949-b). Droits de l'éditeur (Sleep Research Society, Oxford University Press) ; résumé et extraits mot pour mot, usage interne, autorisation à vérifier.",
+    "auditDate": "2026-11-16"
   },
   {
     "sourceId": "WN-SRC-0668",
@@ -17776,6 +17776,58 @@
     "vigilance": "Modérée",
     "requiredAction": "Notice seule (besoin 9) : texte non obtenu par téléchargement automatique, à verser sur la même notice ; aucun extrait ingéré",
     "comment": "Source externe, validation française de l'ERQ (M5). Aucun résumé obtenu ; texte à fournir.",
+    "auditDate": "2026-11-16"
+  },
+  {
+    "sourceId": "WN-SRC-0697",
+    "title": "Horne JA, Östberg O (1976). A self-assessment questionnaire to determine morningness-eveningness in human circadian rhythms. International Journal of Chronobiology 4(2):97-110 (PMID 1027738)",
+    "corpus": "SOURCES_EXTERNES",
+    "documentType": "Article scientifique",
+    "format": "PDF",
+    "mimeType": "application/pdf",
+    "language": "en",
+    "jurisdiction": "EU_INTERNATIONAL",
+    "authorityClass": "EXTERNAL_PRIMARY_STUDY",
+    "audienceOriginal": "Praticien",
+    "importance": "secondary",
+    "prescriptive": false,
+    "primaryNotebook": "13 — Instruments du cabinet",
+    "secondaryNotebooks": [],
+    "sourceVersion": null,
+    "contentHash": null,
+    "rightsStatus": "to_verify",
+    "clinicalReviewStatus": "not_reviewed",
+    "practitionerReviewRequired": true,
+    "lifecycleStatus": "raw",
+    "vigilance": "Modérée",
+    "requiredAction": "Texte intégral fourni par le responsable le 2026-11-16 ; extraits ciblés ingérés (besoin 5, lot LOT_074_2026-11-16) ; claims en attente de signature",
+    "comment": "Source externe, publication primaire du questionnaire de matinalité-vespéralité (M5, rythme) : texte intégral lu (scan, OCR relu sur l'image). Construction, cotation et grille de conversion du total, validation externe sur la température orale. Grille à confronter à l'instrument servi par une décision distincte. Droits de l'éditeur ; extraits mot pour mot, usage interne, autorisation à vérifier.",
+    "auditDate": "2026-11-16"
+  },
+  {
+    "sourceId": "WN-SRC-0698",
+    "title": "Smets EMA, Garssen B, Cull A, de Haes JCJM (1996). Application of the multidimensional fatigue inventory (MFI-20) in cancer patients receiving radiotherapy. British Journal of Cancer 73(2):241-245 (doi:10.1038/bjc.1996.42)",
+    "corpus": "SOURCES_EXTERNES",
+    "documentType": "Article scientifique",
+    "format": "PDF",
+    "mimeType": "application/pdf",
+    "language": "en",
+    "jurisdiction": "EU_INTERNATIONAL",
+    "authorityClass": "EXTERNAL_PRIMARY_STUDY",
+    "audienceOriginal": "Praticien",
+    "importance": "secondary",
+    "prescriptive": false,
+    "primaryNotebook": "13 — Instruments du cabinet",
+    "secondaryNotebooks": [],
+    "sourceVersion": null,
+    "contentHash": null,
+    "rightsStatus": "to_verify",
+    "clinicalReviewStatus": "not_reviewed",
+    "practitionerReviewRequired": true,
+    "lifecycleStatus": "raw",
+    "vigilance": "Modérée",
+    "requiredAction": "Texte intégral fourni par le responsable le 2026-11-16 ; extraits ciblés ingérés (besoin 5, lot LOT_074_2026-11-16) ; claims en attente de signature",
+    "comment": "Source externe, étude psychométrique du MFI-20 (M5, fatigue), complément de la publication fondatrice de 1995 dont le texte reste à obtenir : texte intégral lu. Structure des échelles, évolution du format de réponse, absence de données normatives. Article sous licence Creative Commons Attribution 4.0 selon PubMed Central.",
     "auditDate": "2026-11-16"
   }
 ]
