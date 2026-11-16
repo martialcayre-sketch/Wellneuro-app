@@ -105,7 +105,7 @@ export function MesEchangesJournal({ token, depotOuvert = false }: { token: stri
                       <li key={entree.cle}>
                         <a
                           href={`/portail/${token}/${entree.chemin}`}
-                          className="flex items-center justify-between gap-3 py-2 text-base text-foreground hover:underline"
+                          className="flex min-h-11 items-center justify-between gap-3 py-2 text-base text-foreground hover:underline"
                         >
                           <span>
                             <span className="font-semibold">{LIBELLE_SENS[entree.sens]}</span> · {entree.objet}

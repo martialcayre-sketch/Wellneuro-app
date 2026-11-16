@@ -24,7 +24,9 @@ Trois verdicts, rendus par les hooks PreToolUse de `.claude/settings.json` :
   accolé (`"$NEW:refs/heads/x"`, `$HOTE:tmp`) est refusé : zsh lit `:r`,
   `:h`, `:t`, `:fe`, `:gh`… comme un modificateur. Guillemets doubles et
   heredoc à délimiteur nu compris, puisque zsh y développe ; apostrophes hors
-  guillemets doubles, `\$` et heredoc à délimiteur cité restent libres.
+  guillemets doubles, `\$` (heredoc nu compris) et heredoc à délimiteur cité
+  restent libres — un heredoc écrit dans le corps d'un heredoc cité est du
+  texte.
   `${NEW}:refs/…` passe.
 - **demande** — migration **destructive** sous `prisma/migrations/` ou
   `supabase/migrations/` (DROP, TRUNCATE, DELETE ou UPDATE sans WHERE,
