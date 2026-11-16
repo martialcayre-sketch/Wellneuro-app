@@ -44,6 +44,10 @@ export const MESSAGES_REFUS: Record<RaisonRefusActe, { message: string; status: 
   },
   version_depassee: { message: 'Une version plus récente est déjà validée.', status: 409 },
   structure: { message: 'Ce texte ne rédige pas la structure signée du jour — validation refusée.', status: 422 },
+  registre: {
+    message: 'Ce libellé d’hypothèse emploie un terme écarté du registre (D-477 §2) — validation refusée.',
+    status: 422,
+  },
 };
 
 export function echec(reason: string, error: string, status: number, anomalies?: AnomalieStructure[]) {
@@ -123,7 +127,7 @@ export async function lireDemandeActe(
 export function reponseActe(issue: IssueActe): NextResponse<ActeFicheUsageApiResponse> {
   if (issue.issue === 'refusee') {
     const refus = MESSAGES_REFUS[issue.raison];
-    return echec(issue.raison, refus.message, refus.status, issue.raison === 'structure' ? issue.anomalies : undefined);
+    return echec(issue.raison, refus.message, refus.status, issue.raison === 'structure' || issue.raison === 'registre' ? issue.anomalies : undefined);
   }
   return NextResponse.json({ ok: true, acte: issue.acte, etat: issue.etat });
 }

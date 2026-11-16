@@ -15,6 +15,7 @@ import {
   ficheDeLaStructure,
   type StructureFichesUsage,
 } from './ficheUsageBesoin2V1';
+import { termesHorsRegistre } from './registreLibelleHypothese';
 import type { NatureLibelle } from './vocabulaire';
 
 export type AnomalieStructure =
@@ -22,7 +23,9 @@ export type AnomalieStructure =
   | { code: 'terme_hors_structure' }
   | { code: 'nature_divergente' }
   | { code: 'structure_perimee' }
-  | { code: 'rubriques_non_conformes'; manquantes: string[]; enTrop: string[] };
+  | { code: 'rubriques_non_conformes'; manquantes: string[]; enTrop: string[] }
+  /** Termes du registre ([[D-477]] §2) — jamais le texte du libellé. */
+  | { code: 'libelle_hors_registre'; termes: string[] };
 
 export type ContexteControle = { structure: StructureFichesUsage; empreinte: string };
 
@@ -63,4 +66,15 @@ export function controlerLibelleContreStructure(
   if (!liste.includes(libelle.termeId)) anomalies.push({ code: 'nature_divergente' });
   if (libelle.structureSha256 !== contexte.empreinte) anomalies.push({ code: 'structure_perimee' });
   return anomalies;
+}
+
+/**
+ * Le libellé d'une hypothèse contre son registre ([[D-477]] §2, [[D-331]] §3,
+ * `registreLibelleHypothese.ts`) — au dépôt comme à la validation. Une
+ * population n'en relève pas.
+ */
+export function controlerRegistreLibelle(libelle: { nature: NatureLibelle | string; libelle: string }): AnomalieStructure[] {
+  if (libelle.nature !== 'hypothese') return [];
+  const termes = termesHorsRegistre(libelle.libelle);
+  return termes.length > 0 ? [{ code: 'libelle_hors_registre', termes }] : [];
 }

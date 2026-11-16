@@ -27,6 +27,7 @@ import { ErreurContratFicheUsage, lireContenuFicheUsage } from './contrat';
 import {
   CONTEXTE_DU_DEPOT,
   controlerLibelleContreStructure,
+  controlerRegistreLibelle,
   controlerVersionContreStructure,
   rubriquesAttendues,
   type AnomalieStructure,
@@ -81,12 +82,13 @@ export type RaisonRefusActe =
   | 'deja_dans_cet_etat'
   | 'structure_non_signee'
   | 'version_depassee'
-  | 'structure';
+  | 'structure'
+  | 'registre';
 
 export type IssueActe =
   | { issue: 'posee'; acte: ActeSerialise; etat: EtatTexte }
-  | { issue: 'refusee'; raison: Exclude<RaisonRefusActe, 'structure'> }
-  | { issue: 'refusee'; raison: 'structure'; anomalies: AnomalieStructure[] };
+  | { issue: 'refusee'; raison: Exclude<RaisonRefusActe, 'structure' | 'registre'> }
+  | { issue: 'refusee'; raison: 'structure' | 'registre'; anomalies: AnomalieStructure[] };
 
 const SELECTION_ACTE = {
   ordre: true,
@@ -236,6 +238,7 @@ export async function poserActeLibelle(
         termeId: true,
         nature: true,
         numero: true,
+        libelle: true,
         libelleSha256: true,
         structureSha256: true,
         actes: { orderBy: { ordre: 'desc' }, select: SELECTION_ACTE },
@@ -252,6 +255,10 @@ export async function poserActeLibelle(
     if (demande.acte === 'validee') {
       const anomalies = controlerLibelleContreStructure(courant, contexte.controle);
       if (anomalies.length > 0) return { issue: 'refusee', raison: 'structure', anomalies };
+      // Le registre des libellés d'hypothèse ([[D-477]] §2) : un libellé déposé
+      // avant la garde, ou par un autre chemin, ne se valide pas pour autant.
+      const horsRegistre = controlerRegistreLibelle(courant);
+      if (horsRegistre.length > 0) return { issue: 'refusee', raison: 'registre', anomalies: horsRegistre };
 
       const plusRecents = await tx.ficheUsageLibelle.findMany({
         where: { termeId: courant.termeId, numero: { gt: courant.numero } },
