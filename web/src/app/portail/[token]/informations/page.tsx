@@ -107,7 +107,7 @@ export default function InformationsPage() {
         <PatientPageHeader title="Informations, confidentialité et droits" />
         <Link
           href={`/portail/${token}/questionnaires`}
-          className="shrink-0 text-sm text-primary hover:underline print:hidden"
+          className="inline-flex min-h-11 shrink-0 items-center text-sm text-primary hover:underline print:hidden"
         >
           ← Mon parcours
         </Link>

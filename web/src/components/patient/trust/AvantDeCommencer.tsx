@@ -74,7 +74,7 @@ export function AvantDeCommencer({ token, onDone }: { token: string; onDone: () 
   };
 
   const lienCentre = (
-    <Link href={`/portail/${token}/informations`} className="text-sm text-primary hover:underline">
+    <Link href={`/portail/${token}/informations`} className="inline-flex min-h-11 items-center text-sm text-primary hover:underline">
       Consulter les informations détaillées
     </Link>
   );

@@ -1,7 +1,9 @@
 import { Children, cloneElement, isValidElement, useId, type ReactElement, type ReactNode } from 'react';
 
+// PAT-7a : 44 px de haut. WebKit ignore `min-height` sur un `<select>` natif
+// (24 px mesurés au téléphone) mais respecte `height` : une liste reçoit `h-11`.
 export const patientInputClassName =
-  'w-full px-4 py-2.5 border border-border rounded-lg text-sm bg-surface text-foreground focus:outline-none focus:ring-2 focus:ring-primary';
+  'w-full min-h-11 [&:is(select)]:h-11 px-4 py-2.5 border border-border rounded-lg text-sm bg-surface text-foreground focus:outline-none focus:ring-2 focus:ring-primary';
 
 type ProprietesChamp = {
   id?: string;
