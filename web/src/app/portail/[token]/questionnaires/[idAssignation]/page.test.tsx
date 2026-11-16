@@ -150,6 +150,10 @@ describe('écran portail — garde « période terminée » devant le consenteme
   it('affiche le ConsentScreen normalement quand le consentement est possible', async () => {
     monter({ assignation: { consentement: 'non_donne' }, consentementPossible: true });
     expect(await screen.findByText('Avant de commencer')).toBeTruthy();
+    // Un seul `h1`, le titre du questionnaire ; l'écran de consentement est
+    // un `h2` sous lui (PAT-7b).
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
+    expect(screen.getByRole('heading', { level: 2, name: 'Avant de commencer' })).toBeTruthy();
   });
 
   it('non-régression : un questionnaire ORDINAIRE non périmé ne voit jamais le garde', async () => {
