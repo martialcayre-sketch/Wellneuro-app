@@ -192,7 +192,7 @@ let libelleCourant: Record<string, unknown>;
 describe('poserActeLibelle — un acte par libellé (arbitrages 3, 12, 15)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    libelleCourant = { termeId: 'HYP_SYNTH', nature: 'hypothese', numero: 1, libelleSha256: E_L, structureSha256: S, actes: [] };
+    libelleCourant = { termeId: 'HYP_SYNTH', nature: 'hypothese', numero: 1, libelle: LIBELLE, libelleSha256: E_L, structureSha256: S, actes: [] };
     tx.ficheUsageLibelle.findUnique.mockImplementation(async (args: { select: Record<string, unknown> }) =>
       'actes' in args.select ? libelleCourant : { termeId: 'HYP_SYNTH' },
     );
@@ -218,6 +218,18 @@ describe('poserActeLibelle — un acte par libellé (arbitrages 3, 12, 15)', () 
       issue: 'refusee',
       raison: 'structure',
       anomalies: [{ code: 'structure_perimee' }],
+    });
+  });
+
+  it('refuse de valider un libellé d’hypothèse hors registre (D-477 §2), sans rendre son texte ; le retrait reste possible', async () => {
+    libelleCourant.libelle = 'Carence synthétique';
+    const refus = await poserActeLibelle(demandeLibelle(), SIGNEE);
+    expect(refus).toEqual({ issue: 'refusee', raison: 'registre', anomalies: [{ code: 'libelle_hors_registre', termes: ['carence'] }] });
+    expect(JSON.stringify(refus)).not.toContain('synthétique');
+    expect(tx.ficheUsageLibelleActe.create).not.toHaveBeenCalled();
+    expect(await poserActeLibelle(demandeLibelle({ acte: 'retiree', motif: 'Motif synthétique.' }), SIGNEE)).toMatchObject({
+      issue: 'posee',
+      etat: { etat: 'retiree' },
     });
   });
 

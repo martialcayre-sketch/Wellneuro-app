@@ -60,6 +60,21 @@ describe('POST /api/praticien/fiches-usage/libelles/actes', () => {
     expect(poserActeLibelle).not.toHaveBeenCalled();
   });
 
+  it('un refus du registre (D-535) rend 422, sa raison et ses termes', async () => {
+    poserActeLibelle.mockResolvedValue({
+      issue: 'refusee',
+      raison: 'registre',
+      anomalies: [{ code: 'libelle_hors_registre', termes: ['carence'] }],
+    });
+    const res = await POST(requete({ ...CORPS, acte: 'validee', relectureIntegrale: true, motif: undefined }));
+    expect(res.status).toBe(422);
+    expect(await res.json()).toMatchObject({
+      ok: false,
+      reason: 'registre',
+      anomalies: [{ code: 'libelle_hors_registre', termes: ['carence'] }],
+    });
+  });
+
   it('400 sur un identifiant de libellé hors format', async () => {
     const res = await POST(requete({ ...CORPS, idLibelle: 'x' }));
     expect(res.status).toBe(400);
