@@ -155,6 +155,8 @@ export function PatientCompanionHome({ token }: { token: string }) {
     void sonderComprehension();
   }, [charger, sonderCeQuiCompte, sonderComprehension]);
 
+  // Chaque titre en `h2` : ce composant est rendu dans « Mon accompagnement »
+  // du hub, sous le `h1` « Mon parcours » (PAT-7b, `heading-hierarchy`).
   if (chargement) {
     return (
       <PatientCard>
@@ -166,7 +168,7 @@ export function PatientCompanionHome({ token }: { token: string }) {
   if (erreurProtocole) {
     return (
       <PatientCard>
-        <PatientPageHeader title="Votre accompagnement" />
+        <PatientPageHeader title="Votre accompagnement" as="h2" />
         <div className="mt-3" role="alert">
           <PatientErrorState forme="erreur" message={erreurProtocole} onReessayer={() => void charger()} />
         </div>
@@ -181,7 +183,7 @@ export function PatientCompanionHome({ token }: { token: string }) {
   if (protocole?.ok && protocole.indisponible) {
     return (
       <PatientCard>
-        <PatientPageHeader title="Votre accompagnement" />
+        <PatientPageHeader title="Votre accompagnement" as="h2" />
         <p className="text-sm text-muted-foreground mt-2">
           Votre accompagnement n’est pas consultable pour le moment. Votre praticien en est informé.
         </p>
@@ -193,7 +195,7 @@ export function PatientCompanionHome({ token }: { token: string }) {
   if (!protocole || !protocole.protocoleDiffuse || !protocole.vue) {
     return (
       <PatientCard>
-        <PatientPageHeader title="Votre accompagnement" />
+        <PatientPageHeader title="Votre accompagnement" as="h2" />
         <p className="text-sm text-muted-foreground mt-2">
           Votre accompagnement arrivera bientôt. Votre praticien prépare votre suivi.
         </p>
@@ -245,6 +247,7 @@ export function PatientCompanionHome({ token }: { token: string }) {
     <PatientCard className="space-y-5">
       <PatientPageHeader
         title="Votre accompagnement"
+        as="h2"
         subtitle={
           finDeCycle
             ? // Constat de l'étape, pas récompense — [[D-108]]. La rédaction
