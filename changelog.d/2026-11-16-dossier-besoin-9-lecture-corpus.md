@@ -2,7 +2,7 @@
 
 Documentation seule : ni code, ni migration, ni écriture en base.
 
-- Journal de H15 : fragment `2026-11-16-03`. Le corpus du besoin 9 est lu en production, en lecture seule, sur le
+- Journal de H15 : fragment `2026-11-16-04`. Le corpus du besoin 9 est lu en production, en lecture seule, sur le
   périmètre élargi. Aucun claim n'est étiqueté au besoin 9. Seule la PSS-10 a des sources externes en base. Les
   pièces des autres échelles sont en passages sans claim. Biomarqueurs, interventions et versant élargi ne reposent
   que sur des sources internes. Rien ne fonde la règle de décision du guide.
