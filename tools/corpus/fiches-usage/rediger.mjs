@@ -42,6 +42,7 @@ import {
   messageContreLecture,
   messageRedactionFiche,
   messageRedactionLibelle,
+  requeteRedaction,
   resumeSansTexte,
   sourcesDc03,
   verdictDEnsemble,
@@ -85,13 +86,9 @@ function lireArguments() {
 }
 
 async function redigerTexte(anthropic, consigne, message) {
-  const rep = await anthropic.messages.create({
-    model: MODELE_REDACTION,
-    max_tokens: 16000,
-    thinking: { type: 'adaptive' },
-    system: consigne,
-    messages: [{ role: 'user', content: message }],
-  });
+  // Streaming imposé par le SDK au-delà d'environ 16 000 jetons de sortie ; on
+  // n'en attend que le message final.
+  const rep = await anthropic.messages.stream(requeteRedaction(MODELE_REDACTION, consigne, message)).finalMessage();
   return {
     texte: rep.content.filter(b => b.type === 'text').map(b => b.text).join('\n'),
     arret: rep.stop_reason,

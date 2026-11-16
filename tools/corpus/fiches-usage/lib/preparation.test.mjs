@@ -1,8 +1,10 @@
 // Le cœur pur de la rédaction des fiches d'usage ([[D-314]] §4). Texte
 // SYNTHÉTIQUE seulement ; aucun modèle appelé.
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import { test } from 'node:test';
 import {
+  JETONS_SORTIE_REDACTION,
   axesDeLaFiche,
   claimsDeLaFiche,
   claimsDuTerme,
@@ -14,6 +16,7 @@ import {
   MARQUE_RESERVE,
   messageContreLecture,
   messageRedactionFiche,
+  requeteRedaction,
   rubriquesRedigees,
   sourcesDc03,
   verdictDEnsemble,
@@ -152,9 +155,12 @@ test('une réponse illisible du rédacteur garde son texte brut et son code d’
   const tronque = { texte: '{"rubriques": {"question": "Texte synthétique coupé', arret: 'max_tokens', jetonsSortie: 16000 };
   const r = lireRedactionFiche(tronque, FICHE.rubriques);
   assert.deepEqual(r, {
-    illisible: { raison: 'SyntaxError', arret: 'max_tokens', jetonsSortie: 16000, reponseBrute: tronque.texte },
+    illisible: { raison: 'réponse arrêtée par le budget de sortie (max_tokens)', arret: 'max_tokens', jetonsSortie: 16000, reponseBrute: tronque.texte },
   });
   assert.doesNotMatch(r.illisible.raison, /synthétique/);
+
+  const syntaxe = lireRedactionFiche({ texte: '{"rubriques": {"question": "Coupé', arret: 'end_turn', jetonsSortie: 12 }, FICHE.rubriques);
+  assert.equal(syntaxe.illisible.raison, 'SyntaxError');
 
   const nonConforme = lireRedactionFiche({ texte: '{"rubriques": {"question": "Q."}}', arret: 'end_turn' }, FICHE.rubriques);
   assert.match(nonConforme.illisible.raison, /manquantes : limites/);
@@ -162,6 +168,41 @@ test('une réponse illisible du rédacteur garde son texte brut et son code d’
 
   // Un code d'arrêt hors forme ne part pas au terminal.
   assert.equal(lireRedactionFiche({ texte: '', arret: 'Texte libre !' }, FICHE.rubriques).illisible.arret, null);
+});
+
+test('une réponse VIDE arrêtée sur max_tokens se dit comme telle, plus comme une SyntaxError (essai v9)', () => {
+  for (const texte of ['', '  \n', undefined]) {
+    const r = lireRedactionFiche({ texte, arret: 'max_tokens', jetonsSortie: 16000 }, FICHE.rubriques);
+    assert.deepEqual(r, {
+      illisible: {
+        raison: 'réponse vide : budget de sortie épuisé avant tout texte (max_tokens)',
+        arret: 'max_tokens',
+        jetonsSortie: 16000,
+        reponseBrute: String(texte ?? ''),
+      },
+    });
+  }
+  // Même un objet lisible ne passe pas s'il est arrêté sur max_tokens : la réponse est incomplète.
+  const complet = lireRedactionFiche({ texte: '{"rubriques": {"question": "Q.", "limites": "L."}}', arret: 'max_tokens' }, FICHE.rubriques);
+  assert.equal(complet.illisible.raison, 'réponse arrêtée par le budget de sortie (max_tokens)');
+});
+
+test('la requête de rédaction : 64 000 jetons de sortie, raisonnement adaptatif, effort non fixé', () => {
+  assert.equal(JETONS_SORTIE_REDACTION, 64000);
+  assert.deepEqual(requeteRedaction('modele-x', 'CONSIGNE', 'MESSAGE'), {
+    model: 'modele-x',
+    max_tokens: 64000,
+    thinking: { type: 'adaptive' },
+    system: 'CONSIGNE',
+    messages: [{ role: 'user', content: 'MESSAGE' }],
+  });
+});
+
+test('câblage : rediger.mjs envoie requeteRedaction en streaming, sans autre appel au rédacteur', async () => {
+  const source = await readFile(new URL('../rediger.mjs', import.meta.url), 'utf8');
+  assert.match(source, /anthropic\.messages\.stream\(requeteRedaction\(MODELE_REDACTION, consigne, message\)\)\.finalMessage\(\)/);
+  assert.doesNotMatch(source, /messages\.create\(/);
+  assert.doesNotMatch(source, /max_tokens:/);
 });
 
 test('la réponse du rédacteur pour un libellé — objet JSON, ou libellé nu sur une ligne', () => {
