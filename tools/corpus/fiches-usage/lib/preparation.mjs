@@ -26,6 +26,29 @@
 
 import { ErreurOutil, erreurSansTexte, parseJsonLache } from '../../fiches/lib/assemblage.mjs';
 
+/**
+ * Le budget de sortie de la rédaction, raisonnement compris. À 16 000 jetons,
+ * le raisonnement adaptatif l'épuisait avant tout texte sur cinq fiches de 14
+ * à 41 claims (essai v9, journal F05 du 2026-11-16). Arbitrage du responsable
+ * (liste commune `20261116-1246-b`) : la limite monte, l'effort reste le défaut.
+ */
+export const JETONS_SORTIE_REDACTION = 64000;
+
+/**
+ * La requête de rédaction. Pas d'`output_config` : l'effort reste celui du
+ * modèle, seule la coupure change. Au-delà d'environ 16 000 jetons de sortie,
+ * le SDK impose le streaming (`rediger.mjs` appelle `messages.stream`).
+ */
+export function requeteRedaction(modele, consigne, message) {
+  return {
+    model: modele,
+    max_tokens: JETONS_SORTIE_REDACTION,
+    thinking: { type: 'adaptive' },
+    system: consigne,
+    messages: [{ role: 'user', content: message }],
+  };
+}
+
 /** La clé d'un claim épinglé dans l'instantané local. */
 export const cleClaim = c => `${c.claimId}::${c.versionClaim}`;
 
@@ -153,14 +176,27 @@ export function lireReponseFiche(reponse, attendues) {
  * six `SyntaxError` n'avaient laissé aucune trace (journal F05, 2026-11-15).
  * La raison se donne sans texte, et le code d'arrêt, imprimé au terminal, n'est
  * gardé que s'il a la forme d'un code.
+ *
+ * Une réponse arrêtée sur `max_tokens` est incomplète par définition : elle ne
+ * se lit pas, et sa raison le dit, au lieu d'une `SyntaxError` qui masquait la
+ * cause (cinq fiches de l'essai v9, réponse vide).
  */
 export function lireRedactionFiche(brute, attendues) {
+  const arret = typeof brute.arret === 'string' && /^[a-z_]{1,40}$/u.test(brute.arret) ? brute.arret : null;
+  const jetonsSortie = Number.isInteger(brute.jetonsSortie) ? brute.jetonsSortie : null;
+  const reponseBrute = String(brute.texte ?? '');
+  const illisible = raison => ({ illisible: { raison, arret, jetonsSortie, reponseBrute } });
+  if (arret === 'max_tokens') {
+    return illisible(
+      /\S/u.test(reponseBrute)
+        ? 'réponse coupée par le budget de sortie (max_tokens)'
+        : 'réponse vide : budget de sortie épuisé avant tout texte (max_tokens)',
+    );
+  }
   try {
     return lireReponseFiche(parseJsonLache(brute.texte), attendues);
   } catch (e) {
-    const arret = typeof brute.arret === 'string' && /^[a-z_]{1,40}$/u.test(brute.arret) ? brute.arret : null;
-    const jetonsSortie = Number.isInteger(brute.jetonsSortie) ? brute.jetonsSortie : null;
-    return { illisible: { raison: erreurSansTexte(e), arret, jetonsSortie, reponseBrute: String(brute.texte ?? '') } };
+    return illisible(erreurSansTexte(e));
   }
 }
 
