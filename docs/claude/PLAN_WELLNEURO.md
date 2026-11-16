@@ -1330,7 +1330,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 |---|---|---|---|---|---|
 | J2-base | palier 1, alerte hébergeur, EF-3b, NF-7 | A | 8, 9, 12, 16, 21 ; lève 24 | oui (EF-3b) | H59 |
 | p, J2-cc8 | journal de lecture du protocole | A | 8, 9 | oui | H60 |
-| J3-base | point d'étape, frise, repères, complétude | A | 16 ; 9 pour BF-8 | selon | H61 |
+| J3-base | point d'étape, complétude ; frise et repères sortis (D-530) | A | 16 ; 9 pour BF-8 | selon | H61 |
 | J3-collecte | collecte documentaire : table, dépôt, classement | A | 8, 9, 17 | oui | H62 |
 | cg | ses nuits par semaine, sans chiffre | A | 16 ; 18 à l'ouverture | non | H63 |
 | E67 | lot accessibilité | A | aucune | non | H64 |
@@ -1383,8 +1383,8 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 - **Rang** : 4.
 - **Portes, préalables** : t (H31) ; ab (H14) ; u (H37) ; porte 16 (H27) ; règle N-8.
 - **Migration, release-db** : selon ; la migration du lot est BF-8 (F55).
-- **Décisions, textes** : lettres t, ab, u appliquées ; décision de produit pour la frise.
-- **Critère de fin** : « Mes échanges » prêt, non ouvert ; frise et repères servis après la porte 16.
+- **Décisions, textes** : lettres t, ab, u appliquées ; frise et repères sortis du lot (D-530 §1).
+- **Critère de fin** : « Mes échanges » prêt, non ouvert (D-530 §2).
 - **Journal** : `docs/claude/plan-journal/H61/` — mises à jour datées, un fichier par mise à jour, jamais réécrit ; lecture : `node scripts/wn-plan-fiche.mjs H61`.
 
 #### H62 · J3-collecte : collecte documentaire
@@ -3028,7 +3028,7 @@ Destination proposée [Hypothese] : `docs/archive/roadmap-updates/` pour les feu
 | de D-283, lots (a) à (f), et de D-284, lots (g) à (j) | aucune neuve : « sans arbitrage neuf » (D-283 §10 ; D-284 §7) ; (j) demande une analyse d'impact du transfert | registre ; textes (a), (e) et l'analyse d'impact de la main du responsable | 1 à 4 [Hypothese] | H26 |
 | K-05a et D4 | liste fermée et déclaration des sites IA (porte 5) ; faits le 2026-10-15 | la main du responsable | 0 | F46 |
 | échelle E4 | échelle E4 de l'adhésion, tranchée avec la signature M-2 | la main du responsable | 2 | H32 |
-| de produit pour la frise | frise de J3-base | la main du responsable | 4 [Hypothese] | H61 |
+| de produit pour la frise | frise de J3-base — **tranchée le 2026-11-16 : frise et repères sortent de J3-base, la frise par semaine reste à cg (H63) ; D-530** | la main du responsable | 4 | H61 |
 | du lot 3 de D-281 | exclure ou non l'action d'orientation médecin de la liste proposée au patient — **tranchée le 2026-10-14 : exclue, avec toute orientation vers le médecin et toute prise de sang** | la main du responsable | 1 | F66 |
 | du repère du 2027-06-30 | statut de repère légal pour J3-mineurs, à confirmer | la main du responsable | 10 [Hypothese] | H79 |
 
