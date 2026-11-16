@@ -95,7 +95,7 @@ export function FicheAnalytePanel({
     <div className="flex flex-col gap-5">
       <div>
         <div className="flex flex-wrap items-center gap-2">
-          <h4 className="font-display text-xl font-semibold text-foreground">{fiche.libelle}</h4>
+          <h3 className="font-display text-xl font-semibold text-foreground">{fiche.libelle}</h3>
           <Badge variant="neutral">{LABEL_STATUT_FICHE[fiche.statutFiche] ?? fiche.statutFiche}</Badge>
           {fiche.validationMedicaleRequise && (
             <Badge variant="warning">Interprétation sous validation médicale</Badge>
@@ -125,7 +125,7 @@ export function FicheAnalytePanel({
           motif ET citation — et la fiche le dit. */}
       {(fiche.nonIndiques.length > 0 || fiche.nonIndiquesSuspendus > 0) && (
         <section aria-label="Exploration non indiquée" className="flex flex-col gap-2">
-          <h5 className="text-sm font-semibold text-foreground">Exploration non indiquée</h5>
+          <h4 className="text-sm font-semibold text-foreground">Exploration non indiquée</h4>
           {fiche.nonIndiquesSuspendus > 0 && (
             <p className="text-xs text-muted-foreground">
               {fiche.nonIndiquesSuspendus === 1
@@ -154,7 +154,7 @@ export function FicheAnalytePanel({
       )}
 
       <section aria-label="Référentiels de valeurs">
-        <h5 className="text-sm font-semibold text-foreground">Référentiels de valeurs</h5>
+        <h4 className="text-sm font-semibold text-foreground">Référentiels de valeurs</h4>
         <p className="mt-1 text-xs text-muted-foreground">
           Deux référentiels distincts, présentés côte à côte et jamais fusionnés : la plage
           laboratoire décrit la mesure, la plage fonctionnelle est une lecture clinique ancrée à
@@ -209,7 +209,7 @@ export function FicheAnalytePanel({
       </section>
 
       <section aria-label="Remboursement">
-        <h5 className="text-sm font-semibold text-foreground">Remboursement</h5>
+        <h4 className="text-sm font-semibold text-foreground">Remboursement</h4>
         <p className="mt-1 text-sm text-foreground">
           {LABEL_REMBOURSEMENT[fiche.remboursement.statut] ?? fiche.remboursement.statut}
         </p>
@@ -264,7 +264,7 @@ export function FicheAnalytePanel({
           jugent aucun résultat ; un niveau de preuve nul se dit « non gradé »,
           jamais une lettre (§4). */}
       <section aria-label="Axes biologiques">
-        <h5 className="text-sm font-semibold text-foreground">Axes biologiques</h5>
+        <h4 className="text-sm font-semibold text-foreground">Axes biologiques</h4>
         {fiche.liensAxe.length === 0 && fiche.liensAxeSuspendus === 0 ? (
           <p className="mt-1 text-sm text-muted-foreground">
             Aucun lien vers un axe biologique signé pour cette analyse.
@@ -302,7 +302,7 @@ export function FicheAnalytePanel({
       </section>
 
       <section aria-label="Conditions préanalytiques">
-        <h5 className="text-sm font-semibold text-foreground">Préanalytique</h5>
+        <h4 className="text-sm font-semibold text-foreground">Préanalytique</h4>
         {fiche.preanalytiques.length === 0 ? (
           <p className="mt-1 text-sm text-muted-foreground">
             Aucune consigne préanalytique renseignée à ce jour.
@@ -322,7 +322,7 @@ export function FicheAnalytePanel({
       </section>
 
       <section aria-label="Provenance et complétude">
-        <h5 className="text-sm font-semibold text-foreground">Provenance et complétude</h5>
+        <h4 className="text-sm font-semibold text-foreground">Provenance et complétude</h4>
         <dl className="mt-1 flex flex-col gap-1.5">
           <LigneDetail label="Source" valeur={libelleTechnique(fiche.sourceProvenance)} />
           <LigneDetail

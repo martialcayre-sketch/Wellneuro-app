@@ -130,9 +130,9 @@ export function SignatureNabmLotPanel({ onSignees }: { onSignees?: () => void })
   return (
     <section aria-labelledby="signature-lot-titre" className="flex flex-col gap-4">
       <div>
-        <h4 id="signature-lot-titre" className="text-sm font-semibold text-foreground">
+        <h3 id="signature-lot-titre" className="text-sm font-semibold text-foreground">
           Correspondances préparées à signer
-        </h4>
+        </h3>
         <p className="mt-1 text-xs text-muted-foreground">
           Les propositions de chaque fiche d’analyte, réunies. Chaque correspondance cochée est
           signée à votre nom, comme sur la fiche : signer, c’est attester avoir lu l’acte dans la
@@ -169,13 +169,15 @@ export function SignatureNabmLotPanel({ onSignees }: { onSignees?: () => void })
                 <ul className="flex flex-col gap-2">
                   {groupe.lignes.map(ligne => (
                     <li key={cle(ligne)} className="flex flex-col gap-2 rounded-lg border border-border p-3">
-                      <label className="flex items-start gap-2">
+                      {/* PRA-4 Q5 (a) : la case garde sa taille, sa ligne fait la
+                          zone de clic de 44 px et porte l'anneau de focus. */}
+                      <label className="flex min-h-11 cursor-pointer items-start gap-2 rounded-md py-1 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-focus-ring">
                         <input
                           type="checkbox"
                           checked={cochees.has(cle(ligne))}
                           onChange={() => basculer(ligne)}
                           disabled={enCours}
-                          className="mt-1"
+                          className="mt-1 shrink-0"
                           aria-label={`Signer ${groupe.libelle} → acte ${ligne.codeActe}`}
                         />
                         <DetailActe acte={ligne.acte} />

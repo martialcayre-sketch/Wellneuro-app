@@ -98,17 +98,22 @@ export function ChoixNature({
   onChange: (nature: NatureNabm) => void;
 }) {
   return (
-    <fieldset className="flex flex-col gap-1.5">
+    <fieldset className="flex flex-col gap-2">
       <legend className="text-xs font-semibold text-foreground">Nature de la correspondance</legend>
       {NATURES.map(n => (
-        <label key={n.valeur} className="flex items-start gap-2 text-sm text-foreground">
+        // PRA-4 Q5 (a) : le bouton radio garde sa taille, sa ligne fait la
+        // zone de clic de 44 px et porte l'anneau de focus.
+        <label
+          key={n.valeur}
+          className="flex min-h-11 cursor-pointer items-start gap-2 rounded-md py-1 text-sm text-foreground has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-focus-ring"
+        >
           <input
             type="radio"
             name={nom}
             value={n.valeur}
             checked={valeur === n.valeur}
             onChange={() => onChange(n.valeur)}
-            className="mt-1"
+            className="mt-1 shrink-0"
           />
           <span>
             {n.libelle} <span className="text-muted-foreground">— {n.aide}</span>
@@ -340,7 +345,7 @@ export function CorrespondancesNabmSection({
   return (
     <section aria-label="Correspondances à la nomenclature" className="flex flex-col gap-3">
       <div>
-        <h5 className="text-sm font-semibold text-foreground">Correspondances à la nomenclature</h5>
+        <h4 className="text-sm font-semibold text-foreground">Correspondances à la nomenclature</h4>
         <p className="mt-1 text-xs text-muted-foreground">
           Seules les correspondances signées comptent pour le remboursement. Signer, c’est
           attester avoir lu l’acte dans la nomenclature{millesime ? ` (millésime ${millesime})` : ''}.

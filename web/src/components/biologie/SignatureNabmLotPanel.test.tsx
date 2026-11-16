@@ -129,6 +129,21 @@ describe('SignatureNabmLotPanel (D-326 §2)', () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3));
   });
 
+  // PRA-4 Q1 (a) et Q5 (a) : sous le h2 du tiroir, un h3 ; la case garde sa
+  // taille, sa ligne fait la zone de clic de 44 px ; aucun « tout cocher ».
+  it('titre en h3 sous le tiroir ; chaque case dans une ligne de 44 px ; aucun « tout »', async () => {
+    mockFetch([{ ok: true, millesime: 'V105', lignes: LIGNES }]);
+    render(<SignatureNabmLotPanel />);
+    const alat = await screen.findByLabelText('Signer ALAT → acte 0516');
+    expect(screen.getByRole('heading', { level: 3, name: 'Correspondances préparées à signer' })).toBeTruthy();
+    expect(alat.className).not.toMatch(/\b[hw]-/);
+    const ligne = alat.closest('label');
+    expect(ligne?.className).toMatch(/\bmin-h-11\b/);
+    expect(ligne?.className).toMatch(/has-\[:focus-visible\]:ring-2/);
+    expect(screen.queryByRole('button', { name: /tout/i })).toBeNull();
+    expect(screen.queryByRole('checkbox', { name: /tout/i })).toBeNull();
+  });
+
   it('rien à signer : le dit, sans bouton', async () => {
     mockFetch([{ ok: true, millesime: 'V105', lignes: [] }]);
     render(<SignatureNabmLotPanel />);

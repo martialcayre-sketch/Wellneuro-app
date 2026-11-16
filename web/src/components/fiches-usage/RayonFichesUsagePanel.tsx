@@ -142,14 +142,14 @@ export function RayonFichesUsagePanel() {
         <p className="text-xs font-semibold uppercase tracking-[.06em] text-solar-ink">
           Rayon fiches d’usage · besoin 2, validées ici
         </p>
-        <h3
+        <h2
           id="rayon-fiches-usage-titre"
           ref={titreRef}
           tabIndex={-1}
           className="rounded-sm font-display text-2xl font-bold tracking-[-0.02em] text-foreground outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
         >
           Fiches d’usage
-        </h3>
+        </h2>
         <p className="mt-1 max-w-2xl text-base text-muted-foreground">
           Le texte de chaque fiche est rédigé hors de l’application, puis se relit ici rubrique par
           rubrique : une version est validée quand toutes ses rubriques le sont. Les libellés des
@@ -190,9 +190,9 @@ export function RayonFichesUsagePanel() {
           <Structure rayon={rayon} />
           {!peutDecider && <p className="text-sm text-muted-foreground">{RESERVE_AU_RESPONSABLE}</p>}
           <section aria-labelledby="fiches-usage-fiches-titre" className="flex flex-col gap-3">
-            <h4 id="fiches-usage-fiches-titre" className="text-sm font-semibold uppercase tracking-[.05em] text-solar-ink">
+            <h3 id="fiches-usage-fiches-titre" className="text-sm font-semibold uppercase tracking-[.05em] text-solar-ink">
               Fiches
-            </h4>
+            </h3>
             {rayon.fiches.length === 0 ? (
               <p className="text-sm text-muted-foreground">Aucune fiche déclarée ni déposée.</p>
             ) : (
@@ -209,12 +209,12 @@ export function RayonFichesUsagePanel() {
             )}
           </section>
           <section aria-labelledby="fiches-usage-vocabulaire-titre" className="flex flex-col gap-3">
-            <h4
+            <h3
               id="fiches-usage-vocabulaire-titre"
               className="text-sm font-semibold uppercase tracking-[.05em] text-solar-ink"
             >
               Vocabulaire
-            </h4>
+            </h3>
             {rayon.termes.length === 0 ? (
               <p className="text-sm text-muted-foreground">Aucun terme déclaré ni déposé.</p>
             ) : (
