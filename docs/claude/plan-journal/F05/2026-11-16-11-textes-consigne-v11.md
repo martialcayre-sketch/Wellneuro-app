@@ -1,0 +1,7 @@
+- **Mise à jour (2026-11-16, textes : consigne v11)** : D-501 §14 transcrit, dans les deux consignes, la v11 arbitrée par le responsable (`20261116-2250-b`) sur les cinq refus restés stables aux deux passages de la v10 (rangs 09 et 10). Les cinq points :
+  - le moment de prise est une quantité de prise ;
+  - la forme attribuée et réservée vaut dans toute rubrique, « precautions » comprise ;
+  - une limite de la littérature n'est pas une limite de l'examen ;
+  - un argument de causalité n'est pas une surveillance ;
+  - dans « resultats_consequences », un résultat ne s'interprète pas, et sous « preuves_limitees » aucune conséquence décisionnelle ne s'y écrit, sauf une condition de sécurité imposée par le marqueur « oui ».
+  - Contre-revue Codex (D-505) : un P1 et un P2 corrigés, puis une troisième passe sans constat. Consigne `fiche-usage-v11`, empreinte `365c3413be8abfe1`, banc vert. Le texte est soumis à l'approbation du responsable ; aucun essai avant le merge.
