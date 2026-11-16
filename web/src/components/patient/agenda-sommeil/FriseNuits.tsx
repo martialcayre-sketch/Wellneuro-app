@@ -10,6 +10,16 @@ import type { NuitReponses } from '@/lib/agenda-sommeil/types';
 // « côté patient, jamais un chiffre alarmant »). Un emplacement vide est un
 // pointillé discret — un trou visible, jamais un zéro, jamais du rouge.
 
+// Couleurs en jetons, sur la table du chronogramme praticien (PR 2118) : la nuit
+// dans la couleur primaire, pleine au soir et à 0,4 au matin ; la lune en
+// champagne ; le masque du croissant sur `--surface`, le fond de la carte ;
+// le cadre du jour à 0,4, comme le plus clair des tons praticiens.
+const COULEUR_NUIT_SOIR = 'rgb(var(--color-primary-rgb) / 1)';
+const COULEUR_NUIT_MATIN = 'rgb(var(--color-primary-rgb) / 0.4)';
+const COULEUR_AUJOURDHUI = 'rgb(var(--color-primary-rgb) / 0.4)';
+const COULEUR_LUNE = 'var(--lien-champagne)';
+const COULEUR_FOND = 'var(--surface)';
+
 const COL_W = 16; // largeur d'une colonne (unités viewBox)
 const TOP = 14; // marge haute (place pour la lune)
 const TRACK_H = 118; // hauteur de la piste nuit
@@ -52,14 +62,14 @@ export function FriseNuits({ emplacements, nuitsParDate }: Props) {
       >
         <defs>
           <linearGradient id="agd-nuit" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#4338ca" />
-            <stop offset="100%" stopColor="#f0abfc" />
+            <stop offset="0%" stopColor={COULEUR_NUIT_SOIR} />
+            <stop offset="100%" stopColor={COULEUR_NUIT_MATIN} />
           </linearGradient>
         </defs>
 
         {/* Lune décorative en haut à gauche */}
-        <circle cx={COL_W * 0.7} cy={TOP - 4} r={4} fill="#fde68a" opacity={0.85} />
-        <circle cx={COL_W * 0.7 + 2} cy={TOP - 5} r={4} fill="var(--color-surface, #fff)" />
+        <circle cx={COL_W * 0.7} cy={TOP - 4} r={4} fill={COULEUR_LUNE} opacity={0.85} />
+        <circle cx={COL_W * 0.7 + 2} cy={TOP - 5} r={4} fill={COULEUR_FOND} />
 
         {emplacements.map((emp) => {
           const cx = emp.index * COL_W - COL_W / 2;
@@ -94,7 +104,7 @@ export function FriseNuits({ emplacements, nuitsParDate }: Props) {
                   height={TRACK_H + 8}
                   rx={7}
                   fill="none"
-                  stroke="#a5b4fc"
+                  stroke={COULEUR_AUJOURDHUI}
                   strokeWidth={1.5}
                   strokeOpacity={0.7}
                 />
