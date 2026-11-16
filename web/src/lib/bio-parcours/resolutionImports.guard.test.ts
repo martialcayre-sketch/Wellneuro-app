@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import * as ts from 'typescript';
 import { describe, expect, it, vi } from 'vitest';
+import { PluginLicencesTierces } from '../../../scripts/licences-tierces.mjs';
 import { lire, RACINE } from './balayageSources';
 import { WEB } from './resolutionImports';
 
@@ -30,11 +31,59 @@ vi.mock('@sentry/nextjs', () => ({
  * LE VERROU DE NEXT porte sur la configuration ÉVALUÉE, pas sur son texte : une
  * clé calculée (`['res' + 'olveAlias']`) ou un `typescript.tsconfigPath` vers
  * un autre tsconfig échappaient à un motif (contre-passe Codex sur 05c5ea2b).
- * Toute clé hors de ces listes — `webpack`, `turbopack`, `experimental`,
- * `typescript`, `modularizeImports`… — rougit le banc, quelle que soit son
- * écriture ; l'ajout d'une clé légitime s'y inscrit nommément, en revue.
+ * Toute clé hors de ces listes — `turbopack`, `experimental`, `typescript`,
+ * `modularizeImports`… — rougit le banc, quelle que soit son écriture ;
+ * l'ajout d'une clé légitime s'y inscrit nommément, en revue. `webpack` y est
+ * inscrite sous le contrat ci-dessous.
  */
-const CLES_NEXT_ADMISES = ['headers', 'reactStrictMode', 'redirects'];
+const CLES_NEXT_ADMISES = ['headers', 'reactStrictMode', 'redirects', 'webpack'];
+
+/**
+ * LA CLÉ `webpack` EST ADMISE SOUS DEUX CONDITIONS (lot `licences-tierces-bundle`).
+ *
+ * 1. SON TEXTE est exactement celui-ci. C'est la vraie fermeture : une
+ *    évaluation ne voit ni une branche sur une variable d'environnement ou un
+ *    argument absent du stub, ni une mutation différée, ni une propriété non
+ *    énumérable (revue `wn-reviewer` du lot). Toute autre fonction rougit.
+ * 2. ÉVALUÉE sur les compilations de Next (client, serveur, edge ; production
+ *    ou développement), elle rend la configuration reçue, n'y change rien hors
+ *    de `plugins`, et n'y ajoute qu'une instance directe de
+ *    `PluginLicencesTierces`, sans `apply` propre, sur le client en production.
+ *
+ * Le plugin, lui, est figé par son empreinte, et son rappel de
+ * `thisCompilation` est éprouvé plus bas.
+ */
+const TEXTE_WEBPACK_ADMIS = `webpack(config, { isServer, dev }) {
+    if (!isServer && !dev) config.plugins.push(new PluginLicencesTierces());
+    return config;
+  }`;
+// Vitest (Vite) réindente le module évalué et préfixe ses imports
+// (`__vite_ssr_import_1__.PluginLicencesTierces`) : les deux textes sont
+// comparés blancs repliés, préfixe retiré. Un autre transformateur rougit le
+// banc, il ne le rend pas vert.
+const texteNormalise = (t: string) => t.replace(/__vite_ssr_import_\d+__\./g, '').replace(/\s+/g, ' ').trim();
+function webpackAdmis(fonction: unknown): boolean {
+  if (typeof fonction !== 'function' || texteNormalise(String(fonction)) !== texteNormalise(TEXTE_WEBPACK_ADMIS)) {
+    return false;
+  }
+  for (const [isServer, nextRuntime] of [[false, undefined], [true, 'nodejs'], [true, 'edge']] as const) {
+    for (const dev of [false, true]) {
+      const config = { resolve: { alias: {} }, resolveLoader: {}, module: { rules: [] }, plugins: [] as unknown[] };
+      const avant = JSON.stringify(config);
+      const rendu = fonction(config, { isServer, dev, nextRuntime, dir: WEB });
+      if (rendu !== config) return false;
+      const attendus = !isServer && !dev ? 1 : 0;
+      if (config.plugins.length !== attendus) return false;
+      const p = config.plugins[0];
+      if (attendus === 1 && (Object.getPrototypeOf(p) !== PluginLicencesTierces.prototype || Object.hasOwn(p as object, 'apply'))) {
+        return false;
+      }
+      config.plugins = [];
+      if (JSON.stringify(config) !== avant || Reflect.ownKeys(config).length !== 4) return false;
+    }
+  }
+  return true;
+}
 const CLES_SENTRY_ADMISES = ['authToken', 'org', 'project', 'silent', 'sourcemaps', 'telemetry', 'webpack', 'widenClientFileUpload'];
 
 /** Un fichier qui peut déplacer la résolution d'un module, où qu'il soit sous `web/`. */
@@ -46,7 +95,10 @@ const CLES_TSCONFIG_ADMISES = [
   'allowJs', 'esModuleInterop', 'incremental', 'isolatedModules', 'jsx', 'lib', 'module', 'moduleResolution',
   'noEmit', 'paths', 'plugins', 'resolveJsonModule', 'skipLibCheck', 'strict', 'target',
 ];
-const EMPREINTE_NEXT_CONFIG = 'fc39557e9be8db01158baa1ecd5fe13666746b36e299926ee4f58156bd4c8778';
+const EMPREINTE_NEXT_CONFIG = '19a1dab2af4f1a7cfa0fafe0c252aa76ce8b3dc460d33539b0dbc57990986d21';
+// Le plugin que `webpack` installe s'exécute dans la compilation client : une
+// édition pourrait y réécrire une résolution (`normalModuleFactory`). Figé.
+const EMPREINTE_PLUGIN_LICENCES = 'f2555ec7022904ee8f84209d0cec6443f177dc07132e2ade133487a7a85c9c4c';
 
 /** La chaîne de lancement de production, figée (voir le banc « chaîne de lancement »). */
 const EMPREINTES_LANCEMENT: Record<string, string> = {
@@ -82,6 +134,7 @@ function ecartsConfigNext(configNext: object, optionsSentry: object): string[] {
   for (const cle of Reflect.ownKeys(configNext)) {
     if (!CLES_NEXT_ADMISES.includes(String(cle))) ecarts.push(`next.${String(cle)}`);
   }
+  if ('webpack' in configNext && !webpackAdmis((configNext as { webpack?: unknown }).webpack)) ecarts.push('next.webpack');
   for (const cle of Reflect.ownKeys(optionsSentry)) {
     if (!CLES_SENTRY_ADMISES.includes(String(cle))) ecarts.push(`sentry.${String(cle)}`);
   }
@@ -198,10 +251,16 @@ describe('résolution des imports — configurations verrouillées (bancs de gar
     // `next.config.mjs` : empreinte du fichier entier. Une branche conditionnelle
     // (`NODE_ENV`, variable d'environnement) n'est vue par aucune évaluation.
     // AVANT d'ajuster l'empreinte : vérifier que le changement n'ajoute aucun
-    // alias, aucun `webpack`, `turbopack`, `typescript.tsconfigPath`,
-    // `experimental`, `modularizeImports` ni rien qui déplace une résolution.
+    // alias, aucun `turbopack`, `typescript.tsconfigPath`, `experimental`,
+    // `modularizeImports`, rien dans `webpack` hors du plugin admis, ni rien
+    // qui déplace une résolution.
     const empreinte = createHash('sha256').update(lire('web/next.config.mjs')).digest('hex');
     expect(empreinte).toBe(EMPREINTE_NEXT_CONFIG);
+    // Le plugin admis sous `webpack` : AVANT d'ajuster, vérifier qu'il ne touche
+    // ni `normalModuleFactory`, ni `contextModuleFactory`, ni `compiler.options`,
+    // ni aucun crochet de résolution.
+    const empreintePlugin = createHash('sha256').update(lire('web/scripts/licences-tierces.mjs')).digest('hex');
+    expect(empreintePlugin).toBe(EMPREINTE_PLUGIN_LICENCES);
   });
 
   // VERROU : un alias propre à Next (`webpack`, `turbopack.resolveAlias`) ou un
@@ -222,6 +281,28 @@ describe('résolution des imports — configurations verrouillées (bancs de gar
       [{ turbopack: { ['res' + 'olveAl' + 'ias']: { '@options': './x' } } }, sentry, 'next.turbopack'],
       [{ typescript: { tsconfigPath: 'tsconfig.options.json' } }, sentry, 'next.typescript'],
       [{ webpack: (c: unknown) => c }, sentry, 'next.webpack'],
+      [
+        {
+          webpack: (c: { resolve: { alias: object }; plugins: unknown[] }, o: { isServer: boolean; dev: boolean }) => {
+            if (!o.isServer && !o.dev) c.plugins.push(new PluginLicencesTierces());
+            c.resolve.alias = { '@options': './x' };
+            return c;
+          },
+        },
+        sentry,
+        'next.webpack',
+      ],
+      [
+        {
+          webpack: (c: { plugins: unknown[] }, o: { isServer: boolean; dev: boolean }) => {
+            if (!o.isServer && !o.dev) c.plugins.push(new PluginLicencesTierces(), {});
+            return c;
+          },
+        },
+        sentry,
+        'next.webpack',
+      ],
+      [{ webpack: (c: { plugins: unknown[] }) => (c.plugins.push(new PluginLicencesTierces()), c) }, sentry, 'next.webpack'],
       [{ experimental: { turbo: { resolveAlias: {} } } }, sentry, 'next.experimental'],
       [{ modularizeImports: {} }, sentry, 'next.modularizeImports'],
       [{ [Symbol('cle')]: 1 }, sentry, 'next.Symbol(cle)'],
@@ -230,5 +311,31 @@ describe('résolution des imports — configurations verrouillées (bancs de gar
     ];
     for (const [next, options, attendu] of mutations) expect(ecartsConfigNext(next, options), attendu).toContain(attendu);
     expect(ecartsConfigNext({ headers: 1, reactStrictMode: 1, redirects: 1 }, sentry)).toEqual([]);
+  });
+
+  // Le plugin admis ne se branche que sur `thisCompilation`, et son rappel que
+  // sur `processAssets` : il ne lit ni `compiler.options` (où vivent `resolve`
+  // et les chargeurs), ni les fabriques de modules passées au rappel.
+  it('le plugin admis sous `webpack` ne touche que thisCompilation, puis processAssets', () => {
+    const touches: string[] = [];
+    const espion = (nom: string, valeur: object = {}): object =>
+      new Proxy(valeur, {
+        get: (cible, cle) => {
+          touches.push(`${nom}.${String(cle)}`);
+          return Reflect.get(cible, cle) ?? espion(`${nom}.${String(cle)}`);
+        },
+      });
+    const rappels: ((...a: unknown[]) => void)[] = [];
+    const compilateur = {
+      context: WEB,
+      webpack: { Compilation: { PROCESS_ASSETS_STAGE_REPORT: 5000 }, WebpackError: Error },
+      hooks: { thisCompilation: { tap: (_: string, f: (...a: unknown[]) => void) => void rappels.push(f) } },
+      options: espion('options'),
+    };
+    new PluginLicencesTierces().apply(compilateur);
+    expect(rappels).toHaveLength(1);
+    const compilation = espion('compilation', { hooks: espion('compilation.hooks', { processAssets: { tap: () => undefined } }) });
+    rappels[0](compilation, espion('fabriques'));
+    expect(touches).toEqual(['compilation.hooks', 'compilation.hooks.processAssets']);
   });
 });

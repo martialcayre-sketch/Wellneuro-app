@@ -1,4 +1,5 @@
 import { withSentryConfig } from '@sentry/nextjs';
+import { PluginLicencesTierces } from './scripts/licences-tierces.mjs';
 
 /** @type {import('next').NextConfig} */
 
@@ -75,8 +76,22 @@ const enTetesCameraPage = [
   { key: 'Content-Security-Policy', value: `${scriptSrcPageCamera}; frame-ancestors 'none'` },
 ];
 
+// MENTIONS DE LICENCE DES COMPOSANTS LIVRÉS AU NAVIGATEUR. Le minificateur de
+// Next retire tous les commentaires de licence du bundle ; le plugin écrit à
+// la place `public/licences-tierces.txt` (servi à `/licences-tierces.txt`),
+// depuis les modules réellement émis par la compilation client. Build de
+// production seulement : `next dev` n'écrit rien. Détail et garde :
+// `scripts/licences-tierces.mjs`.
+//
+// LA CLÉ `webpack` EST VERROUILLÉE par `src/lib/bio-parcours/
+// resolutionImports.guard.test.ts` : elle n'ajoute que ce plugin, qui ne
+// touche à aucune résolution. Rien d'autre ne s'y écrit sans relire ce verrou.
 const nextConfig = {
   reactStrictMode: true,
+  webpack(config, { isServer, dev }) {
+    if (!isServer && !dev) config.plugins.push(new PluginLicencesTierces());
+    return config;
+  },
   // Parcours patient unique : toute navigation vers l'ancienne URL
   // `/patient/[idAssignation]` est renvoyée sur l'entrée du portail.
   //
