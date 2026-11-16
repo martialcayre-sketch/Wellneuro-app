@@ -83,7 +83,7 @@ rejoué rend `BROUILLON_INCHANGE`.
 
 ## La consigne versionnée
 
-`versionConsigne` vaut `fiche-usage-v8+<empreinte des deux consignes>`,
+`versionConsigne` vaut `fiche-usage-v9+<empreinte des deux consignes>`,
 épinglée dans `lib/consigne.mjs` et gardée par `lib/consigne.test.mjs`.
 
 Depuis la v2 (`D-501`), le message d'une fiche porte ses cinq axes signés,
@@ -139,6 +139,16 @@ fractionnement ou une durée de prise ne s'écrivent pas. Aucune spécialité
 ni posologie ; la catégorie « médicaments » est admise dans un fait
 descriptif de sécurité ou de comparaison. Un claim fourni n'a pas à être
 employé : une rubrique n'écrit que les claims qui portent sur son objet.
+
+Depuis la v9 (`D-501` §12), un fait auquel son claim attache une quantité
+de prise ne s'écrit ni entier, ni privé de cette quantité. Une rubrique dont
+tous les faits sont ainsi empêchés prend une phrase fixe de quantité,
+distincte de la phrase d'absence. La « question » admet les seuls mots « le
+dosage de » devant la désignation de l'analyte. La phrase d'absence s'écrit
+si, et seulement si, aucun claim fourni ne porte sur l'objet de la rubrique,
+dont la v9 précise le sens pour « interpretations » et
+« resultats_consequences ». La contre-lecture examine alors tous les claims
+fournis.
 
 ## Ce que l'outil ne voit pas
 

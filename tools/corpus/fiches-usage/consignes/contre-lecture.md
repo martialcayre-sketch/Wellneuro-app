@@ -23,7 +23,12 @@ statut de la fiche : sous « preuves_limitees », que l'usage n'est pas
 « etaye_valide », aucune. Une réserve absente quand le statut l'impose, ou
 celle d'un autre statut, est un défaut. Quand la fiche n'a aucun analyte,
 les mots « cet examen » désignent la mesure de la fiche : ils sont FIDÈLES
-et n'ajoutent rien.
+et n'ajoutent rien. Les seuls mots « le dosage de », accordés (« du »,
+« de la », « de l' », « des »), placés devant la désignation approuvée de
+l'analyte, désignent la mesure : ils sont FIDÈLES et n'ajoutent rien. Tout
+autre terme de mesure ajouté à cette désignation (« taux », « mesure »,
+« évaluation », un nom de méthode, de matrice ou d'unité hors de la
+désignation) est INFIDÈLE dans la « question », même porté par un claim.
 
 La rubrique « population » nomme la seule population d'usage par sa
 désignation approuvée : elle est FIDÈLE même si aucun claim ne porte sur
@@ -116,20 +121,53 @@ Il est INFIDÈLE s'il contient au moins un des défauts suivants :
   qualification diagnostique, plutôt qu'un état fonctionnel d'un seul
   nutriment dans le sens bas.
 
+Un claim porte sur l'objet d'une rubrique quand il en traite le contenu
+même, pas seulement son sujet. Pour « interpretations », il dit ce qu'un
+résultat de l'examen permet ou interdit de conclure ; pour
+« resultats_consequences », il nomme un résultat possible de l'examen ou
+la conséquence qu'un résultat autorise. Un claim qui ne relie aucun
+résultat de l'examen à ce qu'il permet ou interdit de conclure ne porte
+pas sur l'objet de « interpretations » ; un claim qui ne nomme ni un
+résultat possible de l'examen, ni une conséquence qu'un résultat
+autorise, ne porte pas sur celui de « resultats_consequences » ; dans les
+deux cas, même s'il porte sur le nutriment ou sur l'état recherché, et un
+texte qui l'y restitue ne traite pas la rubrique nommée.
+
 La phrase « Les sources retenues ne documentent pas ce point. » est FIDÈLE si
 aucun claim ne porte sur l'objet de la rubrique ; INFIDÈLE si un claim y
 porte, et toujours INFIDÈLE dans « question » ou « population ». Un claim
 fourni qui ne porte pas sur l'objet de la rubrique n'a pas à y figurer,
 hors la condition de sécurité ou d'admissibilité restituée hors de sa
 rubrique comme dit plus haut : quand le marqueur est « oui », la rubrique
-qui accueille cette condition l'écrit à la place de la phrase d'absence,
-et la phrase d'absence seule y est une condition tue.
+qui accueille cette condition l'écrit à la place de la phrase d'absence
+ou de la phrase de quantité, et l'une ou l'autre seule y est une condition
+tue.
+
+La phrase « Les sources retenues documentent ce point avec une quantité de prise, qui ne s'écrit pas dans cette fiche. »
+(la phrase de quantité) est FIDÈLE si des claims portent sur l'objet de
+la rubrique, qu'aucun des faits qu'ils y apportent ne peut s'écrire, et
+qu'au moins un en est empêché par une quantité de prise (une quantité à
+prendre ou à consommer, une fréquence ou un fractionnement des prises, une
+durée de prise ou de traitement). Elle est INFIDÈLE si un fait qui porte
+sur cet objet peut s'écrire, si aucun n'est empêché par une quantité de
+prise, et toujours dans « question » ou « population ».
+
+Pour juger la phrase d'absence ou la phrase de quantité, examine TOUS les
+claims fournis, pas seulement ceux que le texte emploie.
 
 Un fait qui ne peut s'écrire sans une quantité exclue ou sans un
 médicament nommé ne s'écrit pas du tout : son omission entière n'est pas une
-condition tue, et ce fait ne compte pas parmi ceux qui portent sur l'objet
-de la rubrique pour juger la phrase d'absence ; les autres faits du même
-claim restent jugés comme tels. Cette exemption ne
+condition tue ; les autres faits du même
+claim restent jugés comme tels. Écrit privé de cette quantité ou de ce
+médicament, il tait une condition de son claim : le texte est INFIDÈLE. Un
+fait auquel son claim attache une quantité de prise ne peut pas s'écrire
+sans elle. Empêché seulement par un médicament nommé, ou par une quantité
+exclue qui n'est pas une quantité de prise, ce fait ne compte pas parmi
+ceux qui portent sur l'objet de la rubrique pour juger la phrase d'absence.
+Empêché par une quantité de prise, même s'il l'est aussi par un médicament
+nommé ou une autre quantité exclue, il y compte : la phrase d'absence est alors
+INFIDÈLE, et seule la phrase de quantité convient si aucun fait qui porte
+sur l'objet ne peut s'écrire. Cette exemption ne
 vaut jamais pour une condition de sécurité ou d'admissibilité quand le
 marqueur est « oui » : son omission reste INFIDÈLE.
 

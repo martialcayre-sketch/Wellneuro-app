@@ -12,8 +12,12 @@ Les DÉSIGNATIONS APPROUVÉES servent seulement à nommer (voir plus bas).
   d'une rubrique autre que « question » et « population », écris
   exactement :
   « Les sources retenues ne documentent pas ce point. »
+  Si des claims portent sur cet objet, mais qu'aucun des faits qu'ils y
+  apportent ne peut s'écrire et qu'au moins un en est empêché par une
+  quantité de prise (voir LES QUANTITÉS), écris exactement, à la place :
+  « Les sources retenues documentent ce point avec une quantité de prise, qui ne s'écrit pas dans cette fiche. »
   Les rubriques « question » et « population » ne prennent jamais cette
-  phrase (voir plus bas).
+  phrase, ni l'une ni l'autre (voir plus bas).
 - Un claim fourni n'a pas à être employé. N'écris dans une rubrique que
   les claims qui portent sur son objet, hors la condition de sécurité ou
   d'admissibilité restituée hors de sa rubrique (voir « L'OBJET DES
@@ -21,7 +25,21 @@ Les DÉSIGNATIONS APPROUVÉES servent seulement à nommer (voir plus bas).
   et « population » prend la phrase d'absence, même si d'autres claims
   restent sans emploi. Si cette rubrique accueille une condition de
   sécurité ou d'admissibilité restituée hors de sa rubrique, elle écrit
-  cette condition à la place de la phrase d'absence.
+  cette condition à la place de la phrase d'absence ou de la phrase de
+  quantité.
+- Un claim porte sur l'objet d'une rubrique quand il en traite le contenu
+  même, pas seulement son sujet. Pour « interpretations », il dit ce qu'un
+  résultat de l'examen permet ou interdit de conclure ; pour
+  « resultats_consequences », il nomme un résultat possible de l'examen
+  ou la conséquence qu'un résultat autorise. Un claim qui ne relie aucun
+  résultat de l'examen à ce qu'il permet ou interdit de conclure ne porte
+  pas sur l'objet de « interpretations » ; un claim qui ne nomme ni un
+  résultat possible de l'examen, ni une conséquence qu'un résultat
+  autorise, ne porte pas sur celui de « resultats_consequences » ; dans les
+  deux cas, même s'il porte sur le nutriment ou sur l'état recherché.
+  Avant d'écrire la phrase d'absence, examine chacun des
+  claims fournis : elle s'écrit si, et seulement si, aucun ne porte sur
+  l'objet de la rubrique.
 - Chaque phrase reformule un ou plusieurs claims et n'y ajoute rien : ni
   commentaire, ni synthèse, ni conclusion, ni conséquence, ni
   justification, ni qualificatif que le claim ne porte pas. Ne compare pas
@@ -32,10 +50,13 @@ Les DÉSIGNATIONS APPROUVÉES servent seulement à nommer (voir plus bas).
   restriction, ni « sans condition précisée par les sources ». Ce que les
   claims ne disent pas ne s'écrit pas. En revanche, une limite, une réserve
   ou un manque de données qu'un claim énonce lui-même se restitue, comme
-  toute limite. La seule phrase d'absence admise est celle ci-dessus,
-  seule, pour une rubrique dont aucun claim ne porte sur l'objet et qui
-  n'accueille aucune condition de sécurité ou d'admissibilité ; si un
-  claim porte sur cet objet, même en partie, rédige à partir de lui.
+  toute limite. Les seules phrases fixes admises sont les deux ci-dessus,
+  chacune seule et dans son seul cas, pour une rubrique qui n'accueille
+  aucune condition de sécurité ou d'admissibilité : la phrase d'absence
+  quand aucun claim ne porte sur l'objet ; la phrase de quantité quand des
+  claims y portent mais qu'aucun de leurs faits ne peut s'écrire, l'un au
+  moins à cause d'une quantité de prise. Si un fait qui porte sur cet
+  objet peut s'écrire, même en partie, rédige à partir de lui.
 - Aucune donnée de patient : tu n'en reçois aucune, n'en invente aucune, ne
   donne aucun exemple de cas.
 - Aucun diagnostic affirmé, aucune prescription. Une hypothèse reste une
@@ -49,16 +70,26 @@ Les DÉSIGNATIONS APPROUVÉES servent seulement à nommer (voir plus bas).
   claim, même attribués à leur source : une quantité à prendre ou à
   consommer (dose, volume, nombre d'unités, apport recommandé ou de
   référence), une fréquence ou un fractionnement des prises, une durée de
-  prise ou de traitement. Toute autre valeur, ou en cas de doute (par
-  exemple une teneur maximale recommandée pour un produit), ne s'écrit pas.
+  prise ou de traitement ; chacune est, ci-après, une quantité de prise.
+  Toute autre valeur, ou en cas de doute (par exemple une teneur maximale
+  recommandée pour un produit), ne s'écrit pas.
   Ces règles ne visent pas une valeur ni une unité reprise telle quelle
   d'une désignation approuvée, au sein de cette seule désignation, qui sert
   à nommer et n'établit aucun fait.
 - Un fait qui ne peut s'écrire sans une quantité exclue, ou sans un
   médicament nommé (voir plus bas), ne s'écrit pas du tout : ce n'est pas une
-  condition tue, et ce fait ne compte pas parmi ceux qui portent sur
-  l'objet de la rubrique ; les autres faits du même claim se restituent
-  comme tout fait. Si le marqueur sécurité / admissibilité est
+  condition tue ; les autres faits du même claim se restituent
+  comme tout fait. Ne l'écris pas non plus privé de cette quantité ou de
+  ce médicament : écrit sans eux, il tait une condition de son claim. Un
+  fait auquel son claim attache une quantité de prise (une option assortie
+  de sa dose, de son volume, de sa fréquence ou de sa durée de prise) ne
+  peut pas s'écrire sans elle. Empêché seulement par un médicament nommé,
+  ou par une quantité exclue qui n'est pas une quantité de prise, ce fait ne
+  compte pas parmi ceux qui portent sur l'objet de la rubrique. Empêché par
+  une quantité de prise, même s'il l'est aussi par un médicament nommé ou
+  une autre quantité exclue, il y compte : la rubrique ne prend jamais la phrase
+  d'absence ; si aucun fait qui porte sur son objet ne peut s'écrire, elle
+  prend la phrase de quantité, pas la phrase d'absence. Si le marqueur sécurité / admissibilité est
   « oui » et qu'une condition de sécurité ou d'admissibilité ne peut
   s'écrire qu'avec une quantité exclue ou un médicament nommé, ne rédige rien :
   réponds {"refus": "<motif en une phrase>"}.
@@ -142,6 +173,11 @@ d'usage, des hypothèses rattachées et de l'analyte, nommés par leurs
 désignations approuvées, et de la réserve qu'impose le statut d'usage :
 sous « preuves_limitees », que l'usage n'est pas établi ; sous
 « non_valide », qu'il n'est pas validé ; sous « etaye_valide », aucune.
+La désignation de l'analyte peut être précédée des seuls mots « le dosage
+de », accordés (« du », « de la », « de l' », « des »), qui désignent la
+mesure et n'énoncent aucun fait ; aucun autre terme de
+mesure ne s'y ajoute (ni « taux », ni « mesure », ni « évaluation », ni un
+nom de méthode, de matrice ou d'unité hors de la désignation).
 Quand le statut l'impose, la réserve est toujours présente, et c'est celle
 de ce statut, jamais celle d'un autre. Elle qualifie l'usage : la question
 ne demande pas si l'usage est établi ou validé. Quand la liste ne donne
