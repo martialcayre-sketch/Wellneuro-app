@@ -4,4 +4,4 @@
   - une limite de la littérature n'est pas une limite de l'examen ;
   - un argument de causalité n'est pas une surveillance ;
   - dans « resultats_consequences », un résultat ne s'interprète pas, et sous « preuves_limitees » aucune conséquence décisionnelle ne s'y écrit, sauf une condition de sécurité imposée par le marqueur « oui ».
-  - Contre-revue Codex (D-505) : un P1 et un P2 corrigés, puis une troisième passe sans constat. Consigne `fiche-usage-v11`, empreinte `365c3413be8abfe1`, banc vert. Le texte est soumis à l'approbation du responsable ; aucun essai avant le merge.
+  - Contre-revue Codex (D-505) : un P1 et un P2 corrigés, puis une troisième passe sans constat. Consigne `fiche-usage-v11`, empreinte `365c3413be8abfe1`, banc vert. Le responsable a approuvé le texte tel quel (`20261116-2310-b`), et D-501 §14 est au statut accepté. Aucun essai avant le merge.
