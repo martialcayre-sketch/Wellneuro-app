@@ -1,4 +1,4 @@
-// La consigne « fiche-usage-v9 » est épinglée : un octet changé sans bump de
+// La consigne « fiche-usage-v10 » est épinglée : un octet changé sans bump de
 // version rougit ici, et l'outil refuse de tourner ([[D-314]] §4).
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
@@ -217,4 +217,36 @@ test('v9 : phrase de quantité, « le dosage de » dans la question, objet des c
   assert.match(contreLecture, /Tout\s+autre terme de mesure ajouté à cette désignation/);
   assert.match(contreLecture, /est INFIDÈLE dans la « question », même porté par un claim/);
   assert.match(contreLecture, /la phrase d'absence est alors\s+INFIDÈLE/);
+});
+
+// [[D-501]] §13 : arbitrages cliniques du 2026-11-16 (20261116-2115-b,
+// 20261116-2116-b) et critères concrets de la phrase d'absence. Un niveau
+// d'apport déclaré sans problème de sécurité est une limite de sécurité ; une
+// mention sans valeur chiffrée n'est pas une quantité de prise ; sous
+// « preuves_limitees », la recommandation d'un claim s'écrit attribuée et
+// réservée dans la même phrase. Des deux côtés.
+test('v10 : limite de sécurité exprimée en apport, mention sans valeur, recommandation attribuée et réservée', () => {
+  const { redaction, contreLecture } = lireConsignes();
+  for (const c of [redaction, contreLecture]) {
+    assert.match(c, /un\s+niveau\s+d'apport\s+qu'une\s+source\s+déclare\s+sans\s+problème\s+de\s+sécurité\s+est\s+une\s+limite\s+supérieure\s+de\s+sécurité/i);
+    assert.match(c, /même\s+exprimé\s+en\s+quantité\s+consommée\s+par\s+prise\s+ou\s+par\s+jour/);
+    assert.match(c, /attribué\s+à\s+sa\s+source,\s+avec\s+sa\s+population,\s+ses\s+exceptions\s+et\s+ses\s+réserves/);
+    assert.match(c, /mention\s+de\s+dose\s+ou\s+d'apport\s+sans\s+valeur\s+chiffrée/);
+    assert.match(c, /n'est\s+pas\s+une\s+quantité\s+de\s+prise/);
+    // La recommandation d'un claim : attribuée, toutes conditions, réserve fixe.
+    assert.match(c, /«\s+Selon\s+<source>,\s+…\s+»/);
+    assert.ok(c.includes("« , mais cet usage n'est pas") , 'réserve fixe');
+    assert.match(c, /«\s+,\s+mais\s+cet\s+usage\s+n'est\s+pas\s+établi\.\s+»/);
+    // Phrase d'absence : critères concrets pour résultats et limites.
+    assert.match(c, /nomme\s+un\s+résultat\s+possible\s+de\s+l'analyte\s+de\s+la\s+fiche/);
+    assert.match(c, /énonce\s+une\s+limite\s+de\s+l'examen\s+ou\s+de\s+son\s+marqueur/);
+  }
+  // La clause de doute ne vise plus qu'une valeur chiffrée (revue D-448 de #2186).
+  assert.match(redaction, /Toute autre valeur chiffrée, ou en cas de doute sur une\s+valeur chiffrée/);
+  assert.match(redaction, /Hors de cette phrase attribuée et réservée, rien ne présente\s+l'usage comme recommandé/);
+  assert.match(redaction, /n'en tire ni qu'au-delà\s+l'apport est dangereux, ni qu'en deçà il est conseillé/);
+  assert.match(contreLecture, /sans l'attribution ou sans cette réserve, elle en est un/);
+  assert.match(contreLecture, /prolongé en danger au-delà ou en conseil en deçà, il en est un/);
+  // Le reste du statut ne bouge pas : « non_valide » garde sa règle.
+  assert.match(redaction, /« non_valide » :\s+le texte dit que l'usage n'est pas validé/);
 });

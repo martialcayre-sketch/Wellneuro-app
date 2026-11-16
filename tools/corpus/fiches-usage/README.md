@@ -83,7 +83,7 @@ rejoué rend `BROUILLON_INCHANGE`.
 
 ## La consigne versionnée
 
-`versionConsigne` vaut `fiche-usage-v9+<empreinte des deux consignes>`,
+`versionConsigne` vaut `fiche-usage-v10+<empreinte des deux consignes>`,
 épinglée dans `lib/consigne.mjs` et gardée par `lib/consigne.test.mjs`.
 
 Depuis la v2 (`D-501`), le message d'une fiche porte ses cinq axes signés,
@@ -149,6 +149,18 @@ si, et seulement si, aucun claim fourni ne porte sur l'objet de la rubrique,
 dont la v9 précise le sens pour « interpretations » et
 « resultats_consequences ». La contre-lecture examine alors tous les claims
 fournis.
+
+Depuis la v10 (`D-501` §13), un niveau d'apport qu'une source déclare sans
+problème de sécurité est une limite supérieure de sécurité, même exprimé en
+quantité consommée : il s'écrit en constat, attribué à sa source, avec sa
+population, ses exceptions et ses réserves. Une mention de dose ou d'apport
+sans valeur chiffrée n'est pas une quantité de prise ; la clause de doute ne
+vise plus qu'une valeur chiffrée. Sous « preuves_limitees », un claim qui
+recommande lui-même l'usage de l'examen s'écrit attribué à sa source, la
+phrase se terminant par « , mais cet usage n'est pas établi. ». Deux critères
+concrets disent quand un claim porte sur « resultats_consequences » (il nomme
+un résultat possible de l'analyte) et sur « limites » (il énonce une limite
+de l'examen ou de son marqueur).
 
 ## Ce que l'outil ne voit pas
 

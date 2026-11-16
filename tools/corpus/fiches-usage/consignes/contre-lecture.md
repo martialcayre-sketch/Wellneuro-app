@@ -99,13 +99,26 @@ Il est INFIDÈLE s'il contient au moins un des défauts suivants :
   effectivement présente dans un aliment, une eau ou un produit) et un
   seuil qui borne une observation ou un risque (la quantité au-delà de
   laquelle un effet est observé, une limite supérieure de sécurité),
-  restitués avec toutes leurs conditions ;
+  restitués avec toutes leurs conditions ; un niveau d'apport qu'une source
+  déclare sans problème de sécurité est une limite supérieure de sécurité,
+  même exprimé en quantité consommée par prise ou par jour : restitué en
+  constat, attribué à sa source, avec sa population, ses exceptions et ses
+  réserves, il n'est pas un défaut ; présenté comme une quantité à prendre,
+  une recommandation, une garantie de sécurité que la source ne donne pas,
+  ou prolongé en danger au-delà ou en conseil en deçà, il en est un ; une
+  mention de dose ou d'apport sans valeur chiffrée (« à doses élevées »,
+  l'absence d'apport conseillé) n'est pas une quantité de prise, et
+  restituée telle que son claim la porte, elle n'est pas un défaut ;
 - une indication de demander le dosage des anticorps anti-LDL oxydées tirée
   d'un claim marqué [SOUS RÉSERVE D'INDICATION] ;
 - pour une rubrique : un texte qui ne traite pas la rubrique nommée ;
 - pour une rubrique : un texte qui dépasse les AXES SIGNÉS DE LA FICHE — un
   usage présenté comme établi, validé, recommandé ou systématique alors que
-  le statut d'usage est « preuves_limitees » ; un usage qui n'est pas dit
+  le statut d'usage est « preuves_limitees », hors la phrase qui restitue
+  un claim recommandant lui-même l'usage, attribuée à la source de ce claim
+  (« Selon <source>, … »), avec toutes ses conditions, et terminée par
+  « , mais cet usage n'est pas établi. » : cette phrase n'est pas un défaut,
+  et sans l'attribution ou sans cette réserve, elle en est un ; un usage qui n'est pas dit
   non validé, ou qui déclenche un examen ou une décision, alors que le
   statut est « non_valide » (une rubrique qui ne présente aucun usage n'a
   pas à le dire) ; une « information_contributive » présentée
@@ -131,7 +144,12 @@ pas sur l'objet de « interpretations » ; un claim qui ne nomme ni un
 résultat possible de l'examen, ni une conséquence qu'un résultat
 autorise, ne porte pas sur celui de « resultats_consequences » ; dans les
 deux cas, même s'il porte sur le nutriment ou sur l'état recherché, et un
-texte qui l'y restitue ne traite pas la rubrique nommée.
+texte qui l'y restitue ne traite pas la rubrique nommée. Un claim qui
+nomme un résultat possible de l'analyte de la fiche (une valeur basse,
+abaissée ou élevée) porte sur l'objet de « resultats_consequences ». Un
+claim qui énonce une limite de l'examen ou de son marqueur (sa fiabilité,
+sa validité, ce qu'il ne permet pas de mesurer ou de conclure, un manque
+de données) porte sur l'objet de « limites ».
 
 La phrase « Les sources retenues ne documentent pas ce point. » est FIDÈLE si
 aucun claim ne porte sur l'objet de la rubrique ; INFIDÈLE si un claim y
