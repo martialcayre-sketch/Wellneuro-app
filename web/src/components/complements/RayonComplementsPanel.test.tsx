@@ -530,4 +530,37 @@ describe('RayonComplementsPanel (instrument à tiroir)', () => {
     await waitFor(() => expect(screen.getByTestId('fiche-stub')).toBeTruthy());
     expect(screen.getByText('Détail de Magnésium Plus')).toBeTruthy();
   });
+
+  // ─── PRA-4 (D-481, complément DOC-13) : Q1, Q5, Q10 ───────────────────────
+
+  it('« Fiches » en h2 sous le h1 du rayon, sans saut ; champs, chips et cartes à 44 px avec focus visible', async () => {
+    fetchMock.mockImplementation(routerFetch(catalogue({ fiches: [fiche({ nomCommercial: 'Magnésium Plus' })] })));
+    render(<RayonComplementsPanel />);
+
+    expect(screen.getByRole('heading', { level: 2, name: 'Fiches' })).toBeTruthy();
+    expect(screen.queryByRole('heading', { level: 3 })).toBeNull();
+
+    for (const champ of [
+      screen.getByLabelText('Rechercher un produit ou une marque'),
+      screen.getByLabelText('Code d’intention clinique'),
+      screen.getByLabelText('Clé de tri (mono-dimension)'),
+    ]) {
+      expect(champ.className).toContain('min-h-11');
+      expect(champ.className).toContain('focus-visible:ring-focus-ring');
+      expect(champ.className).not.toContain('focus:ring-primary');
+    }
+
+    const chip = screen.getByRole('button', { name: 'Bien documentée' });
+    expect(chip.className).toContain('min-h-11');
+    expect(chip.className).toContain('focus-visible:ring-focus-ring');
+    fireEvent.click(chip);
+    await waitFor(() => expect(chip.getAttribute('aria-pressed')).toBe('true'));
+    // Q10 : la chip active passe aux jetons du socle, plus d'indigo.
+    expect(chip.className).toContain('border-primary bg-primary/10');
+    expect(chip.className).not.toMatch(/indigo/);
+
+    const carte = await screen.findByRole('button', { name: /Magnésium Plus/ });
+    expect(carte.className).toContain('min-h-11');
+    expect(carte.className).toContain('focus-visible:ring-focus-ring');
+  });
 });

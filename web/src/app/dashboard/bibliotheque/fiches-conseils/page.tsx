@@ -4,8 +4,9 @@ export const metadata = { title: 'Wellneuro — Fiches conseils' };
 
 // Rayon Fiches conseils (D-251 lot 6) : relecture et validation des fiches
 // d'assiette. Onglet de la page unique jusqu'au 2026-10-18, entrée du menu
-// depuis D-324 §4. Le panneau porte son propre en-tête (titre, surtitre,
-// phrase d'usage) : la page n'en ajoute pas un second.
+// depuis D-324 §4. Le panneau porte son propre en-tête (`EnTeteRayon`, h1
+// de la page) : il y rend le focus au retour de la relecture, ce qu'un
+// en-tête posé par la page ne permettrait pas. La page n'en ajoute pas un second.
 export default function FichesConseilsPage() {
   return (
     <div className="flex flex-col gap-6">

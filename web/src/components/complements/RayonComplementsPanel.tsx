@@ -3,11 +3,18 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
 import { FicheComplementPanel } from '@/components/complements/FicheComplementPanel';
 import { PanneauSuperpose } from '@/components/ui/PanneauSuperpose';
 import type { ComplementsApiResponse } from '@/app/api/praticien/complements/route';
 import type { CatalogueResult, FicheComplement } from '@/lib/supplement-library/catalogue';
 import { getC4DisabledMessage } from '@/lib/supplement-library/featureFlag';
+
+// Q5 de D-481 : 44 px et focus visible, comme `ui/Input` ; `ui/Select` sert
+// d'autres écrans et n'est pas changé par ce lot (même choix que la PR 1).
+const CLASSE_SELECT =
+  'min-h-11 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring';
 
 // Rayon compléments (C4) — instrument « à tiroir » consultable, calqué sur le
 // patron de la Boussole alimentaire (C5). Entrée par intention clinique,
@@ -277,7 +284,7 @@ export function RayonComplementsPanel() {
         <div className="mt-3 flex flex-wrap items-end gap-2">
           <label className="flex flex-col gap-1 text-xs font-semibold text-foreground">
             Nom ou marque
-            <input
+            <Input
               value={rechercheSaisie}
               disabled={surfaceIndisponible}
               onChange={(e) => setRechercheSaisie(e.target.value)}
@@ -289,7 +296,7 @@ export function RayonComplementsPanel() {
               }}
               placeholder="Ex. magnésium"
               aria-label="Rechercher un produit ou une marque"
-              className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              className="placeholder:text-muted-foreground"
             />
           </label>
           <Button type="button" variant="outline" onClick={lancerRecherche} disabled={surfaceIndisponible}>
@@ -315,13 +322,13 @@ export function RayonComplementsPanel() {
         <div className="mt-3 flex flex-wrap items-end gap-2">
           <label className="flex flex-col gap-1 text-xs font-semibold text-foreground">
             Intention clinique
-            <input
+            <Input
               value={intentionSaisie}
               disabled={surfaceIndisponible}
               onChange={(e) => setIntentionSaisie(e.target.value)}
               placeholder="Ex. sommeil_fragmente"
               aria-label="Code d’intention clinique"
-              className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              className="placeholder:text-muted-foreground"
             />
           </label>
           <Button type="button" variant="outline" onClick={explorerIntention} disabled={surfaceIndisponible}>
@@ -375,7 +382,7 @@ export function RayonComplementsPanel() {
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <label className="text-xs font-semibold text-foreground">
             Tri
-            <select
+            <Select
               value={tri}
               disabled={surfaceIndisponible}
               onChange={(e) => {
@@ -385,21 +392,21 @@ export function RayonComplementsPanel() {
                 setTri(e.target.value);
               }}
               aria-label="Clé de tri (mono-dimension)"
-              className="ml-2 rounded-lg border border-border bg-surface px-2 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              className={`ml-2 ${CLASSE_SELECT}`}
             >
               {Object.entries(LABEL_TRI).map(([cle, libelle]) => (
                 <option key={cle} value={cle}>
                   {libelle}
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
         </div>
 
         {/* Facettes indépendantes — disponibles dès l'ouverture de l'écran. */}
         <div className="mt-4 flex flex-col gap-3">
             {FACETTES_ORDRE.map((cle) => (
-              <fieldset key={cle} className="flex flex-wrap items-center gap-1.5">
+              <fieldset key={cle} className="flex flex-wrap items-center gap-2">
                 <legend className="mr-2 text-2xs font-semibold uppercase tracking-[.08em] text-muted-foreground">
                   {LABEL_FACETTE[cle]}
                 </legend>
@@ -414,11 +421,11 @@ export function RayonComplementsPanel() {
                       disabled={grisee || surfaceIndisponible}
                       title={grisee ? MESSAGE_VALEUR_GRISEE : undefined}
                       onClick={() => basculerFacette(cle, valeur)}
-                      className={`inline-flex items-center rounded-full border px-3 py-1 text-2xs font-semibold transition-colors ${
+                      className={`inline-flex min-h-11 items-center rounded-full border px-3 py-1 text-2xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring ${
                         grisee
                           ? 'cursor-not-allowed border-dashed border-border bg-surface text-muted-foreground'
                           : actif
-                            ? 'border-indigo-600 bg-indigo-600/10 text-primary'
+                            ? 'border-primary bg-primary/10 text-primary'
                             : 'border-border bg-surface text-muted-foreground hover:border-primary/40'
                       }`}
                     >
@@ -449,7 +456,7 @@ export function RayonComplementsPanel() {
       {/* Résultats */}
       <div className="rounded-xl border border-border bg-surface shadow-card">
         <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
-          <h3 className="font-display text-lg font-semibold text-foreground">Fiches</h3>
+          <h2 className="font-display text-lg font-semibold text-foreground">Fiches</h2>
           <span className="font-mono text-2xs text-muted-foreground">
             {catalogue ? `${catalogue.total} fiche${catalogue.total > 1 ? 's' : ''}` : '—'}
           </span>
@@ -478,7 +485,7 @@ export function RayonComplementsPanel() {
                   <button
                     type="button"
                     onClick={() => setFicheOuverte(fiche)}
-                    className="w-full rounded-lg border border-border p-3 text-left transition-colors hover:border-primary/40 hover:bg-muted"
+                    className="min-h-11 w-full rounded-lg border border-border p-3 text-left transition-colors hover:border-primary/40 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                   >
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <span className="font-display text-sm font-semibold text-foreground">
