@@ -32,7 +32,9 @@ positions signées, sous forme opaque, par une décision au gabarit de `D-526` ;
 - Contre-revue Codex P0 (`D-505`) sur e34f44d8 : un constat P1 (forme opaque). Corrigé pour les paraphrases du §1 et du
   §3.2 ; écarté pour les poids de produit, déjà publics. Rendu et verdict en commentaire de #2171.
 - `main` a avancé au-delà de la tête poussée : `origin/main` est fusionnée dans la branche (commit de fusion, sans rebase
-  ni force-push), sur arbitrage du responsable (D-518 §2).
+  ni force-push), sur arbitrage du responsable (D-518 §2) ; une seconde fois après #2170, sur un second accord.
+- PR-Agent sur a691af18 : un paragraphe dupliqué au §7 de `D-529`, corrigé ; titre et corps de la PR alignés sur
+  « acceptée » ; « positions signées » du plan écarté avec motif (« prête » attend le constat de la re-signature).
 - **`D-529` acceptée** par le responsable le 2026-11-16 (« J'accepte, motif tel quel »), après la contre-revue Codex.
   Rang du journal H15 : `03` du 2026-11-16 (`01` et `02` déjà sur `main`).
 
