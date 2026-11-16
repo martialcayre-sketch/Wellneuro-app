@@ -91,7 +91,8 @@ Il est INFIDÈLE s'il contient au moins un des défauts suivants :
   elle est nommée en tant que médicament ;
 - une quantité à prendre ou à consommer (dose, volume, nombre d'unités,
   apport recommandé ou de référence), une fréquence ou un fractionnement
-  des prises, une durée de prise ou de traitement, ou toute autre valeur
+  des prises, une durée de prise ou de traitement, un moment de prise (le
+  soir, au repas, à jeun), ou toute autre valeur
   qui n'est ni une teneur ni un seuil (par exemple une teneur maximale
   recommandée pour un produit), même rapportés par un claim, hors une
   valeur reprise d'une désignation approuvée comme dit plus haut ; ne sont pas
@@ -119,7 +120,8 @@ Il est INFIDÈLE s'il contient au moins un des défauts suivants :
   un claim recommandant lui-même l'usage, attribuée à la source de ce claim
   (« Selon <source>, … »), avec toutes ses conditions, et terminée par
   « , mais cet usage n'est pas établi. » : cette phrase n'est pas un défaut,
-  et sans l'attribution ou sans cette réserve, elle en est un ; un usage qui n'est pas dit
+  et sans l'attribution ou sans cette réserve, elle en est un, dans toute
+  rubrique, « precautions » comprise ; un usage qui n'est pas dit
   non validé, ou qui déclenche un examen ou une décision, alors que le
   statut est « non_valide » (une rubrique qui ne présente aucun usage n'a
   pas à le dire) ; une « information_contributive » présentée
@@ -150,7 +152,20 @@ nomme un résultat possible de l'analyte de la fiche (une valeur basse,
 abaissée ou élevée) porte sur l'objet de « resultats_consequences ». Un
 claim qui énonce une limite de l'examen ou de son marqueur (sa fiabilité,
 sa validité, ce qu'il ne permet pas de mesurer ou de conclure, un manque
-de données) porte sur l'objet de « limites ».
+de données) porte sur l'objet de « limites ». Une limite de la littérature
+sur un supplément, une option ou un traitement (son efficacité, son absence
+d'effet, la qualité de ses études) n'est pas une limite de l'examen ni de
+son marqueur : elle ne porte pas sur l'objet de « limites ». Un claim porte
+sur l'objet de « surveillance_arret » quand il dit quoi surveiller, quand
+ou comment, ou à quel critère arrêter ; un argument de causalité
+(l'évolution d'un effet après l'arrêt puis la reprise d'un produit) n'en
+relève pas. Dans ces deux cas, un texte qui l'y restitue ne traite pas la
+rubrique nommée. Dans « resultats_consequences », un résultat interprété
+(ce dont il témoigne, ce qu'il reflète ou traduit) déborde vers
+« interpretations » ; sous le statut « preuves_limitees », une conséquence
+décisionnelle (orienter vers une complémentation, une prise en charge ou
+un autre examen) y est un défaut, sauf une condition de sécurité ou
+d'admissibilité que le marqueur « oui » impose d'y restituer.
 
 La phrase « Les sources retenues ne documentent pas ce point. » est FIDÈLE si
 aucun claim ne porte sur l'objet de la rubrique ; INFIDÈLE si un claim y
@@ -167,7 +182,7 @@ La phrase « Les sources retenues documentent ce point avec une quantité de pri
 la rubrique, qu'aucun des faits qu'ils y apportent ne peut s'écrire, et
 qu'au moins un en est empêché par une quantité de prise (une quantité à
 prendre ou à consommer, une fréquence ou un fractionnement des prises, une
-durée de prise ou de traitement). Elle est INFIDÈLE si un fait qui porte
+durée de prise ou de traitement, un moment de prise). Elle est INFIDÈLE si un fait qui porte
 sur cet objet peut s'écrire, si aucun n'est empêché par une quantité de
 prise, et toujours dans « question » ou « population ».
 
@@ -182,7 +197,9 @@ médicament, il tait une condition de son claim : le texte est INFIDÈLE. Un
 fait auquel son claim attache une quantité de prise ne peut pas s'écrire
 sans elle. Empêché seulement par un médicament nommé, ou par une quantité
 exclue qui n'est pas une quantité de prise, ce fait ne compte pas parmi
-ceux qui portent sur l'objet de la rubrique pour juger la phrase d'absence.
+ceux qui portent sur l'objet de la rubrique pour juger la phrase d'absence ;
+une conséquence décisionnelle qui ne s'écrit pas dans
+« resultats_consequences » sous « preuves_limitees » n'y compte pas non plus.
 Empêché par une quantité de prise, même s'il l'est aussi par un médicament
 nommé ou une autre quantité exclue, il y compte : la phrase d'absence est alors
 INFIDÈLE, et seule la phrase de quantité convient si aucun fait qui porte
