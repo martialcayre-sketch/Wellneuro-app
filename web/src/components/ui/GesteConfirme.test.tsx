@@ -37,6 +37,34 @@ describe('GesteConfirme', () => {
     expect(document.activeElement).toBe(annuler);
   });
 
+  it('après « Annuler » sur un déclencheur inactif, le focus n’est pas repris à un champ où le clavier est allé', () => {
+    const { rerender } = render(
+      <>
+        {rendu(false)}
+        <input aria-label="Champ voisin" />
+      </>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Geste' }));
+    // Le déclencheur devient inactif pendant la confirmation, puis on annule.
+    rerender(
+      <>
+        {rendu(true)}
+        <input aria-label="Champ voisin" />
+      </>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Annuler' }));
+    const champ = screen.getByLabelText('Champ voisin');
+    champ.focus();
+    // La saisie dans le champ réactive le déclencheur : le focus reste au champ.
+    rerender(
+      <>
+        {rendu(false)}
+        <input aria-label="Champ voisin" />
+      </>,
+    );
+    expect(document.activeElement).toBe(champ);
+  });
+
   it('Échap referme sans rien faire et rend le focus au déclencheur', () => {
     const onConfirmer = vi.fn();
     render(rendu(false, onConfirmer));

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { CLASSE_BARRE_ONGLETS, classeOnglet } from '@/components/corpus/habillageAtelier';
 import {
   GRADES_PREUVE_SCIENTIFIQUE,
   labelGradePreuve,
@@ -76,8 +77,9 @@ function formatDate(iso: string): string {
   });
 }
 
+// Q5 de D-481 (complément DOC-13) : 44 px et focus visible, comme `ui/Input`.
 function classeChamp(): string {
-  return 'rounded-lg border border-border bg-background px-3 py-1.5 text-sm';
+  return 'min-h-11 rounded-lg border border-border bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring';
 }
 
 /** Badge de grade — étiquette « preuve scientifique », jamais A/B/C/D nu. */
@@ -187,13 +189,13 @@ function SelecteurIngredient({
 
   if (choisi) {
     return (
-      <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-1.5 text-sm">
+      <div className="flex items-center gap-2 rounded-lg border border-border bg-background py-0.5 pl-3 pr-0.5 text-sm">
         <span className="flex-1 truncate text-foreground">Ingrédient : {choisi.nomFr}</span>
         <button
           type="button"
           disabled={desactive}
           onClick={() => onChoix(null)}
-          className="shrink-0 text-xs font-medium text-primary underline disabled:opacity-50"
+          className="min-h-11 shrink-0 rounded-lg px-3 text-xs font-medium text-primary underline disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
         >
           Changer
         </button>
@@ -232,7 +234,7 @@ function SelecteurIngredient({
                 type="button"
                 disabled={desactive}
                 onClick={() => onChoix(entree)}
-                className="w-full px-3 py-1.5 text-left text-sm text-foreground hover:bg-muted disabled:opacity-50"
+                className="min-h-11 w-full px-3 py-2 text-left text-sm text-foreground hover:bg-muted disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-focus-ring"
               >
                 {entree.nomFr}{' '}
                 {/* Le code est montré parce que la recherche porte AUSSI sur lui :
@@ -294,7 +296,7 @@ function EncartPrevisualisation({ desactive }: { desactive: boolean }) {
       aria-label="Tester une intention"
       className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-4 shadow-card"
     >
-      <h3 className="font-display text-lg font-semibold text-foreground">Tester une intention</h3>
+      <h2 className="font-display text-lg font-semibold text-foreground">Tester une intention</h2>
       <p className="text-sm text-muted-foreground">
         Prévisualisation d&apos;atelier : la résolution inclut ici les brouillons,
         marqués comme tels — elle n&apos;alimente jamais un protocole ni un patient.
@@ -496,7 +498,7 @@ function FormulaireCreation({
   const fige = desactive || envoi;
   return (
     <details className="rounded-xl border border-border bg-surface p-4 shadow-card">
-      <summary className="cursor-pointer font-display text-lg font-semibold text-foreground">
+      <summary className="min-h-11 cursor-pointer rounded-sm py-2 font-display text-lg font-semibold text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring">
         Nouvelle règle (brouillon)
       </summary>
       <div className="mt-3 flex flex-col gap-3">
@@ -1053,7 +1055,7 @@ function FormulaireVocabulaire({
   const fige = desactive || envoi;
   return (
     <details className="rounded-xl border border-border bg-surface p-4 shadow-card">
-      <summary className="cursor-pointer font-display text-lg font-semibold text-foreground">
+      <summary className="min-h-11 cursor-pointer rounded-sm py-2 font-display text-lg font-semibold text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring">
         Vocabulaire gouverné (intentions et critères)
       </summary>
       <div className="mt-3 flex flex-col gap-3">
@@ -1184,7 +1186,7 @@ function FormulaireSource({
   const fige = desactive || envoi;
   return (
     <details className="rounded-xl border border-border bg-surface p-4 shadow-card">
-      <summary className="cursor-pointer font-display text-lg font-semibold text-foreground">
+      <summary className="min-h-11 cursor-pointer rounded-sm py-2 font-display text-lg font-semibold text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring">
         Références sources
       </summary>
       <div className="mt-3 flex flex-col gap-3">
@@ -1314,7 +1316,7 @@ function EncartCatalogueC4({ desactive }: { desactive: boolean }) {
 
   return (
     <details className="rounded-xl border border-border bg-surface p-4 shadow-card">
-      <summary className="cursor-pointer font-display text-lg font-semibold text-foreground">
+      <summary className="min-h-11 cursor-pointer rounded-sm py-2 font-display text-lg font-semibold text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring">
         Sécurité et catégories fonctionnelles
       </summary>
       <div className="mt-3 flex flex-col gap-5">
@@ -1325,9 +1327,9 @@ function EncartCatalogueC4({ desactive }: { desactive: boolean }) {
         </p>
 
         <div className="flex flex-col gap-2">
-          <h4 className="text-sm font-semibold text-foreground">
+          <h3 className="text-sm font-semibold text-foreground">
             Catégories fonctionnelles ({categories.length})
-          </h4>
+          </h3>
           {categories.length > 0 && (
             <ul className="max-h-32 overflow-y-auto rounded-lg border border-border text-sm">
               {categories.map((categorie) => (
@@ -1378,9 +1380,9 @@ function EncartCatalogueC4({ desactive }: { desactive: boolean }) {
         </div>
 
         <div className="flex flex-col gap-2">
-          <h4 className="text-sm font-semibold text-foreground">
+          <h3 className="text-sm font-semibold text-foreground">
             Alertes de sécurité ({alertes.length})
-          </h4>
+          </h3>
           {alertes.length > 0 && (
             <ul className="max-h-32 overflow-y-auto rounded-lg border border-border text-sm">
               {alertes.map((alerte) => (
@@ -1688,7 +1690,7 @@ export function AtelierReglesPanel() {
           tient pas encore ses unités. */}
       <EncartCatalogueC4 desactive={enEnvoi} />
 
-      <div role="tablist" aria-label="Statut des règles" className="flex gap-2">
+      <div role="tablist" aria-label="Statut des règles" className={`self-start ${CLASSE_BARRE_ONGLETS}`}>
         {ONGLETS.map((onglet, index) => {
           const actif = onglet.statut === statut;
           return (
@@ -1705,11 +1707,7 @@ export function AtelierReglesPanel() {
               tabIndex={actif ? 0 : -1}
               onClick={() => changerOnglet(onglet.statut)}
               onKeyDown={(event) => onClavierOnglets(event, index)}
-              className={`min-h-9 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring ${
-                actif
-                  ? 'bg-primary text-primary-foreground'
-                  : 'border border-border text-muted-foreground hover:bg-muted'
-              }`}
+              className={classeOnglet(actif)}
             >
               {onglet.libelle}
             </button>
@@ -1763,10 +1761,10 @@ export function AtelierReglesPanel() {
 
             {[...parIntention.values()].map(({ intention, regles: reglesIntention }) => (
               <section key={intention.id} aria-label={`Intention ${intention.labelFr}`} className="flex flex-col gap-3">
-                <h3 className="font-display text-lg font-semibold text-foreground">
+                <h2 className="font-display text-lg font-semibold text-foreground">
                   {intention.labelFr}{' '}
                   <span className="font-mono text-xs font-normal text-muted-foreground">({intention.code})</span>
-                </h3>
+                </h2>
                 {reglesIntention.map((regle) => {
                   const armeeValider = confirmation?.id === regle.id && confirmation.action === 'valider';
                   const armeeDesactiver = confirmation?.id === regle.id && confirmation.action === 'desactiver';
@@ -1838,7 +1836,7 @@ export function AtelierReglesPanel() {
 
                       {regle.lignee.length > 0 && (
                         <details className="rounded-lg border border-border bg-muted/40 px-3 py-2">
-                          <summary className="cursor-pointer text-sm font-medium text-muted-foreground">
+                          <summary className="min-h-11 cursor-pointer rounded-sm py-2 text-sm font-medium text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring">
                             Lignée — {regle.lignee.length} autre{regle.lignee.length > 1 ? 's' : ''} version
                             {regle.lignee.length > 1 ? 's' : ''}
                           </summary>

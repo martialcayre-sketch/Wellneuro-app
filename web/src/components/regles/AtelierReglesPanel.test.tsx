@@ -363,6 +363,19 @@ describe('AtelierReglesPanel (Atelier de règles cliniques v1)', () => {
     });
   });
 
+  // Habillage seul (PRA-4, PR 4 ; Q5, Q6 de D-481, DOC-13) : onglets à 44 px,
+  // l'onglet actif sans aplat ; les gestes de signature ne changent pas.
+  it('les onglets sont à 44 px, l’onglet actif sans aplat', async () => {
+    fetchMock.mockImplementation(router({}));
+    await attendreLaListe();
+    const onglets = screen.getAllByRole('tab');
+    expect(onglets.length).toBeGreaterThan(1);
+    for (const onglet of onglets) expect(onglet.className).toContain('min-h-11');
+    const actif = onglets.find((o) => o.getAttribute('aria-selected') === 'true');
+    expect(actif?.className).toContain('bg-surface font-semibold');
+    expect(actif?.className).not.toContain('bg-primary');
+  });
+
   it('change d’onglet : recharge avec le statut demandé, offset remis à zéro', async () => {
     fetchMock.mockImplementation(
       router({
