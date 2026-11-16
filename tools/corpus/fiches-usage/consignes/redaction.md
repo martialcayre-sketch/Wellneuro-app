@@ -52,7 +52,9 @@ Les DÉSIGNATIONS APPROUVÉES servent seulement à nommer (voir plus bas).
   résultat se nomme sans être interprété : dire ce dont il témoigne, ce
   qu'il reflète ou traduit relève de « interpretations » ; sous le statut
   « preuves_limitees », une conséquence décisionnelle (orienter vers une
-  complémentation, une prise en charge ou un autre examen) ne s'y écrit pas.
+  complémentation, une prise en charge ou un autre examen) ne s'y écrit pas,
+  sauf une condition de sécurité ou d'admissibilité que le marqueur « oui »
+  impose d'y restituer, comme dit plus bas.
   Avant d'écrire la phrase d'absence, examine chacun des
   claims fournis : elle s'écrit si, et seulement si, aucun ne porte sur
   l'objet de la rubrique. Si l'un y porte, rédige à partir de lui, même

@@ -274,7 +274,11 @@ test('v11 : moment de prise, réserve en toute rubrique, objets de limites, surv
     assert.match(c, /une\s+conséquence\s+décisionnelle\s+\(orienter\s+vers\s+une\s+complémentation,\s+une\s+prise\s+en\s+charge\s+ou\s+un\s+autre\s+examen\)/);
   }
   assert.match(redaction, /ne\s+s'écrit\s+que\s+sous\s+elle/);
-  assert.match(redaction, /complémentation,\s+une\s+prise\s+en\s+charge\s+ou\s+un\s+autre\s+examen\)\s+ne\s+s'y\s+écrit\s+pas/);
+  // Contre-revue Codex (D-505), P1 : la condition de sécurité reste restituable.
+  for (const c of [redaction, contreLecture]) {
+    assert.match(c, /sauf\s+une\s+condition\s+de\s+sécurité\s+ou\s+d'admissibilité\s+que\s+le\s+marqueur\s+«\s+oui\s+»\s+impose\s+d'y\s+restituer/);
+  }
+  assert.match(redaction, /complémentation,\s+une\s+prise\s+en\s+charge\s+ou\s+un\s+autre\s+examen\)\s+ne\s+s'y\s+écrit\s+pas,/);
   assert.match(contreLecture, /complémentation,\s+une\s+prise\s+en\s+charge\s+ou\s+un\s+autre\s+examen\)\s+y\s+est\s+un\s+défaut/);
   assert.match(contreLecture, /durée\s+de\s+prise\s+ou\s+de\s+traitement,\s+un\s+moment\s+de\s+prise\)\.\s+Elle\s+est\s+INFIDÈLE/);
 });

@@ -15,7 +15,7 @@ import path from 'node:path';
 import { empreinteConsignes } from '../../fiches/lib/consigne.mjs';
 
 export const VERSION_CONSIGNE = 'fiche-usage-v11';
-export const EMPREINTE_ATTENDUE = '372544b59e2d8e0c';
+export const EMPREINTE_ATTENDUE = '8d8c0c67f298f050';
 
 const DOSSIER = path.join(import.meta.dirname, '..', 'consignes');
 

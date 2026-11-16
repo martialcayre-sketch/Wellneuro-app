@@ -164,7 +164,8 @@ rubrique nommée. Dans « resultats_consequences », un résultat interprété
 (ce dont il témoigne, ce qu'il reflète ou traduit) déborde vers
 « interpretations » ; sous le statut « preuves_limitees », une conséquence
 décisionnelle (orienter vers une complémentation, une prise en charge ou
-un autre examen) y est un défaut.
+un autre examen) y est un défaut, sauf une condition de sécurité ou
+d'admissibilité que le marqueur « oui » impose d'y restituer.
 
 La phrase « Les sources retenues ne documentent pas ce point. » est FIDÈLE si
 aucun claim ne porte sur l'objet de la rubrique ; INFIDÈLE si un claim y
