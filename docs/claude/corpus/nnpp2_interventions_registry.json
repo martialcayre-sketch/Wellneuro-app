@@ -1715,6 +1715,24 @@
       },
       "statutValidation": "sans_claim",
       "motifSansClaim": "Notebook 13 « Instruments du cabinet » — chunks seuls PAR CONCEPTION ; les instruments passent par le banc certify, jamais par la chaîne de claims."
+    },
+    {
+      "axeId": "stress-burnout",
+      "sousAxe": "stress-burnout",
+      "sourceId": "WN-SRC-0691",
+      "notebook": "03 — Stress et burnout",
+      "documentType": "Recommandation de pratique",
+      "titre": "Haute Autorité de Santé (2017, mise à jour octobre 2025). Fiche mémo : Repérage et prise en charge cliniques du syndrome d'épuisement professionnel ou burnout",
+      "tableauClinique": "Repérage et prise en charge cliniques du syndrome d'épuisement professionnel ou burnout (HAS)",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": false,
+      "claims": {
+        "valide": 0,
+        "enAttente": 6,
+        "prescriptifs": 3,
+        "mesureLe": "2026-11-16"
+      },
+      "statutValidation": "aucun"
     }
   ],
   "ecartees": [
