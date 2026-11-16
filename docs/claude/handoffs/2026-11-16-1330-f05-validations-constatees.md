@@ -30,8 +30,8 @@ Constater par conteneur les validations annoncées par le responsable (« fu val
 - L'essai v9 sur `FU_POLY_AOX_P3`, `P6`, `P7`, `FU_MG_P5` et `P6` (streaming, 64 000 jetons) attend l'arbitrage du responsable.
 - La v10 viendra au vu de cet essai : D-501 §13, Codex P0, puis le texte soumis au responsable.
 - La phrase fixe de quantité (Q1-B) n'est pas encore éprouvée.
-- D-501 §11 est à amender par une PR de décision distincte (avec un fragment `changelog.d`) : l'arbitrage du volume d'eau de `FU_MG_P8` est rendu (`20261116-1352-b`).
-- Restent sans version déposée : les dix fiches de l'essai v9, le fer (`FU_FER_P1`, `P2`, `P5`, `P6`, refusées, en attente d'une couverture documentaire), le zinc et les autres fiches de la structure non encore rédigées.
+- D-501 §11 est à amender par une PR de décision distincte (avec un fragment `changelog.d`) : l'arbitrage du volume d'eau de `FU_MG_P8` est rendu (`20261116-1352-b`). La question clinique a été posée et tranchée en séance sans avis Codex joint (D-505) : la PR de décision en joint un, ou justifie son absence.
+- Restent sans version déposée : les dix fiches de l'essai v9, le fer (`FU_FER_P1`, `P2`, `P5`, `P6`, refusées, en attente d'un changement identifié, couverture documentaire ou cadre signé), le zinc et les autres fiches de la structure non encore rédigées.
 
 ## Prochaine action exacte
 
