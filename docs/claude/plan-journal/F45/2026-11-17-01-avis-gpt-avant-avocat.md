@@ -1,0 +1,1 @@
+- **Mise à jour (2026-11-17, D-536)** : la rubrique 4 reste provisoire. L'avis de l'avocat est reporté à la commercialisation (point 7 de D-449 §6), et un avis GPT passe d'abord sur les six questions ; F45 se clôt sur les arbitrages rendus sur cet avis et reportés dans la rubrique, et non plus sur la réponse de l'avocat. Aucun code, aucun texte servi.
