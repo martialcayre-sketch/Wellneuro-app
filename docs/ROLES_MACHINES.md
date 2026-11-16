@@ -96,9 +96,11 @@ question et la réponse.
     `note`, `le` (ISO), `par` (identifiant opaque du compte), `source`
     (`cockpit`) et `etat` : `envoyee`, puis `reportee` ou `ecartee`.
 
-  Le bouton n'est offert que sur une question `ordinaire`, `ouverte` ou
-  `en_seance`. Une question `clinique` ou `migration` montre ses options et
-  se tranche en séance (voir « Autorité »).
+  Le bouton est offert sur une question `ordinaire` ou `clinique`, `ouverte`
+  ou `en_seance` (`D-531`, arbitrage du responsable du 2026-11-16). Sur une
+  question `clinique`, il annonce un arbitrage clinique et rappelle que rien
+  ne change en service avant la décision `D-xxx` mergée. Une question
+  `migration` montre ses options et se tranche en séance (voir « Autorité »).
 
   **Le report.** Au démarrage et avant « prête », la session lit, en plus de
   sa boîte, les lignes `reponses` de sa file encore `envoyee`. Le guichet
@@ -110,10 +112,16 @@ question et la réponse.
   `reportee_le` et `reportee_par`. Une ligne plus ancienne de la même
   question passe aussi à `reportee`, avec le motif « remplacée ».
 
-  Une ligne visant une question déjà `repondue` ou `close`, ou qui n'est
-  pas `ordinaire`, passe à `ecartee` avec son motif. La session le signale
-  au responsable. Une réponse du cockpit n'a pas d'autre autorité qu'une
-  réponse donnée en session.
+  Une ligne visant une question déjà `repondue` ou `close`, ou une question
+  `migration`, passe à `ecartee` avec son motif, et la session signale cet
+  écartement au responsable. Avant de reporter une ligne `clinique`, la
+  session vérifie que `par` est le compte du responsable : l'action
+  `profiles` de la base le nomme, compte du propriétaire et non invité ;
+  sinon la ligne passe à `ecartee` et l'écartement est signalé. Une ligne
+  `clinique` reportée suit le chemin clinique ordinaire : décision `D-xxx`
+  et fragment `changelog.d/` avant tout code, dont la réponse est la source
+  (`D-531`). Une réponse du cockpit n'a pas d'autre autorité qu'une réponse
+  donnée en session.
 
   **Qui peut écrire.** La page est privée : seul le compte du responsable
   l'ouvre, et donc écrit dans sa base. Les sessions écrivent sous ce même
@@ -154,9 +162,12 @@ question et la réponse.
   `accord session et Codex (D-505)`. Elle reste `repondue` jusqu'à la
   séance, même sans décision ni PR : le guichet la présente, le
   responsable peut la renverser. Sinon, la question attend la séance.
-- **Autorité.** Une réponse `clinique` ou `migration` ne vaut que si elle
-  vient du responsable dans la session qui agit, ou de la décision mergée.
-  Un avis de Codex n'en est jamais une.
+- **Autorité.** Une réponse `clinique` ne vaut que si elle vient du
+  responsable dans la session qui agit, du responsable par le cockpit (une
+  ligne `reponses` de `source` `cockpit`, sur la page privée ; `D-531`), ou
+  de la décision mergée. Une réponse `migration` ne vaut que du responsable
+  dans la session qui agit, ou de la décision mergée. Un avis de Codex n'en
+  est jamais une.
 - **Sortie de la liste.** Une ligne ne passe à `close` qu'au merge de la
   décision, ou de la PR qui écrit la réponse. Cette PR nomme sa ligne dans sa
   déclaration « prête @<sha> » (`question <identifiant>`). Celui qui merge,
