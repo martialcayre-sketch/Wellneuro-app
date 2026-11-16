@@ -83,7 +83,7 @@ rejoué rend `BROUILLON_INCHANGE`.
 
 ## La consigne versionnée
 
-`versionConsigne` vaut `fiche-usage-v10+<empreinte des deux consignes>`,
+`versionConsigne` vaut `fiche-usage-v11+<empreinte des deux consignes>`,
 épinglée dans `lib/consigne.mjs` et gardée par `lib/consigne.test.mjs`.
 
 Depuis la v2 (`D-501`), le message d'une fiche porte ses cinq axes signés,
@@ -161,6 +161,14 @@ phrase se terminant par « , mais cet usage n'est pas établi. ». Deux critère
 concrets disent quand un claim porte sur « resultats_consequences » (il nomme
 un résultat possible de l'analyte) et sur « limites » (il énonce une limite
 de l'examen ou de son marqueur).
+
+Depuis la v11 (`D-501` §14), un moment de prise est une quantité de prise ;
+la forme attribuée et réservée de la v10 vaut dans toute rubrique,
+« precautions » comprise ; une limite de la littérature sur un supplément ou
+une option ne porte pas sur « limites » ; un argument de causalité ne porte
+pas sur « surveillance_arret » ; dans « resultats_consequences », un résultat
+se nomme sans être interprété, et sous « preuves_limitees » aucune
+conséquence décisionnelle ne s'y écrit.
 
 ## Ce que l'outil ne voit pas
 
