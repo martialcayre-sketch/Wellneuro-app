@@ -22,7 +22,7 @@ export function PatientPageHeader({
       <div className="flex items-center justify-between gap-3">
         {/* `text-2xl` (24px) : palier natif le plus proche des 26px de la maquette
             cible, l'échelle s'étant fermée aux valeurs arbitraires le 2026-09-06. */}
-        <Tag className={`font-display font-bold text-foreground ${as === 'h1' ? 'text-2xl leading-tight' : 'text-lg'}`}>{title}</Tag>
+        <Tag className={`font-display font-bold text-foreground [overflow-wrap:anywhere] max-[319px]:hyphens-auto ${as === 'h1' ? 'text-2xl leading-tight' : 'text-lg'}`}>{title}</Tag>
         {accessory}
       </div>
       {subtitle && <p className="text-muted-foreground text-base mt-2">{subtitle}</p>}

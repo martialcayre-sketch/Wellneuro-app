@@ -23,7 +23,7 @@ const formatDate = (iso: string) =>
 function CarteCentre({ id, titre, children }: { id: string; titre: string; children: React.ReactNode }) {
   return (
     <section id={id} className="w-full">
-      <PatientCard className="space-y-3">
+      <PatientCard className="space-y-3 [overflow-wrap:anywhere] max-[319px]:hyphens-auto">
         <h2 className="font-display text-lg font-bold text-foreground">{titre}</h2>
         {children}
       </PatientCard>

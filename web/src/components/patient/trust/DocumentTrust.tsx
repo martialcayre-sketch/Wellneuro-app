@@ -19,7 +19,7 @@ export function DocumentTrust({
   partiesDepliees?: readonly string[];
 }) {
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 [overflow-wrap:anywhere] max-[319px]:hyphens-auto">
       <p className="text-xs text-muted-foreground">
         Version {document.version} — publiée le {datePublicationEnLettres(document.publieLe)}
       </p>

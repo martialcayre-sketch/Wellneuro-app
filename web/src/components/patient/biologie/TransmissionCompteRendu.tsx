@@ -228,6 +228,7 @@ export function TransmissionCompteRendu({ token }: { token: string }) {
                 onClick={() => void accuser(documentAccuse)}
                 loading={occupe}
                 loadingLabel="Enregistrement…"
+                className="[overflow-wrap:anywhere] max-[319px]:hyphens-auto"
               >
                 J’en ai pris connaissance
               </PatientButton>

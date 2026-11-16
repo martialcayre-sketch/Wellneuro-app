@@ -515,7 +515,7 @@ export default function QuestionnairesHubPage() {
         open={signauxProtocole.protocoleDiffuse || lectureProtocoleEchouee}
         className="group rounded-lg border border-border bg-surface"
       >
-        <summary className="flex min-h-12 cursor-pointer select-none list-none items-center justify-between gap-4 rounded-lg px-5 py-3 text-sm font-semibold text-foreground [&::-webkit-details-marker]:hidden">
+        <summary className="flex min-h-12 cursor-pointer select-none list-none items-center justify-between gap-4 rounded-lg px-5 py-3 text-sm font-semibold text-foreground [overflow-wrap:anywhere] max-[319px]:hyphens-auto [&::-webkit-details-marker]:hidden">
           Mon accompagnement
           <ChevronDown
             aria-hidden="true"

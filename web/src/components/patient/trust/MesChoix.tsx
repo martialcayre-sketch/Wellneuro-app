@@ -99,8 +99,8 @@ export function MesChoix({
         const historique = historiqueChoix.filter(h => h.finalite === def.finalite);
         return (
           <details key={def.finalite} className="rounded-lg border border-border bg-surface">
-            <summary className="cursor-pointer px-4 py-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-lg flex items-center justify-between gap-3">
-              <span className="font-semibold text-foreground">{def.libelle}</span>
+            <summary className="cursor-pointer px-4 py-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-lg flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+              <span className="min-w-0 grow basis-24 font-semibold text-foreground">{def.libelle}</span>
               <span className="text-muted-foreground">
                 {statut ? LIBELLE_STATUT[statut] ?? statut : 'Non autorisé'}
               </span>
@@ -178,8 +178,8 @@ export function MesChoix({
           </details>
         );
       })}
-      <div className="flex items-center justify-between gap-3 px-4 py-2 text-sm rounded-lg border border-border bg-surface">
-        <span className="text-foreground">Réutilisation secondaire de vos données</span>
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-2 text-sm rounded-lg border border-border bg-surface">
+        <span className="min-w-0 grow basis-24 text-foreground">Réutilisation secondaire de vos données</span>
         <span className="text-muted-foreground">Non proposée</span>
       </div>
       <p className="text-xs text-muted-foreground">
