@@ -36,10 +36,16 @@ Les DÉSIGNATIONS APPROUVÉES servent seulement à nommer (voir plus bas).
   pas sur l'objet de « interpretations » ; un claim qui ne nomme ni un
   résultat possible de l'examen, ni une conséquence qu'un résultat
   autorise, ne porte pas sur celui de « resultats_consequences » ; dans les
-  deux cas, même s'il porte sur le nutriment ou sur l'état recherché.
+  deux cas, même s'il porte sur le nutriment ou sur l'état recherché. Un
+  claim qui nomme un résultat possible de l'analyte de la fiche (une valeur
+  basse, abaissée ou élevée) porte sur l'objet de « resultats_consequences ».
+  Un claim qui énonce une limite de l'examen ou de son marqueur (sa
+  fiabilité, sa validité, ce qu'il ne permet pas de mesurer ou de conclure,
+  un manque de données) porte sur l'objet de « limites ».
   Avant d'écrire la phrase d'absence, examine chacun des
   claims fournis : elle s'écrit si, et seulement si, aucun ne porte sur
-  l'objet de la rubrique.
+  l'objet de la rubrique. Si l'un y porte, rédige à partir de lui, même
+  s'il n'est pas au centre de la fiche.
 - Chaque phrase reformule un ou plusieurs claims et n'y ajoute rien : ni
   commentaire, ni synthèse, ni conclusion, ni conséquence, ni
   justification, ni qualificatif que le claim ne porte pas. Ne compare pas
@@ -66,13 +72,25 @@ Les DÉSIGNATIONS APPROUVÉES servent seulement à nommer (voir plus bas).
   composition (la quantité d'un nutriment effectivement présente dans un
   aliment, une eau ou un produit) ; un seuil qui borne une observation ou
   un risque (la quantité au-delà de laquelle un effet est observé, une
-  limite supérieure de sécurité). Ne s'écrivent pas, même rapportés par un
+  limite supérieure de sécurité). Un niveau d'apport qu'une source déclare
+  sans problème de sécurité est une limite supérieure de sécurité, même
+  exprimé en quantité consommée par prise ou par jour : écris-le en
+  constat, attribué à sa source, avec sa population, ses exceptions et ses
+  réserves ; jamais comme une quantité à prendre, une recommandation ou une
+  garantie de sécurité générale, détachée de cette population, de ces
+  exceptions ou de ces réserves, et n'en tire ni qu'au-delà l'apport est
+  dangereux, ni qu'en deçà il est conseillé.
+  Ne s'écrivent pas, même rapportés par un
   claim, même attribués à leur source : une quantité à prendre ou à
   consommer (dose, volume, nombre d'unités, apport recommandé ou de
   référence), une fréquence ou un fractionnement des prises, une durée de
   prise ou de traitement ; chacune est, ci-après, une quantité de prise.
-  Toute autre valeur, ou en cas de doute (par exemple une teneur maximale
-  recommandée pour un produit), ne s'écrit pas.
+  Une mention de dose ou d'apport sans valeur chiffrée (« à doses élevées »,
+  l'absence d'apport conseillé) n'est pas une quantité de prise : elle se
+  restitue telle que son claim la porte, comme une condition ou une limite
+  de son fait. Toute autre valeur chiffrée, ou en cas de doute sur une
+  valeur chiffrée (par exemple une teneur maximale recommandée pour un
+  produit), ne s'écrit pas.
   Ces règles ne visent pas une valeur ni une unité reprise telle quelle
   d'une désignation approuvée, au sein de cette seule désignation, qui sert
   à nommer et n'établit aucun fait.
@@ -128,7 +146,13 @@ telle limite qu'un claim établit lui-même se restitue, comme toute limite.
 
 - STATUT D'USAGE. « etaye_valide » : rien de plus que ce que les claims
   établissent. « preuves_limitees » : aucune formulation ne présente
-  l'usage comme établi, validé, recommandé ou systématique. « non_valide » :
+  l'usage comme établi, validé, recommandé ou systématique. Seule exception :
+  quand un claim recommande lui-même l'usage de l'examen (il le dit
+  recommandé, indispensable, systématique ou à pratiquer), ce fait s'écrit
+  attribué à la source du claim (« Selon <source>, … »), avec toutes ses
+  conditions, et la même phrase se termine par « , mais cet usage n'est pas
+  établi. » Hors de cette phrase attribuée et réservée, rien ne présente
+  l'usage comme recommandé. « non_valide » :
   le texte dit que l'usage n'est pas validé ; il ne déclenche ni examen ni
   décision.
 - NATURE DU LIEN. Une « information_contributive » n'est jamais présentée

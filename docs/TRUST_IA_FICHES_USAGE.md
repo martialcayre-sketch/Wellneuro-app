@@ -52,7 +52,7 @@
 Le nom des deux modèles et la version de la consigne sont enregistrés avec
 chaque version de fiche et chaque libellé : l'origine de chaque texte se
 retrace. Par défaut : `claude-sonnet-5` et `gpt-5.4`, sous la consigne
-`fiche-usage-v9` (`D-501` §12). La v2 avait remplacé la v1 avant tout envoi
+`fiche-usage-v10` (`D-501` §13). La v2 avait remplacé la v1 avant tout envoi
 (relue par Codex, puis approuvée par le responsable le 2026-11-12) ; la v3
 l'a remplacée après le pilote fer, où aucun texte n'avait été retenu ; la
 v4 précise la seule rubrique « question », refusée même quand elle ne
@@ -77,7 +77,14 @@ rendus après un avis Codex : un fait lié à une quantité de prise ne s'écrit
 ni entier ni privé d'elle, et une phrase fixe distincte de la phrase
 d'absence le signale ; la « question » admet « le dosage de » devant la
 désignation de l'analyte ; la phrase d'absence n'est admise que si aucun
-claim fourni ne porte sur l'objet de la rubrique.
+claim fourni ne porte sur l'objet de la rubrique ; la v10 porte deux
+arbitrages cliniques du responsable du 2026-11-16, rendus après un avis
+Codex : un niveau d'apport qu'une source déclare sans problème de sécurité
+s'écrit comme une limite de sécurité, attribué et avec ses conditions, et
+une mention de dose sans valeur chiffrée n'est pas une quantité de prise ;
+sous le statut « preuves limitées », la recommandation qu'un claim fait
+lui-même de l'usage s'écrit attribuée à sa source et suivie, dans la même
+phrase, de la réserve « mais cet usage n'est pas établi ».
 
 Un libellé de population que les claims ne décrivent pas ne passe pas par
 l'IA : il vient d'une correspondance approuvée par le responsable, déposée
