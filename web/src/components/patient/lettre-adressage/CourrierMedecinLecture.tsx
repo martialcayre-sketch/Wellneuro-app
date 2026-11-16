@@ -74,7 +74,8 @@ export function CourrierMedecinLecture({ token }: { token: string }) {
   if (etat.statut === 'chargement') {
     return (
       <PatientCard padding="sm">
-        <p className="text-sm text-muted-foreground">Chargement du courrier…</p>
+        <h1 className="text-2xl font-semibold text-foreground">{TITRE_LETTRE}</h1>
+        <div className="mt-3"><p className="text-sm text-muted-foreground">Chargement du courrier…</p></div>
       </PatientCard>
     );
   }
@@ -82,7 +83,8 @@ export function CourrierMedecinLecture({ token }: { token: string }) {
   if (etat.statut === 'erreur') {
     return (
       <PatientCard padding="sm">
-        <PatientErrorState message={etat.message} onReessayer={etat.definitif ? undefined : () => void charger()} />
+        <h1 className="text-2xl font-semibold text-foreground">{TITRE_LETTRE}</h1>
+        <div className="mt-3"><PatientErrorState message={etat.message} onReessayer={etat.definitif ? undefined : () => void charger()} /></div>
       </PatientCard>
     );
   }
@@ -91,7 +93,8 @@ export function CourrierMedecinLecture({ token }: { token: string }) {
   if (!lettre) {
     return (
       <PatientCard padding="sm">
-        <p className="text-base text-foreground">{AUCUN_COURRIER}</p>
+        <h1 className="text-2xl font-semibold text-foreground">{TITRE_LETTRE}</h1>
+        <div className="mt-3"><p className="text-base text-foreground">{AUCUN_COURRIER}</p></div>
       </PatientCard>
     );
   }

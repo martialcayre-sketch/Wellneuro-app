@@ -112,7 +112,8 @@ export function PourVotreMedecinLecture({ token }: { token: string }) {
   if (etat.statut === 'chargement') {
     return (
       <PatientCard padding="sm">
-        <p className="text-sm text-muted-foreground">Chargement…</p>
+        <h1 className="text-2xl font-semibold text-foreground">{TITRE_DOCUMENT_MEDECIN}</h1>
+        <div className="mt-3"><p className="text-sm text-muted-foreground">Chargement…</p></div>
       </PatientCard>
     );
   }
@@ -120,7 +121,8 @@ export function PourVotreMedecinLecture({ token }: { token: string }) {
   if (etat.statut === 'erreur') {
     return (
       <PatientCard padding="sm">
-        <PatientErrorState message={etat.message} onReessayer={etat.definitif ? undefined : () => void charger()} />
+        <h1 className="text-2xl font-semibold text-foreground">{TITRE_DOCUMENT_MEDECIN}</h1>
+        <div className="mt-3"><PatientErrorState message={etat.message} onReessayer={etat.definitif ? undefined : () => void charger()} /></div>
       </PatientCard>
     );
   }
@@ -128,7 +130,8 @@ export function PourVotreMedecinLecture({ token }: { token: string }) {
   if (!etat.document) {
     return (
       <PatientCard padding="sm">
-        <p className="text-base text-foreground">{AUCUN_DOCUMENT_MEDECIN}</p>
+        <h1 className="text-2xl font-semibold text-foreground">{TITRE_DOCUMENT_MEDECIN}</h1>
+        <div className="mt-3"><p className="text-base text-foreground">{AUCUN_DOCUMENT_MEDECIN}</p></div>
       </PatientCard>
     );
   }
