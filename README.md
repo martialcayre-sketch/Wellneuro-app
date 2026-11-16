@@ -49,9 +49,10 @@ bash scripts/release_go_no_go.sh --url https://app.wellneuro.fr
 
 Ajouter `--skip-http` si vous voulez ignorer le smoke HTTP (ex: environnement hors-ligne).
 
-## Setup Supabase Prisma Vercel
+## Setup Prisma et Scalingo
 
-Configuration recommandée pour la stack Next.js en production :
+La production est sur Scalingo (`osc-fr1`) depuis le 2026-08-22 ; Vercel et
+Supabase sont décommissionnés (`D-080`, `D-120`). Mise en route locale :
 
 ```bash
 # 1) Installer les dépendances et générer le client Prisma
@@ -59,27 +60,18 @@ cd web
 npm install
 npm run prisma:generate
 
-# 2) Configurer Supabase CLI
-supabase login
-export SUPABASE_PROJECT_REF=<project-ref>
-npm run supabase:link
-
-# 3) Appliquer les migrations sur la base cible
-npm run prisma:migrate:deploy
-
-# 4) Vérifier le projet
+# 2) Vérifier le projet
 npm run type-check
 ```
 
-Variables obligatoires côté Vercel :
+Les migrations ne s'appliquent jamais à la main sur la production : elles
+passent par une PR relue puis la release-db (`D-087`, `D-520` ;
+`.claude/rules/db-prisma.md`). En local, la base est un Postgres de
+développement (`scripts/bootstrap-mac.sh`).
 
-- `NEXTAUTH_URL`
-- `NEXTAUTH_SECRET`
-- `GOOGLE_CLIENT_ID`
-- `GOOGLE_CLIENT_SECRET`
-- `DATABASE_URL` (pooler Supabase, avec `sslmode=require` et `uselibpqcompat=true`)
-- `SMTP_URL`
-- `ANTHROPIC_API_KEY`
+Les variables de production se règlent sur Scalingo, jamais dans le dépôt :
+`NEXTAUTH_URL`, `NEXTAUTH_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`,
+`DATABASE_URL` (add-on PostgreSQL Scalingo), `SMTP_URL`, `ANTHROPIC_API_KEY`.
 
 Contrôle OAuth Google Cloud Console (production) :
 

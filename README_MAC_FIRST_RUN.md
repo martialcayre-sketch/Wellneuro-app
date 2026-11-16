@@ -13,21 +13,19 @@ bash scripts/bootstrap-mac-system.sh
 
 ## Si le script s'arrête
 
-Cas 1 : Vercel n'est pas encore connecté.
+Le bootstrap ne touche jamais à `web/.env.local` : s'il est absent, le script
+dit quoi y mettre (une `DATABASE_URL` vers une base Postgres locale de
+développement ; le reste : `docs/claude/REGLES_CRITIQUES.md`). Crée-le à la
+main — jamais committé — puis relance :
 
 ```bash
-gh auth login
-vercel login
-cd web
-vercel link
-cd ..
 bash scripts/bootstrap-mac.sh
 ```
 
-Cas 2 : tu veux récupérer les variables plus tard.
+Pour préparer seulement la machine, sans le bootstrap du dépôt :
 
 ```bash
-bash scripts/bootstrap-mac-system.sh --skip-env-pull
+bash scripts/bootstrap-mac-system.sh --skip-repo-bootstrap
 ```
 
 ## Démarrer l'application
