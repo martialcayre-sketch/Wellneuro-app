@@ -1,4 +1,4 @@
-import { readFileSync } from 'fs';
+import { readdirSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { describe, expect, it } from 'vitest';
 
@@ -59,5 +59,86 @@ describe('clés de stockage local du portail patient', () => {
     // Le jeton ne descend plus jusqu'au composant : il ne peut donc plus
     // réapparaître dans une clé par simple copier-coller.
     expect(source).not.toMatch(/\btoken\b/);
+  });
+});
+
+// LE SEGMENT LU PAR `useSegmentPage` ([[D-481]], DOC-14).
+//
+// Le segment `[token]` revient dans les composants par ce crochet, pour une
+// seule fonction : l'en-tête `x-wn-dossier-page` (`enTeteDossierPage`). C'est
+// le même jeton que plus haut : il ne doit jamais nommer une clé de stockage.
+// Plutôt que de chercher les clés fautives, le banc borne les emplois : le
+// segment est lié une fois (`const x = useSegmentPage()`), puis n'apparaît que
+// dans `enTeteDossierPage(x)` ou dans le tableau de dépendances d'un crochet.
+// Tout autre emploi — une clé, un argument de fonction, une copie — rougit.
+// Les composants sont découverts, pas listés : un nouvel emploi est gardé
+// sans qu'on pense à l'inscrire.
+
+const CROCHET = 'lib/portail/useSegmentPage.ts';
+
+function sansCommentaires(source: string): string {
+  return source
+    .split('\n')
+    .filter(ligne => !/^\s*(\/\/|\/\*|\*)/.test(ligne))
+    .join('\n');
+}
+
+/** Emplois du segment hors de l'en-tête et des dépendances ; `null` si le segment n'est pas lié une seule fois. */
+function emploisHorsEnTete(source: string): string[] | null {
+  const code = sansCommentaires(source).replace(/^import .*$/gm, '');
+  const liaisons = [...code.matchAll(/const (\w+) = useSegmentPage\(\);/g)];
+  const appels = code.match(/useSegmentPage\(/g) ?? [];
+  if (liaisons.length !== 1 || appels.length !== 1) return null;
+  const nom = liaisons[0][1];
+  const mot = new RegExp(`\\b${nom}\\b`, 'g');
+  const reste = code
+    .replace(liaisons[0][0], '')
+    .replace(new RegExp(`enTeteDossierPage\\(${nom}\\)`, 'g'), '')
+    // Tableau de dépendances : dernier argument d'un useEffect/useCallback/useMemo.
+    .replace(/,\s*\[[^[\]]*\]\s*,?\s*\)/g, deps => deps.replace(mot, ''));
+  const dansLaLigne = new RegExp(`\\b${nom}\\b`);
+  return reste.split('\n').filter(ligne => dansLaLigne.test(ligne));
+}
+
+function emploisDuCrochet(): string[] {
+  return (readdirSync(RACINE, { recursive: true }) as string[])
+    .filter(chemin => /\.tsx?$/.test(chemin) && !/\.test\.tsx?$/.test(chemin) && chemin !== CROCHET)
+    .filter(chemin => sansCommentaires(readFileSync(join(RACINE, chemin), 'utf8')).includes('useSegmentPage'))
+    .sort();
+}
+
+describe('le segment lu par useSegmentPage ne sert que l’en-tête du dossier', () => {
+  const composants = emploisDuCrochet();
+
+  it('les composants qui l’emploient sont trouvés', () => {
+    // Si la découverte ne trouve plus rien, c'est le banc qui a cessé de
+    // regarder. Le panneau du Journal Alimentaire est le cas sensible : il
+    // écrit en `sessionStorage` ET lit le segment.
+    expect(composants).toContain('components/food-observation/PatientFoodObservationPanel.tsx');
+  });
+
+  it.each(composants)('%s n’emploie le segment que dans enTeteDossierPage', (chemin) => {
+    const emplois = emploisHorsEnTete(readFileSync(join(RACINE, chemin), 'utf8'));
+    expect(emplois, 'segment lié zéro ou plusieurs fois, ou appel non lié').not.toBeNull();
+    expect(emplois).toEqual([]);
+  });
+
+  it('le crochet lui-même ne touche à aucun stockage', () => {
+    const code = sansCommentaires(readFileSync(join(RACINE, CROCHET), 'utf8'));
+    expect(code).not.toMatch(/Storage|wellneuro:|indexedDB|document\.cookie/);
+  });
+
+  it('le banc rougit sur un segment employé comme clé', () => {
+    const fautif = [
+      "const segmentPage = useSegmentPage();",
+      "window.localStorage.setItem(`wellneuro:brouillon:${segmentPage}`, 'x');",
+      "fetch('/api', { headers: { ...enTeteDossierPage(segmentPage) } });",
+    ].join('\n');
+    expect(emploisHorsEnTete(fautif)).toEqual([
+      "window.localStorage.setItem(`wellneuro:brouillon:${segmentPage}`, 'x');",
+    ]);
+    // Une copie dans une autre variable, puis un appel non lié, rougissent aussi.
+    expect(emploisHorsEnTete('const s = useSegmentPage();\nconst cle = s;')).toEqual(['const cle = s;']);
+    expect(emploisHorsEnTete('cle(useSegmentPage());')).toBeNull();
   });
 });
