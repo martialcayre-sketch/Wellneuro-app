@@ -142,6 +142,9 @@ describe('Connaissances — lecture du corpus (D-310 §2), garde-fou du drapeau'
     render(<ConnaissancesPage />);
 
     expect(screen.getByRole('heading', { level: 1, name: 'Connaissances' })).toBeTruthy();
+    // T-73 (D-488) : le surtitre ne nomme plus trois domaines sur huit.
+    expect(screen.getByText('Bibliothèque · claims validés du corpus')).toBeTruthy();
+    expect(screen.queryByText(/cognition, douleurs chroniques/)).toBeNull();
     expect(screen.queryByTestId('recherche-corpus-panel')).toBeNull();
     expect(screen.getByText(/recherche corpus clinique n['’]est pas encore ouverte/i)).toBeTruthy();
   });

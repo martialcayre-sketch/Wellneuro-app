@@ -17,6 +17,7 @@
 // Prisma et les tables cliniques dans le bundle client.
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { EnTeteRayon } from '@/app/dashboard/bibliotheque/EnTeteRayon';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import type { RayonFichesApiResponse } from '@/app/api/praticien/fiches-assiette/route';
@@ -78,48 +79,39 @@ export function RayonFichesConseilsPanel() {
     titreRef.current?.focus();
   }, [versionOuverte]);
 
-  if (versionOuverte) {
-    return (
-      // Une instance par version : une réponse tardive d'une version quittée
-      // ne peut rien écrire dans celle qui est ouverte (constat de revue).
-      <RelectureFicheAssiette
-        key={versionOuverte}
-        idVersion={versionOuverte}
-        onOuvrirVersion={setVersionOuverte}
-        onFermer={() => {
-          retourDeRelecture.current = true;
-          setVersionOuverte(null);
-          void charger();
-        }}
-      />
-    );
-  }
-
+  // L'en-tête du rayon est le h1 de la page (Q1 de D-481, complément DOC-13),
+  // au niveau des autres rayons. Il reste au-dessus de la relecture : la page
+  // garde son h1, et la relecture se range dessous, en h2.
   return (
-    <section aria-labelledby="rayon-fiches-conseils-titre" className="flex flex-col gap-4">
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-[.06em] text-solar-ink">
-          Rayon fiches conseils · adaptées des Fiches MY, validées ici
-        </p>
-        <h3
-          id="rayon-fiches-conseils-titre"
-          ref={titreRef}
-          tabIndex={-1}
-          className="rounded-sm font-display text-2xl font-bold tracking-[-0.02em] text-foreground outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
-        >
-          Fiches conseils
-        </h3>
-        <p className="mt-1 max-w-2xl text-base text-muted-foreground">
-          Une fiche par assiette d’indication. Chaque version déposée se relit en entier, source et
-          adaptation côte à côte, avant d’être validée ; une version validée se retire à tout moment,
-          avec un motif. La version de référence d’une fiche est sa plus récente version validée ;
-          ses contrôles sont rejoués au moment de la remettre. Valider une fiche ne l’envoie à
-          personne : elle part au patient au clic « Valider pour diffusion » d’un protocole qui
-          porte son assiette, une fois l’envoi des fiches ouvert.
-        </p>
-      </div>
+    <section aria-labelledby="rayon-fiches-conseils-titre" className="flex flex-col gap-6">
+      <EnTeteRayon
+        idTitre="rayon-fiches-conseils-titre"
+        titreRef={titreRef}
+        surtitre="Rayon fiches conseils · adaptées des Fiches MY, validées ici"
+        titre="Fiches conseils"
+      >
+        Une fiche par assiette d’indication. Chaque version déposée se relit en entier, source et
+        adaptation côte à côte, avant d’être validée ; une version validée se retire à tout moment,
+        avec un motif. La version de référence d’une fiche est sa plus récente version validée ;
+        ses contrôles sont rejoués au moment de la remettre. Valider une fiche ne l’envoie à
+        personne : elle part au patient au clic « Valider pour diffusion » d’un protocole qui
+        porte son assiette, une fois l’envoi des fiches ouvert.
+      </EnTeteRayon>
 
-      {enCours && lignes === null ? (
+      {versionOuverte ? (
+        // Une instance par version : une réponse tardive d'une version quittée
+        // ne peut rien écrire dans celle qui est ouverte (constat de revue).
+        <RelectureFicheAssiette
+          key={versionOuverte}
+          idVersion={versionOuverte}
+          onOuvrirVersion={setVersionOuverte}
+          onFermer={() => {
+            retourDeRelecture.current = true;
+            setVersionOuverte(null);
+            void charger();
+          }}
+        />
+      ) : enCours && lignes === null ? (
         <p role="status" className="text-sm text-muted-foreground">
           Chargement des fiches…
         </p>

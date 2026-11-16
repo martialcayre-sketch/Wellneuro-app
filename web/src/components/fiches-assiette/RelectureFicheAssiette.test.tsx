@@ -93,6 +93,12 @@ describe('RelectureFicheAssiette — la surface de relecture précède l’attes
     // Le focus va au titre, et il s'y VOIT au clavier (revue #1238).
     await waitFor(() => expect(document.activeElement).toBe(titre));
     expect(titre.className).toContain('focus-visible:ring-2');
+    // PRA-4 Q1 (a) : sous le h1 du rayon, titre en h2, rubriques en h3, sans saut.
+    expect(titre.tagName).toBe('H2');
+    expect(screen.getByRole('heading', { level: 3, name: '1 · Source — la Fiche MY' })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 3, name: '2 · Adaptation — ce que le patient lirait' })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 3, name: '6 · Décision' })).toBeTruthy();
+    expect(screen.queryByRole('heading', { level: 4 })).toBeNull();
 
     const source = screen.getByTestId('relecture-source');
     // Le marqueur de page devient un séparateur nommé ; le texte est rendu tel quel.
