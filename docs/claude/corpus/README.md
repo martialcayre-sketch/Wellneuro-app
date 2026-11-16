@@ -74,9 +74,10 @@ besoin 9, sensations-émotions fondamentales et gestion du stress : publications
 et traductions des instruments servis, recommandations de méthode sur deux
 biomarqueurs, une monographie communautaire, une revue systématique, une
 méta-analyse, une définition de classification, une recommandation de la HAS et
-des instruments de régulation émotionnelle, `WN-SRC-0672` à `0696`, dont sept
-notices sans extrait faute de texte obtenu (`0679` à `0681`, `0687`, `0692`,
-`0693`, `0696`)),
+des instruments de régulation émotionnelle, `WN-SRC-0672` à `0696`, dont quatre
+notices sans extrait faute de texte obtenu (`0679`, `0681`, `0692`, `0696`) ;
+les textes de `0680`, `0687` et `0693`, et le texte intégral de `0605`, ont été
+fournis par le responsable le 2026-11-16 et versés sur leur notice),
 dont seuls des extraits ciblés sont ingérés. Le manuscrit soumis `WN-SRC-0546`
 est `deprecated` : remplacé par sa version publiée `WN-SRC-0564`, ses claims ne
 sont pas retenus. Les plages `0525` à `0539` et `0556` à `0559` sont

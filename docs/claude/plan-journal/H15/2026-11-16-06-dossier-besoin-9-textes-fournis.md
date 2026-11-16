@@ -1,0 +1,16 @@
+- **Mise à jour (2026-11-16, dossier du besoin 9, étape 3, suite : textes fournis)** : forme opaque (`D-251` §4), identifiants, comptes et mécanismes seulement. Suite de `2026-11-16-05` (#2182). Le responsable a fourni le texte de quatre documents de la liste qu'il avait accordée : `0605`, `0680`, `0687` et `0693`.
+  - **Envoi** : un lot, `LOT_073`, par la route d'ingestion, depuis des conteneurs `scalingo run -d`. Il compte 24 passages et 36 claims, tous en attente de validation, et rien n'est étiqueté. Pour `0605`, les passages et les claims sont numérotés à la suite du résumé déjà ingéré.
+  - **Contrôles** :
+    - les passages ont été extraits par programme du texte des PDF, sans l'habillage des pages ni les tampons de téléchargement ;
+    - chaque phrase a été vérifiée contre deux extractions distinctes de chaque PDF : 2 phrases sur 48 paragraphes traversent un saut de page et ont été vérifiées à la main ;
+    - l'annexe des items de `0680` est reconstituée depuis un tableau ; la mise en forme est signalée dans le passage, et les mots y sont inchangés ;
+    - chaque charge est passée par les parseurs de la route avant l'envoi ;
+    - la prélecture (one-off-2443) a confirmé que le lot n'était pas pris et qu'il n'existait aucun passage pour ces quatre sources hormis le résumé de `0605` ;
+    - la relecture (one-off-9313) a confirmé 60 empreintes identiques à la charge, 24 passages actifs du lot et 39 claims en attente pour ces quatre sources.
+  - **Registre** : les quatre notices mentionnent le lot ; `0679` renvoie à `0680`, qui rapporte sa grille. Quatre notices restent sans extrait (`0679`, `0681`, `0692`, `0696`).
+  - **Constats** (détail au dossier privé, aucune correction) :
+    - l'instrument d'épuisement servi reprend mot pour mot les items de la validation française publiée, dans le même ordre ; ses bornes numériques coïncident avec la grille publiée, mais un libellé de classe diffère ;
+    - la cotation et les items inversés de l'échelle de stress perçu servie coïncident avec ceux de l'article de validation française ; cet article ne publie aucune grille d'interprétation du total, mais deux sous-scores moyens ;
+    - pour l'intervention « magnésium », l'avis de l'agence européenne distingue les effets dont le lien est établi de la résistance au stress mental, pour laquelle il ne l'est pas.
+  - **Restent ouverts** : les textes des quatre notices sans extrait, les claims tirés des pièces du cabinet, les autres plantes nommées au corpus et les droits « à vérifier ».
+  - **Suite** : l'étiquetage et les positions. Aucun code : les grilles et libellés servis relèvent chacun d'une décision distincte, appliquée par J3-12f après signature (`D-312` §3).
