@@ -1575,7 +1575,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 #### H67 · R:Onglet : onglet Alimentation
 - **Identifiant, piste** : R:Onglet (FC-3) ; aucun calcul neuf ; alimentation ; file A.
 - **Rang** : 5.
-- **Portes, préalables** : J2-alim (H45) ; c (F59) ; FC-2 (H61) ; J2-base (H59) ; porte 12 ; porte 24.
+- **Portes, préalables** : J2-alim (H45) ; c (F59) ; FC-2 (H61), levé par D-530 §3 ; J2-base (H59) ; porte 12 ; porte 24.
 - **Migration, release-db** : non.
 - **Décisions, textes** : aucune.
 - **Critère de fin** : onglet servi.
@@ -1775,7 +1775,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 #### H74 · R:FC-5 (1/2) : « n jours sur m » au cockpit
 - **Identifiant, piste** : R:FC-5 (1/2) ; alimentation ; file A.
 - **Rang** : 6.
-- **Portes, préalables** : c (F59) ; R:Onglet (H67) ; FC-2 (H61) ; CF-0a de J1-cockpit (F59) ; porte 15.
+- **Portes, préalables** : c (F59) ; R:Onglet (H67) ; FC-2 (H61), levé par D-530 §3 ; CF-0a de J1-cockpit (F59) ; porte 15.
 - **Migration, release-db** : non.
 - **Décisions, textes** : lettre c appliquée.
 - **Critère de fin** : affichage avec dénominateur, banc.
