@@ -145,9 +145,9 @@ export function CompositionAnalyteSection({
 
   return (
     <section aria-labelledby={`composition-${analyteCode}`} className="flex flex-col gap-3">
-      <h5 id={`composition-${analyteCode}`} className="text-sm font-semibold text-foreground">
+      <h4 id={`composition-${analyteCode}`} className="text-sm font-semibold text-foreground">
         Composition
-      </h5>
+      </h4>
 
       {membreDe.length > 0 && (
         <p className="text-sm text-foreground">
@@ -255,12 +255,15 @@ function PrepareeASigner({
         Composition préparée, à signer — {LIBELLES_TYPE_COMPOSITION[preparee.type]}
       </legend>
       <p className="text-xs text-muted-foreground">{preparee.motif}</p>
-      <ul className="flex flex-col gap-1">
+      <ul className="flex flex-col gap-2">
         {preparee.composants.map(c => (
           <li key={c.code}>
-            <label className="flex items-center gap-2 text-sm text-foreground">
+            {/* PRA-4 Q5 (a) : la case garde sa taille, sa ligne fait la zone
+                de clic de 44 px et porte l'anneau de focus. */}
+            <label className="flex min-h-11 cursor-pointer items-center gap-2 rounded-md text-sm text-foreground has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-focus-ring">
               <input
                 type="checkbox"
+                className="shrink-0"
                 checked={coches.has(c.code)}
                 disabled={!c.actif}
                 onChange={() => onBascule(c.code)}

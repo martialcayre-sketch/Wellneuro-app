@@ -147,9 +147,9 @@ export function RayonBiologiePanel() {
         <>
           <section aria-labelledby="analytes-biologie-titre" className="flex flex-col gap-3">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <h4 id="analytes-biologie-titre" className="text-sm font-semibold text-foreground">
+              <h2 id="analytes-biologie-titre" className="text-sm font-semibold text-foreground">
                 Analytes ({analytesFiltres.length} sur {catalogue.analytes.length})
-              </h4>
+              </h2>
               {/* [[D-326]] §2 : les propositions de toutes les fiches, signées en un geste. */}
               <Button variant="outline" onClick={() => setLotOuvert(true)}>
                 Signer en lot les correspondances préparées

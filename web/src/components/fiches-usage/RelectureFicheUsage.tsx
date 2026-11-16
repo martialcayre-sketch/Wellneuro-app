@@ -173,9 +173,9 @@ export function RelectureFicheUsage({ idVersion, onFermer }: { idVersion: string
 
       {detail === null ? (
         <>
-          <h3 id={idTitre} className="font-display text-2xl font-bold tracking-[-0.02em] text-foreground">
+          <h2 id={idTitre} className="font-display text-2xl font-bold tracking-[-0.02em] text-foreground">
             Relecture d’une fiche d’usage
-          </h3>
+          </h2>
           {enCours ? (
             <p role="status" className="text-sm text-muted-foreground">
               Chargement de la version…
@@ -195,14 +195,14 @@ export function RelectureFicheUsage({ idVersion, onFermer }: { idVersion: string
             <p className="text-xs font-semibold uppercase tracking-[.06em] text-solar-ink">
               Relecture · fiche d’usage
             </p>
-            <h3
+            <h2
               id={idTitre}
               ref={titreRef}
               tabIndex={-1}
               className="rounded-sm font-display text-2xl font-bold tracking-[-0.02em] text-foreground outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
             >
               <span className="font-mono">{detail.ficheId}</span>, v{detail.numero}
-            </h3>
+            </h2>
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <Badge variant={libelleEtatVersion(detail.etat, detail.structureSignee).variante}>
                 {libelleEtatVersion(detail.etat, detail.structureSignee).texte}
@@ -304,7 +304,7 @@ function Rubrique({
       className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-4 shadow-card"
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h4 className="text-sm font-semibold uppercase tracking-[.05em] text-solar-ink">{nomRubrique(rubrique.rubrique)}</h4>
+        <h3 className="text-sm font-semibold uppercase tracking-[.05em] text-solar-ink">{nomRubrique(rubrique.rubrique)}</h3>
         <Badge variant={variante}>{texte}</Badge>
       </div>
       <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground">{rubrique.texte}</p>
