@@ -1,0 +1,16 @@
+- **Mise à jour (2026-11-17, dossier du besoin 5, pièces attendues : questionnaire de matinalité-vespéralité et inventaire de fatigue)** : forme opaque (`D-251` §4), identifiants, comptes et mécanismes seulement. Suite de `2026-11-16-07` (#2198). Le responsable a fourni trois documents et a donné son accord à l'envoi de tous : le texte intégral de `0607` (validation du questionnaire de matinalité-vespéralité chez des travailleurs d'âge moyen), un formulaire d'un tiers sur l'inventaire de fatigue (nouvelle notice `0699`, source secondaire) et deux pages d'un manuel qui reproduisent l'inventaire de fatigue avec sa clé et sa cotation (nouvelle notice `0700`).
+  - **Envoi** : un lot, `LOT_075`, par la route d'ingestion, depuis des conteneurs `scalingo run -d`. Il compte 10 passages et 14 claims, tous en attente de validation, et rien n'est étiqueté.
+  - **Contrôles** :
+    - les trois documents ont une couche de texte ; chaque phrase des passages a été cherchée dans deux extractions indépendantes de sa source ;
+    - les segments absents des extractions sont l'habillage de page retiré, la clé de correction lue sur les colonnes de la page et un tableau remis en forme ; chacun a été relu sur l'image de la page ;
+    - deux fichiers reçus en double ont été reconnus à leur empreinte ;
+    - chaque charge est passée par les parseurs de la route avant l'envoi ;
+    - la prélecture (one-off-978) a confirmé que le lot et les trois notices étaient libres ;
+    - la relecture (one-off-8825) a confirmé 24 empreintes identiques à la charge, 10 passages actifs et 14 claims en attente.
+  - **Registre** : `0607` mentionne le lot ; deux notices ajoutées (`0699`, `0700`), droits à vérifier ; le README du corpus compte 672 notices.
+  - **Constats** (détail au dossier privé, aucune correction) :
+    - les pages du manuel sont la source de l'inventaire de fatigue servi : items, inversions et sous-échelles identiques, et la page d'interprétation est la source de la note servie au praticien ; un rang de percentile diffère entre cette page et la note servie ;
+    - le formulaire du tiers donne une autre traduction des items et annonce un autre nombre de sous-échelles que l'instrument servi ;
+    - `0607` propose, pour une population d'âge moyen, une grille du questionnaire de matinalité-vespéralité distincte de la grille servie, sans changer les items ni la cotation.
+  - **Restent ouverts** : les textes de `0609`, de la publication fondatrice de l'inventaire de fatigue et de son adaptation canadienne-française.
+  - **Suite** : signature des claims, étiquetage et positions. Aucun code : les grilles servies relèvent chacune d'une décision distincte, appliquée par J3-12f après signature (`D-312` §3).
