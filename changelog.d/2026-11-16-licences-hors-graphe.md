@@ -1,0 +1,9 @@
+### Mentions de licence des polyfills de Next et des polices next/font (2026-11-16)
+
+Lot `licences-hors-graphe` (carnet, file D, ordre 85, après `licences-tierces-bundle`). `/licences-tierces.txt` déclarait « non couverts » deux composants livrés hors du graphe des modules : il en reproduit désormais les mentions.
+
+- `web/scripts/licences-hors-graphe.mjs` (données seules) : le fichier de polyfills de Next (`static/chunks/polyfills-*.js`, copie telle quelle de `next/dist/build/polyfills/polyfill-nomodule.js`) est reconnu par son empreinte SHA-256. Ses composants ont été énumérés depuis la source de `@next/polyfill-nomodule` au tag v15.5.25 : core-js 3.38.1, object-assign 4.1.1 et whatwg-fetch 3.0.0, avec leurs licences MIT recopiées depuis l'amont à ces tags. Les quatre polices de `next/font/google` (IBM Plex Mono, Instrument Sans, Lora, Sora) sont listées avec leur mention de droits, tirée de leur `OFL.txt` dans google/fonts, et le texte de la SIL OFL 1.1 est reproduit une fois.
+- Le build rougit, sans écrire le fichier, sur un fichier de polyfills d'empreinte inconnue (Next mis à jour : on réénumère) et sur une police `next/font/google` absente de la table. Limite dite : une police `next/font/local` (aucune en service) ne serait pas détectée, faute de nom dans la requête du module.
+- Signal de la file A (T2 rouge dans un worktree sans installation propre) : le runtime webpack et Tailwind CSS sont désormais résolus depuis `compiler.context` (`createRequire`), au lieu d'un chemin `node_modules` écrit en dur.
+- Bancs : `web/src/lib/licencesTierces.test.ts` (trois cas sur une vraie compilation, deux qui confrontent les tables à la version installée de Next et aux imports de `app/layout.tsx`) ; le verrou `resolutionImports.guard.test.ts` fige aussi l'empreinte du module de données.
+- Pas d'écran, aucune migration, aucun drapeau.
