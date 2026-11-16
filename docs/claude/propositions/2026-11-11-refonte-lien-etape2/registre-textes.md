@@ -15,7 +15,8 @@ Numérotation par famille, avec des trous voulus : praticien T-01 à T-19
 (T-16, « Aller au contenu », ajouté par DOC-1 dans [[D-488]] ; T-17 à T-19,
 textes du prototype PRA-2, ajoutés par DOC-6, §1.4), T-60 à T-66
 (textes du prototype PRA-3b, ajoutés par DOC-8, §1.5) et T-67 à T-73
-(textes du prototype PRA-4, ajoutés par DOC-13, §1.6),
+(textes du prototype PRA-4, ajoutés par DOC-13, §1.6), T-74 à T-76
+(textes du prototype PRA-5, ajoutés par DOC-15, §1.7),
 rail patient T-21 à T-23, textes patient T-30 à T-34 ; T-35 est ajouté
 le 2026-11-12 comme proposition non acceptée pour U02. DOC-5 ajoute
 T-36 à T-39 ; DOC-7 inscrit T-40 à T-44 et T-48 (PAT-4), puis T-49/T-50
@@ -143,6 +144,29 @@ Inscrits par le même amendement de [[D-488]] : emplacements neufs de T-17
 lot reste inchangé après T-72. Aucun texte de consentement, de droits ni de
 sécurité n'est touché ; les textes de la signature NABM en lot restent mot
 pour mot ; chaque texte est posé par la PR de PRA-4 indiquée.
+
+### 1.7 Textes du prototype PRA-5 — acceptés (D-488)
+
+Le responsable accepte mot pour mot le 2026-11-16 (« Oui, itération 2 en
+(a) ») les textes du prototype PRA-5 (itération 2, version 6), avec la
+validation du prototype (Q1 à Q14 en a). Inscription par DOC-15 dans
+[[D-488]], amendement du 2026-11-16 ; arbitrages en complément DOC-15 de
+[[D-481]] et amendement DOC-15 de [[D-354]]. Existant lu au commit
+`3caabc93`, inchangé à `7edaeda69`. Les apostrophes sont typographiques,
+comme au texte accepté.
+
+| Id | Proposé | Où | Sens | Existant | Lot | Statut |
+|---|---|---|---|---|---|---|
+| T-74 | Les synthèses n’ont pas pu être lues. Ce n’est pas une absence de synthèse. | Synthèse IA & Booklet (P51), synthèses du patient choisi (`components/SynthesePanel.tsx:98-112`, `:531`), suivi de T-17 | dit l’échec, réponse non `ok` comprise ; le vide reste réservé à une réponse saine | « Aucune synthèse pour ce patient. » sur un échec | PRA-5, PR 3 | **Accepté (D-488)** |
+| T-75 | Les synthèses validées n’ont pas pu être lues. Ce n’est pas une absence de synthèse validée. | Documents (P52), synthèses validées du patient choisi (`components/patient-cockpit/DocumentsPanel.tsx:88-103`, `:269`), suivi de T-17 | idem, pour les synthèses validées | « Aucune synthèse validée pour ce patient. … » sur un échec | PRA-5, PR 3 | **Accepté (D-488)** |
+| T-76 | La liste des patients n’a pas pu être lue. | choix du patient de P51 (`components/SynthesePanel.tsx:114-119`) et de P52 (`components/patient-cockpit/DocumentsPanel.tsx:83`), suivi de T-17 | dit l’échec de lecture de la liste | aucun : échec avalé | PRA-5, PR 3 | **Accepté (D-488)** |
+
+Inscrits par le même amendement de [[D-488]] : emplacements neufs de T-17
+(sous T-74, T-75 et T-76 ; il ne relance que la lecture en échec) et de
+T-15 (repli du panneau de contexte du copilote, dès 1 024 px). Les textes en
+service restent mot pour mot, « Booklet » compris (Q12). Aucun texte de
+consentement, de droits ni de sécurité n’est touché. Chaque texte est posé
+par la PR de PRA-5 indiquée, et T-15 par la PR 2.
 
 ## 2. Patient
 
@@ -378,5 +402,5 @@ amendement DOC-14, et [[D-481]], complément DOC-14. Lot :
 
 | Plan | Textes à accepter avant le lot |
 |---|---|
-| Praticien | T-01 à T-05, T-07, T-10, T-12, T-13 (PRA-1) ; T-14, T-15 (PRA-3) ; T-16 (PRA-2a, inscrit par DOC-1) ; T-17 (PRA-2a), T-18, T-19 (PRA-2b), acceptés et inscrits dans D-488 par DOC-6 ; T-60 à T-66 (PRA-3b), acceptés et inscrits dans D-488 par DOC-8 ; T-67 à T-73 (PRA-4), acceptés et inscrits dans D-488 par DOC-13 |
+| Praticien | T-01 à T-05, T-07, T-10, T-12, T-13 (PRA-1) ; T-14, T-15 (PRA-3) ; T-16 (PRA-2a, inscrit par DOC-1) ; T-17 (PRA-2a), T-18, T-19 (PRA-2b), acceptés et inscrits dans D-488 par DOC-6 ; T-60 à T-66 (PRA-3b), acceptés et inscrits dans D-488 par DOC-8 ; T-67 à T-73 (PRA-4), acceptés et inscrits dans D-488 par DOC-13 ; T-74 à T-76 (PRA-5), acceptés et inscrits dans D-488 par DOC-15 |
 | Patient | T-21 à T-23, T-32 (PAT-1) ; T-31 (PAT-2) ; T-30 (PAT-3) ; T-33, T-34 (PAT-5), avec l'emplacement neuf de T-36 inscrit par DOC-9 (celui de la phrase vide de U28 retiré par DOC-10) ; T-36 à T-39 inscrits par DOC-5 ; emplacements neufs de T-36 et du message de session expirée inscrits par DOC-11 (PAT-6) ; T-40 à T-44, T-48 et nouvel emplacement T-36 inscrits par DOC-7 (PAT-4), T-49/T-50 inscrits pour Q5b ; T-51 et l'emplacement neuf de la mention de sécurité de U40 inscrits par DOC-12 (garde serveur, préalable de Q2a et Q3a), puis emplacements neufs de T-51 inscrits par DOC-14 ; T-34 refusé, T-35 reste proposé, T-45 sans objet |
