@@ -12,3 +12,6 @@ tsconfig.tsbuildinfo
 .env*
 test-results/
 playwright-report/
+
+# Généré par `next build` (scripts/licences-tierces.mjs), servi à /licences-tierces.txt
+/public/licences-tierces.txt
