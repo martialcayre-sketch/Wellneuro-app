@@ -21,6 +21,7 @@ Lot `besoin5-dossier-positions-v02` du carnet (file B, ordre 70), inscrit `bloqu
 
 - `docs/claude/plan-journal/H15/2026-11-16-01-dossier-besoin-5-contre-revue-positions-v02.md` (nouveau).
 - `docs/claude/PLAN_WELLNEURO.md` : ligne « dossiers des autres besoins », dernière colonne.
+- `changelog.d/2026-11-16-dossier-besoin-5-contre-revue-positions-v02.md` (nouveau, ajouté sur le constat P2-1 de `wn-reviewer`).
 - Ce handoff.
 - Hors dépôt : le dossier privé du besoin 5 (premier onglet : dépôt des pièces, section « Étape 5 », signature et lot 2 ; onglet « Positions v0.2 », avec sa mise à jour du jour) ; le dépôt privé des revues ; le carnet (page de la file D).
 
