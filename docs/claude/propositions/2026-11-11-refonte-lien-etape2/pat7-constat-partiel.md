@@ -16,9 +16,16 @@ Aucun constat ne dit ce que vit un patient réel.
 
 ## 1. Méthode
 
-- **Code servi.** Build de production local (`next start`) de `origin/main`.
-  Passe principale sur `3934c3a2`, passe ciblée sur `2552ce3b` ; aucun écran
-  patient ne change entre les deux.
+- **Code servi.** Build de production local (`next start`) de `origin/main`,
+  en trois passes :
+  - première passe sur `cbe52d14`, interrompue après U10 par un défaut du
+    spec de mesure ;
+  - passe principale sur `3934c3a2` ;
+  - passe ciblée sur `2552ce3b`.
+
+  Entre `cbe52d14` et `2552ce3b`, `git diff` est vide sur
+  `web/src/app/portail`, `web/src/components/patient`,
+  `web/src/components/patient-companion` et `globals.css`.
 - **Base.** Base PostgreSQL locale du worktree (`scripts/wn-dev-db.sh`),
   avec les trois fixtures. Sophie Nicola (`PAT_SEED_01`) porte les écrans
   après l'entrée ; Jennifer Martin (`PAT_SEED_02`) porte l'entrée.
@@ -37,7 +44,8 @@ Aucun constat ne dit ce que vit un patient réel.
   - Desktop Chromium : 1 440, 1 024, 768 et 390 px ; zoom 200 % (1 280 px
     rendus à 640 px CSS) ; confort 112,5 % à 1 024 et à 390 px.
   - iPhone 13 (WebKit) : 390 px ; zoom 200 % (195 px CSS, la convention de
-    `portail-message-securite.spec.ts`) ; confort 112,5 %.
+    `portail-message-securite.spec.ts`) ; confort 112,5 %. Puis 320 px, avec
+    et sans confort, pour les six écrans qui débordaient (§3.5).
 - **Mesures.**
   - débordement horizontal ;
   - cibles de moins de 44 px, hors liens dans une phrase et contenus d'un
@@ -78,9 +86,10 @@ questionnaire), U20 à U28, U30 à U38. Deux écrans se sont réorientés :
     questionnaire.
 - **Impression.** Ni rail ni menu à l'impression, sur aucun écran. La frise
   du hub s'imprime ; « Autres espaces » s'imprime aussi sur iPhone.
-- **États dégradés.** Une lecture en 500 affiche le message servi. Sauf aux
-  deux écarts du §3.4, elle propose « Réessayer » et le renvoi au
-  praticien. Rien ne simule un succès.
+- **États dégradés.** Une lecture en 500 affiche le message servi. Sauf sur
+  U24 et U25 (§3.4), elle propose « Réessayer » et le renvoi au praticien.
+  Rien ne simule un succès. Le second point du §3.4 porte sur un refus 404,
+  pas sur une lecture en 500.
 
 ## 3. Écarts
 
@@ -131,10 +140,17 @@ d'urgence (texte de sécurité, hors périmètre).
   *démontré dans le code* : `PourVotreMedecinLecture.tsx:140` ne rend le
   titre que lorsqu'un document existe. Règle : `heading-hierarchy`
   (moyenne).
-- Deux `h1` sur une page. *Observé sur fixture*, sur U11 et U12 (titre du
-  questionnaire, puis « Avant de commencer ») et, à la première passe, sur
-  le hub (« Mon parcours », puis « Votre accompagnement » quand le suivi est
-  refusé). Règle : `heading-hierarchy` (moyenne).
+- Deux `h1` sur une page.
+  - U11 et U12 (titre du questionnaire, puis « Avant de commencer ») :
+    *observé sur fixture* aux trois passes.
+  - Hub, quand la lecture du suivi échoue (« Mon parcours », puis « Votre
+    accompagnement ») : *démontré dans le code*.
+    `PatientCompanionHome.tsx:166-172` rend `PatientPageHeader`, en `h1` par
+    défaut, dans sa branche d'erreur. Observé à la première passe
+    seulement : aux deux suivantes, la fixture portait une assignation
+    lisible, et la branche d'erreur n'était plus atteinte.
+
+  Règle : `heading-hierarchy` (moyenne).
 
 ### 3.4 Reprise après une erreur de lecture
 
@@ -146,28 +162,38 @@ d'urgence (texte de sécurité, hors périmètre).
   reconnu. ».**
   - [[D-488]] §7 (Q-E2-5 (a)) le retire « dans ce seul cas » sur le point
     de suivi (U20, `ProtocolCheckinForm.tsx:50`).
-  - `PatientCompanionHome.tsx` le garde pour la même réponse 404.
-  - *Observé sur fixture* à la première passe : la dernière assignation de
-    la fixture était refusée par `isSessionAuthorizedForAssignment`. Il
-    faudrait une décision pour étendre §7 au hub ; ce document ne la prend
-    pas.
+  - *Démontré dans le code* : `PatientCompanionHome.tsx:166-172` rend
+    « Réessayer » pour tout refus autre que 401, donc aussi pour ce 404.
+  - Observé à la première passe seulement (`cbe52d14`), quand la dernière
+    assignation de la fixture était refusée par
+    `isSessionAuthorizedForAssignment`. Il n'a pas été revu aux deux passes
+    suivantes : la fixture portait alors une assignation lisible. Le code
+    du portail ne change pas entre les passes (§1).
+  - Il faudrait une décision pour étendre §7 au hub ; ce document ne la
+    prend pas.
 
 ### 3.5 Zoom 200 % au téléphone (195 px CSS) — *observé sur fixture, WebKit*
 
-| Écran | Débordement | Éléments |
-|---|---|---|
-| U37, U38 informations | 114 px | « ← Mon parcours », pastilles « Non autorisé », « Non proposée » |
-| U10 hub, suivi refusé | 73 px | titre « Votre accompagnement », « Réessayer » |
-| U26 bilan | 54 px | non identifié (élément rogné) |
-| U35 renseignements | 39 px | `h1` « Ma fiche de renseignements » |
-| U10 hub, U21 | 6 px | icône de la frise |
-| U34 comptes rendus | 1 px | « J'en ai pris connaissance » |
+| Écran | 195 px | 320 px | 320 px, confort 112,5 % | Éléments |
+|---|---|---|---|---|
+| U37, U38 informations | 114 px | 0 | **28 px** | « ← Mon parcours », pastilles « Non autorisé », « Non proposée » |
+| U10 hub, suivi refusé (première passe seulement, §3.4) | 73 px | non vu | non vu | titre « Votre accompagnement », « Réessayer » |
+| U26 bilan | 54 px | 0 | 0 | non identifié (élément rogné) |
+| U35 renseignements | 39 px | 0 | 0 | `h1` « Ma fiche de renseignements » |
+| U10 hub, U21 | 6 px | 0 | 0 | icône de la frise |
+| U34 comptes rendus | 1 px | 0 | 0 | « J'en ai pris connaissance » |
 
-Règle : `horizontal-scroll` (élevée).
-
-Une largeur de 195 px est plus stricte que le critère WCAG 1.4.10 (320 px),
-qui n'a pas été mesuré. Le dépôt prend pourtant ce réglage comme référence
-de zoom 200 % au téléphone ([[D-506]], `portail-message-securite.spec.ts`).
+**Lecture.**
+- À 320 px, la largeur du critère WCAG 1.4.10, il ne reste qu'un
+  débordement : U37 et U38 en confort 112,5 % (28 px, le lien « ← Mon
+  parcours »). Règle : `horizontal-scroll` (élevée).
+- Les autres débordements n'existent qu'à 195 px, plus strict que WCAG. Le
+  dépôt prend pourtant ce réglage comme référence de zoom 200 % au
+  téléphone ([[D-506]], `portail-message-securite.spec.ts`). Leur
+  sévérité est donc celle d'une convention du dépôt, pas d'un critère
+  normatif : moyenne.
+- La mesure à 320 px a été jouée sur WebKit, sur `2552ce3b`, pour les six
+  écrans du tableau.
 
 ### 3.6 Rail « Mon espace » : entrées de deux lignes collées — *observé sur fixture*
 
@@ -199,7 +225,7 @@ Aucun n'est ouvert ; chacun attend le choix du responsable.
 |---|---|---|---|
 | PAT-7a — Cibles des contrôles | §3.1, §3.2, §3.6 : zone cliquable de 44 px des contrôles natifs (libellé compris), des liens isolés et des entrées du rail | non | mesurer d'abord la zone du libellé |
 | PAT-7b — Titres de page | §3.3 : un `h1` dans l'état vide de U30 à U32 (titre existant de la page), un seul `h1` par page | non, si le titre existant suffit | — |
-| PAT-7c — Zoom 200 % au téléphone | §3.5 : retour à la ligne des pastilles, du retour et des titres | non | — |
+| PAT-7c — Zoom 200 % au téléphone | §3.5 : d'abord le seul débordement à 320 px (U37, U38 en confort 112,5 %) ; ensuite, au choix du responsable, ceux de la convention à 195 px | non | — |
 | PAT-7d — Reprise sur erreur | §3.4 : « Réessayer » sur U24 et U25 ; hub sous « Suivi non reconnu. » | emplacement neuf d'un texte existant | décision : étendre [[D-488]] §7 au hub, inscrire l'emplacement par un DOC-n |
 
 ## 5. Non couvert par cette passe
