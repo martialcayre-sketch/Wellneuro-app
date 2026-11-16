@@ -11,7 +11,9 @@ Corriger, par un fragment neuf, la description de la famille des quantités au r
 
 ## Décisions prises
 
-- Aucune décision neuve. Le périmètre de la v10 (`20261116-1517-b`, trois familles) est inchangé ; la note de la question est corrigée.
+- Le périmètre de la v10 (`20261116-1517-b`, trois familles) est inchangé ; la note de la question est corrigée.
+- `20261116-2115-b` (clinique), responsable, 2026-11-16 : « Les deux s'écrivent » (limite de sécurité exprimée en apport ; mention sans valeur). Avis Codex : même option.
+- `20261116-2116-b` (clinique), responsable, 2026-11-16 : « Attribué et réservé » (selon la source, avec la réserve du statut dans la même phrase). Avis Codex : refus du rédacteur ; la recommandation de la session allait aussi au refus.
 
 ## Fichiers modifiés
 
@@ -24,14 +26,13 @@ Corriger, par un fragment neuf, la description de la famille des quantités au r
 
 ## Problèmes ouverts
 
-- Deux questions cliniques au responsable, avec un avis Codex à l'aveugle (D-505) : `20261116-2115-b` (frontière des quantités : limite de sécurité exprimée en apport, mention sans valeur) et `20261116-2116-b` (recommandation portée par un claim sous « preuves limitées »).
-- La v10 (D-501 §13, Codex P0, puis le texte soumis au responsable) attend ces deux arbitrages. La famille « phrase d'absence malgré un claim » n'en demande pas.
+- La v10 (D-501 §13, Codex P0, puis le texte soumis au responsable) transcrit `2115-b`, `2116-b` et la famille « phrase d'absence malgré un claim », qui ne demande pas d'arbitrage.
 - #2185 (budget de la contre-lecture) : CI, revue, puis déclaration « prête ».
 - La validation de `FU_MG_P6` n° 1 attend le responsable. D-501 §11 reste à amender : l'arbitrage du volume d'eau est rendu, et l'avis Codex est à joindre ou à justifier.
 
 ## Prochaine action exacte
 
-Déclarer cette PR « prête @sha ». Poser les deux questions cliniques. Après leurs réponses, rédiger la v10.
+Déclarer cette PR « prête @sha ». Ensuite, rédiger la v10 sur une branche neuve.
 
 ## Interdits encore actifs
 
