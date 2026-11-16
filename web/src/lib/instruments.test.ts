@@ -181,24 +181,13 @@ describe('idsAssignablesPour', () => {
     expect(where.actif).toBe(true);
   });
 
-  // NF-7, P2-1 (arbitrage du 2026-11-12) : drapeau allumé, un publié non
-  // déclaré n'est plus assignable ; drapeau éteint, le filtre d'avant.
-  it('drapeau éteint : aucun filtre sur la déclaration', async () => {
-    delete process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB;
+  // [[D-528]] : publié veut dire déclaré, le CHECK
+  // `cabinet_instruments_valide_declare` le tient en base ; le filtre ne
+  // relit pas la déclaration (même prédicat que `cabinetEnvoyable`).
+  it('aucun filtre sur la déclaration : le CHECK la garantit', async () => {
     prisma.cabinetInstrument.findMany.mockResolvedValue([]);
     await idsAssignablesPour('praticien@wellneuro.fr');
     expect('poseQuestionSuicide' in prisma.cabinetInstrument.findMany.mock.calls[0][0].where).toBe(false);
-  });
-
-  it('drapeau allumé : seuls les publiés déclarés', async () => {
-    process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB = 'true';
-    try {
-      prisma.cabinetInstrument.findMany.mockResolvedValue([]);
-      await idsAssignablesPour('praticien@wellneuro.fr');
-      expect(prisma.cabinetInstrument.findMany.mock.calls[0][0].where.poseQuestionSuicide).toEqual({ not: null });
-    } finally {
-      delete process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB;
-    }
   });
 });
 

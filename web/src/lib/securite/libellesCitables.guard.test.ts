@@ -32,7 +32,6 @@ import {
 const ETAT_LIVRE = { ...SAFETY_QUESTIONNAIRE_CABINET_METADATA };
 
 beforeEach(() => {
-  process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB = 'true';
   // La lettre ne cite une réponse du cabinet que table signée : signature
   // simulée, jamais servie en production.
   SAFETY_QUESTIONNAIRE_CABINET_METADATA.validationExterne = true;
@@ -43,7 +42,6 @@ beforeEach(() => {
 
 afterEach(() => {
   Object.assign(SAFETY_QUESTIONNAIRE_CABINET_METADATA, ETAT_LIVRE);
-  delete process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB;
 });
 
 type Libelles = { titre: string; enonce: string; non: string; positive: string };

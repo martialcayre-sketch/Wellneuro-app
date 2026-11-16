@@ -52,9 +52,8 @@ export async function lireSignauxSecuriteOuverts(email: string): Promise<SignalS
     if (!porteuses.has(consultation.idPatient)) porteuses.set(consultation.idPatient, consultation);
   }
 
-  // [[D-515]] §5 : les instruments du cabinet en plus, drapeau allumé
-  // seulement — `SAF-QUEST-02` lit leur désignation copiée. Éteint, la
-  // requête est celle d'avant ce lot.
+  // [[D-515]] §5 : les instruments du cabinet en plus — `SAF-QUEST-02` lit
+  // leur désignation copiée ([[D-528]] : sans condition de drapeau).
   const cabinet = wherePassationsCabinet();
   const [couvertures, passationsLues] = await Promise.all([
     lireCouverturesAdressageGroupees(
@@ -63,9 +62,7 @@ export async function lireSignauxSecuriteOuverts(email: string): Promise<SignalS
     // Les seuls questionnaires que la table lit : la sélection est celle de la
     // chaîne, et `reponsesSecuriteDeclarees` applique le même filtre de validité.
     prisma.questionnaireReponse.findMany({
-      where: cabinet
-        ? { OR: [{ idQuestionnaire: { in: [...QUESTIONNAIRES_SECURITE] } }, cabinet], patient: dossiers }
-        : { idQuestionnaire: { in: [...QUESTIONNAIRES_SECURITE] }, patient: dossiers },
+      where: { OR: [{ idQuestionnaire: { in: [...QUESTIONNAIRES_SECURITE] } }, cabinet], patient: dossiers },
       select: {
         idPatient: true,
         idReponse: true,

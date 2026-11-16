@@ -334,11 +334,9 @@ describe('BibliothequePanel — EVA sans interprétation (D-088)', () => {
   });
 });
 
-// NF-7 ([[D-303]] §2, [[D-493]] §3) : L'ÉCRAN « RELIRE LA GRILLE » DEMANDE LA
-// DÉCLARATION quand le serveur l'annonce (`declarationSuicideRequise`, drapeau
-// allumé). Sans cette annonce (drapeau éteint), l'écran et le corps envoyé
-// sont ceux d'avant NF-7 — revue `wn-reviewer`, mutation 1 : rien ne le
-// prouvait côté écran.
+// NF-7 ([[D-303]] §2, [[D-493]] §3) : L'ÉCRAN « RELIRE LA GRILLE » DEMANDE
+// TOUJOURS LA DÉCLARATION ([[D-528]] : plus de drapeau, plus d'annonce du
+// serveur). Le geste « Déclarer » est retiré (réponse 20261116-0826-a).
 describe('BibliothequePanel — déclaration « question sur le suicide » (NF-7)', () => {
   const OPTIONS = [{ v: 0, l: 'Jamais' }, { v: 1, l: 'Parfois' }, { v: 2, l: 'Souvent' }];
   const DETAIL_LIKERT = {
@@ -389,7 +387,6 @@ describe('BibliothequePanel — déclaration « question sur le suicide » (NF-7
               statutRelecture: detail.statutRelecture,
               nbQuestions: detail.nbQuestions,
               scoreMax: detail.scoreMax,
-              ...(detail.declarationRequise ? { declarationRequise: true } : {}),
             },
           ],
         });
@@ -412,17 +409,8 @@ describe('BibliothequePanel — déclaration « question sur le suicide » (NF-7
     return screen.getByRole('button', { name: 'Grille relue — publier' }) as HTMLButtonElement;
   }
 
-  it('drapeau éteint : aucune question posée, le corps envoyé est celui d’avant NF-7', async () => {
-    const corps = await ouvrirRelecture(DETAIL_LIKERT);
-    expect(screen.queryByText(LEGENDE)).toBeNull();
-    expect(bouton().disabled).toBe(false);
-    fireEvent.click(bouton());
-    await waitFor(() => expect(corps).toHaveLength(1));
-    expect(corps[0]).toEqual({ idInstrument: 'CAB_NF7', action: 'publier' });
-  });
-
   it('déclaration requise : publier reste impossible tant que la réponse manque ; « non » part seul', async () => {
-    const corps = await ouvrirRelecture({ ...DETAIL_LIKERT, declarationSuicideRequise: true });
+    const corps = await ouvrirRelecture(DETAIL_LIKERT);
     const groupe = screen.getByRole('group', { name: LEGENDE });
     expect(bouton().disabled).toBe(true);
     fireEvent.click(within(groupe).getByLabelText('Non'));
@@ -433,7 +421,7 @@ describe('BibliothequePanel — déclaration « question sur le suicide » (NF-7
   });
 
   it('« oui » : question et réponse « non » exigées ; changer de question remet la réponse à choisir', async () => {
-    const corps = await ouvrirRelecture({ ...DETAIL_LIKERT, declarationSuicideRequise: true });
+    const corps = await ouvrirRelecture(DETAIL_LIKERT);
     fireEvent.click(within(screen.getByRole('group', { name: LEGENDE })).getByLabelText('Oui'));
     expect(bouton().disabled).toBe(true);
     fireEvent.change(screen.getByLabelText('Question concernée'), { target: { value: 'Q2' } });
@@ -458,7 +446,7 @@ describe('BibliothequePanel — déclaration « question sur le suicide » (NF-7
   // P2-4 (arbitrage du 2026-11-12) : le texte validé par le responsable, mot
   // pour mot, et rien qui pousse vers « non ».
   it('« oui » sans question à réponses au choix : le texte validé (P2-4), et publier reste impossible', async () => {
-    await ouvrirRelecture({ ...EVA_DETAIL, declarationSuicideRequise: true });
+    await ouvrirRelecture(EVA_DETAIL);
     fireEvent.click(within(screen.getByRole('group', { name: LEGENDE })).getByLabelText('Oui'));
     const etat = screen.getByRole('status');
     const paragraphes = [...etat.querySelectorAll('p')].map(p => (p.textContent ?? '').replace(/\s+/g, ' ').trim());
@@ -470,62 +458,15 @@ describe('BibliothequePanel — déclaration « question sur le suicide » (NF-7
     expect((screen.getByRole('button', { name: 'Relu — publier' }) as HTMLButtonElement).disabled).toBe(true);
   });
 
-  // P2-1 (arbitrage du 2026-11-12) : un instrument publié non déclaré (drapeau
-  // allumé, `declarationRequise`) affiche le motif et le geste « Déclarer »,
-  // qui n'envoie que la déclaration. Sans l'annonce, ni motif ni geste.
-  describe('geste « Déclarer » (P2-1)', () => {
-    const PUBLIE = { ...DETAIL_LIKERT, statutRelecture: 'valide', declarationSuicideRequise: true };
-    const MOTIF = 'Déclaration requise avant un nouvel envoi.';
-
-    it('sans `declarationRequise` : ni motif ni geste', async () => {
-      stubFetch(PUBLIE);
-      render(<BibliothequePanel entrees={[ENTREE_BASE]} />);
-      await screen.findByText('Modifier');
-      expect(screen.queryByRole('button', { name: 'Déclarer' })).toBeNull();
-      expect(screen.queryByText(MOTIF)).toBeNull();
-    });
-
-    it('motif affiché ; « Déclarer » recueille la déclaration et n’envoie qu’elle', async () => {
-      const corps = stubFetch({ ...PUBLIE, declarationRequise: true });
-      render(<BibliothequePanel entrees={[ENTREE_BASE]} />);
-      expect(await screen.findByText(MOTIF)).toBeTruthy();
-      fireEvent.click(screen.getByRole('button', { name: 'Déclarer' }));
-      const groupe = await screen.findByRole('group', { name: LEGENDE });
-      const valider = () =>
-        screen.getAllByRole('button', { name: 'Déclarer' }).find(b => b.closest('[role="dialog"]')) as HTMLButtonElement;
-      expect(valider().disabled).toBe(true);
-      fireEvent.click(within(groupe).getByLabelText('Oui'));
-      fireEvent.change(screen.getByLabelText('Question concernée'), { target: { value: 'Q2' } });
-      fireEvent.change(screen.getByLabelText('Réponse qui signifie « non »'), { target: { value: '0' } });
-      await waitFor(() => expect(valider().disabled).toBe(false));
-      fireEvent.click(valider());
-      await waitFor(() => expect(corps).toHaveLength(1));
-      expect(corps[0]).toEqual({
-        idInstrument: 'CAB_NF7',
-        action: 'declarer',
-        poseQuestionSuicide: true,
-        questionSuicideId: 'Q2',
-        questionSuicideOptionNon: 0,
-      });
-      expect(await screen.findByText('Déclaration enregistrée.')).toBeTruthy();
-    });
-
-    // Variante « envoi » du texte P2-4 (arbitrage du 2026-11-12) : l'instrument
-    // est déjà publié, le texte parle de déclaration et d'envoi.
-    it('« oui » sans question à réponses au choix : la variante « envoi », et « Déclarer » reste impossible', async () => {
-      stubFetch({ ...EVA_DETAIL, statutRelecture: 'valide', declarationSuicideRequise: true, declarationRequise: true });
-      render(<BibliothequePanel entrees={[ENTREE_BASE]} />);
-      fireEvent.click(await screen.findByRole('button', { name: 'Déclarer' }));
-      fireEvent.click(within(await screen.findByRole('group', { name: LEGENDE })).getByLabelText('Oui'));
-      const etat = screen.getByRole('status');
-      const paragraphes = [...etat.querySelectorAll('p')].map(p => (p.textContent ?? '').replace(/\s+/g, ' ').trim());
-      expect(paragraphes).toEqual([
-        'Ce questionnaire ne propose aucune réponse au choix permettant de désigner la question concernée et sa réponse « non ». Il ne peut donc pas être déclaré « oui » en l’état, et ne peut plus être envoyé.',
-        'Votre déclaration doit décrire le contenu réel du questionnaire. S’il pose une question sur le suicide ou les idées de mort, conservez « Oui » : répondre « Non » pour permettre l’envoi laisserait le patient sans encart d’urgence.',
-      ]);
-      const valider = screen.getAllByRole('button', { name: 'Déclarer' }).find(b => b.closest('[role="dialog"]')) as HTMLButtonElement;
-      expect(valider.disabled).toBe(true);
-    });
+  // P2-1 : le geste « Déclarer » est retiré avec le drapeau — le CHECK
+  // « valide ⇒ déclaré » rend son état d'entrée impossible (réponse
+  // 20261116-0826-a, [[D-528]]).
+  it('un instrument publié n’offre ni motif ni geste « Déclarer »', async () => {
+    stubFetch({ ...DETAIL_LIKERT, statutRelecture: 'valide' });
+    render(<BibliothequePanel entrees={[ENTREE_BASE]} />);
+    await screen.findByText('Modifier');
+    expect(screen.queryByRole('button', { name: 'Déclarer' })).toBeNull();
+    expect(screen.queryByText('Déclaration requise avant un nouvel envoi.')).toBeNull();
   });
 
   // Réponse 20261114-1217-a : le serveur refuse un libellé que la lettre
@@ -537,7 +478,7 @@ describe('BibliothequePanel — déclaration « question sur le suicide » (NF-7
     const REFUS = { success: false, reason: 'invalid_payload', error: MOTIF, erreurs: [MOTIF] };
 
     it('publier : le motif s’affiche dans le tiroir « Relire la grille », qui reste ouvert', async () => {
-      stubFetch({ ...DETAIL_LIKERT, declarationSuicideRequise: true }, REFUS);
+      stubFetch(DETAIL_LIKERT, REFUS);
       render(<BibliothequePanel entrees={[ENTREE_BASE]} />);
       fireEvent.click(await screen.findByText('Relire la grille'));
       fireEvent.click(within(await screen.findByRole('group', { name: LEGENDE })).getByLabelText('Oui'));
@@ -554,30 +495,11 @@ describe('BibliothequePanel — déclaration « question sur le suicide » (NF-7
       stubFetch(DETAIL_LIKERT, 'reseau');
       render(<BibliothequePanel entrees={[ENTREE_BASE]} />);
       fireEvent.click(await screen.findByText('Relire la grille'));
-      await screen.findByText(/— publier$/);
+      fireEvent.click(within(await screen.findByRole('group', { name: LEGENDE })).getByLabelText('Non'));
+      await waitFor(() => expect(bouton().disabled).toBe(false));
       fireEvent.click(bouton());
       const alerte = await within(screen.getByRole('dialog')).findByRole('alert');
       expect(alerte.textContent).toBe('Publication impossible.');
-    });
-
-    it('« Déclarer » : le motif s’affiche dans son tiroir, puis s’efface à la réouverture', async () => {
-      stubFetch({ ...DETAIL_LIKERT, statutRelecture: 'valide', declarationSuicideRequise: true, declarationRequise: true }, REFUS);
-      render(<BibliothequePanel entrees={[ENTREE_BASE]} />);
-      fireEvent.click(await screen.findByRole('button', { name: 'Déclarer' }));
-      fireEvent.click(within(await screen.findByRole('group', { name: LEGENDE })).getByLabelText('Oui'));
-      fireEvent.change(screen.getByLabelText('Question concernée'), { target: { value: 'Q2' } });
-      fireEvent.change(screen.getByLabelText('Réponse qui signifie « non »'), { target: { value: '0' } });
-      const valider = () =>
-        screen.getAllByRole('button', { name: 'Déclarer' }).find(b => b.closest('[role="dialog"]')) as HTMLButtonElement;
-      await waitFor(() => expect(valider().disabled).toBe(false));
-      fireEvent.click(valider());
-      const alerte = await within(screen.getByRole('dialog')).findByRole('alert');
-      expect(alerte.textContent).toBe(MOTIF);
-      fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
-      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
-      fireEvent.click(screen.getByRole('button', { name: 'Déclarer' }));
-      await screen.findByRole('group', { name: LEGENDE });
-      expect(within(screen.getByRole('dialog')).queryByRole('alert')).toBeNull();
     });
   });
 });

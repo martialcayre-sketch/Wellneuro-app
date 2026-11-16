@@ -16,8 +16,6 @@ import {
 } from '@/lib/instruments';
 import {
   DECLARATION_SUICIDE_EFFACEE,
-  declarationRequiseAvantEnvoi,
-  declarationSuicideCabinetActive,
   libellesCitablesRefuses,
   lireDeclarationSuicide,
 } from '@/lib/securite/declarationSuicideCabinet';
@@ -36,25 +34,12 @@ export type InstrumentCabinetDto = {
   nbQuestions: number | null;
   scoreMax: number | null;
   updatedAt: string;
-  /**
-   * NF-7, P2-1 (arbitrage du 2026-11-12) : présent seulement drapeau allumé,
-   * sur un instrument publié sans déclaration. Il reste visible mais ne part
-   * plus ; l'écran affiche le motif et le geste « Déclarer ».
-   */
-  declarationRequise?: true;
 };
 
 export type InstrumentCabinetDetailDto = InstrumentCabinetDto & {
   description: string | null;
   definition: DefinitionCabinet;
   scoring: ScoringCabinet;
-  /**
-   * NF-7 ([[D-303]] §2) : présent, et vrai, seulement drapeau
-   * `WN_ENABLE_DECLARATION_SUICIDE_CAB` allumé — la publication exige alors la
-   * déclaration « question sur le suicide ». Absent, l'écran reste celui
-   * d'avant NF-7.
-   */
-  declarationSuicideRequise?: true;
 };
 
 export type InstrumentsApiResponse = {
@@ -122,7 +107,6 @@ function versDto(row: Awaited<ReturnType<typeof listeInstrumentsCabinet>>[number
     nbQuestions: resume.nbQuestions,
     scoreMax: resume.scoreMax,
     updatedAt: row.updatedAt.toISOString(),
-    ...(declarationRequiseAvantEnvoi(row) ? { declarationRequise: true as const } : {}),
   };
 }
 
@@ -158,7 +142,6 @@ export async function GET(request: Request) {
           description: row.description,
           definition: row.definitionJson as unknown as DefinitionCabinet,
           scoring: row.scoringJson as unknown as ScoringCabinet,
-          ...(declarationSuicideCabinetActive() ? { declarationSuicideRequise: true as const } : {}),
         },
       });
     }
@@ -383,75 +366,12 @@ export async function PATCH(request: Request) {
           { status: 400 },
         );
       }
-      // NF-7 ([[D-303]] §2, [[D-493]] §3) : drapeau allumé, la déclaration
-      // « question sur le suicide » est exigée à CHAQUE publication, et sa
-      // désignation vérifiée contre la définition relue. C'est le seul
-      // passage vers `valide` (banc `declarationSuicideCabinet.guard.test.ts`).
-      // Drapeau éteint : la publication d'avant NF-7, inchangée.
-      const declarationExigee = declarationSuicideCabinetActive();
-      let declaration = {};
-      if (declarationExigee) {
-        const lue = lireDeclarationSuicide(body, instrument.definitionJson);
-        if (!lue.ok) {
-          return NextResponse.json<MutateInstrumentResponse>(
-            { success: false, reason: 'invalid_payload', error: lue.erreur, erreurs: [lue.erreur] },
-            { status: 400 },
-          );
-        }
-        declaration = lue.declaration;
-        // Réponse 20261114-1217-a : sous « oui », les libellés que la lettre
-        // citera passent la garde de son rendu médecin, avant d'être publiés.
-        if (lue.declaration.poseQuestionSuicide) {
-          const refuses = libellesCitablesRefuses({
-            titre: instrument.titre,
-            definitionJson: instrument.definitionJson,
-            questionSuicideId: lue.declaration.questionSuicideId,
-          });
-          if (refuses.length > 0) return refusLibellesCitables(refuses);
-        }
-      }
-      const data = { statutRelecture: 'valide', ...declaration };
-      if (declarationExigee) {
-        // La désignation a été vérifiée contre la définition LUE ci-dessus :
-        // l'écriture n'a lieu que si l'instrument n'a pas bougé depuis. Une
-        // modification concurrente le repasse en brouillon et touche
-        // `updatedAt` — la publication échoue alors en 409 au lieu de valider
-        // une déclaration contre d'anciennes questions (revue CodeRabbit de
-        // #2010 ; `wn-reviewer`, P2-3). Drapeau éteint : l'écriture d'avant.
-        const ecrit = await prisma.cabinetInstrument.updateMany({
-          where: { idInstrument, statutRelecture: 'grille_a_relire', updatedAt: instrument.updatedAt },
-          data,
-        });
-        if (ecrit.count === 0) {
-          return NextResponse.json<MutateInstrumentResponse>(
-            {
-              success: false,
-              reason: 'conflit_statut',
-              error: 'L’instrument a été modifié pendant la relecture : rouvrez « Relire la grille ».',
-            },
-            { status: 409 },
-          );
-        }
-      } else {
-        await prisma.cabinetInstrument.update({ where: { idInstrument }, data });
-      }
-      return NextResponse.json<MutateInstrumentResponse>({ success: true, idInstrument });
-    }
-
-    if (action === 'declarer' && declarationSuicideCabinetActive()) {
-      // NF-7, P2-1 (arbitrage du 2026-11-12) : le geste « Déclarer » recueille
-      // la déclaration d'un instrument PUBLIÉ qui n'en a pas (publié drapeau
-      // éteint), sans toucher aux questions ni au statut. Sans migration ni
-      // reprise en base ; seule la déclaration est enregistrée par
-      // l'application. Même validation que `publier`, contre la définition
-      // relue ; même écriture gardée. Drapeau éteint : l'action n'existe pas
-      // (« Action inconnue »), comme avant ce lot.
-      if (!declarationRequiseAvantEnvoi(instrument)) {
-        return NextResponse.json<MutateInstrumentResponse>(
-          { success: false, reason: 'conflit_statut', error: 'Cet instrument n’attend aucune déclaration.' },
-          { status: 409 },
-        );
-      }
+      // NF-7 ([[D-303]] §2, [[D-493]] §3) : la déclaration « question sur le
+      // suicide » est exigée à CHAQUE publication, et sa désignation vérifiée
+      // contre la définition relue. C'est le seul passage vers `valide` (banc
+      // `declarationSuicideCabinet.guard.test.ts`), et le CHECK
+      // `cabinet_instruments_valide_declare` le garantit en base. Sans
+      // déclaration : 400 avant toute écriture (réponse 20261116-0827-a).
       const lue = lireDeclarationSuicide(body, instrument.definitionJson);
       if (!lue.ok) {
         return NextResponse.json<MutateInstrumentResponse>(
@@ -459,8 +379,8 @@ export async function PATCH(request: Request) {
           { status: 400 },
         );
       }
-      // Réponse 20261114-1217-a : même garde des libellés citables qu'à la
-      // publication.
+      // Réponse 20261114-1217-a : sous « oui », les libellés que la lettre
+      // citera passent la garde de son rendu médecin, avant d'être publiés.
       if (lue.declaration.poseQuestionSuicide) {
         const refuses = libellesCitablesRefuses({
           titre: instrument.titre,
@@ -469,28 +389,22 @@ export async function PATCH(request: Request) {
         });
         if (refuses.length > 0) return refusLibellesCitables(refuses);
       }
-      // Gardée sur ce qui a été relu : toujours publié, toujours non déclaré,
-      // inchangé depuis. Une modification concurrente des questions repasse
-      // l'instrument en brouillon et touche `updatedAt` ; une autre
-      // déclaration le rend non NULL. Dans les deux cas : 409, rien d'écrit.
-      // `data` ne porte QUE la déclaration — jamais le statut (banc
-      // `declarationSuicideCabinet.guard.test.ts`).
+      // La désignation a été vérifiée contre la définition LUE ci-dessus :
+      // l'écriture n'a lieu que si l'instrument n'a pas bougé depuis. Une
+      // modification concurrente le repasse en brouillon et touche
+      // `updatedAt` — la publication échoue alors en 409 au lieu de valider
+      // une déclaration contre d'anciennes questions (revue CodeRabbit de
+      // #2010 ; `wn-reviewer`, P2-3).
       const ecrit = await prisma.cabinetInstrument.updateMany({
-        where: {
-          idInstrument,
-          actif: true,
-          statutRelecture: 'valide',
-          poseQuestionSuicide: null,
-          updatedAt: instrument.updatedAt,
-        },
-        data: lue.declaration,
+        where: { idInstrument, statutRelecture: 'grille_a_relire', updatedAt: instrument.updatedAt },
+        data: { statutRelecture: 'valide', ...lue.declaration },
       });
       if (ecrit.count === 0) {
         return NextResponse.json<MutateInstrumentResponse>(
           {
             success: false,
             reason: 'conflit_statut',
-            error: 'L’instrument a été modifié entre-temps : rouvrez « Déclarer ».',
+            error: 'L’instrument a été modifié pendant la relecture : rouvrez « Relire la grille ».',
           },
           { status: 409 },
         );
@@ -565,7 +479,6 @@ export async function PATCH(request: Request) {
     // publication suivante repasse par la garde.
     if (
       !contenuChange
-      && declarationSuicideCabinetActive()
       && instrument.poseQuestionSuicide === true
       && typeof instrument.questionSuicideId === 'string'
     ) {
@@ -583,13 +496,13 @@ export async function PATCH(request: Request) {
         titre,
         categorie,
         description: description || null,
-        // NF-7, P2-3 (passe Codex du lot 3, P1-1) : drapeau allumé, une
-        // édition des métadonnées seules ne réécrit PAS le contenu. Elle
-        // échappe au verrou et au recomptage ; réécrire la définition et la
-        // grille qu'elle a lues pourrait réinstaller, après une modification,
-        // une publication et un envoi concurrents, l'ancien contenu sous la
-        // nouvelle déclaration. Drapeau éteint : l'écriture d'avant.
-        ...(contenuChange || !declarationSuicideCabinetActive()
+        // NF-7, P2-3 (passe Codex du lot 3, P1-1) : une édition des
+        // métadonnées seules ne réécrit PAS le contenu. Elle échappe au verrou
+        // et au recomptage ; réécrire la définition et la grille qu'elle a
+        // lues pourrait réinstaller, après une modification, une publication
+        // et un envoi concurrents, l'ancien contenu sous la nouvelle
+        // déclaration.
+        ...(contenuChange
           ? {
               definitionJson: definition as unknown as Prisma.InputJsonValue,
               scoringJson: { ...scoring, maxTotal: verdict.scoreMax } as unknown as Prisma.InputJsonValue,
@@ -598,20 +511,20 @@ export async function PATCH(request: Request) {
         ...(contenuChange ? { statutRelecture: 'brouillon' } : {}),
         // NF-7 ([[D-303]] §2) : une modification des questions redemande la
         // déclaration — l'ancienne est effacée (NULL = non déclaré), la
-        // prochaine publication la recueille de nouveau. Drapeau éteint : rien.
-        ...(contenuChange && declarationSuicideCabinetActive() ? DECLARATION_SUICIDE_EFFACEE : {}),
+        // prochaine publication la recueille de nouveau.
+        ...(contenuChange ? DECLARATION_SUICIDE_EFFACEE : {}),
       },
     };
-    if (contenuChange && declarationSuicideCabinetActive()) {
+    if (contenuChange) {
       // NF-7, P2-3 (revue `wn-reviewer` du lot 3, P1) : le gel du contenu
       // comptait les envois HORS de tout verrou. Un envoi pouvait se glisser
       // entre ce comptage et l'écriture, et l'assignation garder la copie de
-      // la déclaration d'avant des questions nouvelles. Drapeau allumé, la
-      // ligne est verrouillée `FOR UPDATE` (en conflit avec le `FOR SHARE`
+      // la déclaration d'avant des questions nouvelles. La ligne est
+      // verrouillée `FOR UPDATE` (en conflit avec le `FOR SHARE`
       // de l'envoi), les envois recomptés sous ce verrou, puis l'écriture :
       // soit l'envoi a commité avant et il est compté (refus), soit
       // l'écriture passe avant et l'envoi, sous son verrou, voit un brouillon
-      // et l'écarte. Drapeau éteint : l'écriture d'avant.
+      // et l'écarte.
       const envoisSousVerrou = await prisma.$transaction(async tx => {
         await tx.$queryRaw`SELECT id_instrument FROM cabinet_instruments WHERE id_instrument = ${idInstrument} FOR UPDATE`;
         const envois = await tx.assignation.count({
@@ -624,12 +537,11 @@ export async function PATCH(request: Request) {
       if (envoisSousVerrou > 0) {
         return refusEnvoisEnCours(envoisSousVerrou);
       }
-    } else if (declarationSuicideCabinetActive()) {
+    } else {
       // Réponse 20261114-1217-a : la garde ci-dessus a jugé le nom contre la
       // déclaration LUE. L'écriture n'a lieu que si l'instrument n'a pas bougé
       // depuis : sinon une publication ou une déclaration « oui » concurrente,
       // jugée sur l'ancien nom, recevrait un nom que personne n'a jugé.
-      // Drapeau éteint : l'écriture d'avant.
       const ecrit = await prisma.cabinetInstrument.updateMany({
         where: { idInstrument, updatedAt: instrument.updatedAt },
         data: edition.data,
@@ -644,8 +556,6 @@ export async function PATCH(request: Request) {
           { status: 409 },
         );
       }
-    } else {
-      await prisma.cabinetInstrument.update(edition);
     }
     return NextResponse.json<MutateInstrumentResponse>({ success: true, idInstrument });
   } catch {

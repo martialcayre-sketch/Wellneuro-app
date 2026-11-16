@@ -185,8 +185,6 @@ export type BibliothequeEntree = {
    * assignables seulement une fois la grille relue puis publiée. */
   cabinet?: {
     statutRelecture: string;
-    /** NF-7, P2-1 : publié mais non déclaré, drapeau allumé — ne part plus avant « Déclarer ». */
-    declarationRequise?: true;
   };
 };
 

@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { estInstrumentCabinet, resolveDefinition } from '@/lib/instruments';
-import { declarationSuicideCabinetActive } from '@/lib/securite/declarationSuicideCabinet';
 import { designationDeLAssignation } from '@/lib/clinical-engine/designationsCabinetPrisma';
 import { designationSuicideCabinetServie } from '@/lib/clinical-engine/safetyFindings';
 import type { DesignationSuicideServie } from '@/lib/securite/urgenceSuicide';
@@ -37,8 +36,8 @@ export type PatientQuestionnaireResponse =
       /**
        * NF-7 ([[D-303]] §3) : l'encart signé de [[D-275]] est dû sur cet
        * instrument du cabinet. Un verdict du serveur, présent seulement
-       * drapeau `WN_ENABLE_DECLARATION_SUICIDE_CAB` allumé ET copie de la
-       * déclaration à vrai sur l'assignation. Les quatre questionnaires du
+       * quand la copie de la déclaration vaut vrai sur l'assignation
+       * ([[D-528]] : plus de drapeau). Les quatre questionnaires du
        * catalogue n'en dépendent pas (`afficheEncartUrgence`).
        */
       encartUrgenceCabinet?: true;
@@ -46,8 +45,8 @@ export type PatientQuestionnaireResponse =
        * [[D-515]] (PR 3 du lot de code) : la question désignée et sa valeur
        * « non », COPIÉES à l'envoi, pour le message de [[D-277]] §1 sur un
        * instrument du cabinet. Présente seulement quand une réponse positive
-       * appellerait le courriel au praticien : drapeau allumé, copie « oui »
-       * lisible, `SAF-QUEST-02` signée (`designationSuicideCabinetServie`).
+       * appellerait le courriel au praticien : copie « oui » lisible,
+       * `SAF-QUEST-02` signée (`designationSuicideCabinetServie`).
        */
       designationSuicideCabinet?: DesignationSuicideServie;
     }
@@ -206,8 +205,7 @@ export async function GET(req: Request): Promise<NextResponse<PatientQuestionnai
     // ouvre l'encart (0028-a : non déclaré n'est jamais lu comme « oui » non
     // plus — c'est la troisième migration qui fermera l'existant non déclaré).
     const encartUrgenceCabinet =
-      declarationSuicideCabinetActive()
-      && estInstrumentCabinet(ass.idQuestionnaire)
+      estInstrumentCabinet(ass.idQuestionnaire)
       && ass.poseQuestionSuicide === true;
 
     // [[D-515]] : la désignation copiée, servie aux mêmes conditions que le

@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 // Test d'autorisation (exig. 7 G-TRUST-04, lot A5) — PRATICIEN SEUL.
 const { getServerSession, prisma } = vi.hoisted(() => ({
@@ -19,10 +19,11 @@ describe('GET /api/praticien/bibliotheque — autorisation', () => {
   });
 });
 
-// NF-7, P2-1 (arbitrage du 2026-11-12) : drapeau allumé, un instrument du
-// cabinet publié non déclaré reste listé mais n'est plus assignable, et porte
-// `declarationRequise`. Drapeau éteint : l'entrée d'avant ce lot.
-describe('GET /api/praticien/bibliotheque — instrument du cabinet non déclaré (NF-7)', () => {
+// NF-7 : un instrument du cabinet publié est assignable — publié veut dire
+// déclaré, le CHECK `cabinet_instruments_valide_declare` le tient en base. Le
+// marqueur `declarationRequise` est retiré avec le geste « Déclarer »
+// (réponse 20261116-0826-a, [[D-528]]).
+describe('GET /api/praticien/bibliotheque — instrument du cabinet publié (NF-7)', () => {
   const PUBLIE = {
     idInstrument: 'CAB_1',
     praticienEmail: 'praticien@wellneuro.fr',
@@ -33,37 +34,25 @@ describe('GET /api/praticien/bibliotheque — instrument du cabinet non déclar�
     scoringJson: { type: 'sum', maxTotal: 4 },
     statutRelecture: 'valide',
     actif: true,
-    poseQuestionSuicide: null,
+    poseQuestionSuicide: false,
   };
 
-  afterEach(() => {
-    delete process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB;
-  });
-
-  async function entreeCabinet(poseQuestionSuicide: boolean | null) {
+  async function entreeCabinet(surcharge: Record<string, unknown> = {}) {
     getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
-    prisma.cabinetInstrument.findMany.mockResolvedValue([{ ...PUBLIE, poseQuestionSuicide }]);
+    prisma.cabinetInstrument.findMany.mockResolvedValue([{ ...PUBLIE, ...surcharge }]);
     const json = await (await GET()).json();
     return json.entrees.find((e: { id: string }) => e.id === 'CAB_1');
   }
 
-  it('drapeau éteint : assignable, sans `declarationRequise`, comme avant', async () => {
-    const entree = await entreeCabinet(null);
+  it('publié : assignable, sans `declarationRequise`', async () => {
+    const entree = await entreeCabinet();
     expect(entree.assignable).toBe(true);
     expect(entree.cabinet).toEqual({ statutRelecture: 'valide' });
   });
 
-  it('drapeau allumé : non déclaré = listé, non assignable, `declarationRequise`', async () => {
-    process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB = 'true';
-    const entree = await entreeCabinet(null);
+  it('à relire : listé, non assignable', async () => {
+    const entree = await entreeCabinet({ statutRelecture: 'grille_a_relire', poseQuestionSuicide: null });
     expect(entree.assignable).toBe(false);
-    expect(entree.cabinet).toEqual({ statutRelecture: 'valide', declarationRequise: true });
-  });
-
-  it('drapeau allumé : déclaré « non » = assignable', async () => {
-    process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB = 'true';
-    const entree = await entreeCabinet(false);
-    expect(entree.assignable).toBe(true);
-    expect(entree.cabinet).toEqual({ statutRelecture: 'valide' });
+    expect(entree.cabinet).toEqual({ statutRelecture: 'grille_a_relire' });
   });
 });

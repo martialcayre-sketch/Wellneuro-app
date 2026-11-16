@@ -220,7 +220,7 @@ describe('file-envoi/envoyer POST', () => {
 
 // NF-7 ([[D-303]] §3, réponse 20261111-0027-a) : la déclaration « question sur
 // le suicide » d'un instrument du cabinet est COPIÉE sur l'assignation à
-// l'envoi. Drapeau éteint, rien n'est écrit : l'envoi d'avant NF-7.
+// chaque envoi ([[D-528]] : sans drapeau).
 describe('file-envoi/envoyer — copie de la déclaration NF-7', () => {
   const INSTRUMENT_PUBLIE = {
     idInstrument: 'CAB_1',
@@ -234,7 +234,6 @@ describe('file-envoi/envoyer — copie de la déclaration NF-7', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    delete process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB;
     process.env.SMTP_URL = 'smtp://test';
     process.env.NEXTAUTH_URL = 'https://app.wellneuro.fr';
     prisma.envoiBrouillon.findFirst.mockResolvedValue({ ...BROUILLON, qids: ['CAB_1', 'Q_STR_02'] });
@@ -258,7 +257,7 @@ describe('file-envoi/envoyer — copie de la déclaration NF-7', () => {
     question_suicide_option_non?: number | null;
   };
 
-  /** `$queryRaw` sert deux verrous : la ligne patient, puis (drapeau allumé) celles des instruments. */
+  /** `$queryRaw` sert deux verrous : la ligne patient, puis celles des instruments. */
   function lignesVerrouillees(lignes: LigneVerrou[]) {
     tx.$queryRaw.mockImplementation((sql: TemplateStringsArray) =>
       Promise.resolve(sql.join('?').includes('cabinet_instruments') ? lignes : [{ id: 1 }]),
@@ -277,19 +276,7 @@ describe('file-envoi/envoyer — copie de la déclaration NF-7', () => {
     return appel![0].data as Record<string, unknown>;
   }
 
-  it('drapeau éteint : aucune copie, aucun verrou d’instrument, l’envoi d’avant NF-7', async () => {
-    lignesVerrouillees([{ id_instrument: 'CAB_1', actif: false, statut_relecture: 'brouillon', pose_question_suicide: null }]);
-    const res = await POST(postRequest({ idBrouillon: 'ENV_1' }));
-    expect(res.status).toBe(200);
-    expect(await res.json()).toMatchObject({ success: true, count: 2 });
-    expect('poseQuestionSuicide' in donneesCreees('CAB_1')).toBe(false);
-    expect('poseQuestionSuicide' in donneesCreees('Q_STR_02')).toBe(false);
-    expect(requetesInstruments()).toEqual([]);
-    expect(tx.cabinetInstrument.findUnique).not.toHaveBeenCalled();
-  });
-
-  it('drapeau allumé : le CAB_ porte la copie lue SOUS VERROU ; le catalogue reste sans copie', async () => {
-    process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB = 'true';
+  it('le CAB_ porte la copie lue SOUS VERROU ; le catalogue reste sans copie', async () => {
     const res = await POST(postRequest({ idBrouillon: 'ENV_1' }));
     expect(res.status).toBe(200);
     expect(donneesCreees('CAB_1').poseQuestionSuicide).toBe(true);
@@ -305,8 +292,7 @@ describe('file-envoi/envoyer — copie de la déclaration NF-7', () => {
     expect(appel.slice(1)).toEqual([['CAB_1'], 'praticien@wellneuro.fr']);
   });
 
-  it('drapeau allumé : « non » se copie « non » ; jamais de NULL copié (0028-a)', async () => {
-    process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB = 'true';
+  it('« non » se copie « non » ; jamais de NULL copié (0028-a)', async () => {
     lignesVerrouillees([{ id_instrument: 'CAB_1', actif: true, statut_relecture: 'valide', pose_question_suicide: false }]);
     await POST(postRequest({ idBrouillon: 'ENV_1' }));
     expect(donneesCreees('CAB_1').poseQuestionSuicide).toBe(false);
@@ -320,8 +306,7 @@ describe('file-envoi/envoyer — copie de la déclaration NF-7', () => {
     ['désactivé', { actif: false }],
     ['déclaration effacée (non déclaré)', { pose_question_suicide: null }],
   ] as const) {
-    it(`drapeau allumé, instrument ${cas} sous verrou : écarté avec sa trace, le reste part`, async () => {
-      process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB = 'true';
+    it(`instrument ${cas} sous verrou : écarté avec sa trace, le reste part`, async () => {
       const publieDeclare: LigneVerrou = { id_instrument: 'CAB_1', actif: true, statut_relecture: 'valide', pose_question_suicide: true };
       lignesVerrouillees([{ ...publieDeclare, ...ligne }]);
       const warn = vi.spyOn(logger, 'warn');
@@ -337,15 +322,13 @@ describe('file-envoi/envoyer — copie de la déclaration NF-7', () => {
     });
   }
 
-  it('drapeau allumé, instrument d’un autre cabinet ou disparu : aucune ligne sous verrou, écarté', async () => {
-    process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB = 'true';
+  it('instrument d’un autre cabinet ou disparu : aucune ligne sous verrou, écarté', async () => {
     lignesVerrouillees([]);
     const res = await POST(postRequest({ idBrouillon: 'ENV_1' }));
     expect(await res.json()).toMatchObject({ success: true, count: 1 });
   });
 
-  it('drapeau allumé, plus rien d’envoyable sous verrou : 400, tout est annulé, aucun mail', async () => {
-    process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB = 'true';
+  it('plus rien d’envoyable sous verrou : 400, tout est annulé, aucun mail', async () => {
     prisma.envoiBrouillon.findFirst.mockResolvedValue({ ...BROUILLON, qids: ['CAB_1'] });
     lignesVerrouillees([{ id_instrument: 'CAB_1', actif: true, statut_relecture: 'valide', pose_question_suicide: null }]);
     const res = await POST(postRequest({ idBrouillon: 'ENV_1' }));
@@ -353,13 +336,6 @@ describe('file-envoi/envoyer — copie de la déclaration NF-7', () => {
     expect(await res.json()).toMatchObject({ success: false, error: 'Aucun questionnaire valide dans ce brouillon.' });
     expect(tx.assignation.create).not.toHaveBeenCalled();
     expect(sendMail).not.toHaveBeenCalled();
-  });
-
-  it('valeur autre que « true » : le drapeau reste éteint', async () => {
-    process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB = '1';
-    await POST(postRequest({ idBrouillon: 'ENV_1' }));
-    expect('poseQuestionSuicide' in donneesCreees('CAB_1')).toBe(false);
-    delete process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB;
   });
 
   // [[D-515]] §4 : sous « oui », la désignation en vigueur est copiée avec la
@@ -385,10 +361,6 @@ describe('file-envoi/envoyer — copie de la déclaration NF-7', () => {
       question_suicide_option_non: 0,
     };
     const COLONNES = ['questionSuicideId', 'questionSuicideOptionNon', 'questionSuicideCopie'];
-
-    beforeEach(() => {
-      process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB = 'true';
-    });
 
     it('« oui » désigné : les trois colonnes reçoivent la désignation, copie verbatim de la seule question désignée', async () => {
       lignesVerrouillees([DESIGNE]);
@@ -438,13 +410,5 @@ describe('file-envoi/envoyer — copie de la déclaration NF-7', () => {
         warn.mockRestore();
       });
     }
-
-    it('drapeau éteint : la désignation n’est ni lue ni copiée', async () => {
-      delete process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB;
-      lignesVerrouillees([DESIGNE]);
-      await POST(postRequest({ idBrouillon: 'ENV_1' }));
-      for (const colonne of COLONNES) expect(colonne in donneesCreees('CAB_1'), colonne).toBe(false);
-      expect(requetesInstruments()).toEqual([]);
-    });
   });
 });

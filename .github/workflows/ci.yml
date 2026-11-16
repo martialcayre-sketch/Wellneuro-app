@@ -1980,8 +1980,8 @@ jobs:
 
       # L'envoi d'un instrument du cabinet contre sa modification, sa
       # publication et sa déclaration (NF-7, H59, lot 3 #2021) : les VRAIS
-      # handlers (`file-envoi/envoyer` POST, `instruments` PATCH), drapeau
-      # allumé, contre PostgreSQL — FOR SHARE de l'envoi, FOR UPDATE et
+      # handlers (`file-envoi/envoyer` POST, `instruments` PATCH), sans
+      # drapeau depuis D-528, contre PostgreSQL — FOR SHARE de l'envoi, FOR UPDATE et
       # recomptage de la modification, les deux ordres, deux témoins, ordres
       # opposés sans interblocage, titre écrit sur une lecture périmée (P1-1).
       - name: Cabinet instrument send race bench

@@ -183,11 +183,11 @@ describe('file-envoi GET', () => {
     expect(where.praticienEmail.equals).toBe('praticien@wellneuro.fr');
   });
 
-  // NF-7, P2-1 (arbitrage du 2026-11-12) : drapeau allumé, un publié non
-  // déclaré est marqué « Indisponible » dans la file, AVANT l'envoi qui
-  // l'écarterait. Drapeau éteint : il reste disponible, comme avant.
-  describe('instrument du cabinet publié non déclaré', () => {
-    function brouillonAvec(poseQuestionSuicide: boolean | null) {
+  // NF-7 : un instrument du cabinet publié est disponible dans la file ; à
+  // relire ou désactivé, « Indisponible ». Publié veut dire déclaré : le CHECK
+  // `cabinet_instruments_valide_declare` le tient ([[D-528]]).
+  describe('instrument du cabinet dans la file', () => {
+    function brouillonAvec(surcharge: Record<string, unknown>) {
       prisma.envoiBrouillon.findMany.mockResolvedValue([
         {
           idBrouillon: 'ENV_1',
@@ -199,7 +199,7 @@ describe('file-envoi GET', () => {
         },
       ]);
       prisma.cabinetInstrument.findMany.mockResolvedValue([
-        { idInstrument: 'CAB_1', titre: 'Humeur cabinet', actif: true, statutRelecture: 'valide', poseQuestionSuicide },
+        { idInstrument: 'CAB_1', titre: 'Humeur cabinet', actif: true, statutRelecture: 'valide', poseQuestionSuicide: false, ...surcharge },
       ]);
     }
 
@@ -208,22 +208,13 @@ describe('file-envoi GET', () => {
       return json.brouillons[0].items[0];
     }
 
-    it('drapeau éteint : disponible, comme avant ce lot', async () => {
-      delete process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB;
-      brouillonAvec(null);
+    it('publié : disponible ; à relire ou désactivé : indisponible', async () => {
+      brouillonAvec({});
       expect(await item()).toEqual({ id: 'CAB_1', titre: 'Humeur cabinet' });
-    });
-
-    it('drapeau allumé : non déclaré = indisponible ; déclaré « non » = disponible', async () => {
-      process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB = 'true';
-      try {
-        brouillonAvec(null);
-        expect(await item()).toEqual({ id: 'CAB_1', titre: 'Humeur cabinet', indisponible: true });
-        brouillonAvec(false);
-        expect(await item()).toEqual({ id: 'CAB_1', titre: 'Humeur cabinet' });
-      } finally {
-        delete process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB;
-      }
+      brouillonAvec({ statutRelecture: 'grille_a_relire', poseQuestionSuicide: null });
+      expect(await item()).toEqual({ id: 'CAB_1', titre: 'Humeur cabinet', indisponible: true });
+      brouillonAvec({ actif: false });
+      expect(await item()).toEqual({ id: 'CAB_1', titre: 'Humeur cabinet', indisponible: true });
     });
   });
 });

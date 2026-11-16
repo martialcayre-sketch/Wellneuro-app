@@ -820,11 +820,15 @@ describe('GET /api/praticien/fil — signal de sécurité ouvert (D-275 §3)', (
     };
     const ID_QUESTIONNAIRE = construireSafetyFindings([], reponsesSecuriteDeclarees([POSITIVE]))
       .findings[0].findingId;
-    // Seule la lecture du producteur de sécurité filtre sur `idQuestionnaire` :
-    // les autres lectures du Fil restent vides.
+    // Seule la lecture du producteur de sécurité filtre sur `idQuestionnaire` —
+    // directement, ou dans son `OR` catalogue ∪ cabinet depuis [[D-528]] (la
+    // table du cabinet est signée, le drapeau retiré) : les autres lectures du
+    // Fil restent vides.
     function passations(rows: unknown[]) {
       prisma.questionnaireReponse.findMany.mockImplementation(
-        async (args: { where?: { idQuestionnaire?: unknown } }) => (args?.where?.idQuestionnaire ? rows : []),
+        async (args: { where?: { idQuestionnaire?: unknown; OR?: { idQuestionnaire?: unknown }[] } }) => (
+          args?.where?.idQuestionnaire || args?.where?.OR?.some(branche => branche.idQuestionnaire) ? rows : []
+        ),
       );
     }
 

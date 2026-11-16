@@ -1,6 +1,6 @@
 // LE DÉVERROUILLAGE D'UNE ASSIGNATION D'UN INSTRUMENT DU CABINET — [[D-524]] §2
-// (réponse 20261114-2145-a, option B), prérequis de l'allumage de
-// `WN_ENABLE_DECLARATION_SUICIDE_CAB` (§3).
+// (réponse 20261114-2145-a, option B), prérequis de l'allumage du drapeau
+// NF-7 (§3), retiré depuis ([[D-528]]).
 //
 // Le contenu d'un instrument est gelé tant qu'un envoi est en cours, mais une
 // assignation VERROUILLÉE ne compte plus comme envoi en cours : l'instrument

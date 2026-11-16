@@ -136,12 +136,10 @@ describe('parité cockpit ↔ Fil — un instrument du cabinet ([[D-515]])', () 
   const jointe = <T extends object>(passation: T) => ({ ...passation, designationCabinet: designationDeLAssignation(ASSIGNATION) });
 
   beforeEach(() => {
-    process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB = 'true';
     prisma.assignation.findMany.mockResolvedValue([ASSIGNATION]);
   });
   afterEach(() => {
     Object.assign(SAFETY_QUESTIONNAIRE_CABINET_METADATA, ETAT_LIVRE);
-    delete process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB;
   });
 
   it('table signée, passation positive : le Fil porte EXACTEMENT les constats du cockpit, celui du cabinet compris', async () => {

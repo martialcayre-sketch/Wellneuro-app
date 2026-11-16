@@ -9,7 +9,7 @@ import { TRAIT_ICONE } from '@/components/ui/icone';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { EnvoiConfirme } from '@/components/bibliotheque/EnvoiConfirme';
-import { MOTIF_DECLARATION_REQUISE, questionsDesignables } from '@/lib/securite/declarationSuicideCabinet';
+import { questionsDesignables } from '@/lib/securite/declarationSuicideCabinet';
 import { PanneauSuperpose } from '@/components/ui/PanneauSuperpose';
 import { QuestionField } from '@/components/patient/QuestionField';
 import { ECHELLES_NOMMEES, interditTouteBande, type EchelleNommee } from '@/lib/echelles-cabinet';
@@ -59,7 +59,7 @@ export function BibliothequePanel({ entrees }: { entrees: BibliothequeEntree[] }
   const titreFileRef = useRef<HTMLHeadingElement>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
-  // Refus de « publier » ou de « Déclarer », affiché DANS le tiroir ouvert :
+  // Refus de « publier », affiché DANS le tiroir ouvert :
   // le bandeau de la page reste sous l'overlay (réponse 20261114-1217-a, le
   // refus nomme le champ à reformuler).
   const [erreursTiroir, setErreursTiroir] = useState<string[]>([]);
@@ -74,9 +74,6 @@ export function BibliothequePanel({ entrees }: { entrees: BibliothequeEntree[] }
   const [tiroirRelecture, setTiroirRelecture] = useState(false);
   const [editionInitiale, setEditionInitiale] = useState<InstrumentCabinetDetailDto | null>(null);
   const [relecture, setRelecture] = useState<InstrumentCabinetDetailDto | null>(null);
-  // NF-7, P2-1 : le geste « Déclarer » d'un instrument publié non déclaré.
-  const [tiroirDeclaration, setTiroirDeclaration] = useState(false);
-  const [aDeclarer, setADeclarer] = useState<InstrumentCabinetDetailDto | null>(null);
 
   const selection = useMemo(
     () => entreesCourantes.find(e => e.id === selectionId) ?? null,
@@ -315,7 +312,7 @@ export function BibliothequePanel({ entrees }: { entrees: BibliothequeEntree[] }
     setTiroirRelecture(true);
   }
 
-  async function publier(idInstrument: string, declaration?: DeclarationSuicideSaisie) {
+  async function publier(idInstrument: string, declaration: DeclarationSuicideSaisie) {
     setOccupe(true);
     setMessage(null);
     setErreur(null);
@@ -338,46 +335,6 @@ export function BibliothequePanel({ entrees }: { entrees: BibliothequeEntree[] }
     } catch {
       setErreur('Publication impossible.');
       setErreursTiroir(['Publication impossible.']);
-    }
-    setOccupe(false);
-  }
-
-  async function ouvrirDeclaration(idInstrument: string) {
-    setErreur(null);
-    const detail = await chargerDetail(idInstrument);
-    if (!detail) {
-      setErreur('Instrument introuvable.');
-      return;
-    }
-    setADeclarer(detail);
-    setErreursTiroir([]);
-    setTiroirDeclaration(true);
-  }
-
-  async function declarer(idInstrument: string, declaration: DeclarationSuicideSaisie) {
-    setOccupe(true);
-    setMessage(null);
-    setErreur(null);
-    setErreursTiroir([]);
-    try {
-      const res = await fetch('/api/praticien/instruments', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idInstrument, action: 'declarer', ...declaration }),
-      });
-      const json = (await res.json()) as MutateInstrumentResponse;
-      if (json.success) {
-        setMessage('Déclaration enregistrée.');
-        setTiroirDeclaration(false);
-        // La file d'envoi aussi : ses items « Indisponible » redeviennent envoyables.
-        await Promise.all([rafraichirCabinet(), chargerFile()]);
-      } else {
-        setErreur(json.error ?? 'Déclaration impossible.');
-        setErreursTiroir(json.erreurs ?? [json.error ?? 'Déclaration impossible.']);
-      }
-    } catch {
-      setErreur('Déclaration impossible.');
-      setErreursTiroir(['Déclaration impossible.']);
     }
     setOccupe(false);
   }
@@ -459,22 +416,6 @@ export function BibliothequePanel({ entrees }: { entrees: BibliothequeEntree[] }
                   occupe={occupe}
                   erreurs={erreursTiroir}
                   onPublier={declaration => void publier(relecture.idInstrument, declaration)}
-                />
-              )}
-            </PanneauSuperpose>
-            <PanneauSuperpose
-              largeur="standard"
-              titre="Déclarer"
-              description={`${MOTIF_DECLARATION_REQUISE}.`}
-              open={tiroirDeclaration}
-              onOpenChange={setTiroirDeclaration}
-            >
-              {aDeclarer && (
-                <DeclarerInstrument
-                  detail={aDeclarer}
-                  occupe={occupe}
-                  erreurs={erreursTiroir}
-                  onDeclarer={declaration => void declarer(aDeclarer.idInstrument, declaration)}
                 />
               )}
             </PanneauSuperpose>
@@ -600,25 +541,10 @@ export function BibliothequePanel({ entrees }: { entrees: BibliothequeEntree[] }
                           {i.nbQuestions != null ? ` · ${i.nbQuestions} questions` : ''}
                           {i.scoreMax != null ? ` · /${i.scoreMax}` : ''}
                         </p>
-                        {/* NF-7, P2-1 : publié mais non déclaré, drapeau allumé —
-                            visible, plus envoyable avant « Déclarer ». */}
-                        {i.declarationRequise && (
-                          <p className="mt-1 text-xs text-status-danger">{MOTIF_DECLARATION_REQUISE}.</p>
-                        )}
                         {/* Q5 et Q6 de D-481 : gestes à 44 px par `ui/Button`,
                             aucun plein dans la zone ; « Désactiver » confirmé
                             (Q4, T-70 de D-488). */}
                         <div className="mt-2 flex flex-wrap gap-2">
-                          {i.declarationRequise && (
-                            <Button
-                              type="button"
-                              variant="outline"
-                              disabled={occupe}
-                              onClick={() => void ouvrirDeclaration(i.idInstrument)}
-                            >
-                              Déclarer
-                            </Button>
-                          )}
                           {i.statutRelecture === 'grille_a_relire' && (
                             <Button
                               type="button"
@@ -756,9 +682,7 @@ export function BibliothequePanel({ entrees }: { entrees: BibliothequeEntree[] }
                     {selection && !selection.assignable
                       ? selection.passationPraticien
                         ? 'Passation en consultation — cet instrument ne peut pas être envoyé.'
-                        : selection.cabinet?.declarationRequise
-                          ? `${MOTIF_DECLARATION_REQUISE}.`
-                          : selection.cabinet
+                        : selection.cabinet
                           ? 'Instrument du cabinet non publié — faites relire puis publiez la grille avant l’envoi.'
                           : 'Alias historique — non assignable tel quel.'
                       : selection?.passationPraticien
@@ -1417,40 +1341,29 @@ function ImportInstrument({ onRafraichir }: { onRafraichir: () => Promise<void> 
 }
 
 // NF-7 ([[D-303]] §2, [[D-493]] §3) : la déclaration « question sur le
-// suicide », exigée à la publication quand le serveur l'annonce
-// (`declarationSuicideRequise`, drapeau `WN_ENABLE_DECLARATION_SUICIDE_CAB`).
+// suicide », exigée à chaque publication ([[D-528]] : plus de drapeau).
 // « Oui » demande la question concernée et sa réponse « non ». Le serveur
 // revérifie tout contre la définition relue en base.
 type DeclarationSuicideSaisie =
   | { poseQuestionSuicide: false }
   | { poseQuestionSuicide: true; questionSuicideId: string; questionSuicideOptionNon: number };
 
-// Deux contextes, deux jeux de textes validés par le responsable
-// (2026-11-12) : « Relire la grille » (publication) et « Déclarer » (un
-// instrument déjà publié, qui ne part plus avant sa déclaration).
+// Textes validés par le responsable (2026-11-12), pour « Relire la grille ».
+// Ceux du geste « Déclarer » sont retirés avec lui (réponse 20261116-0826-a).
 const TEXTES_DECLARATION = {
-  publication: {
-    aide: 'Réponse obligatoire pour publier.',
-    sansChoix: 'Il ne peut donc pas être publié en l’état avec une déclaration « oui ».',
-    pourPermettre: 'la publication',
-  },
-  declaration: {
-    aide: `${MOTIF_DECLARATION_REQUISE}.`,
-    sansChoix: 'Il ne peut donc pas être déclaré « oui » en l’état, et ne peut plus être envoyé.',
-    pourPermettre: 'l’envoi',
-  },
+  aide: 'Réponse obligatoire pour publier.',
+  sansChoix: 'Il ne peut donc pas être publié en l’état avec une déclaration « oui ».',
+  pourPermettre: 'la publication',
 } as const;
 
 function DeclarationSuicide({
   detail,
   onChange,
-  contexte = 'publication',
 }: {
   detail: InstrumentCabinetDetailDto;
   onChange: (declaration: DeclarationSuicideSaisie | null) => void;
-  contexte?: keyof typeof TEXTES_DECLARATION;
 }) {
-  const textes = TEXTES_DECLARATION[contexte];
+  const textes = TEXTES_DECLARATION;
   const idLegende = useId();
   const idAide = useId();
   const idQuestion = useId();
@@ -1552,11 +1465,6 @@ function DeclarationSuicide({
   );
 }
 
-// NF-7, P2-1 (arbitrage du 2026-11-12) : le geste « Déclarer » d'un instrument
-// publié sans déclaration. Il recueille la seule déclaration — ni les
-// questions ni le statut ne bougent — et le serveur la vérifie comme à la
-// publication. Sans migration ni reprise en base ; seule la déclaration est
-// enregistrée par l'application.
 // Le refus du serveur, lu dans le tiroir qui l'a provoqué : chaque motif nomme
 // le champ à reformuler (réponse 20261114-1217-a).
 function ErreursTiroir({ erreurs }: { erreurs: string[] }) {
@@ -1572,42 +1480,6 @@ function ErreursTiroir({ erreurs }: { erreurs: string[] }) {
           <li key={i}>{e}</li>
         ))}
       </ul>
-    </div>
-  );
-}
-
-function DeclarerInstrument({
-  detail,
-  occupe,
-  erreurs,
-  onDeclarer,
-}: {
-  detail: InstrumentCabinetDetailDto;
-  occupe: boolean;
-  erreurs: string[];
-  onDeclarer: (declaration: DeclarationSuicideSaisie) => void;
-}) {
-  const [declaration, setDeclaration] = useState<DeclarationSuicideSaisie | null>(null);
-  return (
-    <div className="flex flex-col gap-4">
-      <div>
-        <p className="font-display text-base font-semibold text-foreground">{detail.titre}</p>
-        <p className="mt-1 font-mono text-2xs text-muted-foreground">
-          {detail.idInstrument}
-          {detail.nbQuestions != null ? ` · ${detail.nbQuestions} questions` : ''}
-        </p>
-      </div>
-      <DeclarationSuicide detail={detail} onChange={setDeclaration} contexte="declaration" />
-      <ErreursTiroir erreurs={erreurs} />
-      <div className="border-t border-border pt-4">
-        <Button
-          type="button"
-          disabled={occupe || declaration === null}
-          onClick={() => declaration && onDeclarer(declaration)}
-        >
-          Déclarer
-        </Button>
-      </div>
     </div>
   );
 }
@@ -1629,10 +1501,9 @@ function RelectureGrille({
   detail: InstrumentCabinetDetailDto;
   occupe: boolean;
   erreurs: string[];
-  onPublier: (declaration?: DeclarationSuicideSaisie) => void;
+  onPublier: (declaration: DeclarationSuicideSaisie) => void;
 }) {
   const [declaration, setDeclaration] = useState<DeclarationSuicideSaisie | null>(null);
-  const declarationManquante = detail.declarationSuicideRequise === true && declaration === null;
   const sansInterpretation = interditTouteBande(detail.scoring);
   const premiere = detail.definition.sections[0]?.questions[0];
   const options = premiere && premiere.type === 'likert' ? premiere.options : [];
@@ -1712,15 +1583,13 @@ function RelectureGrille({
           </div>
         </>
       )}
-      {detail.declarationSuicideRequise === true && (
-        <DeclarationSuicide detail={detail} onChange={setDeclaration} />
-      )}
+      <DeclarationSuicide detail={detail} onChange={setDeclaration} />
       <ErreursTiroir erreurs={erreurs} />
       <div className="border-t border-border pt-4">
         <Button
           type="button"
-          disabled={occupe || declarationManquante}
-          onClick={() => onPublier(detail.declarationSuicideRequise === true ? declaration ?? undefined : undefined)}
+          disabled={occupe || declaration === null}
+          onClick={() => declaration && onPublier(declaration)}
         >
           {sansInterpretation ? 'Relu — publier' : 'Grille relue — publier'}
         </Button>
