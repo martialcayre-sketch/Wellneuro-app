@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { prisma } = vi.hoisted(() => {
+const { prisma, logger } = vi.hoisted(() => {
   const client = {
     cabinetInstrument: {
       findMany: vi.fn(),
@@ -19,16 +19,19 @@ const { prisma } = vi.hoisted(() => {
     $transaction: vi.fn(),
   };
   client.$transaction.mockImplementation((op: (tx: typeof client) => unknown) => op(client));
-  return { prisma: client };
+  // [[D-533]] : le journal du PATCH est observé, jamais émis.
+  return { prisma: client, logger: { error: vi.fn() } };
 });
 
 vi.mock('@/lib/prisma', () => ({ prisma }));
+vi.mock('@/lib/observability/logger', () => ({ logger }));
 vi.mock('next-auth', () => ({
   getServerSession: vi.fn().mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } }),
 }));
 vi.mock('@/lib/auth', () => ({ authOptions: {} }));
 vi.mock('@/lib/ids', () => ({ createPublicId: (prefix: string) => `${prefix}_TEST_12345678` }));
 
+import { Prisma } from '@/generated/prisma';
 import { GET, PATCH, POST } from './route';
 
 const DEFINITION_VALIDE = {
@@ -928,5 +931,147 @@ describe('instruments — libellés citables par la lettre (20261114-1217-a)', (
         });
       });
     });
+  });
+});
+
+// [[D-533]] (amende [[D-528]] §3) : une erreur technique du PATCH se
+// journalise, et la réponse reste le 500 « Erreur inattendue. ». Le journal
+// ne porte que le code d'événement, le code Prisma et le nom de la
+// contrainte. Les erreurs sont façonnées comme les rend l'adaptateur pg :
+// `meta.driverAdapterError.cause` porte le message Postgres et le `detail`,
+// qui recopie la ligne refusée entière.
+describe('instruments PATCH — journal d’une erreur technique (D-533)', () => {
+  const VALEUR_DE_LIGNE = 'VALEUR_DE_LIGNE_SENTINELLE';
+  const DETAIL = `Failing row contains (CAB_1, praticien@wellneuro.fr, ${VALEUR_DE_LIGNE}, {"type":"sum","interpretation":[{"label":"Faible"}]}, valide, null).`;
+
+  // `@prisma/adapter-pg` 7.8 : `originalCode` et `originalMessage` sur toute
+  // erreur du pilote ; un 23514 tombe dans la branche `postgres` (avec
+  // `detail`, la ligne refusée), un 23505 / 23503 dans leur `kind` propre.
+  function erreurPg(code: string, sqlstate: string, messagePg: string, kind: Record<string, unknown>) {
+    const cause = { originalCode: sqlstate, originalMessage: messagePg, ...kind };
+    return new Prisma.PrismaClientKnownRequestError(
+      `Database error. Code: \`${sqlstate}\`. Message: \`${messagePg}\` ${VALEUR_DE_LIGNE}`,
+      { code, clientVersion: '7.8.0', meta: { driverAdapterError: { name: 'DriverAdapterError', cause } } },
+    );
+  }
+
+  const CHECK = erreurPg(
+    'P2039',
+    '23514',
+    'new row for relation "cabinet_instruments" violates check constraint "cabinet_instruments_valide_declare"',
+    { kind: 'postgres', code: '23514', severity: 'ERROR', message: 'violation', detail: DETAIL },
+  );
+  const UNIQUE = erreurPg('P2002', '23505', 'duplicate key value violates unique constraint "cabinet_instruments_pkey"', {
+    kind: 'UniqueConstraintViolation',
+    constraint: { fields: ['id_instrument'] },
+  });
+  const CLE_ETRANGERE = erreurPg(
+    'P2003',
+    '23503',
+    'insert or update on table "cabinet_instruments" violates foreign key constraint "cabinet_instruments_fk"',
+    { kind: 'ForeignKeyConstraintViolation', constraint: { index: 'cabinet_instruments_fk' } },
+  );
+
+  const CHAMPS_PERMIS = ['context', 'domain', 'event', 'message', 'metadata'];
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    prisma.cabinetInstrument.findFirst.mockResolvedValue(INSTRUMENT);
+    prisma.assignation.count.mockResolvedValue(0);
+  });
+
+  async function patchEnEchec(erreur: unknown) {
+    prisma.cabinetInstrument.updateMany.mockRejectedValueOnce(erreur);
+    return PATCH(patchRequest({ idInstrument: 'CAB_1', titre: 'Sommeil, version 2' }));
+  }
+
+  async function attendre500(res: Response) {
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ success: false, reason: 'exception', error: 'Erreur inattendue.' });
+  }
+
+  it('violation du CHECK « valide ⇒ déclaré » : 500 inchangé, code d’événement propre, seuls les champs permis', async () => {
+    await attendre500(await patchEnEchec(CHECK));
+
+    expect(logger.error).toHaveBeenCalledTimes(1);
+    const entree = logger.error.mock.calls[0][0];
+    expect(Object.keys(entree).sort()).toEqual(CHAMPS_PERMIS);
+    expect(entree.event).toBe('PRATICIEN.INSTRUMENTS_CABINET.CHECK_VALIDE_DECLARE_VIOLE');
+    expect(entree.domain).toBe('PRATICIEN');
+    expect(entree.metadata).toEqual({ codePrisma: 'P2039', contrainte: 'cabinet_instruments_valide_declare' });
+    expect(entree.context.statusCode).toBe(500);
+  });
+
+  it.each([
+    ['P2002', UNIQUE, 'cabinet_instruments_pkey'],
+    ['P2003', CLE_ETRANGERE, 'cabinet_instruments_fk'],
+  ])('%s : 500 inchangé, code d’événement générique, code Prisma et contrainte seuls', async (code, erreur, contrainte) => {
+    await attendre500(await patchEnEchec(erreur));
+
+    const entree = logger.error.mock.calls[0][0];
+    expect(Object.keys(entree).sort()).toEqual(CHAMPS_PERMIS);
+    expect(entree.event).toBe('PRATICIEN.INSTRUMENTS_CABINET.PATCH_ECHEC');
+    expect(entree.metadata).toEqual({ codePrisma: code, contrainte });
+  });
+
+  it('aucune valeur de ligne, aucun message ni objet d’erreur n’atteint le journal', async () => {
+    for (const erreur of [CHECK, UNIQUE, CLE_ETRANGERE]) {
+      await attendre500(await patchEnEchec(erreur));
+    }
+    expect(logger.error).toHaveBeenCalledTimes(3);
+    const journal = JSON.stringify(logger.error.mock.calls);
+    for (const interdit of [VALEUR_DE_LIGNE, 'Failing row', 'praticien@wellneuro.fr', 'Faible', 'Sommeil', 'violates', 'Database error', '23514', 'driverAdapterError']) {
+      expect(journal).not.toContain(interdit);
+    }
+    for (const [entree] of logger.error.mock.calls) {
+      expect(entree).not.toHaveProperty('error');
+    }
+  });
+
+  // La ligne réellement émise, par le vrai logger : `sanitizeLogData` masque
+  // en `[id]` un identifiant de 24 caractères ou plus — d'où le code
+  // d'événement propre à la violation du CHECK, qui la nomme sans lui.
+  it('ligne émise par le vrai logger : le code d’événement nomme la violation, aucune donnée de ligne', async () => {
+    const { logger: vrai } = await vi.importActual<typeof import('@/lib/observability/logger')>('@/lib/observability/logger');
+    logger.error.mockImplementationOnce((entree: Parameters<typeof vrai.error>[0]) => vrai.error(entree));
+    const sortie = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      await attendre500(await patchEnEchec(CHECK));
+      expect(sortie).toHaveBeenCalledTimes(1);
+      const ligne = String(sortie.mock.calls[0][0]);
+      const emise = JSON.parse(ligne);
+      expect(emise.event).toBe('PRATICIEN.INSTRUMENTS_CABINET.CHECK_VALIDE_DECLARE_VIOLE');
+      expect(emise.metadata).toEqual({ codePrisma: 'P2039', contrainte: '[id]' });
+      expect(emise.error).toBeUndefined();
+      for (const interdit of [VALEUR_DE_LIGNE, 'Failing row', 'praticien@wellneuro.fr', 'Faible', 'violates']) {
+        expect(ligne).not.toContain(interdit);
+      }
+    } finally {
+      sortie.mockRestore();
+    }
+  });
+
+  it('une erreur qui n’est pas de Prisma : 500 inchangé, ni code ni contrainte', async () => {
+    await attendre500(await patchEnEchec(new TypeError(`lecture impossible ${VALEUR_DE_LIGNE}`)));
+
+    const entree = logger.error.mock.calls[0][0];
+    expect(entree.event).toBe('PRATICIEN.INSTRUMENTS_CABINET.PATCH_ECHEC');
+    expect(entree.metadata).toEqual({ codePrisma: null, contrainte: null });
+    expect(JSON.stringify(entree)).not.toContain(VALEUR_DE_LIGNE);
+  });
+
+  it('un journal en panne ne change pas la réponse', async () => {
+    logger.error.mockImplementationOnce(() => {
+      throw new Error('journal indisponible');
+    });
+    await attendre500(await patchEnEchec(CHECK));
+  });
+
+  it('le 409 de l’écriture gardée reste un 409, et rien n’est journalisé', async () => {
+    prisma.cabinetInstrument.updateMany.mockResolvedValueOnce({ count: 0 });
+    const res = await PATCH(patchRequest({ idInstrument: 'CAB_1', titre: 'Sommeil, version 2' }));
+    expect(res.status).toBe(409);
+    expect((await res.json()).reason).toBe('conflit_statut');
+    expect(logger.error).not.toHaveBeenCalled();
   });
 });

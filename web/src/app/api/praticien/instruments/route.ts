@@ -5,6 +5,9 @@ import type { Prisma } from '@/generated/prisma';
 import { prisma } from '@/lib/prisma';
 import { createPublicId } from '@/lib/ids';
 import { emailPraticien } from '@/lib/praticien/appartenance';
+import { EVENT_CODES } from '@/lib/observability/eventCodes';
+import { logger } from '@/lib/observability/logger';
+import { createRequestContext, finalizeLogContext } from '@/lib/observability/requestContext';
 import {
   listeInstrumentsCabinet,
   normaliserDefinitionCabinet,
@@ -95,6 +98,50 @@ function refusLibellesCitables(erreurs: string[]) {
     { success: false, reason: 'invalid_payload', error: erreurs.join(' '), erreurs },
     { status: 400 },
   );
+}
+
+// [[D-533]] (amende [[D-528]] §3) : une erreur technique du PATCH se
+// journalise, la réponse restant le 500 « Erreur inattendue. ». Le journal ne
+// porte que le code Prisma et, s'il est lisible, le nom de la contrainte —
+// JAMAIS l'objet d'erreur, son message ni ses métadonnées : sous l'adaptateur
+// pg, une violation de CHECK remonte en `P2039`, et
+// `meta.driverAdapterError.cause.detail` y recopie la ligne refusée entière
+// (« Failing row contains (…) »), grille comprise. Le nom de la contrainte se
+// lit dans le message Postgres, qui ne porte pas de valeur de ligne, et seul
+// un identifiant SQL en est extrait.
+const CONTRAINTE_CHECK_VALIDE_DECLARE = 'cabinet_instruments_valide_declare';
+const CODE_PRISMA = /^P\d{4}$/;
+const CONTRAINTE_VIOLEE = /violates (?:check |foreign key |unique |not-null )?constraint "([A-Za-z0-9_]{1,63})"/;
+
+function codeEtContrainte(err: unknown): { codePrisma: string | null; contrainte: string | null } {
+  if (typeof err !== 'object' || err === null) return { codePrisma: null, contrainte: null };
+  const { code, meta } = err as { code?: unknown; meta?: { driverAdapterError?: { cause?: { originalMessage?: unknown } } } };
+  const message = meta?.driverAdapterError?.cause?.originalMessage;
+  return {
+    codePrisma: typeof code === 'string' && CODE_PRISMA.test(code) ? code : null,
+    contrainte: typeof message === 'string' ? CONTRAINTE_VIOLEE.exec(message)?.[1] ?? null : null,
+  };
+}
+
+function journaliserEchecPatch(request: Request, err: unknown): void {
+  // Le journal ne doit jamais changer la réponse : une erreur ici est avalée.
+  try {
+    const { codePrisma, contrainte } = codeEtContrainte(err);
+    const violationCheck = contrainte === CONTRAINTE_CHECK_VALIDE_DECLARE;
+    logger.error({
+      event: violationCheck
+        ? EVENT_CODES.PRATICIEN_INSTRUMENTS_CHECK_VALIDE_DECLARE
+        : EVENT_CODES.PRATICIEN_INSTRUMENTS_PATCH_ECHEC,
+      domain: 'PRATICIEN',
+      message: violationCheck
+        ? 'Instrument du cabinet : violation du CHECK « valide ⇒ déclaré »'
+        : 'Échec de la modification d’un instrument du cabinet',
+      context: finalizeLogContext(createRequestContext(request), { statusCode: 500 }),
+      metadata: { codePrisma, contrainte },
+    });
+  } catch {
+    // rien : la réponse 500 part telle quelle
+  }
 }
 
 function versDto(row: Awaited<ReturnType<typeof listeInstrumentsCabinet>>[number]): InstrumentCabinetDto {
@@ -558,7 +605,8 @@ export async function PATCH(request: Request) {
       }
     }
     return NextResponse.json<MutateInstrumentResponse>({ success: true, idInstrument });
-  } catch {
+  } catch (err) {
+    journaliserEchecPatch(request, err);
     return NextResponse.json<MutateInstrumentResponse>(
       { success: false, reason: 'exception', error: 'Erreur inattendue.' },
       { status: 500 },

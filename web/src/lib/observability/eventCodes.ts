@@ -142,6 +142,14 @@ export const EVENT_CODES = {
   METRICS_UNAUTHORIZED: 'PRATICIEN.METRICS.UNAUTHORIZED',
   METRICS_QUERY_FAILED: 'PRATICIEN.METRICS.QUERY_FAILED',
 
+  // [[D-533]] : une erreur technique du PATCH des instruments du cabinet, qui
+  // reste un 500 « Erreur inattendue. ». La violation du CHECK « valide ⇒
+  // déclaré » ([[D-528]] §3) a son code à elle : aucun écrivain connu ne peut
+  // l'atteindre, c'est un défaut de code, alertable pour lui-même — et le nom
+  // de la contrainte, trop long, serait masqué en `[id]` dans les métadonnées.
+  PRATICIEN_INSTRUMENTS_PATCH_ECHEC: 'PRATICIEN.INSTRUMENTS_CABINET.PATCH_ECHEC',
+  PRATICIEN_INSTRUMENTS_CHECK_VALIDE_DECLARE: 'PRATICIEN.INSTRUMENTS_CABINET.CHECK_VALIDE_DECLARE_VIOLE',
+
   // G-TRUST-04, exigence 5 — journal des accès praticien. Comme
   // PORTAIL_GOOGLE_TRACE_ECHEC : une trace d'accès perdue est un trou de
   // conformité alertable pour lui-même, pas un incident applicatif. Couvre
