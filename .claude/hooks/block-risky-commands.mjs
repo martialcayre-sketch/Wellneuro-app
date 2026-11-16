@@ -252,7 +252,14 @@ for (const { motif, raison } of refusStructure) {
 //   est pas un pour ce crochet : un `<<'FIN'` cité dans un message de commit
 //   ou un commentaire masquait toute la suite (P1 de wn-reviewer). Ses lignes
 //   retournent à la structure. Un heredoc NU non terminé reste lu brut.
-const OUVERTURE_HEREDOC = /(?<!<)<<(?!<)(-?)\s*((?:'[^'\n]*'|"[^"\n]*"|\\[^\n]|[^\s'"\\<>|;&()])+)/g;
+//   Entre guillemets doubles, `\` n'échappe que `$`, `` ` ``, `"` et `\`
+//   (`<<"E\\OF"` termine sur `E\OF`, Codex).
+const OUVERTURE_HEREDOC = /(?<!<)<<(?!<)(-?)\s*((?:'[^'\n]*'|"(?:\\[^\n]|[^"\\\n])*"|\\[^\n]|[^\s'"\\<>|;&()])+)/g;
+function delimiteurSansCitation(mot) {
+  return mot.replace(/'([^']*)'|"((?:\\[^\n]|[^"\\\n])*)"|\\(.)/g, (_m, simple, double, echappe) =>
+    simple ?? (double !== undefined ? double.replace(/\\([$`"\\])/g, "$1") : echappe),
+  );
+}
 function lireHeredocs(commande) {
   const lignes = commande.split("\n");
   const structure = [];
@@ -265,7 +272,7 @@ function lireHeredocs(commande) {
     let consomme = false;
     for (const [, tiret, mot] of ligne.matchAll(OUVERTURE_HEREDOC)) {
       const cite = /['"\\]/.test(mot);
-      const delimiteur = mot.replace(/'([^']*)'|"([^"]*)"|\\(.)/g, (_m, a, b, c) => a ?? b ?? c);
+      const delimiteur = delimiteurSansCitation(mot);
       const depart = i;
       const corps = [];
       let termine = false;

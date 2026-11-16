@@ -81,6 +81,20 @@ les pièges suivants du titre, un contrôle par piège.
   - Les 44 cas d'épreuve du relecteur sont rejoués contre `main`. Aucun cas ne régresse. Les seuls cas
     passés de refus à passe sont ceux où zsh lit du corps cité.
   - T1 complet : `code=0`.
+- Contre-revue Codex P0 sur le diff poussé `facf02cd` : avis conforme (code 0), aucun P0. Les cinq
+  constats sont corrigés dans le commit suivant, chacun avec un banc :
+  - **P1, crochet** : un `\\` dans un délimiteur entre guillemets doubles n'était pas réduit.
+    `<<"E\\OF"` ne trouvait pas `E\OF`, et le heredoc redevenait de la structure : le push passait. Le
+    témoin passe de 0 à 2.
+  - **Trois P2, banc SDK** : « signal: » écrit dans un prompt, une parenthèse dans une chaîne, et un appel
+    coupé sur deux lignes. Chaînes et commentaires sont désormais masqués avant lecture. Une garde par
+    fichier (appels bruts = appels lus) signale un littéral regex qui fausserait ce masquage.
+  - **P2, banc Tailwind** : une opacité décimale `/10.5` était lue `/10`.
+  - Après correction :
+    - crochet : 102/102 ;
+    - bancs Vitest : 9/9 ;
+    - les 44 cas du relecteur rendent un verdict identique ;
+    - T1 complet : `code=0`.
 
 ## Problèmes ouverts
 
@@ -92,7 +106,7 @@ les pièges suivants du titre, un contrôle par piège.
     - un appel sous un autre nom que `.messages.` n'est pas vu ;
     - `stream: true` porté par une variable n'est pas vu ;
     - `signal: undefined` satisfait le banc ;
-    - une parenthèse dans une chaîne fausse le découpage ;
+    - les littéraux regex ne sont pas lus par le masquage, mais un écart d'appels se signale ;
   - dans le crochet :
     - un `\` en fin de ligne d'un corps nu n'est pas joint à la suivante ;
     - une apostrophe entre guillemets doubles imbriqués sous `$(…)` (`"$(printf "l'ajout")"`) masque

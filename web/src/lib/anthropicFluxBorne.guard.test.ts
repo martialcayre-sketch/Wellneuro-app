@@ -21,7 +21,42 @@ import path from 'node:path';
 // pas lu : un flux qui pend y bloque une commande, pas un dossier.
 
 const RACINE = path.resolve(__dirname, '..');
-const APPEL = /\.messages\.(stream|create)\s*\(/g;
+const APPEL = /\.\s*messages\s*\.\s*(stream|create)\s*\(/g;
+
+/**
+ * Le texte, chaînes et commentaires remplacés par des espaces (sauts de ligne
+ * gardés) : un `'('` ou un « signal: » écrit dans un prompt ne compte pas
+ * (Codex). Un gabarit `${…}` est masqué avec sa chaîne.
+ */
+function sansChainesNiCommentaires(texte: string): string {
+  let sortie = '';
+  let i = 0;
+  const blanc = (s: string) => s.replace(/[^\n]/g, ' ');
+  while (i < texte.length) {
+    const c = texte[i];
+    const suivant = texte[i + 1];
+    let fin = -1;
+    if (c === '/' && suivant === '/') {
+      fin = texte.indexOf('\n', i);
+      if (fin === -1) fin = texte.length;
+    } else if (c === '/' && suivant === '*') {
+      fin = texte.indexOf('*/', i + 2);
+      fin = fin === -1 ? texte.length : fin + 2;
+    } else if (c === "'" || c === '"' || c === '`') {
+      let j = i + 1;
+      while (j < texte.length && texte[j] !== c) j += texte[j] === '\\' ? 2 : 1;
+      fin = Math.min(j + 1, texte.length);
+    }
+    if (fin === -1) {
+      sortie += c;
+      i += 1;
+    } else {
+      sortie += blanc(texte.slice(i, fin));
+      i = fin;
+    }
+  }
+  return sortie;
+}
 
 function sources(dossier: string, sortie: string[] = []): string[] {
   for (const nom of readdirSync(dossier)) {
@@ -43,7 +78,8 @@ function argumentsDeLAppel(texte: string, ouvrante: number): string {
 }
 
 /** Les appels en flux d'un texte, et ceux qui n'ont pas de `signal` (`fichier:ligne`). */
-function fluxSansSignal(texte: string, fichier: string): { flux: number; fautifs: string[] } {
+function fluxSansSignal(source: string, fichier: string): { flux: number; fautifs: string[] } {
+  const texte = sansChainesNiCommentaires(source);
   let flux = 0;
   const fautifs: string[] = [];
   for (const m of texte.matchAll(APPEL)) {
@@ -71,14 +107,32 @@ describe('appels en flux au SDK Anthropic', () => {
     expect(fluxSansSignal('a.messages.create({ model }, { timeout: 1 })', 'x')).toEqual({ flux: 0, fautifs: [] });
   });
 
+  it('témoins (Codex) : prompt qui écrit « signal: », parenthèse dans une chaîne, appel coupé sur deux lignes', () => {
+    expect(fluxSansSignal("a.messages.stream({ messages: [{ content: 'signal:' }] })", 'x').fautifs).toEqual(['x:1']);
+    expect(
+      fluxSansSignal("a.messages.stream({ content: '(' }); a.messages.stream({ m }, { signal });", 'x').fautifs,
+    ).toEqual(['x:1']);
+    expect(fluxSansSignal('a.messages\n  .stream({ model })', 'x').fautifs).toEqual(['x:1']);
+    expect(fluxSansSignal('// a.messages.stream({ model })\nconst s = "a.messages.stream(";', 'x').flux).toBe(0);
+  });
+
   it('chaque flux de src/ porte son propre signal', () => {
     let flux = 0;
     const fautifs: string[] = [];
+    const incertains: string[] = [];
     for (const fichier of sources(RACINE)) {
-      const r = fluxSansSignal(readFileSync(fichier, 'utf8'), path.relative(RACINE, fichier));
+      const source = readFileSync(fichier, 'utf8');
+      const r = fluxSansSignal(source, path.relative(RACINE, fichier));
       flux += r.flux;
       fautifs.push(...r.fautifs);
+      // Le masquage ne lit pas les littéraux regex : une apostrophe dans `/'/`
+      // ouvrirait une fausse chaîne et blanchirait un vrai appel. Tout écart
+      // entre le texte brut et le texte masqué se signale ici.
+      const bruts = source.match(APPEL)?.length ?? 0;
+      const lus = sansChainesNiCommentaires(source).match(APPEL)?.length ?? 0;
+      if (bruts !== lus) incertains.push(`${path.relative(RACINE, fichier)} (${bruts} appels, ${lus} lus)`);
     }
+    expect(incertains, 'appel au SDK masqué par la lecture : à vérifier à la main').toEqual([]);
     // Le banc lit bien quelque chose : l'extraction des comptes rendus est en flux.
     expect(flux).toBeGreaterThan(0);
     expect(fautifs, 'appel en flux sans AbortSignal : `timeout` ne borne pas le corps').toEqual([]);

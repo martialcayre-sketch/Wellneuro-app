@@ -164,6 +164,8 @@ for (const cmd of [
   // Le délimiteur est un mot entier : `<<"E"OF` termine sur `EOF`.
   "cat <<\"E\"OF\nx\nEOF\ngit push origin \"$NEW:refs/heads/x\"",
   "cat <<'E'OF\nx\nEOF\ngit push origin \"$NEW:refs/heads/x\"",
+  // Codex : entre guillemets doubles, `\\\\` se réduit, `<<"E\\\\OF"` termine sur `E\\OF`.
+  "cat <<\"E\\\\OF\"\nl'ajout\nE\\OF\ngit push origin \"$NEW:refs/heads/x\"",
 ]) {
   test(`un $VAR:x non accolé est refusé : ${cmd}`, () => assert.equal(verdict(cmd), "refus"));
 }

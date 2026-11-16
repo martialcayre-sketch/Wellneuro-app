@@ -35,7 +35,8 @@ const exiger = createRequire(path.join(WEB, 'package.json'));
 const UTILITAIRES =
   'text|bg|border|ring|ring-offset|from|to|via|fill|stroke|outline|divide|placeholder|decoration|shadow|accent|caret';
 const CLASSE_OPACITE = new RegExp(
-  `(?<![\\w-])(?:[a-z-]+:)*((?:${UTILITAIRES})-[a-z0-9-]+\\/(?:\\d+|\\[[^\\]\\s]+\\]))(?![\\w-])`,
+  // `\d+(?:\.\d+)?` : `/10.5` ne doit pas être lue `/10` (Codex).
+  `(?<![\\w-])(?:[a-z-]+:)*((?:${UTILITAIRES})-[a-z0-9-]+\\/(?:\\d+(?:\\.\\d+)?|\\[[^\\]\\s]+\\]))(?![\\w.-])`,
   'g',
 );
 
@@ -103,6 +104,10 @@ describe("classes d'opacité Tailwind", () => {
     expect(await nonGenerees(['bg-accent/[.14]', 'text-muted-foreground/[.7]'])).toEqual([
       'text-muted-foreground/[.7]',
     ]);
+  });
+
+  it('la lecture garde une opacité décimale entière (Codex)', () => {
+    expect([...'x bg-primary/10.5 y'.matchAll(CLASSE_OPACITE)].map(m => m[1])).toEqual(['bg-primary/10.5']);
   });
 
   it('la lecture des sources trouve des classes à opacité', () => {
