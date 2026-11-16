@@ -12,6 +12,8 @@ Faire l'essai unique sous la v9 arbitré par le responsable (`20261116-1342-b`) 
 ## Décisions prises
 
 - `20261116-1342-b`, responsable, 2026-11-16 : « Essai v9 sur les cinq fiches, une fois ».
+- `20261116-1517-b`, responsable : la v10 porte sur les trois familles du rédacteur, sans les familles déjà interdites.
+- `20261116-1518-b`, responsable : relever le budget de la contre-lecture et garder la cause, par une PR d'outil ; POLY P6 rejouée avec l'essai v10.
 - `20261116-1352-b` (clinique), responsable, 2026-11-16 : la validation de « options » de `FU_MG_P8` vaut l'arbitrage de D-501 §11 (consigné par #2177).
 
 ## Fichiers modifiés
@@ -22,25 +24,25 @@ Faire l'essai unique sous la v9 arbitré par le responsable (`20261116-1342-b`) 
 
 - La consigne servie est `fiche-usage-v9+26ec769b7e28a398`, annoncée par l'outil. Les cinq fiches passent la rédaction, et aucune ne s'arrête sur `max_tokens`.
 - `FU_MG_P6` est acceptée, `--validate` conforme, puis déposée en n° 1 (`BROUILLON_DEPOSE`). Constat `one-off-1380` (lecture seule) : 5 rubriques, aucun acte.
-- Trois refus à la contre-lecture sur 5 rubriques (POLY P3, P7, MG P5), et une contre-lecture inachevée (POLY P6). Rapports hors dépôt : `~/.wellneuro/corpus/fiches-usage/*/2026-11-16T1[23]-*-revue.json`.
+- Trois refus à la contre-lecture sur 5 rubriques (POLY P3, P7, MG P5), et une contre-lecture inachevée (précautions de POLY P6, dont les cinq autres rubriques passent). Rapports hors dépôt : `~/.wellneuro/corpus/fiches-usage/*/2026-11-16T1[23]-*-revue.json`.
 - La phrase fixe de quantité n'est écrite dans aucune rubrique.
 
 ## Problèmes ouverts
 
 - Validation de `FU_MG_P6` n° 1 : geste du responsable, à l'écran.
-- v10 (D-501 §13, Codex P0, puis texte soumis au responsable), au vu de l'ensemble des refus. Trois familles :
+- v10 (D-501 §13, Codex P0, puis texte soumis au responsable), arbitrée `20261116-1517-b`. Ses trois familles :
   - la quantité de prise écrite malgré Q1-B (phrase fixe jamais écrite) ;
   - la phrase d'absence écrite malgré un claim ;
   - un usage qui dépasse le statut « preuves limitées ».
-  S'y ajoutent les familles connues : options qui débordent, généralisation, rubriques hors objet.
-- POLY P6 : contre-lecture inachevée (`max_output_tokens` 4096). Budget d'outil à arbitrer, comme celui de la rédaction.
+  Les familles déjà interdites (options qui débordent, généralisation, rubriques hors objet) ne sont pas retouchées.
+- Budget de la contre-lecture (`max_output_tokens` 4096) : PR d'outil arbitrée (`20261116-1518-b`), avec un banc qui couvre la réponse inachevée.
 - D-501 §11 : amendement à faire par une PR de décision. L'arbitrage du volume d'eau est rendu (`20261116-1352-b`). L'avis Codex (D-505) est à joindre, ou son absence à justifier.
 - Le `RAG_INTERNAL_SECRET` local n'est pas celui de la production. Le dépôt passe le secret Scalingo au seul processus (`env-get`), sans l'afficher.
 - Restent sans version déposée : POLY P2, P3, P4, P6, P7, P8, MG P4, P5, P7, le fer (`FU_FER_P1`, `P2`, `P5`, `P6`), le zinc et les fiches non rédigées.
 
 ## Prochaine action exacte
 
-Déclarer cette PR « prête @sha ». Poser au responsable les questions de la v10 et du budget de contre-lecture.
+Déclarer cette PR « prête @sha ». Ensuite, deux PR distinctes depuis `origin/main` : l'outil (budget de la contre-lecture), puis la consigne v10 (D-501 §13, Codex P0, texte soumis à l'approbation du responsable avant tout essai).
 
 ## Interdits encore actifs
 
