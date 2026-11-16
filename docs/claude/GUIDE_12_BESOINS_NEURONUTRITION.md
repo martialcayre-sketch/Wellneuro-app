@@ -129,14 +129,35 @@ ressentir une sécurité fondamentale archaïque. Englobe le confort digestif
 Alternance indispensable entre l'activité corporelle (qui nourrit le
 cerveau) et les phases de repos (qui restaurent).
 
-- **Variables d'entrée** : questionnaire d'activité (GPAQ/NAP) et qualité du
-  sommeil (index PSQI `Q_SOM_01` ; **agenda du sommeil interactif `Q_SOM_09`** —
-  recueil de 21 nuits, indice composite /100 : durée, efficacité, latence,
-  réveils, régularité). L'agenda complète le PSQI comme source du besoin 5
-  (niveau de preuve B ; barème /100 validé cliniquement le 2026-07-26).
-- **Règle de décision** : si sédentarité ou PSQI > 5 (sommeil inefficace),
-  intégrer la remise en mouvement et l'hygiène du sommeil dans le socle de
-  la prescription.
+- **Section réécrite sur le dossier de preuve signé** (`D-529`, 2026-11-16,
+  `D-312` §3). Les claims, valeurs et sources sont au dossier privé du
+  besoin 5 ; ici, les mécanismes seulement (`D-251` §4).
+- **Variables d'entrée** : le mouvement, par le sous-score d'activité
+  physique du questionnaire de mode de vie SIIN (`Q_MOD_01`), support sans
+  référence publiée ; le GPAQ en est la référence publiée, non servie, qui ne
+  le valide pas. Le repos, par le PSQI (`Q_SOM_01`), l'agenda du sommeil
+  (`Q_SOM_09`, niveau D, `D-424`), l'Epworth (`Q_SOM_02`) et la seule fatigue
+  générale du MFI-20 (`Q_SOM_07`). Le rythme biologique, par le questionnaire
+  de Horne (`Q_SOM_05`), hors score. La mobilité est « non évaluée ».
+- **Règle de décision** : un constat par instrument. Les seuils affichent le
+  constat ; les claims du dossier ne fondent aucun déclenchement, et les deux
+  lignes existantes qui lisent la bande du PSQI restent régies par leurs
+  décisions. Le PSQI et l'Epworth s'affichent en deux lectures : la lecture
+  publiée en référence, la grille servie comme lecture sans source publiée.
+  Les indicateurs du GPAQ restent de population. Les options (activité,
+  hygiène du sommeil, sieste) sont à la main du praticien, aucun score ne les
+  déclenche ; un doute d'apnée appelle un adressage médical. La règle
+  précédente (remise en mouvement et hygiène du sommeil au socle, sur une
+  sédentarité ou un seuil du PSQI) est retirée.
+- **Références citées** : identifiants au dossier privé ; seuls les claims
+  cités par une position signée fondent un constat, dans le rôle qu'elle leur
+  donne. La liste des claims de provenance ou de limite seulement est au
+  `D-529` §5.5.
+- **Population visée et « non évalué »** : `D-529` §4.
+- **Motif de la part de pondération** : mouvement et repos à parts égales,
+  aucune pondération sourcée ; poids du repos selon `D-438` (`D-529` §6.3,
+  motif confirmé par le responsable).
+- **Application** : lot J3-12f.
 
 ### 6. Le besoin de respirer (oxygénation)
 
