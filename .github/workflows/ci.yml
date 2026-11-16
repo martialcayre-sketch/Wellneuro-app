@@ -476,6 +476,13 @@ jobs:
       - name: Migrations — btrim à un argument refusé (banc)
         run: node --test scripts/migrations-btrim.test.mjs
 
+      # Piège converti en contrôle (lot `autonomie-pieges-restes`) : `now()` nu
+      # dans un corps de trigger suit le fuseau de session et reste figé par la
+      # transaction ; forme retenue `clock_timestamp() AT TIME ZONE 'UTC'`.
+      # Migrations appliquées gelées à leur compte. Ni npm ni base.
+      - name: Migrations — now() nu dans un trigger refusé (banc)
+        run: node --test scripts/migrations-now-trigger.test.mjs
+
       # Piège converti en contrôle : doublons « * 2.* » ou « * 2 » du client
       # Prisma (deux `prisma generate` concurrents). Le contrôle tourne dans
       # `wn-test-worktree.sh` ; son banc tourne ici. Ni npm ni base.

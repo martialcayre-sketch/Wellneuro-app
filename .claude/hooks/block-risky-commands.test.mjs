@@ -125,6 +125,51 @@ test("un --check d'une autre commande n'excuse pas prisma format", () => {
   assert.equal(verdict("npx prisma format && npm run lint -- --check"), "refus");
 });
 
+// ── Modificateurs zsh : `$VAR:r…` non accolé (lot autonomie-pieges-restes) ───
+
+for (const cmd of [
+  'git push origin "$NEW:refs/heads/ma-branche"',
+  "git push origin $NEW:refs/heads/ma-branche",
+  'git update-ref refs/heads/x "$SHA" && git push origin "$SHA:refs/heads/x"',
+  "scp fichier $HOTE:tmp/",
+  'git push origin "$1:refs/heads/x"',
+  // P2 de wn-reviewer : `:fe` et `:gh` (branches `feat/…`, `gh-pages`).
+  'git push origin "$SHA:feat/x"',
+  'git push origin "$SHA:gh-pages"',
+  // P2 de wn-reviewer : une apostrophe entre guillemets doubles n'ouvre rien.
+  `git commit -m "l'ajout" && git push origin "$NEW:refs/heads/x" && echo "c'est fait"`,
+  `echo "branche '$NEW:refs'"`,
+  // Un heredoc à délimiteur nu développe.
+  "cat <<FIN\n$NEW:refs/heads/x\nFIN",
+  // P1 de wn-reviewer : une ligne vide ne clôt pas un heredoc cité.
+  "cat > /tmp/f <<'EOF'\na\n\nb c'est\nEOF\ngit push origin \"$NEW:refs/heads/x\"",
+  // Codex : les apostrophes d'un heredoc nu sont du texte, zsh y développe.
+  "cat <<FIN\n'$NEW:refs/heads/x'\nFIN",
+]) {
+  test(`un $VAR:x non accolé est refusé : ${cmd}`, () => assert.equal(verdict(cmd), "refus"));
+}
+
+for (const cmd of [
+  'git push origin "${NEW}:refs/heads/ma-branche"',
+  "git push origin HEAD:refs/heads/ma-branche",
+  "echo '$NEW:refs/heads/x est le piège'",
+  'echo "\\$NEW:refs/heads/x"',
+  'echo "${VAR:-defaut}" "$PATH:/usr/bin" "$HOTE:8080"',
+  // `:w` et `:x` ne s'appliquent pas à un paramètre (P3 de wn-reviewer).
+  "rsync -a dist/ $HOTE:www/",
+  'docker run -v $PWD:/app image "code=$?"',
+  'gh pr comment 1 --body "voir \\$NEW:refs/heads/x"',
+  // Codex : un délimiteur cité n'est pas qu'un mot.
+  "cat <<'FIN-PR'\n$NEW:refs/heads/x\nFIN-PR",
+  // P1 de wn-reviewer : corps de plusieurs paragraphes.
+  "gh pr create --body-file - <<'CORPS'\nPremier paragraphe.\n\nNe jamais écrire \"$NEW:refs/heads/x\" en zsh.\nCORPS",
+  "git commit -m \"$(cat <<'EOF'\nfix: titre\n\nCorps qui cite \"$NEW:refs/heads/x\" et l'ajout.\n\nCo-Authored-By: X\nEOF\n)\"",
+  "gh pr create --body-file - <<'CORPS'\nNe jamais écrire \"$NEW:refs/heads/x\" en zsh.\nCORPS",
+]) {
+  test(`accolé, inerte ou sans modificateur, passe : ${cmd.split("\n")[0]}`, () =>
+    assert.equal(verdict(cmd), "passe"));
+}
+
 // ── Niveau « demande » : inchangé par le masquage des heredocs ───────────────
 
 test("prisma migrate deploy demande une autorisation", () => {

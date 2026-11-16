@@ -213,6 +213,67 @@ for (const { motif, raison } of refusStructure) {
   }
 }
 
+// MODIFICATEURS ZSH (lot `autonomie-pieges-restes`, partie 2). Le shell de ces
+// sessions est zsh : dans `$VAR:r…`, `:r` est un modificateur (« retire
+// l'extension »), comme `:h`, `:t`, `:e`, `:a`, `:l`, `:u`, `:q`… `git push
+// origin "$NEW:refs/heads/x"` part en `<sha>efs/heads/x` et échoue sans
+// nommer le shell (mémoire zsh-modificateur-parametre-git-refspec). Les
+// guillemets doubles n'y changent rien : zsh y développe aussi. On masque
+// donc seulement ce qui est réellement inerte — chaîne entre apostrophes
+// HORS guillemets doubles (« l'ajout » dans un message de commit n'en ouvre
+// pas), caractère échappé par `\`, corps d'un heredoc à délimiteur cité
+// (`<<'FIN'` ; un `<<FIN` nu développe, il reste lu) — et non la commande
+// masquée ci-dessus, qui efface les guillemets doubles. `${VAR}:refs/…`
+// passe. Modificateurs retenus, constatés par `zsh -fc` : `:f`, `:F` et `:g`
+// ne jouent que devant un autre (`:fe…` de `feat/x`, `:gh…` de
+// `gh-pages`) ; `:w` et `:x` ne s'appliquent pas à un paramètre.
+function sansLitterauxInertes(commande) {
+  const corps = commande.replace(
+    // UN seul groupe pour le délimiteur : une référence arrière vers un groupe
+    // vide vaut « » en JS, et `(?:\2|\3|\4)` acceptait toute ligne vide
+    // comme fin du corps (P1 de wn-reviewer).
+    // Un délimiteur n'est pas qu'un mot : `<<'FIN-PR'` (Codex).
+    /(<<-?\s*(?:'|"|\\)([^\s'"<>|;&()]+)['"]?[^\n]*\n)[\s\S]*?^\s*\2\s*$/gm,
+    "$1 <<corps-masqué> ",
+  );
+  let sortie = "";
+  let guillemets = false;
+  for (let i = 0; i < corps.length; i += 1) {
+    const c = corps[i];
+    if (c === "\\") {
+      sortie += "  ";
+      i += 1;
+    } else if (c === "'" && !guillemets) {
+      const fin = corps.indexOf("'", i + 1);
+      const j = fin === -1 ? corps.length : fin;
+      sortie += " ".repeat(j + 1 - i);
+      i = j;
+    } else {
+      if (c === '"') guillemets = !guillemets;
+      sortie += c;
+    }
+  }
+  return sortie;
+}
+// Le corps d'un heredoc à délimiteur NU est lu brut, à part : ses apostrophes
+// sont du texte, que zsh développe (`cat <<FIN\n'$NEW:refs'\nFIN`, Codex).
+function corpsDeHeredocsNus(commande) {
+  const corps = [];
+  const re = /<<-?\s*([^\s'"\\<>|;&()]+)[^\n]*\n([\s\S]*?)^\s*\1\s*$/gm;
+  let m;
+  while ((m = re.exec(commande))) corps.push(m[2]);
+  return corps.join("\n");
+}
+const MODIFICATEUR_ZSH = /\$(?:[A-Za-z_][A-Za-z0-9_]*|\d):[fFg]?[aAcehlPqQrstu&]/;
+if (MODIFICATEUR_ZSH.test(sansLitterauxInertes(original)) || MODIFICATEUR_ZSH.test(corpsDeHeredocsNus(original))) {
+  console.error(
+    "Commande bloquée par WellNeuro : un `$VAR:x` non accolé — zsh lit `:r`, `:h`, `:t`, `:e`… " +
+    "comme un modificateur de paramètre (`\"$NEW:refs/heads/x\"` devient `<sha>efs/heads/x`). " +
+    "Écrire `${NEW}:refs/heads/x`."
+  );
+  process.exit(2);
+}
+
 // SONDAGE — n'est plus refusé depuis le 2026-10-24 : le responsable autorise,
 // pour toutes les sessions, le contrôle en boucle (CI, revue CodeRabbit,
 // déploiement). `wn-attendre-ci.mjs` en tâche de fond reste la forme préférée
