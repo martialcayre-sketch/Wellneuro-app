@@ -166,6 +166,31 @@ for (const cmd of [
   "cat <<'E'OF\nx\nEOF\ngit push origin \"$NEW:refs/heads/x\"",
   // Codex : entre guillemets doubles, `\\\\` se réduit, `<<"E\\\\OF"` termine sur `E\\OF`.
   "cat <<\"E\\\\OF\"\nl'ajout\nE\\OF\ngit push origin \"$NEW:refs/heads/x\"",
+  // Partie 4, routé de #2192 : un faux `<<'EOF'` (guillemets, `$(…)`, commentaire)
+  // suivi d'une vraie ligne `EOF` ne masque plus ce qui les sépare.
+  "git commit -m \"voir <<'EOF'\" && git push origin \"$NEW:refs/heads/x\"\nEOF",
+  "git commit -m \"voir <<'EOF'\"\ngit push origin \"$NEW:refs/heads/x\"\nEOF",
+  "echo \"$(echo \"<<'EOF'\")\"\ngit push origin \"$NEW:refs/heads/x\"\nEOF",
+  "# exemple <<'EOF'\ngit push origin \"$NEW:refs/heads/x\"\nEOF",
+  "git commit -m 'voir <<EOF'\ngit push origin \"$NEW:refs/heads/x\"\nEOF",
+  // Routé de #2192 : l'apostrophe des guillemets internes, sous `$(…)`, est du texte.
+  "echo \"$(printf \"l'ajout\") $NEW:r\"",
+  "git commit -m \"$(printf \"l'ajout\")\" && git push origin \"$NEW:refs/heads/x\" && echo \"c'est fait\"",
+  // Routé de #2192 : `\\` en fin de ligne d'un corps nu joint la suivante (zsh -f).
+  "cat <<FIN\nx $NEW\\\n:refs/heads/y\nFIN",
+  "cat <<F\nfoo\\\nF\nl'ajout\nF\ngit push origin \"$NEW:refs/heads/x\"",
+  // P2 de wn-reviewer : `#` après `\x` ou après le `)` de `$(…)`/`$((…))` n'ouvre
+  // pas de commentaire ; après le `)` d'un sous-shell, si.
+  "echo $(echo a)#\"\nl'a $NEW:r\"",
+  "echo a\\ #\"\nl'a $NEW:r\"",
+  "echo \\)#\"\nl'a $NEW:r\"",
+  "echo $((1))#\"\nl'a $NEW:r\"",
+  "(echo a)# l'a\necho \"$NEW:r\"",
+  // Codex sur #2202 : parenthèses citées dans une arithmétique ; `#` après une
+  // continuation (`x\` puis `#` : mot `x#`) ; continuation après un blanc.
+  "echo $(( $(printf '%s' '))' >/dev/null; echo 1) ))\necho \"$NEW:r\"",
+  "echo x\\\n#\"\nl'a $NEW:r\"",
+  "echo x \\\n# l'a\necho \"$NEW:r\"",
 ]) {
   test(`un $VAR:x non accolé est refusé : ${cmd}`, () => assert.equal(verdict(cmd), "refus"));
 }
@@ -192,6 +217,13 @@ for (const cmd of [
   "cat > f.md <<'FIN'\nexemple :\ncat <<EOF\n$NEW:refs/heads/x\nEOF\nFIN",
   // `<<-` admet des tabulations devant le terminateur.
   "cat <<-'FIN'\n\t$NEW:refs/heads/x\n\tFIN",
+  // Partie 4 : `<<` arithmétique, apostrophe de commentaire, `$'…'`, `\\\\` final.
+  "echo $((1<<2))\necho '$NEW:refs/heads/x'",
+  "# l'ajout\necho '$NEW:refs/heads/x'",
+  "echo $'l\\'ajout $NEW:refs/heads/x'",
+  "cat <<FIN\nfoo\\\\\nFIN\necho '$NEW:refs/heads/x'",
+  // Codex sur #2202 : un délimiteur n'est jamais développé.
+  "cat <<'$NEW:r'\ntexte\n$NEW:r",
 ]) {
   test(`accolé, inerte ou sans modificateur, passe : ${cmd.split("\n")[0]}`, () =>
     assert.equal(verdict(cmd), "passe"));

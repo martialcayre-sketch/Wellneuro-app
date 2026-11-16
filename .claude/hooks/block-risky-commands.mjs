@@ -254,73 +254,206 @@ for (const { motif, raison } of refusStructure) {
 //   retournent à la structure. Un heredoc NU non terminé reste lu brut.
 //   Entre guillemets doubles, `\` n'échappe que `$`, `` ` ``, `"` et `\`
 //   (`<<"E\\OF"` termine sur `E\OF`, Codex).
-const OUVERTURE_HEREDOC = /(?<!<)<<(?!<)(-?)\s*((?:'[^'\n]*'|"(?:\\[^\n]|[^"\\\n])*"|\\[^\n]|[^\s'"\\<>|;&()])+)/g;
+//
+// Partie 4 (routés de #2192) : un lecteur CONSCIENT DES CITATIONS, en un seul
+// passage sur toute la commande, avec une pile de contextes (code, `$(…)`,
+// accent grave, guillemets doubles, apostrophes, `$'…'`, arithmétique).
+// - Un `<<` n'ouvre un heredoc qu'en contexte de code — `$(…)` compris, même
+//   entre guillemets doubles (`"$(cat <<'EOF' …)"`) — jamais entre guillemets
+//   ou apostrophes, dans un commentaire ni dans `$((1<<2))`. Un faux
+//   `<<'EOF'` dans un message de commit, suivi plus loin d'une vraie ligne
+//   `EOF`, masquait tout ce qui les séparait, `git push` compris (focus area
+//   PR-Agent sur #2192, préexistant sur `main`).
+// - Une apostrophe n'est inerte qu'en contexte de code. Sous `$(…)`, même
+//   entre guillemets doubles, le contexte redevient du code ; dans
+//   `"$(printf "l'ajout") $NEW:r"`, l'apostrophe est entre les guillemets
+//   internes, donc du texte, et zsh développe `$NEW:r` (constaté par `zsh -f`).
+// - Un commentaire (`#` en tête de mot, hors citation) reste lu tel quel : ses
+//   apostrophes et ses `<<` sont du texte, rien n'y est masqué.
+// - Dans un corps NU, `\` en fin de ligne joint la ligne suivante (constaté
+//   par `zsh -f` : `$NEW\` puis `:refs` donne `abc123efs`, et `foo\` puis la
+//   ligne terminatrice donne `fooF`, qui ne clôt pas).
+const OUVERTURE_HEREDOC = /<<(?!<)(-?)[ \t]*((?:'[^'\n]*'|"(?:\\[^\n]|[^"\\\n])*"|\\[^\n]|[^\s'"\\<>|;&()])+)/y;
 function delimiteurSansCitation(mot) {
   return mot.replace(/'([^']*)'|"((?:\\[^\n]|[^"\\\n])*)"|\\(.)/g, (_m, simple, double, echappe) =>
     simple ?? (double !== undefined ? double.replace(/\\([$`"\\])/g, "$1") : echappe),
   );
 }
-function lireHeredocs(commande) {
+const finEchappee = (l) => (/\\+$/.exec(l)?.[0].length ?? 0) % 2 === 1;
+const CONTEXTES_CODE = new Set(["code", "sous", "bq"]);
+// Rend la structure, littéraux inertes blanchis (apostrophes en contexte de
+// code, `$'…'`, caractères échappés ; corps de heredoc retirés), et à part
+// les corps des heredocs nus, échappements retirés.
+function lireCommande(commande) {
   const lignes = commande.split("\n");
-  const structure = [];
+  const pile = [{ t: "code", p: 0 }];
   const corpsNus = [];
+  let structure = "";
+  let enAttente = [];
   let i = 0;
+  // Début de mot au sens de zsh, tenu au fil des caractères : ni un `\x`
+  // échappé, ni le `)` qui ferme `$(…)` ou `$((…))` n'en ouvrent un (P2 de
+  // wn-reviewer) ; le `)` d'un sous-shell, si. Une ligne continuée par `\`
+  // garde le début de mot de la précédente (`echo x\` puis `#` : mot `x#`,
+  // Codex).
+  let debut = true;
+  let continuee = false;
   while (i < lignes.length) {
     const ligne = lignes[i];
     i += 1;
-    structure.push(ligne);
+    let commentaire = false;
+    let suite = false;
+    if (!continuee) debut = true;
+    for (let j = 0; j < ligne.length; j += 1) {
+      const c = ligne[j];
+      const haut = pile.at(-1);
+      if (commentaire) {
+        structure += c;
+      } else if (haut.t === "sq") {
+        if (c === "'") {
+          pile.pop();
+          debut = false;
+        }
+        structure += " ";
+      } else if (haut.t === "ansi") {
+        if (c === "\\") {
+          structure += "  ";
+          j += 1;
+        } else {
+          if (c === "'") {
+            pile.pop();
+            debut = false;
+          }
+          structure += " ";
+        }
+      } else if (haut.t === "arith" && !/['"\\`$]/.test(c)) {
+        // Citations, échappements et substitutions d'une expression
+        // arithmétique se lisent comme ailleurs : leurs parenthèses ne
+        // comptent pas (`$(( $(printf '))') ))`, Codex).
+        if (c === "(") haut.p += 1;
+        else if (c === ")" && haut.p > 0) haut.p -= 1;
+        else if (c === ")") {
+          pile.pop();
+          debut = false;
+          if (ligne[j + 1] === ")") {
+            structure += ")";
+            j += 1;
+          }
+        }
+        structure += c;
+      } else if (c === "\\") {
+        if (j === ligne.length - 1) suite = true;
+        else debut = false;
+        structure += "  ";
+        j += 1;
+      } else if (c === "$" && ligne.startsWith("((", j + 1)) {
+        pile.push({ t: "arith", p: 0 });
+        structure += "$((";
+        j += 2;
+      } else if (c === "$" && ligne[j + 1] === "(") {
+        pile.push({ t: "sous", p: 0 });
+        debut = true;
+        structure += "$(";
+        j += 1;
+      } else if (c === "`") {
+        if (haut.t === "bq") pile.pop();
+        else pile.push({ t: "bq", p: 0 });
+        debut = haut.t !== "bq";
+        structure += c;
+      } else if (haut.t === "dq") {
+        if (c === '"') {
+          pile.pop();
+          debut = false;
+        }
+        structure += c;
+      } else if (c === "'") {
+        pile.push({ t: "sq", p: 0 });
+        structure += " ";
+      } else if (c === "$" && ligne[j + 1] === "'") {
+        pile.push({ t: "ansi", p: 0 });
+        structure += "  ";
+        j += 1;
+      } else if (c === '"') {
+        pile.push({ t: "dq", p: 0 });
+        structure += c;
+      } else if (c === "#" && debut) {
+        commentaire = true;
+        structure += c;
+      } else if (c === "(" && ligne[j + 1] === "(" && debut) {
+        pile.push({ t: "arith", p: 0 });
+        structure += "((";
+        j += 1;
+      } else if (c === "(") {
+        if (haut.t === "sous") haut.p += 1;
+        debut = true;
+        structure += c;
+      } else if (c === ")") {
+        if (haut.t === "sous" && haut.p > 0) haut.p -= 1;
+        else if (haut.t === "sous") {
+          pile.pop();
+          debut = false;
+        }
+        if (pile.at(-1) === haut) debut = true;
+        structure += c;
+      } else if (c === "<" && ligne.startsWith("<<<", j)) {
+        debut = false;
+        structure += "<<<";
+        j += 2;
+      } else if (c === "<" && ligne[j + 1] === "<") {
+        OUVERTURE_HEREDOC.lastIndex = j;
+        const m = OUVERTURE_HEREDOC.exec(ligne);
+        debut = false;
+        if (m) {
+          enAttente.push({ tiret: m[1], mot: m[2] });
+          // Le délimiteur n'est jamais développé : `<<'$NEW:r'` est inerte (Codex).
+          structure += "<<" + " ".repeat(m[0].length - 2);
+          j += m[0].length - 1;
+        } else structure += c;
+      } else {
+        debut = /[\s;&|]/.test(c);
+        structure += c;
+      }
+    }
+    continuee = suite;
+    structure += "\n";
+    // Les corps commencent après la première fin de ligne lue en contexte de
+    // code, hors continuation par `\`.
+    if (!enAttente.length || suite || !CONTEXTES_CODE.has(pile.at(-1).t)) continue;
     let consomme = false;
-    for (const [, tiret, mot] of ligne.matchAll(OUVERTURE_HEREDOC)) {
+    for (const { tiret, mot } of enAttente) {
       const cite = /['"\\]/.test(mot);
       const delimiteur = delimiteurSansCitation(mot);
       const depart = i;
       const corps = [];
       let termine = false;
+      let jointe = false;
       while (i < lignes.length) {
         const l = lignes[i];
         i += 1;
-        if ((tiret ? l.replace(/^\t+/, "") : l) === delimiteur) {
+        if (!jointe && (tiret ? l.replace(/^\t+/, "") : l) === delimiteur) {
           termine = true;
           break;
         }
         corps.push(l);
+        jointe = !cite && finEchappee(l);
       }
       if (cite && !termine) {
         i = depart;
         continue;
       }
       consomme = true;
-      if (!cite) corpsNus.push(corps.join("\n").replace(/\\[^\n]/g, "  "));
+      if (!cite) corpsNus.push(corps.join("\n").replace(/\\(\n|[^\n])/g, (_m, x) => (x === "\n" ? "" : "  ")));
     }
-    if (consomme) structure.push(" <<corps-masqué> ");
+    enAttente = [];
+    if (consomme) structure += " <<corps-masqué> \n";
   }
-  return { structure: structure.join("\n"), corpsNus: corpsNus.join("\n") };
+  return { structure, corpsNus: corpsNus.join("\n") };
 }
-const heredocs = lireHeredocs(original);
-function sansLitterauxInertes(corps) {
-  let sortie = "";
-  let guillemets = false;
-  for (let i = 0; i < corps.length; i += 1) {
-    const c = corps[i];
-    if (c === "\\") {
-      sortie += "  ";
-      i += 1;
-    } else if (c === "'" && !guillemets) {
-      const fin = corps.indexOf("'", i + 1);
-      const j = fin === -1 ? corps.length : fin;
-      sortie += " ".repeat(j + 1 - i);
-      i = j;
-    } else {
-      if (c === '"') guillemets = !guillemets;
-      sortie += c;
-    }
-  }
-  return sortie;
-}
+const heredocs = lireCommande(original);
 // Le corps d'un heredoc à délimiteur NU est lu brut, à part : ses apostrophes
 // sont du texte, que zsh développe (`cat <<FIN\n'$NEW:refs'\nFIN`, Codex).
 const MODIFICATEUR_ZSH = /\$(?:[A-Za-z_][A-Za-z0-9_]*|\d):[fFg]?[aAcehlPqQrstu&]/;
-if (MODIFICATEUR_ZSH.test(sansLitterauxInertes(heredocs.structure)) || MODIFICATEUR_ZSH.test(heredocs.corpsNus)) {
+if (MODIFICATEUR_ZSH.test(heredocs.structure) || MODIFICATEUR_ZSH.test(heredocs.corpsNus)) {
   console.error(
     "Commande bloquée par WellNeuro : un `$VAR:x` non accolé — zsh lit `:r`, `:h`, `:t`, `:e`… " +
     "comme un modificateur de paramètre (`\"$NEW:refs/heads/x\"` devient `<sha>efs/heads/x`). " +

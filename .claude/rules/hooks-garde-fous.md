@@ -26,7 +26,9 @@ Trois verdicts, rendus par les hooks PreToolUse de `.claude/settings.json` :
   heredoc à délimiteur nu compris, puisque zsh y développe ; apostrophes hors
   guillemets doubles, `\$` (heredoc nu compris) et heredoc à délimiteur cité
   restent libres — un heredoc écrit dans le corps d'un heredoc cité est du
-  texte.
+  texte. La lecture suit les citations : un `<<` n'ouvre un heredoc qu'en
+  contexte de code (`$(…)` compris), jamais entre guillemets ou apostrophes,
+  dans un commentaire (lu tel quel) ni dans `$((…))`.
   `${NEW}:refs/…` passe.
 - **demande** — migration **destructive** sous `prisma/migrations/` ou
   `supabase/migrations/` (DROP, TRUNCATE, DELETE ou UPDATE sans WHERE,
