@@ -52,6 +52,10 @@ describe('PatientCompanionHome', () => {
     mockFetch({ ok: true, protocoleDiffuse: false, finDeCycle: false, vue: null }, { ok: true, protocoleDiffuse: false, pointEtapeOuvert: null, points: [] });
     render(<PatientCompanionHome token="TOK" />);
     expect(await screen.findByText(/arrivera bientôt/i)).toBeTruthy();
+    // Rendu dans le hub, sous le `h1` « Mon parcours » : son titre est un `h2`
+    // (PAT-7b).
+    expect(screen.queryAllByRole('heading', { level: 1 })).toHaveLength(0);
+    expect(screen.getByRole('heading', { level: 2, name: 'Votre accompagnement' })).toBeTruthy();
   });
 
   it('affiche LES TROIS actions, l’axe et le critère quand un protocole est diffusé', async () => {

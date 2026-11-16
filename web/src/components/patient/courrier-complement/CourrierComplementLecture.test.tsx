@@ -128,6 +128,8 @@ describe('Courrier à remettre à votre médecin (D-345, J3-12h lot 4)', () => {
     repondre(200, { ok: true, courriers: [] });
     await afficher();
     expect(screen.getByText(AUCUN_COURRIER_COMPLEMENT)).toBeTruthy();
+    // Le titre de la page reste son `h1`, même sans courrier (PAT-7b).
+    expect(screen.getByRole('heading', { level: 1, name: TITRE_COURRIER_COMPLEMENT })).toBeTruthy();
     expect(tracesPosees()).toEqual([]);
   });
 
