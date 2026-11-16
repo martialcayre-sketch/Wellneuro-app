@@ -15436,8 +15436,8 @@
     "practitionerReviewRequired": true,
     "lifecycleStatus": "raw",
     "vigilance": "Modérée",
-    "requiredAction": "Traduction servie de la PSS-10 « à confirmer » (D-424 §3) ; résumé ingéré (besoin 9, lot LOT_068_2026-11-16) ; claims en attente de signature ; texte intégral à verser sur la même notice (Cairn refuse le téléchargement automatique)",
-    "comment": "Résumé lu (Crossref) : PSS-10 chez des salariés, deux facteurs (« perception de débordement » et « efficacité personnelle perçue ») ; effectif et texte des items non lus (texte intégral inaccessible). Citée par Lesage et al. 2012 (WN-SRC-0540), sans que la traduction utilisée par Lesage soit établie",
+    "requiredAction": "Traduction servie de la PSS-10 « à confirmer » (D-424 §3) ; résumé ingéré (besoin 9, lot LOT_068_2026-11-16), puis texte intégral fourni par le responsable le 2026-11-16 (lot LOT_073_2026-11-16) ; claims en attente de signature",
+    "comment": "Texte intégral lu (PDF fourni par le responsable le 2026-11-16) : PSS-10 chez des salariés suivis en médecine du travail, cotation et items renversés décrits, deux sous-scores en score moyen ; l'article ne publie ni le texte complet des items ni grille d'interprétation du total. Citée par Lesage et al. 2012 (WN-SRC-0540), sans que la traduction utilisée par Lesage soit établie",
     "auditDate": "2026-11-16"
   },
   {
@@ -17333,7 +17333,7 @@
     "lifecycleStatus": "raw",
     "vigilance": "Modérée",
     "requiredAction": "Notice seule (besoin 9) : texte non obtenu par téléchargement automatique, à verser sur la même notice ; aucun extrait ingéré",
-    "comment": "Source externe, publication primaire du BMS-10 (M1). Aucun résumé obtenu (ni PubMed ni Crossref) ; texte à fournir par le responsable.",
+    "comment": "Source externe, publication primaire du BMS-10 (M1). Aucun résumé obtenu (ni PubMed ni Crossref) ; texte à fournir par le responsable ; l'échelle de réponse et la grille d'interprétation sont rapportées par Lourel et al. 2007 (WN-SRC-0680, texte fourni le 2026-11-16).",
     "auditDate": "2026-11-16"
   },
   {
@@ -17358,8 +17358,8 @@
     "practitionerReviewRequired": true,
     "lifecycleStatus": "raw",
     "vigilance": "Modérée",
-    "requiredAction": "Notice seule (besoin 9) : texte non obtenu par téléchargement automatique, à verser sur la même notice ; aucun extrait ingéré",
-    "comment": "Source externe, validation française du BMS-10 (M1, M2). Aucun résumé obtenu (Crossref sans résumé) ; texte à fournir par le responsable.",
+    "requiredAction": "Texte intégral fourni par le responsable le 2026-11-16 ; extraits ciblés ingérés (besoin 9, lot LOT_073_2026-11-16) ; claims en attente de signature",
+    "comment": "Source externe, validation française du BMS-10 (M1, M2) : texte intégral lu. Annexe des dix items, échelle de réponse et grille d'interprétation de Malach-Pines (2005) rapportée, à confronter à l'instrument servi par une décision distincte.",
     "auditDate": "2026-11-16"
   },
   {
@@ -17540,8 +17540,8 @@
     "practitionerReviewRequired": true,
     "lifecycleStatus": "raw",
     "vigilance": "Élevée",
-    "requiredAction": "Notice seule (besoin 9) : texte non obtenu par téléchargement automatique, à verser sur la même notice ; aucun extrait ingéré",
-    "comment": "Source externe (M4, intervention « magnésium »). Téléchargement automatique refusé (403) ; conclusions non lues, texte à fournir.",
+    "requiredAction": "Texte intégral fourni par le responsable le 2026-11-16 ; extraits ciblés ingérés (besoin 9, lot LOT_073_2026-11-16) ; claims en attente de signature",
+    "comment": "Source externe (M4, intervention « magnésium ») : texte intégral lu ; conclusions du panel pour la fatigue, les fonctions psychologiques et la résistance au stress mental, et conditions d'usage.",
     "auditDate": "2026-11-16"
   },
   {
@@ -17696,8 +17696,8 @@
     "practitionerReviewRequired": true,
     "lifecycleStatus": "raw",
     "vigilance": "Modérée",
-    "requiredAction": "Notice seule (besoin 9) : texte non obtenu par téléchargement automatique, à verser sur la même notice ; aucun extrait ingéré",
-    "comment": "Source externe, publication primaire de la DERS (M5, axe régulation émotionnelle). Aucun résumé obtenu ; texte à fournir.",
+    "requiredAction": "Texte intégral fourni par le responsable le 2026-11-16 ; extraits ciblés ingérés (besoin 9, lot LOT_073_2026-11-16) ; claims en attente de signature",
+    "comment": "Source externe, publication primaire de la DERS (M5, axe régulation émotionnelle) : texte intégral lu ; conceptualisation, cotation, six facteurs, fidélité et limites.",
     "auditDate": "2026-11-16"
   },
   {
