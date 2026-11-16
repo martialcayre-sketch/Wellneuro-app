@@ -3,8 +3,9 @@
 ## Branche et état Git
 
 - Branche `docs/besoin9-lecture-corpus`, tirée d'`origin/main` e6412209 (#2162 mergée) dans le worktree
-  `.claude/worktrees/b-besoin4-decision-guide`, avancée sans commit propre par `--ff-only` sur e9da2b71 (#2168), qui
-  ne touche aucun des fichiers du lot.
+  `.claude/worktrees/b-besoin4-decision-guide`, avancée sans commit propre par `--ff-only` sur e9da2b71 (#2168), puis
+  fusion d'`origin/main` a3abf821 (#2170) sur accord du responsable. Aucun de ces commits ne touche les fichiers du
+  lot.
 - Session concurrente (file B) : `git` et `gh` en direct, pas de `/wn-*`.
 
 ## Objectif
@@ -18,17 +19,21 @@ questions avec l'avis de Codex, les faire trancher. Documentation seule, rien d'
 - Reprise : #2162 (étape 1) renvoyée pour conflit après #2161, même cellule du plan. Fusion d'`origin/main` en
   gardant les deux ajouts, rang H15 `02` gardé, CI 0, PR-Agent 0, redéclarée prête ; mergée e6412209. Lot à `fait`,
   questions `0846-b` à `0848-b` closes, `merge_fait` passé à `traite`.
-- Lecture faite (constats : journal H15, `2026-11-16-03`) ; inventaire par axe au dossier privé, section « Étape 2 ».
+- Lecture faite (constats : journal H15, `2026-11-16-04`) ; inventaire par axe au dossier privé, section « Étape 2 ».
 - Cinq questions cliniques versées à la liste commune, `20261116-1304-b` à `1308-b`. Avis de Codex à l'aveugle
   (`wn-codex-avis.mjs --mode question`, cinq avis conformes, code 0) : A, B, A, A, A. Tranchées par le responsable
   dans la session : A partout, **M2 contre l'avis de Codex**. Précisions du responsable consignées dans
   `reponse_note` et au dossier. Ces choix cadrent la recherche documentaire ; ni certification, ni accord
   d'ingestion, ni changement du score. Statut `repondue` ; elles passent à `close` au merge.
-- Rang du journal H15 : `03`, libre sur `main` après l'avance.
+- Rang du journal H15 : `04`. Le `03` était libre sur `main`, mais #2171 (besoin 5, décision du guide, autre
+  session) le porte aussi : renuméroté avant le merge. #2171 modifie aussi la même cellule du plan ; la seconde à
+  merger fusionne `origin/main` en gardant les deux ajouts.
+- `origin/main` avancé par #2170 (aucun fichier commun) après le premier commit : fusionné dans la branche sur
+  accord du responsable (`D-518`), sans rebase ni force-push.
 
 ## Fichiers modifiés
 
-- `docs/claude/plan-journal/H15/2026-11-16-03-dossier-besoin-9-lecture-corpus.md` (nouveau).
+- `docs/claude/plan-journal/H15/2026-11-16-04-dossier-besoin-9-lecture-corpus.md` (nouveau).
 - `docs/claude/PLAN_WELLNEURO.md` : ligne « dossiers des autres besoins », dernière colonne.
 - `changelog.d/2026-11-16-dossier-besoin-9-lecture-corpus.md` (nouveau) ; ce handoff.
 - Hors dépôt : le dossier privé (statut, section « Étape 2 », table M1 à M5 avec les réponses) ; la liste commune, le
