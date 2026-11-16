@@ -58,6 +58,9 @@ const CODE_SANS_COMMENTAIRES = SOURCE.split('\n')
 // RE-SIGNÉE LE 2026-09-16 : trois instruments cités confrontés à leur publication
 // et réalignés — BDI-13, IRLS, score de Francis ([[D-199]]). Ce banc a rougi seul
 // le jour où leur cotation a bougé, et c'est ce qu'on lui demande.
+// RE-SIGNÉE LE 2026-11-16 (F34, étape 3, [[D-382]] §6) SUR LA MÊME CHAÎNE :
+// aucune règle, grille ni cotation n'a bougé ; seule la date de signature a
+// changé, et ce littéral reste celui du 2026-09-16.
 const SHA_CONTENU_2026_09_16 = '33894e9c6afbd6b3f59a8bb33396aefa56890f57a120f255908ebaf942adef19';
 
 describe('indications biologie — le verrou de signature ne peut pas être neutralisé', () => {
@@ -92,7 +95,7 @@ describe('indications biologie — le verrou de signature ne peut pas être neut
   // changement d'état s'accompagne du tableau de `docs/FEATURE_FLAGS.md`
   // (gardé par `verrousSignatureDocumentes.guard`).
   it('l\'état livré est signé aux cinq termes, et le verdict le dit', () => {
-    expect(INDICATIONS_BIOLOGIE_METADATA.dateValidation).toBe('2026-09-16T00:00:00.000Z');
+    expect(INDICATIONS_BIOLOGIE_METADATA.dateValidation).toBe('2026-11-16T23:25:39.000Z');
     expect(INDICATIONS_BIOLOGIE_METADATA.claimsSource.length).toBe(29);
     expect(INDICATIONS_BIOLOGIE_METADATA.shaPerimetre).toBe(INDICATIONS_BIOLOGIE_SHA256);
     expect(signatureIndicationsValide(INDICATIONS_BIOLOGIE_METADATA)).toBe(true);
