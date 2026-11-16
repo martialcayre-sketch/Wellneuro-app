@@ -606,7 +606,8 @@ export const INDICATIONS_BIOLOGIE_METADATA: IndicationsBiologieMetadata = {
   //     (AQ et QDRS réalignés — [[D-195]])
   //   · 2026-09-16 — `33894e9c6afbd6b3f59a8bb33396aefa56890f57a120f255908ebaf942adef19`
   //     (BDI-13, IRLS et score de Francis réalignés — [[D-199]]) ; même
-  //     chaîne re-signée le 2026-11-16, seule la date a changé (F34, étape 3)
+  //     chaîne re-signée le 2026-11-16 à 23:25:39 UTC (2026-11-17 à Paris),
+  //     seule la date a changé (F34, étape 3)
   //
   // SECONDE ATTESTATION DU 2026-09-14. C'est sur CETTE table que le défaut a
   // été démontré : `BIO-DIG-01` lit la couleur globale de `Q_GAS_01`, et retirer
@@ -687,8 +688,9 @@ export const INDICATIONS_BIOLOGIE_METADATA: IndicationsBiologieMetadata = {
   // PROVENANCE DÉCLARÉE PAR LE RESPONSABLE (question `20261029-1938-c`) :
   //   · BIO-MET-01 et BIO-MET-02 — sa validation de la proposition d'août
   //     ([[D-068]]) et la signature de la table ([[D-069]]), sur son avis
-  //     d'expert ; aucun claim du corpus ne relie le tableau métabolique au
-  //     bilan ; d'autres sources sont à fournir.
+  //     d'expert ; les claims cités fondent la composition des panels, mais
+  //     aucun claim du corpus ne relie au bilan le tableau métabolique que
+  //     nomme la condition de BIO-MET-01 ; d'autres sources sont à fournir.
   //   · la ligne B12 du panel mémoire de BIO-MEM-01 — même provenance, et un
   //     soutien en chaîne du corpus : `WN-CL-0282-018`, cité ici, puis
   //     `WN-CL-0044-016` et `WN-CL-0125-011`, NON cités par cette table et hors

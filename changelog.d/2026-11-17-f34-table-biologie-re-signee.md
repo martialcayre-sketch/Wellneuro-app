@@ -14,8 +14,9 @@ du bilan (F34, étape 2, #1775). Le responsable a déclaré sa relecture le
   la provenance déclarée et les réserves.
 - Provenance déclarée, en réponse à la question `20261029-1938-c` :
   BIO-MET-01 et BIO-MET-02 reposent sur la validation d'août (D-068), la
-  signature de la table (D-069) et l'avis d'expert du responsable, aucun
-  claim du corpus ne reliant le tableau métabolique au bilan ; la ligne B12
+  signature de la table (D-069) et l'avis d'expert du responsable : les
+  claims cités fondent la composition des panels, mais aucun claim du corpus
+  ne relie au bilan le tableau métabolique de la condition ; la ligne B12
   de BIO-MEM-01 a la même provenance et un soutien en chaîne du corpus, par
   deux claims que la table ne cite pas (leur ajout relève de F53).
 - Réserves : R5, objections documentaires ADA/AACC 2023 et IDF 2006 ; une

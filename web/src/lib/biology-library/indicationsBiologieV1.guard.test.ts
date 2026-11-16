@@ -58,7 +58,8 @@ const CODE_SANS_COMMENTAIRES = SOURCE.split('\n')
 // RE-SIGNÉE LE 2026-09-16 : trois instruments cités confrontés à leur publication
 // et réalignés — BDI-13, IRLS, score de Francis ([[D-199]]). Ce banc a rougi seul
 // le jour où leur cotation a bougé, et c'est ce qu'on lui demande.
-// RE-SIGNÉE LE 2026-11-16 (F34, étape 3, [[D-382]] §6) SUR LA MÊME CHAÎNE :
+// RE-SIGNÉE LE 2026-11-16 À 23:25:39 UTC (2026-11-17 à Paris ; F34, étape 3,
+// [[D-382]] §6) SUR LA MÊME CHAÎNE :
 // aucune règle, grille ni cotation n'a bougé ; seule la date de signature a
 // changé, et ce littéral reste celui du 2026-09-16.
 const SHA_CONTENU_2026_09_16 = '33894e9c6afbd6b3f59a8bb33396aefa56890f57a120f255908ebaf942adef19';
