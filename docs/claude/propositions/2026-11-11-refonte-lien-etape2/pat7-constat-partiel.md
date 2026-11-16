@@ -45,7 +45,8 @@ Aucun constat ne dit ce que vit un patient réel.
     rendus à 640 px CSS) ; confort 112,5 % à 1 024 et à 390 px.
   - iPhone 13 (WebKit) : 390 px ; zoom 200 % (195 px CSS, la convention de
     `portail-message-securite.spec.ts`) ; confort 112,5 %. Puis 320 px, avec
-    et sans confort, pour les six écrans qui débordaient (§3.5).
+    et sans confort, pour six écrans qui débordaient à 195 px (liste au
+    §3.5).
 - **Mesures.**
   - débordement horizontal ;
   - cibles de moins de 44 px, hors liens dans une phrase et contenus d'un
@@ -142,7 +143,8 @@ d'urgence (texte de sécurité, hors périmètre).
   (moyenne).
 - Deux `h1` sur une page.
   - U11 et U12 (titre du questionnaire, puis « Avant de commencer ») :
-    *observé sur fixture* aux trois passes.
+    *observé sur fixture* aux deux passes qui les ont vus, la principale et
+    la ciblée. La première passe s'est arrêtée avant eux.
   - Hub, quand la lecture du suivi échoue (« Mon parcours », puis « Votre
     accompagnement ») : *démontré dans le code*.
     `PatientCompanionHome.tsx:166-172` rend `PatientPageHeader`, en `h1` par
@@ -180,7 +182,7 @@ d'urgence (texte de sécurité, hors périmètre).
 | U10 hub, suivi refusé (première passe seulement, §3.4) | 73 px | non vu | non vu | titre « Votre accompagnement », « Réessayer » |
 | U26 bilan | 54 px | 0 | 0 | non identifié (élément rogné) |
 | U35 renseignements | 39 px | 0 | 0 | `h1` « Ma fiche de renseignements » |
-| U10 hub, U21 | 6 px | 0 | 0 | icône de la frise |
+| U10 hub (et U21, qui y renvoie) | 6 px | 0 (U10) | 0 (U10) | icône de la frise |
 | U34 comptes rendus | 1 px | 0 | 0 | « J'en ai pris connaissance » |
 
 **Lecture.**
@@ -192,8 +194,12 @@ d'urgence (texte de sécurité, hors périmètre).
   téléphone ([[D-506]], `portail-message-securite.spec.ts`). Leur
   sévérité est donc celle d'une convention du dépôt, pas d'un critère
   normatif : moyenne.
-- La mesure à 320 px a été jouée sur WebKit, sur `2552ce3b`, pour les six
-  écrans du tableau.
+- La mesure à 320 px a été jouée sur WebKit, sur `2552ce3b`, pour six
+  écrans : U10 (le hub sans erreur), U26, U34, U35, U37 et U38.
+  - U21 n'a pas été mesuré à part : sans protocole diffusé, il renvoie au
+    hub.
+  - L'état « suivi refusé » du hub n'a pas été mesuré : il n'était plus
+    atteint (§3.4).
 
 ### 3.6 Rail « Mon espace » : entrées de deux lignes collées — *observé sur fixture*
 

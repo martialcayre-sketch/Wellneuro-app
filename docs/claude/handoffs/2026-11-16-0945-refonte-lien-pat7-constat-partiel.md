@@ -39,6 +39,9 @@ Ouvrir PAT-7 en partie, sur les écrans patient déjà livrés.
   - les deux points du hub sont réétiquetés *démontré dans le code*, avec leur passe d'observation ;
   - la phrase « deux écarts » du §2 est corrigée ;
   - les débordements sont mesurés à 320 px.
+- **Revue PR-Agent de la deuxième tête** (`9bb6875e`). Deux constats neufs, corrigés au troisième commit :
+  - U11 et U12 ont été vus à deux passes, pas trois ;
+  - la liste des six écrans mesurés à 320 px est donnée en clair.
 - **Relecture** `ui-ux-pro-max` : six requêtes au catalogue (domaine `ux`), règles citées au §3 du constat.
 - **Contrôles** : `check:rapide` 0, `check_no_secrets.sh` 0, `npm run check` 0.
 
