@@ -1,8 +1,8 @@
 # Registre sanitaire du corpus clinique
 
-`source_registry.json` contient 643 notices normalisées : 391 issues du pack WN
+`source_registry.json` contient 668 notices normalisées : 391 issues du pack WN
 Ultimate v2 (`NNFC1_Annee1`, `NNPP2_Annee2`), 116 instruments du cabinet
-(`INSTRUMENTS_CABINET`), et 136 sources externes (`SOURCES_EXTERNES` — BP-07 :
+(`INSTRUMENTS_CABINET`), et 161 sources externes (`SOURCES_EXTERNES` — BP-07 :
 avis d'agence, recommandation, essai, règlement, `WN-SRC-0508` à `0511`, puis
 pour la position P5 v0.3 une recommandation de l'OMS, `WN-SRC-0555` ; besoin 2 :
 trois avis d'agence, un rapport d'évaluation, une recommandation de pratique,
@@ -69,7 +69,15 @@ publications primaires d'instruments et d'une étude primaire, `WN-SRC-0666` à
 `0668`, puis le guide d'analyse d'un questionnaire d'activité physique de
 l'OMS, `WN-SRC-0669`, et des lignes directrices de l'OMS sur l'activité
 physique et la sédentarité, `WN-SRC-0670`, et l'article de développement d'un
-instrument de santé musculo-squelettique, `WN-SRC-0671`),
+instrument de santé musculo-squelettique, `WN-SRC-0671` ;
+besoin 9, sensations-émotions fondamentales et gestion du stress : publications
+et traductions des instruments servis, recommandations de méthode sur deux
+biomarqueurs, une monographie communautaire, une revue systématique, une
+méta-analyse, une définition de classification, une recommandation de la HAS et
+des instruments de régulation émotionnelle, `WN-SRC-0672` à `0696`, dont quatre
+notices sans extrait faute de texte obtenu (`0679`, `0681`, `0692`, `0696`) ;
+les textes de `0680`, `0687` et `0693`, et le texte intégral de `0605`, ont été
+fournis par le responsable le 2026-11-16 et versés sur leur notice),
 dont seuls des extraits ciblés sont ingérés. Le manuscrit soumis `WN-SRC-0546`
 est `deprecated` : remplacé par sa version publiée `WN-SRC-0564`, ses claims ne
 sont pas retenus. Les plages `0525` à `0539` et `0556` à `0559` sont
@@ -139,7 +147,11 @@ corpus runtime.
   directrices (`0670`, CC BY-NC-SA 3.0 IGO, usage non commercial) restent à
   vérifier ; `0671` est sous licence CC BY 4.0, statut qui vaut pour les
   extraits de l'article, l'usage de l'instrument relevant de la licence de son
-  détenteur. La recommandation de l'OMS
+  détenteur ; au 2026-11-16, pour le besoin 9, `0686` (EMA, reproduction
+  autorisée avec citation de la source), `0688` et `0622` (CC BY 4.0) sont
+  couverts pour les extraits ; les résumés sous droits de l'éditeur, les pages
+  de l'OMS et des auteurs du DASS et la fiche de la HAS restent à vérifier.
+  La recommandation de l'OMS
   (`WN-SRC-0555`, tous droits réservés), dont un extrait court est ingéré pour
   usage interne sur arbitrage du responsable, reste à vérifier.
 - Quarantaine sanitaire (`lifecycleStatus: quarantined`) : relue au registre

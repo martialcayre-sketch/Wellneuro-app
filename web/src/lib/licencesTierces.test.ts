@@ -5,11 +5,13 @@
 // rougit si un paquet livré manque au fichier, si un paquet non livré y
 // entre, ou si un paquet livré sans licence lisible laisse le build vert.
 
+import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { POLICES_OFL, POLYFILLS_NEXT, TEXTE_OFL } from '../../scripts/licences-hors-graphe.mjs';
 import {
   PluginLicencesTierces,
   composerMentions,
@@ -59,6 +61,14 @@ function emetteur(fichiers: Record<string, string>) {
   };
 }
 
+const sha256 = (texte: string | Buffer) => createHash('sha256').update(texte).digest('hex');
+
+/** Tables de fixture : un fichier de polyfills (contenu « 1 ») et une police reconnus. */
+const POLYFILLS_ESSAI = {
+  [sha256('1')]: { next: '0.0.0-essai', composants: [{ nom: 'poly', version: '1.0.0', licence: 'MIT', texte: 'Copyright Poly' }] },
+};
+const POLICES_ESSAI = { 'Police Connue': { droits: 'Copyright Police Connue' } };
+
 function compiler(
   entree: string,
   sortie: string,
@@ -73,7 +83,7 @@ function compiler(
       // Le minificateur par défaut n'est pas embarqué par Next ; la
       // concaténation, elle, reste active — c'est elle que le banc éprouve.
       optimization: { minimize: false, concatenateModules: true },
-      plugins: [emetteur(fichiers), new PluginLicencesTierces({ sortie, horsGraphe })],
+      plugins: [emetteur(fichiers), new PluginLicencesTierces({ sortie, horsGraphe, polyfills: POLYFILLS_ESSAI, polices: POLICES_ESSAI })],
     }).run((erreur, stats) => {
       if (erreur) rejeter(erreur);
       else resoudre(stats!.compilation.errors);
@@ -121,6 +131,12 @@ beforeAll(() => {
   );
   ecrire('src/sans-manifeste.js', "import x from 'hote/dist/compiled/sans-manifeste/index.js';\nconsole.log(x);\n");
   ecrire('src/muet.js', "import muet from 'muet';\nimport nu from 'apache-nu';\nconsole.log(muet + nu);\n");
+  // Polices de `next/font` : le chargeur de Next passe la famille dans la
+  // requête du module (`target.css?{"import":"Police_Connue",…}`).
+  paquet('node_modules/next', { name: 'next', version: '0.0.0-essai', license: 'MIT' }, 'Copyright Next');
+  ecrire('node_modules/next/font/google/target.js', 'module.exports = {};\n');
+  ecrire('src/police.js', `import p from 'next/font/google/target.js?{"import":"Police_Connue"}';\nconsole.log(p);\n`);
+  ecrire('src/police-inconnue.js', `import p from 'next/font/google/target.js?{"import":"Police_Inconnue"}';\nconsole.log(p);\n`);
 });
 
 afterAll(() => {
@@ -147,8 +163,35 @@ describe('PluginLicencesTierces sur une vraie compilation webpack', () => {
     expect(texte).toContain('Permission is hereby granted, free of charge');
     expect(texte).toContain('asynchrone@6.0.0');
     expect(texte).toContain('Composants : 5.');
-    expect(texte).toContain('ne couvre pas encore');
-    expect(texte).toContain('static/chunks/polyfills-0a1b2c.js');
+    expect(texte).not.toContain('ne couvre pas encore');
+    expect(texte).toContain('Fichier de polyfills de Next.js (static/chunks/polyfills-0a1b2c.js)');
+    expect(texte).toContain('poly@1.0.0');
+    expect(texte).toContain('Copyright Poly');
+    expect(texte).not.toContain('Polices servies par next/font');
+  });
+
+  it('reproduit la mention de droits et le texte OFL de chaque police servie par next/font', async () => {
+    const sortie = path.join(racine, 'public-police', 'licences-tierces.txt');
+    const erreurs = await compiler('src/police.js', sortie);
+    expect(erreurs).toEqual([]);
+    const texte = fs.readFileSync(sortie, 'utf8');
+    expect(texte).toContain('Polices servies par next/font');
+    expect(texte).toContain('Police Connue\nCopyright Police Connue');
+    expect(texte).toContain('SIL OPEN FONT LICENSE Version 1.1');
+  });
+
+  it('rougit le build sur une police next/font sans mention de droits, sans écrire le fichier', async () => {
+    const sortie = path.join(racine, 'public-police-inconnue', 'licences-tierces.txt');
+    const erreurs = await compiler('src/police-inconnue.js', sortie);
+    expect(erreurs.map((e) => e.message).join('\n')).toMatch(/police\(s\) next\/font sans mention de droits.*Police Inconnue/);
+    expect(fs.existsSync(sortie)).toBe(false);
+  });
+
+  it("rougit le build sur un fichier de polyfills d'empreinte inconnue (Next mis à jour : réénumérer)", async () => {
+    const sortie = path.join(racine, 'public-polyfills', 'licences-tierces.txt');
+    const erreurs = await compiler('src/app.js', sortie, { fichiers: { 'static/chunks/polyfills-0a1b2c.js': '2' } });
+    expect(erreurs.map((e) => e.message).join('\n')).toContain(`polyfills-0a1b2c.js : ${sha256('2')}`);
+    expect(fs.existsSync(sortie)).toBe(false);
   });
 
   it("rougit le build si un paquet livré n'a aucune licence lisible, sans écrire le fichier", async () => {
@@ -180,6 +223,35 @@ describe('PluginLicencesTierces sur une vraie compilation webpack', () => {
     const erreurs = await compiler('src/app.js', sortie, { fichiers: { 'static/chunks/copie-tierce.js': '1', 'static/media/tiers.wasm': '2', 'static/polyfills.js': '3' } });
     expect(erreurs.map((e) => e.message).join('\n')).toMatch(/hors des morceaux : static\/chunks\/copie-tierce\.js, static\/media\/tiers\.wasm, static\/polyfills\.js/);
     expect(fs.existsSync(sortie)).toBe(false);
+  });
+});
+
+// Les tables de `licences-hors-graphe.mjs` contre ce que l'application livre
+// vraiment : le fichier de polyfills de la version INSTALLÉE de Next, et les
+// polices importées par `app/layout.tsx`. Un écart rougit ici avant le build.
+describe('licences-hors-graphe : les tables couvrent ce qui est livré', () => {
+  it('reconnaît le fichier de polyfills de la version installée de Next, et ses composants y figurent', () => {
+    const fichier = fs.readFileSync(requireNext.resolve('next/dist/build/polyfills/polyfill-nomodule.js'));
+    const table = POLYFILLS_NEXT as Record<string, { next: string; composants: { nom: string; version: string; texte: string }[] }>;
+    const entree = table[sha256(fichier)];
+    expect(entree, 'empreinte inconnue : réénumérer depuis @next/polyfill-nomodule').toBeDefined();
+    expect(entree.next).toBe(requireNext('next/package.json').version);
+    expect(entree.composants.map((c) => c.nom)).toEqual(['core-js', 'object-assign', 'whatwg-fetch']);
+    // core-js inscrit sa version dans le code compilé : la seule présente est la déclarée.
+    const versions = new Set(fichier.toString('utf8').match(/version:"\d+\.\d+\.\d+",mode:"global"/g));
+    expect([...versions]).toEqual([`version:"${entree.composants[0].version}",mode:"global"`]);
+    for (const c of entree.composants) expect(c.texte).toMatch(/^(The MIT License \(MIT\)\n\n)?Copyright \(c\) /);
+  });
+
+  it('a une mention de droits pour chaque police importée de next/font/google', () => {
+    const layout = fs.readFileSync(path.join(process.cwd(), 'src/app/layout.tsx'), 'utf8');
+    const importees = /import \{([^}]+)\} from 'next\/font\/google'/
+      .exec(layout)?.[1]
+      .split(',')
+      .map((n) => n.trim().replace(/_/g, ' '));
+    expect(importees?.length).toBeGreaterThan(0);
+    for (const nom of importees ?? []) expect(Object.keys(POLICES_OFL), nom).toContain(nom);
+    expect(TEXTE_OFL).toContain('SIL OPEN FONT LICENSE Version 1.1 - 26 February 2007');
   });
 });
 

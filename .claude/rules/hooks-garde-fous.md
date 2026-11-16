@@ -20,6 +20,12 @@ Trois verdicts, rendus par les hooks PreToolUse de `.claude/settings.json` :
   `autonomie-frictions`), `prisma format` est aussi refusé, mais lu sur la
   commande **masquée** comme la « demande » : il ne détruit rien, et une
   prose qui le cite doit rester libre ; `prisma format --check` passe.
+  Depuis le 2026-11-16 (lot `autonomie-pieges-restes`), un `$VAR:x` non
+  accolé (`"$NEW:refs/heads/x"`, `$HOTE:tmp`) est refusé : zsh lit `:r`,
+  `:h`, `:t`, `:fe`, `:gh`… comme un modificateur. Guillemets doubles et
+  heredoc à délimiteur nu compris, puisque zsh y développe ; apostrophes hors
+  guillemets doubles, `\$` et heredoc à délimiteur cité restent libres.
+  `${NEW}:refs/…` passe.
 - **demande** — migration **destructive** sous `prisma/migrations/` ou
   `supabase/migrations/` (DROP, TRUNCATE, DELETE ou UPDATE sans WHERE,
   RENAME, ALTER … TYPE, MERGE, `EXECUTE` dynamique, DISABLE TRIGGER,
