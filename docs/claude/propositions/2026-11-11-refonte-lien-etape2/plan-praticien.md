@@ -187,6 +187,14 @@ Consultation copilote et son panneau contextuel escamotable ; synthèses
 menu ; impression sans rail ni menu (X06). **Réception** : partage d'écran
 protégé en mode consultation ; aucun score ni export ajouté pour remplir
 une colonne libérée (cadrage v3 l.295).
+Prototype validé par écrit le 2026-11-16, itération 2 (Q1 à Q14 en a, Q10
+et Q14 cliniques comprises), complément DOC-15 de [[D-481]] ; textes T-74 à
+T-76 acceptés et inscrits dans [[D-488]] par DOC-15 ; Q10 amende [[D-354]]
+(en mode consultation, la fiche ne rend aucun lien qui la quitte). Trois PR,
+chacune reçue séparément : PR 1 impression (X06, classes `print:` sur le
+chrome seulement) ; PR 2 copilote (P34, panneau de contexte et T-15) ; PR 3
+synthèses et documents (P51, P52, T-74 à T-76, et Q10 dans la fiche ; revue
+`wn-reviewer` en plus).
 
 ### PRA-6 — Vérification et stabilisation
 
