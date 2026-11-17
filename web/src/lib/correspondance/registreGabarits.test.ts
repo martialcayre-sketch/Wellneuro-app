@@ -88,6 +88,8 @@ describe('registre des gabarits patient — intégrité', () => {
       'conditions_utilisation@5',
       // [[D-292]] §5 — l'annonce des conditions v6 ([[D-497]] §7, BP-05).
       'conditions_utilisation@6',
+      // [[D-292]] §5 — l'annonce des conditions v7 ([[D-513]] §12, H95 part B).
+      'conditions_utilisation@7',
       // [[D-317]] §3 — une nouvelle version du protocole. Il ne nomme rien.
       'protocole_diffuse@1',
       // Décision du praticien du 2026-10-23 (D/39 du plan) : les quatre
@@ -248,14 +250,14 @@ describe('registre des gabarits patient — intégrité', () => {
   });
 
   // D-497 §7 : phrase de tête validée le 2026-11-12, version courte (B2) ; le
-  // reste est celui de la @5 au caractère près. La @6 est la plus haute, servie.
+  // reste est celui de la @5 au caractère près. La @7 lui succède (D-513 §12).
   it('conditions_utilisation@6 : la phrase de tête validée, la fin de la @5 au caractère près', () => {
     const tete = teteB2('2026-11-12-bp05-texte-patient');
     expect(tete).toBe(
       'Les conditions d’utilisation de votre espace Wellneuro évoluent : la partie “Vos données personnelles” '
         + 'dit que votre praticien peut désormais noter les circonstances du prélèvement de vos analyses.',
     );
-    const g = getGabarit('conditions_utilisation');
+    const g = REGISTRE_GABARITS_PATIENT.find(x => x.key === 'conditions_utilisation' && x.version === 6)!;
     expect(g.version).toBe(6);
     expect(g.sujet).toBe('Wellneuro — les conditions d’utilisation de votre espace évoluent');
     expect(g.corps.startsWith(`Bonjour,\n\n${tete}\n\n`)).toBe(true);
@@ -263,6 +265,36 @@ describe('registre des gabarits patient — intégrité', () => {
     const v5 = REGISTRE_GABARITS_PATIENT.find(x => x.key === 'conditions_utilisation' && x.version === 5)!;
     const fin = (c: string) => c.slice(c.indexOf('Rien d’autre ne change dans votre accompagnement.'));
     expect(fin(g.corps)).toBe(fin(v5.corps));
+  });
+
+  // D-513 §12 : phrase de tête validée le 2026-11-17 (proposition, 6b) ; le
+  // reste est celui de la @6 au caractère près. La @7 est la plus haute, servie.
+  it('conditions_utilisation@7 : la phrase de tête validée, la fin de la @6 au caractère près', () => {
+    const texte = fs
+      .readFileSync(path.resolve(__dirname, '../../../../docs/claude/propositions/2026-11-17-h95b-code-textes/README.md'), 'utf8')
+      .replaceAll("'", '’');
+    const suite = texte.slice(texte.indexOf('### 6b.'));
+    const tete = suite
+      .slice(0, suite.indexOf('\n## '))
+      .split('\n')
+      .filter(ligne => ligne.startsWith('>'))
+      .map(ligne => ligne.replace(/^>\s?/, '').trim())
+      .join(' ');
+    expect(tete).toBe(
+      'Les conditions d’utilisation de votre espace Wellneuro évoluent : vos résultats d’analyses et les '
+        + 'circonstances de leur prélèvement peuvent désormais être transmis à l’outil qui prépare le brouillon '
+        + 'de la synthèse destinée à votre praticien.',
+    );
+    const g = getGabarit('conditions_utilisation');
+    expect(g.version).toBe(7);
+    expect(g.sujet).toBe('Wellneuro — les conditions d’utilisation de votre espace évoluent');
+    expect(g.corps.startsWith(`Bonjour,\n\n${tete}\n\n`)).toBe(true);
+    expect([...g.variables]).toEqual(['lien']);
+    const v6 = REGISTRE_GABARITS_PATIENT.find(x => x.key === 'conditions_utilisation' && x.version === 6)!;
+    const fin = (c: string) => c.slice(c.indexOf('Rien d’autre ne change dans votre accompagnement.'));
+    expect(fin(g.corps)).toBe(fin(v6.corps));
+    // Ni valeur, ni nom d'analyse : l'annonce dit le flux, pas son contenu.
+    expect(g.corps).not.toMatch(/\d+[.,]?\d*\s*(?:mg|µg|ng|g|mmol|µmol|UI|U)\b/);
   });
 
   it('document_remis : objet et phrase du §9 mot pour mot, et RIEN du document', () => {
@@ -301,7 +333,7 @@ describe('registre des gabarits patient — intégrité', () => {
     expect(REGISTRE_GABARITS_PATIENT.filter(g => g.key === 'acces_portail')).toHaveLength(3);
   });
 
-  it('les vingt-quatre validations formelles sont datées — le reste du registre ne l’est pas', () => {
+  it('les vingt-cinq validations formelles sont datées — le reste du registre ne l’est pas', () => {
     // `valideLe` a existé huit versions durant sans jamais être renseigné. Ce
     // banc échoue si une validation est posée ailleurs sans décision.
     const valides = REGISTRE_GABARITS_PATIENT.filter(g => g.valideLe !== null);
@@ -343,6 +375,8 @@ describe('registre des gabarits patient — intégrité', () => {
       'conditions_utilisation@5',
       // [[D-292]] §5, conditions v6 — né validé le 2026-11-12 ([[D-497]] §7).
       'conditions_utilisation@6',
+      // [[D-292]] §5, conditions v7 — né validé le 2026-11-17 ([[D-513]] §12).
+      'conditions_utilisation@7',
       // [[D-317]] §3 — relu mot pour mot et validé en session, le jour de sa
       // rédaction.
       'protocole_diffuse@1',
@@ -378,6 +412,7 @@ describe('registre des gabarits patient — intégrité', () => {
       '2026-10-27',
       '2026-10-28',
       '2026-11-12',
+      '2026-11-17',
       '2026-10-17',
       '2026-10-23',
       '2026-10-23',

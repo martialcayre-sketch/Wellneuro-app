@@ -61,6 +61,20 @@ export { racineDe, serieParAnalyte } from './serieParAnalyte';
 export { etatLecture, type ActeLectureRow } from './import/lectureImport';
 export { lireValeurQuantitative, unitesConcordent } from './import/valeurLue';
 
+// Sixième lecteur hors biologie : le bloc de biologie de la synthèse
+// ([[D-513]] §2, H95 part B) — la même série que la fiche, le contexte de
+// prélèvement champ par champ sous les libellés de [[D-497]] §2, les faits du
+// laboratoire avec les silences de [[D-267]] §5. Aucune qualification, aucune
+// plage ; le drapeau de l'étage des résultats est déjà publié plus haut.
+export { type MotifNonComparabilite } from './serieParAnalyte';
+export {
+  CHAMPS_CONTEXTE,
+  LIBELLES_CHAMP,
+  validerContextePrelevement,
+  valeurAffichee,
+  type ContextePrelevementSaisi,
+} from './contextePrelevement';
+
 /** Les fichiers de `biology-library` que cette entrée ré-exporte — liste fermée. */
 export const FICHIERS_PUBLIES = [
   'import/lectureDemandee',
@@ -72,6 +86,7 @@ export const FICHIERS_PUBLIES = [
   'serieParAnalyte',
   'import/lectureImport',
   'import/valeurLue',
+  'contextePrelevement',
 ] as const;
 
 /**
