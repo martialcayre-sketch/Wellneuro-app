@@ -170,7 +170,7 @@ function BoutonRelance({
             ? `Débloquer le questionnaire en retard — ${titre}`
             : `Rappeler au patient le questionnaire en retard — ${titre}`
         }
-        className="inline-flex min-h-9 items-center rounded-lg border border-border bg-surface px-3 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+        className="inline-flex min-h-11 items-center rounded-lg border border-border bg-surface px-3 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
       >
         {aDebloquer ? (enCours ? 'Déblocage…' : 'Débloquer') : enCours ? 'Envoi…' : 'Rappeler'}
       </button>
@@ -268,7 +268,7 @@ function CarteDuFil({
               // UNE ACTION PRINCIPALE PAR CARTE (PRA-2b) : le bouton plein est
               // réservé à la carte « Maintenant » ; ailleurs, un lien pétrole.
               // La cible (`carte.href`) ne change pas.
-              className={`inline-flex min-h-9 items-center rounded-lg text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring ${
+              className={`inline-flex min-h-11 items-center rounded-lg text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring ${
                 imminente
                   ? 'bg-primary px-3 font-medium text-primary-foreground hover:bg-primary/90'
                   : 'px-1 font-semibold text-primary underline underline-offset-[3px] hover:decoration-2'

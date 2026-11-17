@@ -756,7 +756,7 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
                 {detailOuvert === snapshot.draftId && (
                   <div className="mt-2 space-y-2" data-testid="ja-praticien-transmission-detail">
                     {detailErreur ? (
-                      <p className="text-sm text-destructive">{detailErreur}</p>
+                      <p className="text-sm text-status-danger">{detailErreur}</p>
                     ) : !detail ? (
                       <p className="text-sm text-muted-foreground">Ouverture…</p>
                     ) : (
