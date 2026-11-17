@@ -2,8 +2,9 @@
 
 Le constat PRA-6 relève des champs sans nom accessible sur Patients (P02) et
 Questionnaires (P37), et deux listes de même nom sur Documents (P52). Le
-responsable accepte mot pour mot les six noms proposés : « Oui, les six »,
-question `20261117-2150-d`, 2026-11-17.
+responsable accepte mot pour mot les six points proposés (trois textes
+neufs, trois réemplois ; sept champs nommés) : « Oui, les six », question
+`20261117-2150-d`, 2026-11-17.
 
 - D-488 : T-77 « Trier la liste des patients » (tri de P02), T-78 « Date
   limite (optionnel) » (date de l'assignation d'un pack, P37) et T-79

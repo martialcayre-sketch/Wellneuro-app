@@ -172,8 +172,10 @@ par la PR de PRA-5 indiquée, et T-15 par la PR 2.
 ### 1.8 Noms accessibles de PRA-6b — acceptés (D-488)
 
 Le responsable accepte mot pour mot le 2026-11-17 (« Oui, les six »,
-question `20261117-2150-d`) les noms accessibles proposés pour les champs
-relevés par le constat PRA-6 (`pra6-constat.md` §3.1). Inscription par
+question `20261117-2150-d`) les six points de la proposition de noms
+accessibles pour les champs relevés par le constat PRA-6 (`pra6-constat.md`
+§3.1) : trois textes neufs et trois réemplois, dont le dernier nomme deux
+listes, soit sept champs. Inscription par
 DOC-17 dans [[D-488]], amendement du 2026-11-17. Existant lu au commit
 `8b35cec3`. Ces noms ne s'affichent pas (`aria-label` ou
 `aria-labelledby`) : aucun libellé visible n'est ajouté.
