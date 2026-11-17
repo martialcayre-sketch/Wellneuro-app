@@ -482,6 +482,16 @@ export async function PATCH(req: Request) {
         syntheseJson = validateSyntheseSchema(body.synthese) as unknown as Prisma.InputJsonValue;
       }
     } else if (action === 'valider') {
+      // Seul un brouillon se valide — l'écran ne propose rien d'autre. Sans ce
+      // refus, un onglet périmé revalidait une synthèse déjà validée, corrigée
+      // ou imprimée, avec une date de validation postérieure à l'impression
+      // (constat de wn-reviewer, lot synthese-enregistrer-verrou).
+      if (existing.statut !== 'Brouillon_IA' && existing.statut !== 'Brouillon_Praticien') {
+        return withCorrelationHeader(NextResponse.json(
+          { error: 'Seul un brouillon (IA ou praticien) peut être validé.' },
+          { status: 409 },
+        ), requestContext);
+      }
       if (existing.statut === 'Brouillon_Praticien' || existing.modele === MODELE_REDACTION_PRATICIEN) {
         const validation = validerBrouillonPraticien(existing.syntheseJson);
         if (!validation.ok) {
@@ -570,32 +580,49 @@ export async function PATCH(req: Request) {
     // lu. Une validation suivie d'une impression entre la lecture et
     // l'écriture était sinon remise en brouillon, son texte remplacé — celui
     // que « Mon bilan » lit vivant (constat de wn-reviewer sur #2215).
+    //
+    // « VALIDER » ET « ANNOTER » AUSSI : ils réécrivent statut, texte et date de
+    // validation lus hors verrou (lot synthese-valider-annoter-conditionnels).
+    // Ni l'un ni l'autre n'entre au contrôle d'impression : une note se pose
+    // sur une synthèse imprimée (elle va au booklet), et « valider » n'atteint
+    // qu'un brouillon relu sous le verrou — l'impression exige une synthèse
+    // validée, un brouillon n'a donc jamais été imprimé. « REJETER » relit
+    // aussi : un onglet périmé ne retire pas du portail une synthèse validée
+    // et envoyée entre-temps (wn-reviewer, P3-1) ; le retrait voulu reste
+    // possible depuis un écran rechargé. Seul « effacer » ne relit pas : il
+    // réinitialise quel que soit le statut, et le contrôle d'impression ci-
+    // dessous, sous le même verrou, garde ce qu'il ne doit pas défaire.
+    const relitStatut = action !== 'effacer';
     const figeeParImpression = action === 'effacer' || action === 'rejeter' || action === 'enregistrer';
-    let plusUnBrouillon = false;
-    const record = figeeParImpression
-      ? await prisma.$transaction(async (tx) => {
-          await tx.$queryRaw`SELECT id FROM patients WHERE id_patient = ${existing.idPatient} FOR UPDATE`;
-          if (action === 'enregistrer') {
-            const courante = await tx.syntheseIA.findUnique({
-              where: { idSynthese },
-              select: { statut: true, modele: true },
-            });
-            if (!courante || courante.statut !== existing.statut || courante.modele !== existing.modele) {
-              plusUnBrouillon = true;
-              return null;
-            }
-          }
-          const imprimee = await tx.documentMedecinImprime.findFirst({
-            where: { idSynthese },
-            select: { id: true },
-          });
-          if (imprimee) return null;
-          return tx.syntheseIA.update({ where: { idSynthese }, data });
-        })
-      : await prisma.syntheseIA.update({ where: { idSynthese }, data });
-    if (plusUnBrouillon) {
+    let changeeEntreTemps = false;
+    const record = await prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM patients WHERE id_patient = ${existing.idPatient} FOR UPDATE`;
+      if (relitStatut) {
+        const courante = await tx.syntheseIA.findUnique({
+          where: { idSynthese },
+          select: { statut: true, modele: true },
+        });
+        if (!courante || courante.statut !== existing.statut || courante.modele !== existing.modele) {
+          changeeEntreTemps = true;
+          return null;
+        }
+      }
+      if (figeeParImpression) {
+        const imprimee = await tx.documentMedecinImprime.findFirst({
+          where: { idSynthese },
+          select: { id: true },
+        });
+        if (imprimee) return null;
+      }
+      return tx.syntheseIA.update({ where: { idSynthese }, data });
+    });
+    if (changeeEntreTemps) {
       return withCorrelationHeader(NextResponse.json(
-        { error: 'Seul un brouillon (IA ou praticien) non encore validé peut être modifié.' },
+        {
+          error: action === 'enregistrer'
+            ? 'Seul un brouillon (IA ou praticien) non encore validé peut être modifié.'
+            : 'La synthèse a été modifiée entre-temps. Rechargez-la avant de recommencer.',
+        },
         { status: 409 },
       ), requestContext);
     }
