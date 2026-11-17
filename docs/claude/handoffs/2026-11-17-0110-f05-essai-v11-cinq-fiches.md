@@ -3,7 +3,7 @@
 ## Branche et état Git
 
 - Worktree `.claude/worktrees/b-fiche-usage-iode-selenium`, session concurrente, cycle en git/gh direct.
-- Branche `f05-essai-v11`, depuis `origin/main` (`d6b48b4b`, merge de #2200). Le lot ne contient que la consignation.
+- Branche `f05-essai-v11`, depuis `origin/main` (`55831726`, merge de #2208, qui contient #2200). Le lot ne contient que la consignation.
 
 ## Objectif
 
