@@ -1,23 +1,30 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { TEXTE_MINEUR_JEUNE, decouperNumeros } from './texteMineurs';
+import {
+  SECTION_URGENCE_MINEUR,
+  TEXTE_MINEUR_15_17,
+  TEXTE_MINEUR_MOINS_15,
+  decouperNumeros,
+  texteMineurJeune,
+} from './texteMineurs';
 
-// ACT-5 (H78) — le texte 2B de G-11 est servi MOT POUR MOT, le texte 2A ne l'est
-// pas, et l'écran qui le porte ne s'affiche qu'à un dossier mineur. Ces trois
-// bancs tiennent aussi la part « garde d'âge » de J2-conf pour cette surface
-// (arbitrage du 2026-10-21 : lot J2-conf fondu dans ACT-5).
+// ACT-5 (H78) — le texte 2B est servi MOT POUR MOT, le texte 2A ne l'est pas, et
+// l'écran qui le porte ne s'affiche qu'à un dossier mineur. Ces trois bancs
+// tiennent aussi la part « garde d'âge » de J2-conf pour cette surface
+// (arbitrage du 2026-10-21 : lot J2-conf fondu dans ACT-5). Depuis D-537 §7, le
+// 2B a deux variantes (moins de 15 ans, 15 à 17 ans), validées le 2026-11-17.
 
-const SOURCE = resolve(process.cwd(), '../docs/claude/propositions/2026-10-14-g11-textes-patient/README.md');
+const SOURCE = resolve(process.cwd(), '../docs/claude/propositions/2026-11-17-texte-2b-neuf/README.md');
 const SRC = resolve(process.cwd(), 'src');
 
 /** Les apostrophes du document source sont droites ; celles du portail, typographiques. */
 const apostrophesDroites = (s: string) => s.replace(/’/g, "'");
 
-/** La section « 2B — Pour le jeune » du texte validé : titres en gras, puis un paragraphe chacun. */
-function sectionsValidees2B(): { titre: string; texte: string }[] {
+/** Une variante du texte validé (`### <titre>`) : titres en gras, puis un paragraphe chacun. */
+function sectionsValidees2B(variante: string): { titre: string; texte: string }[] {
   const doc = readFileSync(SOURCE, 'utf8');
-  const debut = doc.indexOf('### 2B — Pour le jeune');
+  const debut = doc.indexOf(`### ${variante}\n`);
   expect(debut).toBeGreaterThan(-1);
   const suite = doc.slice(debut).split('\n').slice(1);
   const fin = suite.findIndex(l => /^#{1,3} /.test(l));
@@ -44,17 +51,34 @@ function fichiers(dir: string): string[] {
   });
 }
 
-describe('texte des mineurs servi au jeune (G-11, 2B)', () => {
-  it('★ reprend le texte validé le 2026-10-14 mot pour mot, sections dans l’ordre', () => {
-    const servi = TEXTE_MINEUR_JEUNE.map(s => ({
-      titre: apostrophesDroites(s.titre),
-      texte: apostrophesDroites(s.texte),
-    }));
-    expect(servi).toEqual(sectionsValidees2B());
+const servi = (sections: readonly { titre: string; texte: string }[]) =>
+  sections.map(s => ({ titre: apostrophesDroites(s.titre), texte: apostrophesDroites(s.texte) }));
+
+describe('texte des mineurs servi au jeune (2B, D-537 §7)', () => {
+  it('★ moins de 15 ans : le texte validé le 2026-11-17 mot pour mot, sections dans l’ordre', () => {
+    expect(servi(TEXTE_MINEUR_MOINS_15)).toEqual(sectionsValidees2B('2B — Pour le jeune, moins de 15 ans'));
+  });
+
+  it('★ de 15 à 17 ans : le texte validé le 2026-11-17 mot pour mot, sections dans l’ordre', () => {
+    expect(servi(TEXTE_MINEUR_15_17)).toEqual(sectionsValidees2B('2B — Pour le jeune, de 15 à 17 ans'));
+  });
+
+  it('★ seule la première section diffère, et l’encart d’urgence clôt les deux variantes', () => {
+    expect(TEXTE_MINEUR_MOINS_15[0].titre).not.toBe(TEXTE_MINEUR_15_17[0].titre);
+    expect(TEXTE_MINEUR_MOINS_15.slice(1)).toEqual(TEXTE_MINEUR_15_17.slice(1));
+    expect(TEXTE_MINEUR_MOINS_15.at(-1)).toBe(SECTION_URGENCE_MINEUR);
+    expect(TEXTE_MINEUR_15_17.at(-1)).toBe(SECTION_URGENCE_MINEUR);
+  });
+
+  it('★ la variante des 15-17 ans n’est servie qu’à cette tranche ; une tranche inconnue n’annonce aucune ouverture', () => {
+    expect(texteMineurJeune('15_17')).toBe(TEXTE_MINEUR_15_17);
+    expect(texteMineurJeune('moins_15')).toBe(TEXTE_MINEUR_MOINS_15);
+    expect(texteMineurJeune(null)).toBe(TEXTE_MINEUR_MOINS_15);
+    expect(texteMineurJeune(undefined)).toBe(TEXTE_MINEUR_MOINS_15);
   });
 
   it('chaque numéro appelable figure dans son texte', () => {
-    for (const s of TEXTE_MINEUR_JEUNE) {
+    for (const s of [...TEXTE_MINEUR_MOINS_15, ...TEXTE_MINEUR_15_17]) {
       for (const n of s.numerosAppelables ?? []) {
         expect(decouperNumeros(s.texte, [n]).filter(m => m.numero)).toHaveLength(1);
       }
@@ -115,7 +139,7 @@ describe('texte des mineurs servi au jeune (G-11, 2B)', () => {
 
 describe('decouperNumeros', () => {
   it('rend le texte d’origine, numéros isolés', () => {
-    const texte = TEXTE_MINEUR_JEUNE[3].texte;
+    const texte = SECTION_URGENCE_MINEUR.texte;
     const morceaux = decouperNumeros(texte, ['15', '112', '119']);
     expect(morceaux.map(m => m.morceau).join('')).toBe(texte);
     expect(morceaux.filter(m => m.numero).map(m => m.morceau)).toEqual(['15', '112', '119']);

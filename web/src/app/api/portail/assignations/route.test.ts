@@ -241,6 +241,23 @@ describe('GET /api/portail/assignations — liaison session au compte', () => {
     });
   });
 
+  it('★ dit au hub le statut d’âge et la tranche d’un mineur (D-284 §4, D-537 §7)', async () => {
+    const cookie = signPatientSession({ idPatient: patient.idPatient, email: patient.email });
+    const quinzeAns = new Date(Date.now() - 15 * 366 * 24 * 3600 * 1000).toISOString().slice(0, 10);
+    const douzeAns = new Date(Date.now() - 12 * 366 * 24 * 3600 * 1000).toISOString().slice(0, 10);
+    for (const [dateNaissance, statut, tranche] of [
+      [null, 'date_manquante', null],
+      [douzeAns, 'mineur', 'moins_15'],
+      [quinzeAns, 'mineur', '15_17'],
+      ['1985-03-12', 'majeur', null],
+    ] as const) {
+      prisma.patient.findUnique.mockResolvedValueOnce({ ...patient, dateNaissance });
+      const corps = await (await GET(request(cookie))).json();
+      expect(corps.statutAge, String(dateNaissance)).toBe(statut);
+      expect(corps.trancheMineur, String(dateNaissance)).toBe(tranche);
+    }
+  });
+
   it('expose la date de dernière réponse, sans aucune donnée de score', async () => {
     // Horloge de la reprise (SP-SPI / LOT-01) : seule la position dans le
     // temps est racontée au patient — jamais le score de cette réponse.

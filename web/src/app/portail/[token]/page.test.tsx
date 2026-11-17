@@ -16,7 +16,7 @@ vi.mock('next/navigation', () => ({
 }));
 
 import PortailPage from './page';
-import { TEXTE_MINEUR_JEUNE } from '@/lib/patient/texteMineurs';
+import { TEXTE_MINEUR_15_17, TEXTE_MINEUR_MOINS_15 } from '@/lib/patient/texteMineurs';
 
 describe('PortailPage — restauration de session', () => {
   afterEach(() => {
@@ -150,17 +150,18 @@ describe('PortailPage — garde d’âge', () => {
   });
 
   it('★ une date de mineur laisse la pause en place, et le parcours accessible', async () => {
-    stubPortail('date_manquante', { ok: true, statutAge: 'mineur' });
+    stubPortail('date_manquante', { ok: true, statutAge: 'mineur', trancheMineur: '15_17' });
     render(<PortailPage />);
     await waitFor(() => expect(screen.getByText('Votre date de naissance')).not.toBeNull());
-    fireEvent.change(screen.getByLabelText('Date de naissance'), { target: { value: '2012-05-01' } });
+    fireEvent.change(screen.getByLabelText('Date de naissance'), { target: { value: '2010-05-01' } });
     fireEvent.click(screen.getByRole('button', { name: 'Continuer' }));
     fireEvent.click(screen.getByRole('button', { name: 'C’est exact, enregistrer' }));
-    // ACT-5 : l'écran sert le texte des mineurs (G-11, 2B), numéros appelables.
+    // ACT-5 : l'écran sert le texte des mineurs (2B, D-537 §7) dans la variante
+    // de la tranche rendue par la route, numéros appelables.
     await waitFor(() =>
-      expect(screen.getByText('Avant 18 ans, un parent donne d’abord son accord')).not.toBeNull(),
+      expect(screen.getByText('Avant 18 ans, ton accompagnement attend encore')).not.toBeNull(),
     );
-    expect(screen.getByText('Ce n’est pas secret pour tes parents')).not.toBeNull();
+    expect(screen.getByText('Ce que tes parents peuvent savoir')).not.toBeNull();
     for (const numero of ['15', '112', '119']) {
       expect(screen.getByRole('link', { name: numero }).getAttribute('href')).toBe(`tel:${numero}`);
     }
@@ -172,31 +173,51 @@ describe('PortailPage — garde d’âge', () => {
 
   // ACT-5 (D-341 §4) : le texte des mineurs n'est servi qu'à un dossier mineur
   // ouvert — ni à un majeur, ni à un dossier clos (jamais traité en mineur).
-  const TEXTE_ATTENDU = TEXTE_MINEUR_JEUNE.flatMap(s => [s.titre, s.texte]).join('');
+  const texteAttendu = (sections: readonly { titre: string; texte: string }[]) =>
+    sections.flatMap(s => [s.titre, s.texte]).join('');
+  const TITRE_MOINS_15 = 'Avant 15 ans, l’accompagnement ne se fait pas ici';
+  const TITRE_15_17 = 'Avant 18 ans, ton accompagnement attend encore';
 
-  it('★ une session mineure ouverte sert le texte des mineurs, entier et dans l’ordre', async () => {
-    stubPortail('mineur', {});
+  it('★ une session mineure de 15 à 17 ans sert sa variante, entière et dans l’ordre', async () => {
+    stubPortail('mineur', {}, { trancheMineur: '15_17' });
     const { container } = render(<PortailPage />);
-    await waitFor(() =>
-      expect(screen.getByText('Avant 18 ans, un parent donne d’abord son accord')).not.toBeNull(),
-    );
+    await waitFor(() => expect(screen.getByText(TITRE_15_17)).not.toBeNull());
     const carte = screen.getByRole('heading', { level: 2 }).closest('div.w-full');
-    expect((carte ?? container).textContent).toContain(TEXTE_ATTENDU);
+    expect((carte ?? container).textContent).toContain(texteAttendu(TEXTE_MINEUR_15_17));
+    expect(screen.queryByText(TITRE_MOINS_15)).toBeNull();
     expect(screen.queryByText('Merci !')).toBeNull();
   });
 
+  it('★ une session mineure de moins de 15 ans sert sa variante, entière et dans l’ordre', async () => {
+    stubPortail('mineur', {}, { trancheMineur: 'moins_15' });
+    const { container } = render(<PortailPage />);
+    await waitFor(() => expect(screen.getByText(TITRE_MOINS_15)).not.toBeNull());
+    const carte = screen.getByRole('heading', { level: 2 }).closest('div.w-full');
+    expect((carte ?? container).textContent).toContain(texteAttendu(TEXTE_MINEUR_MOINS_15));
+    expect(screen.queryByText(TITRE_15_17)).toBeNull();
+  });
+
+  it('★ une tranche absente sert la variante des moins de 15 ans, qui n’annonce aucune ouverture', async () => {
+    stubPortail('mineur', {});
+    render(<PortailPage />);
+    await waitFor(() => expect(screen.getByText(TITRE_MOINS_15)).not.toBeNull());
+    expect(screen.queryByText(TITRE_15_17)).toBeNull();
+  });
+
   it('★ un dossier mineur clos ne voit pas le texte des mineurs', async () => {
-    stubPortail('mineur', {}, { dossierOuvert: false });
+    stubPortail('mineur', {}, { dossierOuvert: false, trancheMineur: '15_17' });
     render(<PortailPage />);
     await waitFor(() => expect(screen.getByText('Merci !')).not.toBeNull());
-    expect(screen.queryByText('Avant 18 ans, un parent donne d’abord son accord')).toBeNull();
+    expect(screen.queryByText(TITRE_15_17)).toBeNull();
+    expect(screen.queryByText(TITRE_MOINS_15)).toBeNull();
   });
 
   it('★ un dossier majeur ne voit pas le texte des mineurs', async () => {
     stubPortail('majeur', {});
     render(<PortailPage />);
     await waitFor(() => expect(screen.getByText('Merci !')).not.toBeNull());
-    expect(screen.queryByText('Avant 18 ans, un parent donne d’abord son accord')).toBeNull();
+    expect(screen.queryByText(TITRE_15_17)).toBeNull();
+    expect(screen.queryByText(TITRE_MOINS_15)).toBeNull();
   });
 
   it('le refus de la route s’affiche, et la saisie reste possible', async () => {

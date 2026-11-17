@@ -39,6 +39,10 @@
 
 - Les 15–17 ans, renvoyés à un avocat par l'avis ([[D-284]], restes ouverts) :
   le texte 2 applique 18 ans sans nuance, et cet avis peut le changer.
+  — 2026-11-17 : le texte 2B est remplacé par
+  `docs/claude/propositions/2026-11-17-texte-2b-neuf/README.md`, validé mot
+  pour mot ([[D-537]] §7). Le 2B ci-dessous n'est plus servi ; le 2A reste en
+  attente de J3-mineurs.
 - « Vos données personnelles » est à mettre à jour à l'ouverture de la
   collecte (lettre l) : version distincte, à valider.
 - Le circuit des droits adapté aux mineurs ([[D-283]] §5) reste à écrire, dans
