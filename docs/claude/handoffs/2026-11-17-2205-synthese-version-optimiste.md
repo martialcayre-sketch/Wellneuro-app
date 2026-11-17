@@ -3,6 +3,14 @@
 ## 1. Branche et état Git
 
 - Branche `fix/synthese-version-optimiste`, tirée d'`origin/main` 8b35cec3 (#2228) le 2026-11-17 à 20:55Z, puis avancée par `--ff-only` sur d647df21 (#2230, H95 B) et 9b5e3674 (#2233, docs), sans fichier commun. Worktree `.claude/worktrees/orch-ci`.
+- Après l'ouverture de #2235, `main` a reçu #2234 (PRA-6c, qui touche aussi `SynthesePanel.tsx`), #2236 et #2237 : la PR est passée en conflit. Le responsable a arbitré le 2026-11-17 (question `20261117-2235-d`, D-518 §2) : fusionner `origin/main`. Le conflit portait sur un seul bloc, que les deux branches ajoutaient au même endroit :
+  - les deux ajouts sont gardés ;
+  - `rechargerApresConflit` passe par la garde du patient courant de PRA-6c (`patientCourant`) ;
+  - le garde de fraîcheur bloquait toute édition pendant la fusion. Celle-ci a donc été faite avec `-X ours`, qui s'applique à tous les blocs en conflit ; il n'y en avait qu'un. La définition de `relireSiCourant` a été réinsérée ensuite, puis repliée dans le commit de fusion avant le push ;
+  - seconde relecture `wn-reviewer`, sur la fusion : **GO**.
+    - P3-1, libellé de la garde, et P3-2, « rechargée » dit alors que la relecture avait été rendue périmée : **corrigés**. Témoin multi-patient ajouté ; il rougit si la garde est neutralisée.
+    - P3-3, cette phrase : **corrigé**.
+    - P2-1 était déjà là avant le lot et avant la fusion : le sélecteur de patient n'est pas désactivé pendant `saving`, et deux succès (`onSaveManual`, `onResetSynthese`) réinstallent la synthèse de la fermeture. **Routé** vers le lot `synthese-succes-synthese-ouverte`, suite de PRA-6c, inscrit au carnet.
 - Carnet : lot `synthese-version-optimiste` (file D, ordre 92), pris le 2026-11-17 à 20:55Z. Le `merge_fait` de #2232 est accusé (`lu`).
 - Code touché :
   - `web/src/app/api/praticien/synthese/route.ts` (PATCH ; `updatedAt` exposé au GET, au PUT et au PATCH) ;
@@ -55,11 +63,18 @@ Fermer le P3 de `wn-reviewer` sur #2221 et le P3-2 sur #2226, relevés aussi par
   1. route remise à `origin/main` : les quatre témoins du banc rougissent, tous sur « expected 200 to be 409 » ;
   2. écran remis à `origin/main` : quatre témoins d'écran sur cinq rougissent. Le cinquième garde qu'un 409 ordinaire ne relit rien.
 - `tsc --noEmit` : 0 erreur. T1 rapide, puis T1 complet : code 0.
-- T2, première passe : code 0 en 10 min 41 s (18 256 tests Vitest, 423 E2E). Elle a démarré avant le correctif P3-2 et les témoins ajoutés. La seconde passe, sur l'arbre final, donne code 0 en 11 min 21 s (18 260 tests Vitest, 423 E2E). Le banc de réservation est sauté en T2 : il tourne dans le job CI des bancs sur base réelle.
+- T2, première passe : code 0 en 10 min 41 s (18 256 tests Vitest, 423 E2E). Elle a démarré avant le correctif P3-2 et les témoins ajoutés. La seconde passe, avant la fusion, donne code 0 en 11 min 21 s (18 260 tests Vitest, 423 E2E).
+- Après la fusion :
+  - `SynthesePanel*` et `synthese/` : 400 sur 400. T1 complet : code 0.
+  - Premier T2 : code 1, sur le seul banc `scripts/wn-etat-reel.test.mjs` (voir §6). Rejoué seul : 10 sur 10.
+  - T2 sur l'arbre final, sans charge concurrente : code 0 en 10 min 32 s (18 273 tests Vitest, 423 E2E).
+  - Puis `main` a reçu #2239 (docs H15, aucun fichier commun), fusionné sans conflit sur l'accord du responsable, valable pour ce lot. Le banc de réservation est sauté en T2 : il tourne dans le job CI des bancs sur base réelle.
 
 ## 6. Problèmes ouverts
 
 - Lot de suivi `synthese-conflit-texte-conserve` (inscrit `pret`) : garder consultable le texte non enregistré qu'un 409 remplace.
+- Lot de suivi `synthese-succes-synthese-ouverte` (inscrit `pret`, P2-1 de la seconde relecture) : un succès de `onSaveManual` ou `onResetSynthese` ne doit pas réinstaller une synthèse qui n'est plus ouverte.
+- T2 après la fusion : un rouge intermittent sur `scripts/wn-etat-reel.test.mjs`, banc étranger au diff, qui passe seul (10 sur 10). Cause inconnue faute de preuve ; il est survenu pendant une relecture concurrente.
 - La suite de la partie 5 d'`autonomie-pieges-restes` reste prise (handoff 2026-11-17-1246, §6).
 
 ## 7. Prochaine action exacte

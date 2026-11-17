@@ -208,6 +208,46 @@ describe('SynthesePanel — version optimiste', () => {
     expect(ecran.queryByText(MESSAGE, { exact: false })).toBeNull();
   });
 
+  // Garde de PRA-6c reprise par `rechargerApresConflit` (relecture wn-reviewer
+  // de la fusion de #2234) : un 409 arrivé après le choix d'un autre patient
+  // ne relit pas l'ancien, dont la liste paraîtrait sous le nouveau.
+  it('patient changé avant le 409 : l’ancien n’est pas relu, la liste reste celle du nouveau', async () => {
+    const JENNIFER = { idPatient: 'PAT_SEED_02', prenom: 'Jennifer', nom: 'Martin', email: 'jennifer.martin@exemple.test', actif: true };
+    const deJennifer = { ...brouillon(V1, 'Texte de Jennifer.'), idSynthese: 'SYN_JENNIFER', idPatient: JENNIFER.idPatient, modele: 'MODELE-DE-JENNIFER' };
+    const lectures: string[] = [];
+    let repondre: (r: Response) => void = () => {};
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (entree: unknown, init?: RequestInit) => {
+        const url = String(entree);
+        const rep = (status: number, corps: unknown) =>
+          ({ ok: status < 400, status, headers: new Headers(), json: async () => corps }) as unknown as Response;
+        if (url.includes('/api/praticien/patients-pg')) return rep(200, { patients: [SOPHIE, JENNIFER] });
+        if (url.includes('/api/praticien/synthese') && init?.method === 'PATCH') {
+          return new Promise<Response>(r => { repondre = r; });
+        }
+        if (url.includes('/api/praticien/synthese')) {
+          const id = new URL(url, 'http://test.local').searchParams.get('idPatient') ?? '';
+          lectures.push(id);
+          return rep(200, { syntheses: id === JENNIFER.idPatient ? [deJennifer] : [brouillon(V1, 'Texte lu.')] });
+        }
+        return rep(200, {});
+      }),
+    );
+    const ecran = await ouvrir();
+
+    fireEvent.click(ecran.getByRole('button', { name: 'Valider la synthèse' }));
+    fireEvent.change(ecran.getByRole('combobox', { name: 'Patient' }), { target: { value: JENNIFER.idPatient } });
+    expect(await ecran.findByText('MODELE-DE-JENNIFER')).toBeTruthy();
+    const avant = lectures.length;
+
+    repondre({ ok: false, status: 409, headers: new Headers(), json: async () => CONFLIT.corps } as unknown as Response);
+
+    expect(await ecran.findByText('Votre geste sur la synthèse d’un autre patient n’a pas été appliqué : elle avait été modifiée entre-temps. Rouvrez-la avant de recommencer.')).toBeTruthy();
+    expect(lectures.slice(avant)).toEqual([]);
+    expect(ecran.getByText('MODELE-DE-JENNIFER')).toBeTruthy();
+  });
+
   it('un 409 sans le code de rechargement garde son message et ne relit rien', async () => {
     stub([[brouillon(V1, 'Texte lu.')]], [{ status: 409, corps: { error: 'Seul un brouillon (IA ou praticien) peut être validé.' } }]);
     const fetchMock = vi.mocked(fetch);

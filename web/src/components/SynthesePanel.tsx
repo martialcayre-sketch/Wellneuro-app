@@ -189,29 +189,34 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
   // que `relireSiCourant` : un autre patient choisi entre-temps n'est pas relu
   // à la place du sien.
   const rechargerApresConflit = async (idSynthese: string, zone: ZoneRetour, texteNonEnregistre: boolean) => {
+    // Sous un autre patient, rien n'est relu : le message dit seulement que
+    // le geste n'a pas été appliqué.
+    const msgAutrePatient = 'Votre geste sur la synthèse d’un autre patient n’a pas été appliqué : elle avait été modifiée entre-temps. Rouvrez-la avant de recommencer.';
     if (patientCourant.current !== selectedPatient) {
-      setFeedback({ ok: false, msg: 'La synthèse a été modifiée entre-temps. Rouvrez-la avant de recommencer.', zone: 'patient' });
+      setFeedback({ ok: false, msg: msgAutrePatient, zone: 'patient' });
       return;
     }
     const liste = await loadSyntheses(selectedPatient);
     const msg = 'La synthèse a été modifiée entre-temps. Elle est rechargée : vérifiez-la avant de recommencer.'
       + (texteNonEnregistre ? ' Vos modifications non enregistrées ne sont pas conservées.' : '');
+    if (!liste) {
+      // Rien n'a été relu : jamais « rechargée » ici (P3-2 de wn-reviewer, deux
+      // passes). Patient changé pendant la relecture, elle n'a rien écrit ;
+      // sinon elle a échoué, et le détail reste tel quel, texte saisi compris.
+      setFeedback(patientCourant.current !== selectedPatient
+        ? { ok: false, msg: msgAutrePatient, zone: 'patient' }
+        : {
+            ok: false,
+            msg: 'La synthèse a été modifiée entre-temps et n’a pas pu être relue. Fermez-la puis rouvrez-la avant de recommencer.',
+            zone: zoneDuDetail(idSynthese, zone),
+          });
+      return;
+    }
     if (syntheseOuverte.current !== idSynthese) {
       setFeedback({ ok: false, msg, zone: 'patient' });
       return;
     }
-    const fraiche = liste?.find(s => s.idSynthese === idSynthese);
-    if (!liste) {
-      // Relecture en échec : le détail reste tel quel, texte saisi compris, et
-      // l'erreur de liste s'affiche (P3-2 de wn-reviewer : ne pas dire
-      // « rechargée » ici).
-      setFeedback({
-        ok: false,
-        msg: 'La synthèse a été modifiée entre-temps et n’a pas pu être relue. Fermez-la puis rouvrez-la avant de recommencer.',
-        zone,
-      });
-      return;
-    }
+    const fraiche = liste.find(s => s.idSynthese === idSynthese);
     if (!fraiche) {
       setSelectedSynthese(null);
       setEditedManual(null);
