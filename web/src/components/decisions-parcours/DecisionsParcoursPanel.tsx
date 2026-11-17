@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AlertTriangle } from 'lucide-react';
+import { TRAIT_ICONE } from '@/components/ui/icone';
 import { normaliserTexte } from '@/lib/physio-traitements/liste';
 import type { DecisionsParcoursGetResponse } from '@/app/api/praticien/decisions-parcours/route';
 import {
@@ -513,7 +514,7 @@ export function DecisionsParcoursPanel({ idPatient }: { idPatient: string }) {
           </h3>
           {lacunaires.map(p => (
             <p key={p ?? ''} className="flex items-center gap-1 text-xs font-medium text-foreground">
-              <AlertTriangle aria-hidden="true" size={14} className="text-accent" />
+              <AlertTriangle aria-hidden="true" strokeWidth={TRAIT_ICONE} size={14} className="text-accent" />
               {titreAction(version, p)} — {TEXTES.sequenceIncomplete}
             </p>
           ))}

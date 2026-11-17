@@ -254,7 +254,7 @@ export function TrustPanel() {
             value={s.statutTraitement}
             disabled={enCours === s.id}
             onChange={e => void changerStatut(s, e.target.value)}
-            className="min-h-11 text-sm rounded-lg border border-control-border bg-surface px-2 py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            className="min-h-11 h-11 text-sm rounded-lg border border-control-border bg-surface px-2 py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
             {Object.entries(LIBELLE_STATUT).map(([valeur, libelle]) => (
               <option key={valeur} value={valeur}>{libelle}</option>

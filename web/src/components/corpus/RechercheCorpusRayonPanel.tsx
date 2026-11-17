@@ -11,7 +11,7 @@ import type { ClaimRayon } from '@/lib/supplement-library/rayonCorpus';
 // Q5 de D-481 : 44 px et focus visible, comme `ui/Input` ; `ui/Select` sert
 // d'autres écrans et n'est pas changé par ce lot (même choix que la PR 1).
 const CLASSE_SELECT =
-  'min-h-11 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring';
+  'min-h-11 h-11 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring';
 
 // Recherche corpus clinique — instrument de consultation simple : un rayon,
 // une requête libre, les claims validés qui en ressortent. Contrairement au

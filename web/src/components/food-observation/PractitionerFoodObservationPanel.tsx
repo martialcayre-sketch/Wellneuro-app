@@ -637,7 +637,7 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
               h4 (Q2 a). Mention de version du prototype retirée (Q9 a, [[D-488]]). */}
           <h3 className="font-display text-3xl font-bold text-foreground">Trajectoire alimentaire</h3>
         </div>
-        <Link href={`/dashboard/patients/${encodeURIComponent(idPatient)}`} className="text-sm text-muted-foreground hover:underline">
+        <Link href={`/dashboard/patients/${encodeURIComponent(idPatient)}`} className="inline-flex min-h-11 items-center text-sm text-muted-foreground hover:underline">
           ← Retour fiche patient
         </Link>
       </div>
@@ -884,7 +884,7 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
         <button
           type="button"
           data-testid="ja-praticien-reset-local"
-          className="text-xs text-status-danger hover:underline"
+          className="min-h-11 text-xs text-status-danger hover:underline"
           onClick={resetLocalDraft}
         >
           Réinitialiser le brouillon local
@@ -1047,7 +1047,7 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
 
         <fieldset className="space-y-2" data-testid="ja-praticien-decision-mode">
           <legend className="text-sm text-muted-foreground">Décision praticien</legend>
-          <label className="flex items-center gap-2 text-sm text-foreground">
+          <label className="flex min-h-11 items-center gap-2 text-sm text-foreground">
             <input
               type="radio"
               name="decision-mode"
@@ -1060,7 +1060,7 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
             />
             Accepter
           </label>
-          <label className="flex items-center gap-2 text-sm text-foreground">
+          <label className="flex min-h-11 items-center gap-2 text-sm text-foreground">
             <input
               type="radio"
               name="decision-mode"

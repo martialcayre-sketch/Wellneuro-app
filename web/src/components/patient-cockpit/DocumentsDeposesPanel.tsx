@@ -149,7 +149,7 @@ function LigneDocument({
               value={categorie}
               disabled={occupe}
               onChange={e => setCategorie(e.target.value as CategorieDocument)}
-              className="min-h-11 rounded-lg border border-border bg-surface px-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+              className="min-h-11 h-11 rounded-lg border border-border bg-surface px-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
             >
               {CATEGORIES_DOCUMENT.map(c => (
                 <option key={c} value={c}>

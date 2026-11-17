@@ -266,7 +266,7 @@ export function ComprehensionPanel({ idPatient }: { idPatient: string }) {
     <section
       ref={sectionRef}
       tabIndex={-1}
-      className="mt-6 rounded-lg border border-border bg-card p-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+      className="mt-6 rounded-lg border border-border bg-surface p-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
     >
       <header className="mb-3">
         <h4 className="text-base font-semibold">Ce que j’ai compris de vous</h4>

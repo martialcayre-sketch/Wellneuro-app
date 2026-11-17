@@ -114,7 +114,7 @@ const LIBELLES_STATUT: Record<string, string> = {
   echec: 'Échec de lecture',
 };
 
-const CHAMP = 'min-h-11 rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground';
+const CHAMP = 'min-h-11 [&:is(select)]:h-11 rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground';
 const BOUTON = 'min-h-11 rounded-lg border border-border px-3 py-2 text-sm text-foreground disabled:opacity-50';
 const BOUTON_PRIMAIRE =
   'min-h-11 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50';

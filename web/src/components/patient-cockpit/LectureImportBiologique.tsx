@@ -27,7 +27,7 @@ import {
 const BOUTON = 'min-h-11 rounded-lg border border-border px-3 py-2 text-sm text-foreground disabled:opacity-50';
 const BOUTON_PRIMAIRE =
   'min-h-11 rounded-lg border border-transparent bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50';
-const CHAMP = 'min-h-11 rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground';
+const CHAMP = 'min-h-11 [&:is(select)]:h-11 rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground';
 
 const FORMAT_PARIS = new Intl.DateTimeFormat('fr-FR', {
   timeZone: 'Europe/Paris',

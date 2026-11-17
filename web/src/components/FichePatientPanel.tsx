@@ -347,9 +347,9 @@ function libelleStatut(id: IdPhase, statut: StatutPhase): string {
 // Le statut n'est jamais porté par la seule couleur : icône + texte.
 function IconeStatut({ statut }: { statut: StatutPhase }) {
   if (statut === 'fait') return <Check aria-hidden="true" size={14} strokeWidth={2.5} className="text-status-success" />;
-  if (statut === 'en_attente') return <Clock aria-hidden="true" size={14} strokeWidth={2} className="text-accent" />;
-  if (statut === 'inconnu') return <HelpCircle aria-hidden="true" size={14} strokeWidth={2} className="text-muted-foreground" />;
-  return <Circle aria-hidden="true" size={14} strokeWidth={2} className="text-muted-foreground" />;
+  if (statut === 'en_attente') return <Clock aria-hidden="true" size={14} strokeWidth={TRAIT_ICONE} className="text-accent" />;
+  if (statut === 'inconnu') return <HelpCircle aria-hidden="true" size={14} strokeWidth={TRAIT_ICONE} className="text-muted-foreground" />;
+  return <Circle aria-hidden="true" size={14} strokeWidth={TRAIT_ICONE} className="text-muted-foreground" />;
 }
 
 // Instrument à tiroir — mince habillage de la primitive `PanneauSuperpose`
@@ -390,12 +390,12 @@ function InstrumentTiroir({
           type="button"
           className="flex min-h-12 w-full items-center gap-2 rounded-[11px] border border-border bg-surface px-3 py-2 text-left text-14 font-medium text-foreground shadow-card hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
         >
-          <Icone aria-hidden="true" size={18} strokeWidth={2} className="shrink-0 text-primary" />
+          <Icone aria-hidden="true" size={18} strokeWidth={TRAIT_ICONE} className="shrink-0 text-primary" />
           <span className="min-w-0 flex-1">
             {libelle}
             {sousLibelle && <span className="block text-xs font-normal text-muted-foreground">{sousLibelle}</span>}
           </span>
-          <ChevronRight aria-hidden="true" size={16} strokeWidth={2} className="shrink-0 text-muted-foreground" />
+          <ChevronRight aria-hidden="true" size={16} strokeWidth={TRAIT_ICONE} className="shrink-0 text-muted-foreground" />
         </button>
       }
     >
@@ -2460,7 +2460,7 @@ export function FichePatientPanel({
               onClick={activerModeConsultation}
               className="flex min-h-11 items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
             >
-              <Stethoscope size={16} strokeWidth={2} />
+              <Stethoscope size={16} strokeWidth={TRAIT_ICONE} />
               Mode consultation
             </button>
           )}
@@ -2472,11 +2472,11 @@ export function FichePatientPanel({
           {/* [[D-354]] amendement DOC-15 (Q10) : en mode consultation, on ne
               quitte la fiche que par « Quitter ». */}
           {modeConsultationActif ? null : ongletInitial === 'trajectoire' ? (
-            <Link href="/dashboard/trajectoires" className="text-sm text-muted-foreground hover:text-foreground hover:underline">
+            <Link href="/dashboard/trajectoires" className="inline-flex min-h-11 items-center text-sm text-muted-foreground hover:text-foreground hover:underline">
               ← Retour aux fiches-trajectoires
             </Link>
           ) : (
-            <Link href="/dashboard/patients" className="text-sm text-muted-foreground hover:text-foreground hover:underline">
+            <Link href="/dashboard/patients" className="inline-flex min-h-11 items-center text-sm text-muted-foreground hover:text-foreground hover:underline">
               ← Retour aux patients
             </Link>
           )}
@@ -2528,7 +2528,7 @@ export function FichePatientPanel({
           role="alert"
           className="flex flex-wrap items-center gap-3 rounded-xl border border-accent bg-status-warning/10 px-4 py-2 text-base text-status-warning"
         >
-          <ShieldAlert aria-hidden="true" size={16} strokeWidth={2} className="shrink-0" />
+          <ShieldAlert aria-hidden="true" size={16} strokeWidth={TRAIT_ICONE} className="shrink-0" />
           <span className="min-w-0">
             Les demandes de correction de questionnaire n’ont pas pu être lues. Ce dossier peut en compter une en attente de déblocage.
           </span>
@@ -2553,7 +2553,7 @@ export function FichePatientPanel({
           role="status"
           className="flex flex-wrap items-center gap-3 rounded-xl border border-accent bg-status-warning/10 px-4 py-2 text-base text-status-warning"
         >
-          <Clock aria-hidden="true" size={16} strokeWidth={2} className="shrink-0" />
+          <Clock aria-hidden="true" size={16} strokeWidth={TRAIT_ICONE} className="shrink-0" />
           <span className="min-w-0">
             {assignationsModif.length === 1
               ? '1 demande de correction de questionnaire en attente de déblocage.'
@@ -2612,7 +2612,7 @@ export function FichePatientPanel({
           role="status"
           className="flex flex-wrap items-center gap-3 rounded-xl border border-accent bg-status-warning/10 px-4 py-2 text-base text-status-warning"
         >
-          <Clock aria-hidden="true" size={16} strokeWidth={2} className="shrink-0" />
+          <Clock aria-hidden="true" size={16} strokeWidth={TRAIT_ICONE} className="shrink-0" />
           <span className="min-w-0">
             Votre patient demande une correction de son objectif négocié.
           </span>
@@ -2643,7 +2643,7 @@ export function FichePatientPanel({
           role="alert"
           className="flex flex-wrap items-center gap-3 rounded-xl border border-accent bg-status-warning/10 px-4 py-2 text-base text-status-warning"
         >
-          <ShieldAlert aria-hidden="true" size={16} strokeWidth={2} className="shrink-0" />
+          <ShieldAlert aria-hidden="true" size={16} strokeWidth={TRAIT_ICONE} className="shrink-0" />
           <span className="min-w-0">
             L’état de la phase Compréhension n’a pas pu être lu. Ce dossier peut compter une
             demande de correction de l’objectif en attente.
@@ -2685,7 +2685,7 @@ export function FichePatientPanel({
                 setOngletActif('cockpit');
                 choisirPhase(due);
               }}
-              className="ml-auto min-h-9 shrink-0 rounded-lg border border-border px-3 py-1 text-xs font-medium text-foreground hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+              className="ml-auto min-h-11 shrink-0 rounded-lg border border-border px-3 py-1 text-xs font-medium text-foreground hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
             >
               Y aller
             </button>
@@ -2710,7 +2710,7 @@ export function FichePatientPanel({
           role="status"
           className="flex flex-wrap items-center gap-3 rounded-xl border border-accent bg-status-warning/10 px-4 py-2 text-base text-status-warning"
         >
-          <ShieldAlert aria-hidden="true" size={16} strokeWidth={2} className="shrink-0" />
+          <ShieldAlert aria-hidden="true" size={16} strokeWidth={TRAIT_ICONE} className="shrink-0" />
           <span className="min-w-0">Protocole bloqué — bloqueurs décisionnels à revoir.</span>
           {!(ongletActif === 'cockpit' && phaseActive === 'actions') && (
             <button
@@ -2752,7 +2752,7 @@ export function FichePatientPanel({
           role="status"
           className="flex flex-wrap items-center gap-3 rounded-xl border border-accent bg-status-warning/10 px-4 py-2 text-base text-status-warning"
         >
-          <Clock aria-hidden="true" size={16} strokeWidth={2} className="shrink-0" />
+          <Clock aria-hidden="true" size={16} strokeWidth={TRAIT_ICONE} className="shrink-0" />
           <span className="min-w-0">Priorité non retenue — le protocole reste indisponible.</span>
           {!(ongletActif === 'cockpit' && phaseActive === 'decision') && (
             <button

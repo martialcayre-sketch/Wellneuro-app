@@ -283,7 +283,7 @@ export function BlocContextePrelevement({
               value={valeur.delaiDernierePriseUnite}
               onChange={event => modifier('delaiDernierePriseUnite', event.target.value as UniteDelai)}
               disabled={disabled}
-              className="min-h-11 rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+              className="min-h-11 h-11 rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
             >
               <option value="heure">heures</option>
               <option value="jour">jours</option>

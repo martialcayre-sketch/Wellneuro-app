@@ -184,7 +184,7 @@ export function SaisieBilan({
                     disabled={disabled}
                     aria-invalid={refus ? true : undefined}
                     aria-describedby={refus ? idErreur : undefined}
-                    className="min-h-11 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+                    className="min-h-11 h-11 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
                   >
                     <option value="">— choisir —</option>
                     {analytes.map(analyte => (

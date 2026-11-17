@@ -56,7 +56,7 @@ export function MeteoAdhesionAside() {
             <div key={ligne.idPatient} className="flex items-center justify-between gap-2">
               <Link
                 href={`/dashboard/patients/${ligne.idPatient}`}
-                className="min-w-0 truncate text-sm text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                className="min-h-11 min-w-0 truncate py-3 text-sm text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
               >
                 {ligne.patient}
               </Link>
