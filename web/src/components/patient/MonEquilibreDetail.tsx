@@ -101,7 +101,7 @@ export function MonEquilibreDetail({
           onHoverBesoin={setHoveredId}
         />
 
-        <div className="flex justify-center gap-4 mt-3 mb-6">
+        <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 mt-3 mb-6">
           {LEGENDE_STRATE.map(s => (
             <span key={s.strate} className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ backgroundColor: s.couleur }} />
@@ -119,12 +119,12 @@ export function MonEquilibreDetail({
                 onMouseLeave={() => setHoveredId(null)}
                 onFocus={() => setHoveredId(b.id)}
                 onBlur={() => setHoveredId(null)}
-                className={`w-full min-h-11 flex items-center justify-between gap-3 text-left text-sm rounded-lg px-3 py-2 transition-colors ${
+                className={`w-full min-h-11 flex max-[319px]:flex-wrap items-center justify-between gap-x-3 gap-y-0.5 text-left text-sm rounded-lg px-3 py-2 transition-colors ${
                   hoveredId === b.id ? 'bg-primary/10 text-primary font-medium' : 'bg-muted text-foreground'
                 }`}
               >
-                <span>{b.libellePatient}</span>
-                <span className="text-xs text-muted-foreground">{libelleCouverture(b.couverture)}</span>
+                <span className="max-[319px]:min-w-0 max-[319px]:grow max-[319px]:basis-24 max-[319px]:[overflow-wrap:anywhere] max-[319px]:hyphens-auto">{b.libellePatient}</span>
+                <span className="text-xs text-muted-foreground max-[319px]:[overflow-wrap:anywhere]">{libelleCouverture(b.couverture)}</span>
               </button>
             </li>
           ))}
