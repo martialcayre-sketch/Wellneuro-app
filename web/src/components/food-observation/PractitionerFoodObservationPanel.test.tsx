@@ -100,6 +100,9 @@ describe('PractitionerFoodObservationPanel', () => {
   it('réinitialise le brouillon local praticien', () => {
     render(<PractitionerFoodObservationPanel idPatient="PAT_TEST" />);
     fireEvent.click(screen.getByTestId('ja-praticien-enregistrer'));
+    // Cibles de 44 px (PRA-6d, constat à l'écran : 18 et 23 px).
+    expect(screen.getByTestId('ja-praticien-reset-local').className).toContain('min-h-11');
+    expect(screen.getByRole('link', { name: /Retour fiche patient/ }).className).toContain('min-h-11');
 
     fireEvent.click(screen.getByTestId('ja-praticien-reset-local'));
     expect(screen.queryByText('Brouillon local restauré sur cet appareil.')).toBeNull();

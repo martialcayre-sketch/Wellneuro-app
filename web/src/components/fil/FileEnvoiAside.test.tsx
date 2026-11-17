@@ -72,6 +72,8 @@ describe('FileEnvoiAside', () => {
     expect(screen.getByRole('link', { name: 'Sophie Nicola' }).getAttribute('href')).toBe(
       '/dashboard/patients/PAT_SEED_01',
     );
+    // Cible de 44 px pour le nom (PRA-6d, constat à l'écran : 23 px).
+    expect(screen.getByRole('link', { name: 'Sophie Nicola' }).className).toContain('min-h-11');
     expect(
       screen.getByRole('link', { name: /gérer la file dans la bibliothèque/i }).getAttribute('href'),
     ).toBe('/dashboard/bibliotheque/questionnaires');

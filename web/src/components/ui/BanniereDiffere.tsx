@@ -1,4 +1,5 @@
 import { Clock } from 'lucide-react';
+import { TRAIT_ICONE } from '@/components/ui/icone';
 import type { ReactNode } from 'react';
 
 // Bannière « Module différé » (maquettes 4.0/5.0) : les écrans réservés
@@ -11,7 +12,7 @@ export function BanniereDiffere({ children }: { children: ReactNode }) {
       role="status"
       className="flex items-start gap-3 rounded-xl border border-accent bg-status-warning/15 px-4 py-3 text-base text-status-warning shadow-card"
     >
-      <Clock aria-hidden="true" size={18} strokeWidth={2} className="mt-0.5 shrink-0" />
+      <Clock aria-hidden="true" size={18} strokeWidth={TRAIT_ICONE} className="mt-0.5 shrink-0" />
       <p className="min-w-0">
         <span className="font-semibold">Module différé. </span>
         {children}

@@ -2,6 +2,7 @@
 
 import { useId, useState } from 'react';
 import { FileDown } from 'lucide-react';
+import { TRAIT_ICONE } from '@/components/ui/icone';
 import { Button } from '@/components/ui/Button';
 import { PanneauSuperpose } from '@/components/ui/PanneauSuperpose';
 import type { VersionExport } from '@/lib/export-dossier/modele';
@@ -136,7 +137,7 @@ export function ExportDossierPanel({ idPatient }: { idPatient: string }) {
           type="button"
           className="flex min-h-11 items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
         >
-          <FileDown aria-hidden="true" size={16} strokeWidth={2} />
+          <FileDown aria-hidden="true" size={16} strokeWidth={TRAIT_ICONE} />
           Exporter en PDF
         </button>
       }
@@ -186,7 +187,7 @@ export function ExportDossierPanel({ idPatient }: { idPatient: string }) {
         aria-busy={enCours}
         className="mt-4 inline-flex min-h-11 items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
       >
-        <FileDown aria-hidden="true" size={16} strokeWidth={2} />
+        <FileDown aria-hidden="true" size={16} strokeWidth={TRAIT_ICONE} />
         {enCours ? 'Préparation du PDF…' : 'Télécharger le PDF'}
       </Button>
 

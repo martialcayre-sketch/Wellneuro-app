@@ -881,7 +881,7 @@ export function ProtocolMiniBuilder({
                       aria-invalid={erreur !== null && action.type === ''}
                       value={action.type}
                       onChange={event => updateAction(action.actionId, { type: event.target.value as ProtocolActionType | '' })}
-                      className={`mt-1 min-h-11 w-full rounded-lg border border-border bg-background p-2 text-sm aria-[invalid=true]:border-status-danger ${ANNEAU_FOCUS}`}
+                      className={`mt-1 min-h-11 h-11 w-full rounded-lg border border-border bg-background p-2 text-sm aria-[invalid=true]:border-status-danger ${ANNEAU_FOCUS}`}
                     >
                       {/* Option d'absence NON désactivée : elle doit se lire,
                           et rester atteignable si le praticien veut revenir en
@@ -959,7 +959,7 @@ export function ProtocolMiniBuilder({
                           aria-label={`Assiette de l’action ${index + 1}`}
                           value={action.recommendedPlateRef?.plateCode ?? ''}
                           onChange={event => choisirAssiette(action.actionId, event.target.value)}
-                          className={`mt-1 min-h-11 w-full rounded-lg border border-border bg-background p-2 text-sm ${ANNEAU_FOCUS}`}
+                          className={`mt-1 min-h-11 h-11 w-full rounded-lg border border-border bg-background p-2 text-sm ${ANNEAU_FOCUS}`}
                         >
                           <option value="">Aucune assiette — action alimentaire libre</option>
                           {(assiettesIndiquees ?? []).map(assiette => (
@@ -1134,7 +1134,7 @@ export function ProtocolMiniBuilder({
             aria-invalid={erreur !== null && loadLevel === ''}
             value={loadLevel}
             onChange={event => { markDirty(); setLoadLevel(event.target.value as NiveauChargeBrouillon); }}
-            className={`mt-1 min-h-11 w-full rounded-lg border border-border bg-background p-2 font-normal aria-[invalid=true]:border-status-danger ${ANNEAU_FOCUS}`}
+            className={`mt-1 min-h-11 h-11 w-full rounded-lg border border-border bg-background p-2 font-normal aria-[invalid=true]:border-status-danger ${ANNEAU_FOCUS}`}
           >
             <option value="">Choisir la charge…</option>
             {Object.entries(LOAD_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
