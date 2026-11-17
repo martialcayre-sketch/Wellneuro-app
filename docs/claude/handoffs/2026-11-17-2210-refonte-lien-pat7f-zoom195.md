@@ -22,6 +22,7 @@ Supprimer les débordements à 195 px relevés au §3.1 de `pat7-constat-ecrans-
 - En-tête commun du questionnaire (`[idAssignation]/page.tsx`) :
   - le `h1` passe de `truncate` à un retour à la ligne (`min-w-0`, `overflow-wrap:anywhere`, césure sous 320 px).
   - Mesure ajoutée à la sonde locale : il était tronqué à 195 px et à 320 px en confort, ce qui fait perdre du texte à la largeur du critère WCAG 1.4.10.
+  - Sa rangée passe en `flex-wrap` (remarque de PR-Agent sur #2238) : le badge d'état passe sous le titre quand les deux ne tiennent pas. Sans cela, à 195 px, « BDI » se coupait lettre par lettre à côté de « Transmis au praticien » (vu en capture), là où `truncate` affichait « B… ».
 
 ## Fichiers modifiés
 

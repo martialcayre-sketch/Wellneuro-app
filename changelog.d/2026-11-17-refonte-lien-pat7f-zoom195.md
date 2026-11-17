@@ -20,7 +20,10 @@ largeurs mesurées, axe sans violation.
 - **Titre d'un questionnaire ou d'un agenda** (en-tête commun) : il passe à
   la ligne au lieu d'être coupé par des points de suspension. À 320 px en
   confort de lecture, « Agenda du sommeil — 21 nuits » était tronqué ; il
-  s'affiche désormais en entier. Aux largeurs où il tenait, rien ne change.
+  s'affiche désormais en entier. Quand le titre et l'état de l'envoi
+  (« Transmis au praticien ») ne tiennent plus sur une ligne, l'état passe
+  sous le titre au lieu de le réduire à quelques lettres. Aux largeurs où
+  ils tenaient, rien ne change.
 
 Hauteurs de page identiques avant et après à toutes les largeurs mesurées
 dès 320 px, sauf là où un titre était tronqué ou la légende sortait de la
