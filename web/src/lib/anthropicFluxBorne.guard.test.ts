@@ -93,6 +93,16 @@ function fluxSansSignal(source: string, fichier: string): { flux: number; fautif
   return { flux, fautifs };
 }
 
+/**
+ * Le fichier peut-il porter un appel, brut ou masqué ? Le masquage remplace
+ * par des espaces sans rien déplacer : tout appel lu après masquage a ses mots
+ * `messages` et `stream`/`create` dans le texte brut. Le tri sur `APPEL` brut
+ * laissait passer `a.messages.stream/* x *\/(` (PR-Agent sur #2209).
+ */
+function aLire(source: string): boolean {
+  return source.includes('messages') && /stream|create/.test(source);
+}
+
 describe('appels en flux au SDK Anthropic', () => {
   it('témoins : un flux sans signal est relevé, un flux signé ou un appel simple ne l’est pas', () => {
     expect(fluxSansSignal('a.messages.stream({ model }).finalMessage()', 'x').fautifs).toEqual(['x:1']);
@@ -116,17 +126,25 @@ describe('appels en flux au SDK Anthropic', () => {
     expect(fluxSansSignal('// a.messages.stream({ model })\nconst s = "a.messages.stream(";', 'x').flux).toBe(0);
   });
 
+  it('témoin (PR-Agent) : un commentaire entre le nom et la parenthèse ne fait pas sauter le fichier', () => {
+    const source = 'a.messages.stream/* x */({ model })';
+    expect(source.match(APPEL)).toBeNull();
+    expect(aLire(source)).toBe(true);
+    expect(fluxSansSignal(source, 'x').fautifs).toEqual(['x:1']);
+    expect(aLire('const a = 1;')).toBe(false);
+  });
+
   it('chaque flux de src/ porte son propre signal', () => {
     let flux = 0;
     const fautifs: string[] = [];
     const incertains: string[] = [];
     for (const fichier of sources(RACINE)) {
       const source = readFileSync(fichier, 'utf8');
-      // Le masquage ne fait que retirer du texte : un fichier sans appel brut
-      // n'en a pas de masqué. Le masquer quand même coûtait ~1,5 s sur tout
-      // `src/`, et le délai de 5 s cédait sous la charge du contrôle de fusion.
+      // Masquer tout `src/` coûtait ~1,5 s, et le délai de 5 s cédait sous la
+      // charge du contrôle de fusion (#2209) : seuls les fichiers qui peuvent
+      // porter un appel sont lus.
+      if (!aLire(source)) continue;
       const bruts = source.match(APPEL)?.length ?? 0;
-      if (bruts === 0) continue;
       const r = fluxSansSignal(source, path.relative(RACINE, fichier));
       flux += r.flux;
       fautifs.push(...r.fautifs);
