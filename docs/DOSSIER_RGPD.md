@@ -972,7 +972,11 @@ d'avocat. Ses références ont été vérifiées par la session.
   l'AIPD elle-même si cette revue la requiert (§5, §6). Elle attend aussi
   deux points : la durée, l'engagement et l'arrêt de l'accompagnement,
   documentés ; l'accord des deux titulaires tant que l'« acte usuel » n'est
-  pas qualifié (§1, §9).
+  pas qualifié (§1, §9). — 2026-11-17 : deux de ces conditions sont
+  remplies, le texte 2B réécrit et servi, et l'analyse de proportionnalité,
+  écrite et arbitrée. Restent J3-mineurs, la notice adaptée, la revue de
+  nécessité de l'AIPD, la durée, l'engagement et l'arrêt, ainsi que l'accord
+  des deux titulaires.
 - **Texte 2B** : il est réécrit maintenant, en entier. Le responsable le
   valide mot pour mot, puis un lot de code le sert (§7). — 2026-11-17 :
   validé mot pour mot (questions `20261117-1346-c` et `-1919-c`) et servi en deux
