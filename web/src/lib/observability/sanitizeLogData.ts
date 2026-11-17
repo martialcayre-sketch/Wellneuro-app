@@ -5,6 +5,10 @@ const MAX_ENTRIES = 30;
 const MAX_STRING_LENGTH = 300;
 
 const REDACTED = '[redacted]';
+// Chaque entrée est NORMALISÉE à la construction, comme la clé comparée
+// (`normalizeSensitiveKey` retire soulignés et majuscules) : une entrée écrite
+// `narratif_patient` ne pouvait jamais correspondre, et le récit du patient
+// partait au journal en clair (constat de wn-reviewer sur #2215, 2026-11-17).
 const BLOCKED_KEYS = new Set([
   'token',
   'secret',
@@ -30,12 +34,10 @@ const BLOCKED_KEYS = new Set([
   'systemprompt',
   'narratif_patient',
   'resume_praticien',
-  // [[D-513]] §6 : la restitution biologique ne part pas plus au journal. Sous
-  // la forme NORMALISÉE (`normalizeSensitiveKey` retire les soulignés) : les
-  // deux entrées à soulignés ci-dessus ne peuvent pas correspondre.
+  // [[D-513]] §6 : la restitution biologique ne part pas plus au journal.
   'resumebiologiepraticien',
   'pointsdevigilancebiologie',
-]);
+].map(normalizeSensitiveKey));
 
 function normalizeSensitiveKey(key: string): string {
   return key.toLowerCase().replace(/[^a-z0-9]/g, '');
