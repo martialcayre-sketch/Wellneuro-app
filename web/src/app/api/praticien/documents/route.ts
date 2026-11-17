@@ -9,6 +9,7 @@ import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appar
 import { journaliserAccesDossier } from '@/lib/praticien/journalAcces';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
 import { logger } from '@/lib/observability/logger';
+import { motifBlocageContamination } from '@/lib/synthese/gardeContamination';
 import {
   createRequestContext,
   finalizeLogContext,
@@ -64,6 +65,22 @@ export async function GET(req: Request) {
           { error: 'La synthèse doit être validée par le praticien avant de composer un document.' },
           { status: 422 },
         ),
+        requestContext,
+      );
+    }
+
+    // [[D-513]] §5 : une synthèse suspecte n'entre pas au document au médecin.
+    const motifSuspecte = motifBlocageContamination({
+      idSynthese,
+      syntheseJson: synthese.syntheseJson,
+      donneesEntree: synthese.donneesEntree,
+      statut: synthese.statut,
+      sortie: 'document_medecin',
+      requestContext,
+    });
+    if (motifSuspecte) {
+      return withCorrelationHeader(
+        NextResponse.json({ error: motifSuspecte, code: 'synthese_suspecte' }, { status: 422 }),
         requestContext,
       );
     }

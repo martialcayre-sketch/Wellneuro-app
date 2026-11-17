@@ -69,7 +69,7 @@ describe('la provenance se CONSTATE, jamais ne se déclare', () => {
     expect(c.prioriteSource).toBe('proposition_ia');
     expect(c.prioriteSourceSyntheseId).toBe('SYN_1');
     expect(c.prioriteSourceDepotId).toBe('DEP_1');
-    expect(c.prioritePrompt).toBe('priorite-v1');
+    expect(c.prioritePrompt).toBe('priorite-v2');
     expect(c.prioriteSourceRang).toBe(2);
   });
 

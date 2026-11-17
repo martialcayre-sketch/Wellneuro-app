@@ -52,6 +52,13 @@ type Props = {
   onCancel?: () => void;
   saving?: boolean;
   saveLabel?: string;
+  /**
+   * [[D-513]] §5 : `limites` est contrôlé comme les autres champs ordinaires ;
+   * il devient éditable pour que chaque blocage ait une issue. Seulement pour un
+   * brouillon IA : un brouillon praticien porte un texte fixe, réécrit à
+   * l'enregistrement (`validerBrouillonPraticien`).
+   */
+  limitesEditable?: boolean;
 };
 
 const champ =
@@ -116,6 +123,7 @@ export function SynthesePraticienEditor({
   onCancel,
   saving = false,
   saveLabel = 'Enregistrer le brouillon',
+  limitesEditable = false,
 }: Props) {
   // Compté, pas booléen : le message dit combien d'axes restent à trancher, ce
   // qui évite au praticien de les rouvrir un par un pour trouver lequel.
@@ -439,6 +447,18 @@ export function SynthesePraticienEditor({
           <span className="text-xs font-normal text-muted-foreground">Une question par ligne.</span>
         </label>
       </div>
+
+      {limitesEditable && (
+        <label className="grid gap-2 text-sm font-medium text-foreground">
+          Limites
+          <textarea
+            value={value.limites}
+            onChange={event => modifier('limites', event.target.value)}
+            rows={2}
+            className={`${champ} resize-y`}
+          />
+        </label>
+      )}
 
       <div className="flex flex-wrap items-center gap-2 border-t border-border pt-4">
         {axesSansPriorite > 0 && (

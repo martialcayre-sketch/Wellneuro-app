@@ -379,3 +379,78 @@ describe('brouillon praticien /api/praticien/synthese', () => {
     expect(prisma.syntheseIA.update).not.toHaveBeenCalled();
   });
 });
+
+// [[D-513]] §5 et §11 : une synthèse suspecte ne se valide pas, quel que soit
+// l'auteur ; une correction lève le blocage. Données entièrement fictives.
+describe('validation — contrôle de contamination (D-513 §5)', () => {
+  const TRACE = {
+    blocBiologie: {
+      texte: '## Résultats de biologie\nFerritine — 1 prélèvement.',
+      formes: { valeursUnites: [{ valeur: '32', unite: 'µg/L' }], intervalles: ['30 - 400'] },
+    },
+    metadonneesPrompt: { versionSchema: 'synthese-json-v4' },
+  };
+  const JSON_IA = {
+    resume_praticien: 'Résumé sans biologie.',
+    axes_prioritaires: [],
+    points_de_vigilance: [],
+    questions_entretien: [],
+    narratif_patient: 'Votre praticien a reçu votre bilan biologique du 12 mars 2026.',
+    limites: 'À valider par le praticien.',
+    resume_biologie_praticien: 'Ferritine le 2026-03-12 : 32 µg/L.',
+    points_de_vigilance_biologie: [],
+  };
+  function ligneIA(patch: Record<string, unknown>, donneesEntree: unknown = TRACE) {
+    return { ...ligneSynthese(), modele: 'claude-test', statut: 'Brouillon_IA', donneesEntree, syntheseJson: { ...JSON_IA, ...patch } };
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
+    prisma.syntheseIA.update.mockResolvedValue(ligneSynthese());
+    prisma.auditSynthese.create.mockResolvedValue({});
+    prisma.documentMedecinImprime.findFirst.mockResolvedValue(null);
+    journaliserAccesDossier.mockResolvedValue(undefined);
+  });
+
+  it('refuse de valider une synthèse dont `limites` porte un intervalle du bloc', async () => {
+    prisma.syntheseIA.findFirst.mockResolvedValue(ligneIA({ limites: 'Intervalle 30 - 400 à relire.' }));
+    const response = await PATCH(requete('PATCH', { idSynthese: 'SYN_MANUEL_1', action: 'valider' }));
+    expect(response.status).toBe(409);
+    const corps = await response.json();
+    expect(corps.code).toBe('synthese_suspecte');
+    expect(corps.error).not.toContain('30 - 400');
+    expect(prisma.syntheseIA.update).not.toHaveBeenCalled();
+  });
+
+  it('refuse une ancienne synthèse qui porte un bloc sous un schéma antérieur à v4', async () => {
+    prisma.syntheseIA.findFirst.mockResolvedValue(ligneIA({}, { ...TRACE, metadonneesPrompt: { versionSchema: 'synthese-json-v3' } }));
+    const response = await PATCH(requete('PATCH', { idSynthese: 'SYN_MANUEL_1', action: 'valider' }));
+    expect(response.status).toBe(409);
+    expect(prisma.syntheseIA.update).not.toHaveBeenCalled();
+  });
+
+  it('valide une fois le champ corrigé : la restitution dans les champs dédiés est permise', async () => {
+    prisma.syntheseIA.findFirst.mockResolvedValue(ligneIA({}));
+    const response = await PATCH(requete('PATCH', { idSynthese: 'SYN_MANUEL_1', action: 'valider' }));
+    expect(response.status).toBe(200);
+    expect(prisma.syntheseIA.update).toHaveBeenCalled();
+    // Le texte validé est celui qui vient d'être contrôlé, réécrit tel quel.
+    expect(prisma.syntheseIA.update.mock.calls[0][0].data.syntheseJson).toEqual(JSON_IA);
+  });
+
+  it('enregistrer rend le verdict recalculé : suspect, puis levé après correction', async () => {
+    prisma.syntheseIA.findFirst.mockResolvedValue(ligneIA({}));
+    prisma.syntheseIA.update.mockImplementation(async ({ data }: { data: { syntheseJson: unknown } }) => ({
+      ...ligneIA({}), syntheseJson: data.syntheseJson,
+    }));
+    const contamine = await PATCH(requete('PATCH', {
+      idSynthese: 'SYN_MANUEL_1', action: 'enregistrer', synthese: { ...JSON_IA, limites: 'Intervalle 30 - 400.' },
+    }));
+    expect((await contamine.json()).motifSuspecte).toContain('limites');
+    const corrige = await PATCH(requete('PATCH', {
+      idSynthese: 'SYN_MANUEL_1', action: 'enregistrer', synthese: JSON_IA,
+    }));
+    expect((await corrige.json()).motifSuspecte).toBeNull();
+  });
+});

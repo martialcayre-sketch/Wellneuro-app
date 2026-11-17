@@ -24,6 +24,10 @@ type SyntheseRecord = {
   /* Renseigné quand la synthèse précède le retrait d'interprétation d'un des
    * questionnaires du dossier — calculé côté serveur, jamais ici. */
   avertissementMesureRetiree?: string | null;
+  /* [[D-513]] §5 : renseigné quand la synthèse est suspecte (un résultat de
+   * biologie repris hors de ses champs) — calculé côté serveur, qui refuse
+   * aussi la validation et les sorties. */
+  motifSuspecte?: string | null;
 };
 
 const STATUT_LABEL: Record<string, string> = {
@@ -263,12 +267,13 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
           synthese: editedManual,
         }),
       });
-      const d = await r.json() as { success?: boolean; error?: string; syntheseJson?: SyntheseSchema };
+      const d = await r.json() as { success?: boolean; error?: string; syntheseJson?: SyntheseSchema; motifSuspecte?: string | null };
       if (!r.ok || !d.success || !d.syntheseJson) {
         setFeedback({ ok: false, msg: d.error ?? 'Impossible d’enregistrer le brouillon.' });
         return;
       }
-      setSelectedSynthese({ ...selectedSynthese, syntheseJson: d.syntheseJson });
+      // [[D-513]] §5 : le verdict recalculé par le serveur sur le texte enregistré.
+      setSelectedSynthese({ ...selectedSynthese, syntheseJson: d.syntheseJson, motifSuspecte: d.motifSuspecte ?? null });
       setEditedManual(d.syntheseJson);
       setManualDirty(false);
       setFeedback({ ok: true, msg: 'Brouillon praticien enregistré.' });
@@ -444,6 +449,7 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
       manualDirty
       || !editedManual?.resume_praticien.trim()
       || !editedManual?.narratif_patient.trim()
+      || Boolean(selectedSynthese?.motifSuspecte)
     );
 
   return (
@@ -592,10 +598,17 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
             </p>
           )}
 
+          {selectedSynthese.motifSuspecte && (
+            <p role="alert" className="rounded-lg border border-status-danger/40 bg-status-danger/10 px-3 py-2 text-sm text-status-danger">
+              {selectedSynthese.motifSuspecte}
+            </p>
+          )}
+
           {brouillonEditable && editedManual ? (
             <>
               <SynthesePraticienEditor
                 key={selectedSynthese.idSynthese}
+                limitesEditable={selectedSynthese.statut === 'Brouillon_IA'}
                 value={editedManual}
                 onChange={value => {
                   setEditedManual(value);
@@ -686,6 +699,29 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
 
               <p className="text-xs text-muted-foreground italic">{selectedSynthese.syntheseJson.limites}</p>
             </>
+          )}
+
+          {/* [[D-513]] §3 et §6 : la restitution biologique, réservée au cockpit
+              praticien. Lecture seule ; aucune sortie ne la reprend. */}
+          {(Boolean(selectedSynthese.syntheseJson.resume_biologie_praticien?.trim())
+            || (selectedSynthese.syntheseJson.points_de_vigilance_biologie?.length ?? 0) > 0) && (
+            <div className="rounded-lg border border-border p-3">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Biologie — réservé au praticien</p>
+              {selectedSynthese.syntheseJson.resume_biologie_praticien?.trim() && (
+                <p className="text-base text-foreground leading-relaxed">{selectedSynthese.syntheseJson.resume_biologie_praticien}</p>
+              )}
+              {(selectedSynthese.syntheseJson.points_de_vigilance_biologie?.length ?? 0) > 0 && (
+                <>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mt-2 mb-1">Points de vigilance biologiques</p>
+                  <ul className="text-base text-foreground list-disc pl-4 space-y-0.5">
+                    {selectedSynthese.syntheseJson.points_de_vigilance_biologie?.map((p, i) => <li key={i}>{p}</li>)}
+                  </ul>
+                </>
+              )}
+              <p className="mt-2 text-xs text-muted-foreground">
+                Ces éléments n’entrent ni au document du médecin, ni au portail du patient, ni à l’export du dossier.
+              </p>
+            </div>
           )}
 
           {/* Actions validation */}

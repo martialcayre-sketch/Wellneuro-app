@@ -5,6 +5,7 @@ import { blocsDepuisSynthese } from './depuisSynthese';
 import { MODELE_SUIVI_21J } from './modele';
 import { renderDocumentHtml } from './rendu';
 import type { Bloc, StatutSyntheseSource } from './types';
+import { CHAMPS_DOCUMENT_MEDECIN, projeterSynthese } from '@/lib/synthese/projectionSorties';
 
 // La composition d'un document depuis une synthèse VALIDÉE, CÔTÉ SERVEUR — une
 // seule source pour l'aperçu (`GET /api/praticien/documents`) et pour
@@ -36,7 +37,10 @@ export function compositionDepuisSynthese(
     year: 'numeric',
   });
   const blocs = blocsDepuisSynthese({
-    syntheseJson: synthese.syntheseJson as unknown as SyntheseSchema,
+    // [[D-513]] §5 : la liste des champs autorisés, jamais le JSON complet — les
+    // deux champs biologiques n'entrent ni à l'aperçu, ni à l'impression, ni au
+    // document téléchargeable au portail.
+    syntheseJson: projeterSynthese(synthese.syntheseJson, CHAMPS_DOCUMENT_MEDECIN) as unknown as SyntheseSchema,
     statut: synthese.statut as StatutSyntheseSource,
     versionPrompt: synthese.versionPrompt,
     dateValidation: synthese.dateValidation ? synthese.dateValidation.toISOString() : null,

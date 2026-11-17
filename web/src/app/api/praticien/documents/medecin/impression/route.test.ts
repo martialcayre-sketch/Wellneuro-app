@@ -106,6 +106,23 @@ describe('POST /api/praticien/documents/medecin/impression (D-307 §2)', () => {
     expect(enregistrerImpression).not.toHaveBeenCalled();
   });
 
+  // [[D-513]] §5 : une synthèse suspecte ne s'imprime pas — et le portail, qui
+  // ne sert que le document figé ici, ne la reçoit donc jamais.
+  it('422 sur une synthèse suspecte, rien n’est imprimé', async () => {
+    findFirst.mockResolvedValue({
+      ...synthese(),
+      syntheseJson: { ...synthese().syntheseJson, points_de_vigilance: ['Ferritine 32 µg/L.'] },
+      donneesEntree: {
+        blocBiologie: { texte: '## Résultats de biologie', formes: { valeursUnites: [{ valeur: '32', unite: 'µg/L' }], intervalles: [] } },
+        metadonneesPrompt: { versionSchema: 'synthese-json-v4' },
+      },
+    });
+    const res = await POST(requete({ idSynthese: 'SYN_1' }));
+    expect(res.status).toBe(422);
+    expect((await res.json()).reason).toBe('synthese_suspecte');
+    expect(enregistrerImpression).not.toHaveBeenCalled();
+  });
+
   it('409 sur un dossier clos, sans trace', async () => {
     findUniquePatient.mockResolvedValue({ prenom: 'Sophie', nom: 'Nicola', actif: false, suiviClotureLe: new Date('2026-09-01T00:00:00Z') });
     const res = await POST(requete({ idSynthese: 'SYN_1' }));
