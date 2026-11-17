@@ -267,6 +267,9 @@ lots nommés proposés PAT-7a à PAT-7d dans
 PAT-7f proposé, U29 toujours non vu, dans
 [`pat7-constat-ecrans-non-vus.md`](pat7-constat-ecrans-non-vus.md).
 
+**M1 clos le 2026-11-17** (DOC-16) : le rail revient déplié au retour d'un
+questionnaire, limite acceptée et inscrite dans [[D-482]] §1.
+
 ## 4. Coordination avec le plan praticien
 
 - Aucune dépendance entre PAT-n et PRA-n.
