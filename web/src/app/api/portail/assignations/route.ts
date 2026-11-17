@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { isSessionValideForPatient, readPatientSession } from '@/lib/patient-session';
 import { mapAssignationPatient, type AssignationPatient } from '@/lib/consultation/mapAssignation';
 import { IDS_SUSPENDUS } from '@/lib/questionnaires-catalog';
-import { statutAge, type StatutAge } from '@/lib/patient/gardeAge';
+import { statutAge, trancheMineur, type StatutAge, type TrancheMineur } from '@/lib/patient/gardeAge';
 import { accepteNouvelEnvoi } from '@/lib/patient/cycleDeVie';
 import { consultationCourante } from '@/lib/consultation/portail';
 import { AGENDA_SOMMEIL_ID } from '@/lib/agenda-sommeil/types';
@@ -31,6 +31,9 @@ export type PortailAssignationsResponse =
       // des mineurs) au lieu d'ouvrir les questionnaires — que les routes
       // d'écriture refusent de toute façon.
       statutAge: StatutAge;
+      // D-537 §4 : la tranche d'un mineur choisit la variante du texte 2B ;
+      // `null` hors `mineur`. Elle ne rouvre rien.
+      trancheMineur: TrancheMineur | null;
       dossierOuvert: boolean;
       // Date de la dernière réponse transmise (ISO), `null` si le patient n'a
       // jamais répondu. Alimente l'accueil de reprise (SP-SPI / LOT-01) et
@@ -323,11 +326,13 @@ export async function GET(req: Request): Promise<NextResponse> {
       };
     });
 
+    const maintenantAge = Date.now();
     return withCorrelationHeader(NextResponse.json({
       ok: true,
       patient: { idPatient: session.idPatient, prenom: patient.prenom, nom: patient.nom },
       assignations,
-      statutAge: statutAge(patient.dateNaissance, Date.now()),
+      statutAge: statutAge(patient.dateNaissance, maintenantAge),
+      trancheMineur: trancheMineur(patient.dateNaissance, maintenantAge),
       dossierOuvert: accepteNouvelEnvoi(patient),
       agendas,
       agendasAlimentaires,

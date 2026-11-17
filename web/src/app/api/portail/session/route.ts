@@ -10,7 +10,7 @@ import {
   signPatientSession,
   readPatientSession,
 } from '@/lib/patient-session';
-import { statutAge, type StatutAge } from '@/lib/patient/gardeAge';
+import { statutAge, trancheMineur, type StatutAge, type TrancheMineur } from '@/lib/patient/gardeAge';
 import { accepteNouvelEnvoi } from '@/lib/patient/cycleDeVie';
 import { logger } from '@/lib/observability/logger';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
@@ -41,6 +41,9 @@ export type PortailSessionResponse =
       // D-284 §3 : tant qu'il n'est pas `majeur`, le portail demande la date
       // (ou annonce le circuit des mineurs) avant tout autre geste.
       statutAge: StatutAge;
+      // D-537 §4 : la tranche d'un mineur choisit la variante du texte 2B ;
+      // `null` hors `mineur`. Elle ne rouvre rien.
+      trancheMineur: TrancheMineur | null;
       // Un dossier clos ne recueille plus rien : le portail ne lui demande pas
       // sa date (constat de revue du lot h).
       dossierOuvert: boolean;
@@ -88,6 +91,7 @@ export async function POST(req: Request): Promise<NextResponse> {
       select: { idAssignation: true },
     });
 
+    const maintenant = Date.now();
     const res = NextResponse.json<PortailSessionResponse>({
       ok: true,
       patient: { idPatient: patient.idPatient, prenom: patient.prenom, nom: patient.nom, email: patient.email },
@@ -102,7 +106,8 @@ export async function POST(req: Request): Promise<NextResponse> {
           }
         : null,
       premiereAssignation: premiere?.idAssignation ?? null,
-      statutAge: statutAge(patient.dateNaissance, Date.now()),
+      statutAge: statutAge(patient.dateNaissance, maintenant),
+      trancheMineur: trancheMineur(patient.dateNaissance, maintenant),
       dossierOuvert: accepteNouvelEnvoi(patient),
     });
 

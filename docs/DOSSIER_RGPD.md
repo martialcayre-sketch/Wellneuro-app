@@ -970,7 +970,10 @@ d'avocat. Ses références ont été vérifiées par la session.
   documentés ; l'accord des deux titulaires tant que l'« acte usuel » n'est
   pas qualifié (§1, §9).
 - **Texte 2B** : il est réécrit maintenant, en entier. Le responsable le
-  valide mot pour mot, puis un lot de code le sert (§7).
+  valide mot pour mot, puis un lot de code le sert (§7). — 2026-11-17 :
+  validé mot pour mot (questions `20261117-1346-c` et `-1919-c`) et servi en deux
+  variantes, moins de 15 ans et 15 à 17 ans
+  (`docs/claude/propositions/2026-11-17-texte-2b-neuf/README.md`).
 - **Considérant 38** : écarté. L'accord parental reste requis (§8).
 
 **Périmètre.** Le responsable exerce un accompagnement en neuronutrition qui
@@ -1042,7 +1045,10 @@ personnelles », « L'IA dans Wellneuro ») lui est accessible, mais elle
 s'adresse à un adulte. Une version adaptée à son âge (RGPD art. 12 §1) est à
 écrire avec J3-mineurs. Elle dira notamment le rôle de l'IA dans la lecture
 des comptes rendus. Le masquage de l'identité est une pseudonymisation, pas
-une anonymisation.
+une anonymisation. — 2026-11-17 ([[D-537]] §7) : le 2B neuf remplace celui du
+2026-10-14. Il a deux variantes selon la tranche d'âge, nomme l'IA, dit que
+masquer ne rend pas anonyme, et ne promet ni secret absolu ni accès intégral
+des parents. La notice adaptée reste à écrire.
 
 **Confidentialité.** Le responsable n'invoque pas le régime dérogatoire de
 l'art. L1111-5 du CSP, qui vise d'autres professionnels. **Suspendu à l'avis

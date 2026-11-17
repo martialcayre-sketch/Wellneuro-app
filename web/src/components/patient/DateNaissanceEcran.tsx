@@ -1,8 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import type { StatutAge } from '@/lib/patient/gardeAge';
-import { TEXTE_MINEUR_JEUNE, decouperNumeros } from '@/lib/patient/texteMineurs';
+import type { StatutAge, TrancheMineur } from '@/lib/patient/gardeAge';
+import {
+  SECTION_URGENCE_MINEUR,
+  decouperNumeros,
+  texteMineurJeune,
+  type SectionTexteMineur,
+} from '@/lib/patient/texteMineurs';
 import type { PortailDateNaissanceResponse } from '@/app/api/portail/date-naissance/route';
 import { PatientCard } from '@/components/patient/ui/PatientCard';
 import { PatientButton, patientButtonClassName } from '@/components/patient/ui/PatientButton';
@@ -36,10 +41,11 @@ function dateEnClair(iso: string): string {
   });
 }
 
-// ACT-5 (H78) : l'écran du mineur sert le texte 2B de G-11, mot pour mot
-// (`texteMineurs.ts`). Sa première section en est le titre ; les numéros
-// d'urgence du texte s'appellent d'un geste, comme au pied du portail.
-function SectionTexteMineur({ section }: { section: (typeof TEXTE_MINEUR_JEUNE)[number] }) {
+// ACT-5 (H78) : l'écran du mineur sert le texte 2B, mot pour mot
+// (`texteMineurs.ts`), dans la variante de sa tranche d'âge (D-537 §7). Sa
+// première section en est le titre ; les numéros d'urgence du texte
+// s'appellent d'un geste, comme au pied du portail.
+function SectionTexteMineur({ section }: { section: SectionTexteMineur }) {
   return (
     <section className="space-y-1">
       <h3 className="font-semibold text-foreground">{section.titre}</h3>
@@ -63,19 +69,24 @@ function SectionTexteMineur({ section }: { section: (typeof TEXTE_MINEUR_JEUNE)[
  * section d'urgence du texte 2B, mot pour mot. Le 119 n'est pas au pied du portail.
  */
 export function EncartUrgenceMineur() {
-  const section = TEXTE_MINEUR_JEUNE.find(s => s.numerosAppelables && s.numerosAppelables.length > 0);
-  if (!section) return null;
   return (
     <PatientCard maxWidth="md">
       <div className="text-sm text-muted-foreground leading-relaxed">
-        <SectionTexteMineur section={section} />
+        <SectionTexteMineur section={SECTION_URGENCE_MINEUR} />
       </div>
     </PatientCard>
   );
 }
 
-export function EcranCircuitMineur({ lienParcours }: { lienParcours?: string }) {
-  const [entree, ...suite] = TEXTE_MINEUR_JEUNE;
+export function EcranCircuitMineur({
+  lienParcours,
+  tranche,
+}: {
+  lienParcours?: string;
+  /** `null` : la variante des moins de 15 ans, qui n'annonce aucune ouverture. */
+  tranche: TrancheMineur | null;
+}) {
+  const [entree, ...suite] = texteMineurJeune(tranche);
   return (
     <PatientCard maxWidth="md">
       <PatientPageHeader title={entree.titre} as="h2" />
@@ -94,7 +105,11 @@ export function EcranCircuitMineur({ lienParcours }: { lienParcours?: string }) 
   );
 }
 
-export function DateNaissanceEcran({ onEnregistree }: { onEnregistree: (statut: StatutAge) => void }) {
+export function DateNaissanceEcran({
+  onEnregistree,
+}: {
+  onEnregistree: (statut: StatutAge, tranche: TrancheMineur | null) => void;
+}) {
   const [saisie, setSaisie] = useState('');
   const [aConfirmer, setAConfirmer] = useState(false);
   const [envoi, setEnvoi] = useState(false);
@@ -114,7 +129,7 @@ export function DateNaissanceEcran({ onEnregistree }: { onEnregistree: (statut: 
       });
       const data = (await res.json()) as PortailDateNaissanceResponse;
       if (data.ok) {
-        onEnregistree(data.statutAge);
+        onEnregistree(data.statutAge, data.trancheMineur ?? null);
         return;
       }
       setErreur(data.error);

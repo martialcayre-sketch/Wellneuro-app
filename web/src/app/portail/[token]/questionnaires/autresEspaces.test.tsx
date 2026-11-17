@@ -177,7 +177,8 @@ const MINEUR: CleEntree[] = [
   'dossier',
 ];
 
-const TITRE_MINEUR = 'Avant 18 ans, un parent donne d’abord son accord';
+// Sans tranche rendue par la route : la variante des moins de 15 ans (D-537 §7).
+const TITRE_MINEUR = 'Avant 15 ans, l’accompagnement ne se fait pas ici';
 
 afterEach(() => {
   cleanup();
