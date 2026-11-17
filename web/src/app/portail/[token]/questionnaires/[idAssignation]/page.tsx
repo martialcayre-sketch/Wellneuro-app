@@ -34,7 +34,7 @@ function EnTete({ token, titre, badge }: { token: string; titre: string; badge?:
         ← Mon parcours
       </a>
       <div className="flex items-center justify-between gap-3 mt-2">
-        <h1 className="font-display text-lg font-bold text-foreground truncate">{titre}</h1>
+        <h1 className="min-w-0 font-display text-lg font-bold text-foreground [overflow-wrap:anywhere] max-[319px]:hyphens-auto">{titre}</h1>
         {badge && <span className="text-xs text-muted-foreground shrink-0">{badge}</span>}
       </div>
     </div>
