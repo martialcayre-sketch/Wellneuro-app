@@ -263,6 +263,10 @@ les écrans déjà livrés, sans l'en-tête de U10 (après PAT-3b) : constat et
 lots nommés proposés PAT-7a à PAT-7d dans
 [`pat7-constat-partiel.md`](pat7-constat-partiel.md).
 
+**Suite le 2026-11-17** : écrans non vus (U13 à U17, U39 à U41) mesurés,
+PAT-7f proposé, U29 toujours non vu, dans
+[`pat7-constat-ecrans-non-vus.md`](pat7-constat-ecrans-non-vus.md).
+
 ## 4. Coordination avec le plan praticien
 
 - Aucune dépendance entre PAT-n et PRA-n.
