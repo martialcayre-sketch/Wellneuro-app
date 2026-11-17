@@ -12,7 +12,7 @@ export default async function DashboardDocumentsPage({
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h2 className="font-display text-3xl font-bold tracking-[-0.02em] text-foreground">Documents contextuels</h2>
+        <h1 className="font-display text-3xl font-bold tracking-[-0.02em] text-foreground">Documents contextuels</h1>
         <p className="text-base text-muted-foreground mt-1">
           Composer un document multi-destinataires (patient, médecin, praticien) à partir d’une synthèse validée —
           aperçu par destinataire et impression HTML

@@ -12,6 +12,7 @@ import {
   type CategorieDocument,
   type MotifRetraitDocument,
 } from '@/lib/collecte/documentsDeposes';
+import { useChiffresMasques } from '@/components/patient-cockpit/ChiffresMasques';
 
 /*
  * « DOCUMENTS DÉPOSÉS PAR LE PATIENT » ([[D-330]], J3-collecte).
@@ -69,6 +70,10 @@ function LigneDocument({
   const [occupe, setOccupe] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
   const retire = document.retireLe !== null;
+  // [[D-354]] amendement DOC-15 (Q10) : en mode consultation (contexte posé par
+  // la fiche), « Ouvrir le document » n'est pas rendu — il quitterait la fiche,
+  // et le document peut porter des valeurs que le §2 masque.
+  const enConsultation = useChiffresMasques();
   const lien = `/api/praticien/documents-deposes/contenu?idPatient=${encodeURIComponent(idPatient)}&idDocument=${encodeURIComponent(document.id)}`;
 
   async function geste(corps: Record<string, string>) {
@@ -123,6 +128,7 @@ function LigneDocument({
 
       {!retire && (
         <div className="flex flex-wrap items-center gap-3">
+          {!enConsultation && (
           <a
             href={lien}
             target="_blank"
@@ -135,6 +141,7 @@ function LigneDocument({
           >
             Ouvrir le document
           </a>
+          )}
 
           <label className="flex items-center gap-2 text-xs text-foreground">
             Catégorie

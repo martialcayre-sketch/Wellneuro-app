@@ -2,6 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { PenLine, Sparkles, Trash2 } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
+import { Select } from '@/components/ui/Select';
+import { TRAIT_ICONE } from '@/components/ui/icone';
 import { readEventStream } from '@/lib/sse/readEventStream';
 import type { PatientsPgApiResponse } from '@/app/api/praticien/patients-pg/route';
 import type { SyntheseSchema } from '@/lib/anthropic';
@@ -58,8 +61,26 @@ const PRIORITE_LABEL: Record<string, string> = {
   faible: 'Faible',
 };
 
-const inputCls = 'bg-surface border border-border rounded-lg px-3 py-2 text-sm text-foreground';
-const btnPrimary = 'px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-60';
+// Q7 de PRA-5 ([[D-481]] complément DOC-15) : 44 px et focus visible.
+const focus = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring';
+const inputCls = `bg-surface border border-border rounded-lg px-3 py-2 text-sm text-foreground ${focus}`;
+
+// Q6 : le retour d'action paraît une seule fois, sous le geste qui l'a
+// produit — succès en `role=status`, échec en `role=alert`.
+type ZoneRetour = 'patient' | 'brouillon' | 'edition' | 'actions' | 'note' | 'booklet';
+type Retour = { ok: boolean; msg: string; zone: ZoneRetour };
+
+function RetourAction({ retour, zone, className = '' }: { retour: Retour | null; zone: ZoneRetour; className?: string }) {
+  if (!retour || retour.zone !== zone) return null;
+  return (
+    <p
+      role={retour.ok ? 'status' : 'alert'}
+      className={`text-base ${retour.ok ? 'text-status-success' : 'text-status-danger'} ${className}`}
+    >
+      {retour.msg}
+    </p>
+  );
+}
 
 export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: string }) {
   const [patients, setPatients] = useState<PatientsPgApiResponse['patients']>([]);
@@ -87,7 +108,22 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
   const [registreATrancher, setRegistreATrancher] = useState<string | null>(null);
   const [confirmerRegistre, setConfirmerRegistre] = useState(false);
   const [notes, setNotes] = useState('');
-  const [feedback, setFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
+  const [feedback, setFeedback] = useState<Retour | null>(null);
+  // Q4 et Q5 de PRA-5 : un échec de lecture n'est pas une absence. Chaque
+  // lecture a son état d'échec et son « Réessayer », qui ne relance qu'elle ;
+  // le focus revient au bouton si la lecture échoue encore.
+  const [erreurPatients, setErreurPatients] = useState(false);
+  const [erreurSyntheses, setErreurSyntheses] = useState(false);
+  const reessayerPatients = useRef<HTMLButtonElement>(null);
+  const reessayerSyntheses = useRef<HTMLButtonElement>(null);
+  const [focusApresRelecture, setFocusApresRelecture] = useState<'patients' | 'syntheses' | null>(null);
+  // La synthèse ouverte AU RENDU : un retour arrivé après la fermeture du
+  // détail, ou l'ouverture d'une autre synthèse, paraît sous le choix du
+  // patient, toujours affiché — jamais nulle part, ni sous une autre synthèse.
+  const syntheseOuverte = useRef<string | null>(null);
+  syntheseOuverte.current = selectedSynthese?.idSynthese ?? null;
+  const zoneDuDetail = (idSynthese: string, zone: ZoneRetour): ZoneRetour =>
+    syntheseOuverte.current === idSynthese ? zone : 'patient';
 
   // UNE RÉPONSE PÉRIMÉE N'ÉCRASE PAS LE DOSSIER COURANT. Deux lectures peuvent
   // être en vol : celle du dossier qu'on quitte et celle du dossier choisi. Si
@@ -101,26 +137,64 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
 
   const loadSyntheses = useCallback(async (idPatient: string) => {
     const generation = ++generationSyntheses.current;
+    setErreurSyntheses(false);
     if (!idPatient) { setSyntheses([]); return; }
     setLoading(true);
     try {
       const r = await fetch(`/api/praticien/synthese?idPatient=${encodeURIComponent(idPatient)}`);
-      const d = await r.json() as { syntheses: SyntheseRecord[] };
+      const d = await r.json() as { syntheses?: SyntheseRecord[] };
       if (generation !== generationSyntheses.current) return;
-      setSyntheses(d.syntheses ?? []);
+      // Une réponse non `ok` est un échec, pas une liste vide (Q4).
+      if (!r.ok || !Array.isArray(d.syntheses)) {
+        setSyntheses([]);
+        setErreurSyntheses(true);
+        return;
+      }
+      setSyntheses(d.syntheses);
     } catch {
       if (generation !== generationSyntheses.current) return;
       setSyntheses([]);
+      setErreurSyntheses(true);
     }
     finally { if (generation === generationSyntheses.current) setLoading(false); }
   }, []);
 
-  useEffect(() => {
-    fetch('/api/praticien/patients-pg')
-      .then(r => r.json())
-      .then((d: PatientsPgApiResponse) => setPatients(d.patients ?? []))
-      .catch(() => {});
+  // Q5 : l'échec de la liste des patients n'est plus avalé.
+  const chargerPatients = useCallback(async () => {
+    try {
+      const r = await fetch('/api/praticien/patients-pg');
+      const d = (await r.json()) as Partial<PatientsPgApiResponse>;
+      if (!r.ok || !Array.isArray(d.patients)) {
+        setErreurPatients(true);
+        return;
+      }
+      setPatients(d.patients);
+    } catch {
+      setErreurPatients(true);
+    }
   }, []);
+
+  useEffect(() => {
+    void chargerPatients();
+  }, [chargerPatients]);
+
+  const relirePatients = async () => {
+    setErreurPatients(false);
+    await chargerPatients();
+    setFocusApresRelecture('patients');
+  };
+
+  const relireSyntheses = async () => {
+    await loadSyntheses(selectedPatient);
+    setFocusApresRelecture('syntheses');
+  };
+
+  // Le bouton n'est rendu que si la lecture a encore échoué : le focus y revient.
+  useEffect(() => {
+    if (!focusApresRelecture) return;
+    (focusApresRelecture === 'patients' ? reessayerPatients : reessayerSyntheses).current?.focus();
+    setFocusApresRelecture(null);
+  }, [focusApresRelecture]);
 
   // LE DOSSIER DE L'URL S'APPLIQUE UNE FOIS, PAS À CHAQUE CHANGEMENT DE
   // SÉLECTION. `selectedPatient` a été dans les dépendances ET dans la garde de
@@ -179,7 +253,7 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
       // quel que soit le transport de succès.
       if (!r.ok) {
         const d = (await r.json().catch(() => ({}))) as { error?: string };
-        setFeedback({ ok: false, msg: d.error ?? 'Erreur lors de la génération.' });
+        setFeedback({ ok: false, msg: d.error ?? 'Erreur lors de la génération.', zone: 'patient' });
         return;
       }
 
@@ -187,10 +261,10 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
 
       // Transport SSE (Scalingo) : lire le flux jusqu'à l'événement terminal.
       if (r.headers.get('content-type')?.includes('text/event-stream')) {
-        let terminal: { ok: boolean; msg: string } | null = null;
+        let terminal: Retour | null = null;
         await readEventStream(r, e => {
           if (e.event === 'done') {
-            terminal = { ok: true, msg: msgSucces };
+            terminal = { ok: true, msg: msgSucces, zone: 'patient' };
           } else if (e.event === 'error') {
             let msg = 'Erreur lors de la génération.';
             try {
@@ -198,11 +272,11 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
             } catch {
               /* trame d'erreur illisible : message générique */
             }
-            terminal = { ok: false, msg };
+            terminal = { ok: false, msg, zone: 'patient' };
           }
         });
         if (!terminal) {
-          setFeedback({ ok: false, msg: 'Réponse incomplète du serveur. Réessayez.' });
+          setFeedback({ ok: false, msg: 'Réponse incomplète du serveur. Réessayez.', zone: 'patient' });
           return;
         }
         setFeedback(terminal);
@@ -213,13 +287,13 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
       // Transport JSON historique.
       const d = (await r.json()) as { success?: boolean; error?: string };
       if (!d.success) {
-        setFeedback({ ok: false, msg: d.error ?? 'Erreur lors de la génération.' });
+        setFeedback({ ok: false, msg: d.error ?? 'Erreur lors de la génération.', zone: 'patient' });
         return;
       }
-      setFeedback({ ok: true, msg: msgSucces });
+      setFeedback({ ok: true, msg: msgSucces, zone: 'patient' });
       await loadSyntheses(selectedPatient);
     } catch {
-      setFeedback({ ok: false, msg: 'Erreur réseau. Réessayez.' });
+      setFeedback({ ok: false, msg: 'Erreur réseau. Réessayez.', zone: 'patient' });
     } finally {
       setGenerating(false);
     }
@@ -237,17 +311,18 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
       });
       const d = await r.json() as { success?: boolean; error?: string; synthese?: SyntheseRecord };
       if (!r.ok || !d.success || !d.synthese) {
-        setFeedback({ ok: false, msg: d.error ?? 'Impossible de créer le brouillon.' });
+        setFeedback({ ok: false, msg: d.error ?? 'Impossible de créer le brouillon.', zone: 'brouillon' });
         return;
       }
       setManualDraft(null);
       setSelectedSynthese(d.synthese);
       setEditedManual(d.synthese.syntheseJson);
       setManualDirty(false);
-      setFeedback({ ok: true, msg: 'Brouillon praticien enregistré. Validez-le avant de préparer le booklet.' });
+      // Le brouillon devient le détail ouvert : le retour suit l'éditeur.
+      setFeedback({ ok: true, msg: 'Brouillon praticien enregistré. Validez-le avant de préparer le booklet.', zone: 'edition' });
       await loadSyntheses(selectedPatient);
     } catch {
-      setFeedback({ ok: false, msg: 'Erreur réseau. Réessayez.' });
+      setFeedback({ ok: false, msg: 'Erreur réseau. Réessayez.', zone: 'brouillon' });
     } finally {
       setSaving(false);
     }
@@ -269,17 +344,17 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
       });
       const d = await r.json() as { success?: boolean; error?: string; syntheseJson?: SyntheseSchema; motifSuspecte?: string | null };
       if (!r.ok || !d.success || !d.syntheseJson) {
-        setFeedback({ ok: false, msg: d.error ?? 'Impossible d’enregistrer le brouillon.' });
+        setFeedback({ ok: false, msg: d.error ?? 'Impossible d’enregistrer le brouillon.', zone: zoneDuDetail(selectedSynthese.idSynthese, 'edition') });
         return;
       }
       // [[D-513]] §5 : le verdict recalculé par le serveur sur le texte enregistré.
       setSelectedSynthese({ ...selectedSynthese, syntheseJson: d.syntheseJson, motifSuspecte: d.motifSuspecte ?? null });
       setEditedManual(d.syntheseJson);
       setManualDirty(false);
-      setFeedback({ ok: true, msg: 'Brouillon praticien enregistré.' });
+      setFeedback({ ok: true, msg: 'Brouillon praticien enregistré.', zone: zoneDuDetail(selectedSynthese.idSynthese, 'edition') });
       await loadSyntheses(selectedPatient);
     } catch {
-      setFeedback({ ok: false, msg: 'Erreur réseau. Réessayez.' });
+      setFeedback({ ok: false, msg: 'Erreur réseau. Réessayez.', zone: zoneDuDetail(selectedSynthese.idSynthese, 'edition') });
     } finally {
       setSaving(false);
     }
@@ -296,16 +371,17 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
       });
       const d = await r.json() as { success?: boolean; error?: string; statut?: string };
       if (!r.ok || !d.success) {
-        setFeedback({ ok: false, msg: d.error ?? 'Erreur.' });
+        setFeedback({ ok: false, msg: d.error ?? 'Erreur.', zone: zoneDuDetail(idSynthese, action === 'annoter' ? 'note' : 'actions') });
         return;
       }
       const labels: Record<string, string> = { valider: 'Synthèse validée.', rejeter: 'Synthèse rejetée.', annoter: 'Notes enregistrées.' };
-      setFeedback({ ok: true, msg: labels[action] ?? 'Mis à jour.' });
+      // Le détail se ferme : le retour paraît sous le choix du patient.
+      setFeedback({ ok: true, msg: labels[action] ?? 'Mis à jour.', zone: 'patient' });
       await loadSyntheses(selectedPatient);
       setSelectedSynthese(null);
       setBookletHtml(null);
     } catch {
-      setFeedback({ ok: false, msg: 'Erreur réseau. Réessayez.' });
+      setFeedback({ ok: false, msg: 'Erreur réseau. Réessayez.', zone: zoneDuDetail(idSynthese, action === 'annoter' ? 'note' : 'actions') });
     } finally {
       setSaving(false);
     }
@@ -336,7 +412,7 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
         notesPraticien?: string | null;
       };
       if (!r.ok || !d.success || !d.syntheseJson || !d.statut) {
-        setFeedback({ ok: false, msg: d.error ?? 'Impossible d’effacer la synthèse.' });
+        setFeedback({ ok: false, msg: d.error ?? 'Impossible d’effacer la synthèse.', zone: zoneDuDetail(selectedSynthese.idSynthese, 'actions') });
         return;
       }
       const syntheseVide = {
@@ -358,10 +434,10 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
       setForceSend(false);
       setRegistreATrancher(null);
       setConfirmerRegistre(false);
-      setFeedback({ ok: true, msg: 'Synthèse vidée. Complétez le brouillon avant validation et booklet.' });
+      setFeedback({ ok: true, msg: 'Synthèse vidée. Complétez le brouillon avant validation et booklet.', zone: zoneDuDetail(selectedSynthese.idSynthese, 'actions') });
       await loadSyntheses(selectedPatient);
     } catch {
-      setFeedback({ ok: false, msg: 'Erreur réseau. Réessayez.' });
+      setFeedback({ ok: false, msg: 'Erreur réseau. Réessayez.', zone: zoneDuDetail(selectedSynthese.idSynthese, 'actions') });
     } finally {
       setSaving(false);
     }
@@ -380,13 +456,13 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
       const r = await fetch(`/api/praticien/booklet?idSynthese=${encodeURIComponent(idSynthese)}`);
       const d = await r.json() as { html?: string; error?: string; dejaEnvoye?: boolean; dernierEnvoiEmailMasque?: string | null };
       if (!r.ok || !d.html) {
-        setFeedback({ ok: false, msg: d.error ?? 'Impossible de générer le booklet.' });
+        setFeedback({ ok: false, msg: d.error ?? 'Impossible de générer le booklet.', zone: zoneDuDetail(idSynthese, 'booklet') });
         return;
       }
       setBookletHtml(d.html);
       setBookletInfo({ dejaEnvoye: d.dejaEnvoye ?? false, emailMasque: d.dernierEnvoiEmailMasque ?? null });
     } catch {
-      setFeedback({ ok: false, msg: 'Erreur réseau. Réessayez.' });
+      setFeedback({ ok: false, msg: 'Erreur réseau. Réessayez.', zone: zoneDuDetail(idSynthese, 'booklet') });
     } finally {
       setLoadingBooklet(false);
     }
@@ -399,12 +475,12 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
     setForceSend(false);
     setRegistreATrancher(null);
     setConfirmerRegistre(false);
-    setFeedback({ ok: true, msg: 'Prévisualisation du booklet effacée.' });
+    setFeedback({ ok: true, msg: 'Prévisualisation du booklet effacée.', zone: 'booklet' });
   };
 
   const onSend = async (idSynthese: string) => {
     if (!relectureConfirmee) {
-      setFeedback({ ok: false, msg: 'Confirmez d\'abord la relecture du booklet.' });
+      setFeedback({ ok: false, msg: 'Confirmez d\'abord la relecture du booklet.', zone: zoneDuDetail(idSynthese, 'booklet') });
       return;
     }
     setSending(true);
@@ -421,21 +497,21 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
         // (déjà envoyé) et le registre (un mot du texte patient). La route
         // refuse de faire valoir l'une pour l'autre ; l'écran non plus.
         if (d.reason === 'REGISTRE_ANXIOGENE') setRegistreATrancher(d.terme ?? '');
-        setFeedback({ ok: false, msg: d.warning ?? 'Booklet déjà envoyé. Cochez le renvoi forcé pour confirmer.' });
+        setFeedback({ ok: false, msg: d.warning ?? 'Booklet déjà envoyé. Cochez le renvoi forcé pour confirmer.', zone: zoneDuDetail(idSynthese, 'booklet') });
         return;
       }
       if (!r.ok || !d.success) {
-        setFeedback({ ok: false, msg: d.error ?? 'Erreur lors de l\'envoi.' });
+        setFeedback({ ok: false, msg: d.error ?? 'Erreur lors de l\'envoi.', zone: zoneDuDetail(idSynthese, 'booklet') });
         return;
       }
-      setFeedback({ ok: true, msg: `Booklet envoyé à ${d.emailMasque ?? 'patient'}.` });
+      setFeedback({ ok: true, msg: `Booklet envoyé à ${d.emailMasque ?? 'patient'}.`, zone: zoneDuDetail(idSynthese, 'booklet') });
       setRelectureConfirmee(false);
       setForceSend(false);
       setRegistreATrancher(null);
       setConfirmerRegistre(false);
       await loadSyntheses(selectedPatient);
     } catch {
-      setFeedback({ ok: false, msg: 'Erreur réseau. Réessayez.' });
+      setFeedback({ ok: false, msg: 'Erreur réseau. Réessayez.', zone: zoneDuDetail(idSynthese, 'booklet') });
     } finally {
       setSending(false);
     }
@@ -457,12 +533,13 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
 
       {/* Sélection patient */}
       <div className="bg-surface border border-border rounded-xl shadow-card p-4">
-        <h3 className="font-display text-lg font-semibold text-foreground mb-3">Patient</h3>
+        <h2 id="synthese-patient-titre" className="font-display text-lg font-semibold text-foreground mb-3">Patient</h2>
         <div className="flex flex-wrap gap-3 items-center">
-          <select
+          <Select
+            aria-labelledby="synthese-patient-titre"
             value={selectedPatient}
             onChange={e => onSelectPatient(e.target.value)}
-            className={`${inputCls} w-full sm:w-96`}
+            className={`min-h-11 w-full sm:w-96 ${focus}`}
           >
             <option value="">Sélectionner un patient</option>
             {patients.map(p => (
@@ -470,18 +547,21 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
                 {`${p.prenom} ${p.nom} — ${p.email}`}
               </option>
             ))}
-          </select>
+          </Select>
           {selectedPatient && (
             <>
-              <button
+              <Button
+                type="button"
                 onClick={onGenerate}
                 disabled={generating || saving}
-                className={`${btnPrimary} inline-flex items-center gap-2 bg-primary`}
+                className="inline-flex items-center gap-2"
               >
-                <Sparkles size={16} aria-hidden="true" />
+                <Sparkles size={16} strokeWidth={TRAIT_ICONE} aria-hidden="true" />
                 {generating ? 'Génération en cours...' : 'Générer une synthèse IA'}
-              </button>
-              <button
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
                 onClick={() => {
                   setSelectedSynthese(null);
                   setEditedManual(null);
@@ -490,24 +570,30 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
                   setFeedback(null);
                 }}
                 disabled={generating || saving}
-                className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-60"
+                className="inline-flex items-center gap-2"
               >
-                <PenLine size={16} aria-hidden="true" />
+                <PenLine size={16} strokeWidth={TRAIT_ICONE} aria-hidden="true" />
                 Rédiger une synthèse
-              </button>
+              </Button>
             </>
           )}
         </div>
-        {feedback && (
-          <p className={`mt-2 text-base ${feedback.ok ? 'text-status-success' : 'text-status-danger'}`}>{feedback.msg}</p>
+        {erreurPatients && (
+          <div role="alert" className="mt-2 flex flex-wrap items-center gap-3 text-base text-status-danger">
+            <span>La liste des patients n’a pas pu être lue.</span>
+            <Button ref={reessayerPatients} type="button" variant="outline" onClick={() => void relirePatients()}>
+              Réessayer
+            </Button>
+          </div>
         )}
+        <RetourAction retour={feedback} zone="patient" className="mt-2" />
       </div>
 
       {manualDraft && selectedPatient && (
         <div className="bg-surface border border-border rounded-xl shadow-card p-4">
-          <h3 className="mb-4 font-display text-lg font-semibold text-foreground">
+          <h2 className="mb-4 font-display text-lg font-semibold text-foreground">
             Nouveau brouillon praticien
-          </h3>
+          </h2>
           <SynthesePraticienEditor
             value={manualDraft}
             onChange={setManualDraft}
@@ -516,9 +602,7 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
             saving={saving}
             saveLabel="Créer le brouillon"
           />
-          {feedback && (
-            <p className={`mt-3 text-base ${feedback.ok ? 'text-status-success' : 'text-status-danger'}`}>{feedback.msg}</p>
-          )}
+          <RetourAction retour={feedback} zone="brouillon" className="mt-3" />
         </div>
       )}
 
@@ -526,20 +610,29 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
       {selectedPatient && (
         <div className="bg-surface border border-border rounded-xl shadow-card overflow-hidden">
           <div className="px-4 py-3 border-b border-border">
-            <h3 className="font-display text-lg font-semibold text-foreground">
+            <h2 className="font-display text-lg font-semibold text-foreground">
               Synthèses de {patient ? `${patient.prenom} ${patient.nom}` : selectedPatient}
-              <span className="ml-2 text-muted-foreground font-normal">({syntheses.length})</span>
-            </h3>
+              {!loading && !erreurSyntheses && (
+                <span className="ml-2 text-muted-foreground font-normal">({syntheses.length})</span>
+              )}
+            </h2>
           </div>
           {loading ? (
-            <div className="px-4 py-4 text-base text-muted-foreground">Chargement...</div>
+            <div role="status" className="px-4 py-4 text-base text-muted-foreground">Chargement...</div>
+          ) : erreurSyntheses ? (
+            <div role="alert" className="flex flex-wrap items-center gap-3 px-4 py-4 text-base text-status-danger">
+              <span>Les synthèses n’ont pas pu être lues. Ce n’est pas une absence de synthèse.</span>
+              <Button ref={reessayerSyntheses} type="button" variant="outline" onClick={() => void relireSyntheses()}>
+                Réessayer
+              </Button>
+            </div>
           ) : syntheses.length === 0 ? (
             <div className="px-4 py-4 text-base text-muted-foreground">Aucune synthèse pour ce patient.</div>
           ) : (
             <div className="divide-y divide-border">
               {syntheses.map(s => (
                 <div key={s.idSynthese} className="px-4 py-3 flex flex-wrap gap-3 items-center justify-between">
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-wrap items-center gap-3">
                     <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUT_COLOR[s.statut] ?? 'bg-muted text-muted-foreground'}`}>
                       {STATUT_LABEL[s.statut] ?? s.statut}
                     </span>
@@ -550,7 +643,9 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
                       {estRedactionPraticien(s.modele) ? 'Rédaction praticien' : s.modele}
                     </span>
                   </div>
-                  <button
+                  <Button
+                    type="button"
+                    variant="outline"
                     onClick={() => {
                       setSelectedSynthese(s);
                       setManualDraft(null);
@@ -561,10 +656,9 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
                       setBookletInfo(null);
                       setFeedback(null);
                     }}
-                    className="text-xs text-accent-ink hover:underline"
                   >
                     Voir / gérer
-                  </button>
+                  </Button>
                 </div>
               ))}
             </div>
@@ -575,16 +669,16 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
       {/* Détail synthèse sélectionnée */}
       {selectedSynthese && (
         <div className="bg-surface border border-border rounded-xl shadow-card p-4 flex flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <h3 className="font-display text-lg font-semibold text-foreground">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="min-w-0 break-all font-display text-lg font-semibold text-foreground">
               Synthèse {selectedSynthese.idSynthese}
               <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-medium ${STATUT_COLOR[selectedSynthese.statut] ?? 'bg-muted text-muted-foreground'}`}>
                 {STATUT_LABEL[selectedSynthese.statut] ?? selectedSynthese.statut}
               </span>
-            </h3>
-            <button onClick={() => { setSelectedSynthese(null); setEditedManual(null); setManualDirty(false); setBookletHtml(null); }} className="text-xs text-muted-foreground hover:text-foreground">
+            </h2>
+            <Button type="button" variant="outline" onClick={() => { setSelectedSynthese(null); setEditedManual(null); setManualDirty(false); setBookletHtml(null); }}>
               Fermer
-            </button>
+            </Button>
           </div>
 
           {/* Synthèse antérieure au retrait d'interprétation : elle a pu
@@ -622,6 +716,7 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
                   Enregistrez les modifications avant de valider le brouillon.
                 </p>
               )}
+              <RetourAction retour={feedback} zone="edition" />
             </>
           ) : (
             <>
@@ -727,36 +822,44 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
           {/* Actions validation */}
           {(selectedSynthese.statut === 'Brouillon_IA' || selectedSynthese.statut === 'Brouillon_Praticien') && (
             <div className="flex flex-wrap gap-2 pt-2 border-t border-border">
-              <button
+              <Button
+                type="button"
                 onClick={() => onAction(selectedSynthese.idSynthese, 'valider')}
                 disabled={saving || validationBrouillonBloquee}
-                className={`${btnPrimary} bg-status-success`}
               >
                 {saving ? '...' : 'Valider la synthèse'}
-              </button>
-              <button onClick={() => onAction(selectedSynthese.idSynthese, 'rejeter')} disabled={saving} className={`${btnPrimary} bg-status-danger`}>
+              </Button>
+              <Button
+                type="button"
+                variant="danger"
+                onClick={() => onAction(selectedSynthese.idSynthese, 'rejeter')}
+                disabled={saving}
+              >
                 {saving ? '...' : 'Rejeter'}
-              </button>
+              </Button>
             </div>
           )}
 
           <div className="flex flex-wrap gap-2 pt-2 border-t border-border">
-            <button
+            <Button
               type="button"
+              variant="outline"
               onClick={onResetSynthese}
               disabled={saving || sending}
-              className="inline-flex items-center gap-2 rounded-lg border border-status-danger/40 px-4 py-2 text-sm font-medium text-status-danger hover:bg-status-danger/10 disabled:opacity-60"
+              className="inline-flex items-center gap-2"
             >
-              <Trash2 size={16} aria-hidden="true" />
+              <Trash2 size={16} strokeWidth={TRAIT_ICONE} aria-hidden="true" />
               {saving ? 'Effacement...' : 'Vider la synthèse'}
-            </button>
+            </Button>
+            <RetourAction retour={feedback} zone="actions" className="basis-full" />
           </div>
 
           {/* Notes praticien */}
           {(selectedSynthese.statut === 'Validee_Praticien' || selectedSynthese.statut === 'Corrigee_Praticien') && (
             <div className="pt-2 border-t border-border flex flex-col gap-2">
-              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Note / correction praticien</label>
+              <label htmlFor="synthese-note-praticien" className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Note / correction praticien</label>
               <textarea
+                id="synthese-note-praticien"
                 value={notes}
                 onChange={e => setNotes(e.target.value)}
                 rows={3}
@@ -764,23 +867,26 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
                 placeholder="Ajoutez une note ou une correction à inclure dans le booklet..."
                 className={`${inputCls} resize-y`}
               />
-              <button onClick={() => onAction(selectedSynthese.idSynthese, 'annoter')} disabled={saving} className={`${btnPrimary} bg-primary self-start`}>
+              <Button type="button" variant="outline" onClick={() => onAction(selectedSynthese.idSynthese, 'annoter')} disabled={saving} className="self-start">
                 {saving ? '...' : 'Enregistrer la note'}
-              </button>
+              </Button>
+              <RetourAction retour={feedback} zone="note" />
             </div>
           )}
 
           {/* Booklet */}
           {(selectedSynthese.statut === 'Validee_Praticien' || selectedSynthese.statut === 'Corrigee_Praticien') && (
             <div className="pt-2 border-t border-border flex flex-col gap-3">
-              <h4 className="text-sm font-semibold text-foreground">Booklet patient</h4>
-              <button
+              <h3 className="text-sm font-semibold text-foreground">Booklet patient</h3>
+              <Button
+                type="button"
+                variant="outline"
                 onClick={() => onLoadBooklet(selectedSynthese.idSynthese)}
                 disabled={loadingBooklet}
-                className={`${btnPrimary} self-start bg-indigo-600`}
+                className="self-start"
               >
                 {loadingBooklet ? 'Préparation...' : 'Prévisualiser le booklet'}
-              </button>
+              </Button>
 
               {bookletHtml && (
                 <div className="flex flex-col gap-3">
@@ -793,18 +899,18 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
                     <iframe srcDoc={bookletHtml} title="Prévisualisation booklet" className="w-full h-full" sandbox="allow-same-origin" />
                   </div>
                   <div className="flex flex-col gap-2">
-                    <label className="flex items-center gap-2 text-sm text-foreground cursor-pointer">
+                    <label className="flex min-h-11 items-center gap-2 text-sm text-foreground cursor-pointer">
                       <input type="checkbox" checked={relectureConfirmee} onChange={e => setRelectureConfirmee(e.target.checked)} />
                       J&apos;ai relu et validé le booklet ci-dessus avant envoi au patient.
                     </label>
                     {bookletInfo?.dejaEnvoye && (
-                      <label className="flex items-center gap-2 text-sm text-status-warning cursor-pointer">
+                      <label className="flex min-h-11 items-center gap-2 text-sm text-status-warning cursor-pointer">
                         <input type="checkbox" checked={forceSend} onChange={e => setForceSend(e.target.checked)} />
                         Confirmer le renvoi (déjà envoyé précédemment).
                       </label>
                     )}
                     {registreATrancher !== null && (
-                      <label className="flex items-start gap-2 text-sm text-status-warning cursor-pointer">
+                      <label className="flex min-h-11 items-start gap-2 text-sm text-status-warning cursor-pointer">
                         <input
                           type="checkbox"
                           checked={confirmerRegistre}
@@ -820,31 +926,29 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
                       </label>
                     )}
                     <div className="flex flex-wrap gap-2">
-                      <button
+                      <Button
+                        type="button"
                         onClick={() => onSend(selectedSynthese.idSynthese)}
                         disabled={sending || !relectureConfirmee}
-                        className={`${btnPrimary} bg-status-success`}
                       >
                         {sending ? 'Envoi en cours...' : 'Envoyer au patient'}
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         type="button"
+                        variant="outline"
                         onClick={onClearBooklet}
                         disabled={sending}
-                        className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-60"
+                        className="inline-flex items-center gap-2"
                       >
-                        <Trash2 size={16} aria-hidden="true" />
+                        <Trash2 size={16} strokeWidth={TRAIT_ICONE} aria-hidden="true" />
                         Effacer le booklet affiché
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 </div>
               )}
+              <RetourAction retour={feedback} zone="booklet" />
             </div>
-          )}
-
-          {feedback && (
-            <p className={`text-base ${feedback.ok ? 'text-status-success' : 'text-status-danger'}`}>{feedback.msg}</p>
           )}
         </div>
       )}

@@ -413,6 +413,10 @@ function InstrumentTiroir({
  * requêtes — angle mort perf du contre-audit), puis une seule lecture.
  */
 function TiroirSyntheseInline({ idPatient }: { idPatient: string }) {
+  // [[D-354]] amendement DOC-15 (Q10) : en mode consultation, aucun lien ne
+  // quitte la fiche. Le contexte des chiffres masqués est posé par la fiche
+  // exactement quand le mode est actif.
+  const enConsultation = useChiffresMasques();
   const [etat, setEtat] = useState<'repos' | 'chargement' | 'chargee' | 'erreur'>('repos');
   const [validee, setValidee] = useState<{
     statut: string;
@@ -509,6 +513,7 @@ function TiroirSyntheseInline({ idPatient }: { idPatient: string }) {
             )}
           </div>
         )}
+        {!enConsultation && (
         <div className="flex flex-wrap gap-2">
           <Link
             href={`/dashboard/synthese?idPatient=${encodeURIComponent(idPatient)}`}
@@ -526,6 +531,7 @@ function TiroirSyntheseInline({ idPatient }: { idPatient: string }) {
             Composer un document
           </Link>
         </div>
+        )}
       </div>
     </InstrumentTiroir>
   );
@@ -1916,11 +1922,18 @@ export function FichePatientPanel({
                 Dossier effacé définitivement. Il ne subsiste qu’une ligne anonyme.
               </p>
               <p className="mt-2 text-base text-muted-foreground">
-                Cette page ne désigne plus aucun dossier.{' '}
-                <Link href="/dashboard/patients" className="underline">
-                  Revenir à la liste des patients
-                </Link>
-                .
+                Cette page ne désigne plus aucun dossier.
+                {/* [[D-354]] amendement DOC-15 (Q10) : aucun lien ne quitte la
+                    fiche en mode consultation, celui-ci compris. */}
+                {!modeConsultationActif && (
+                  <>
+                    {' '}
+                    <Link href="/dashboard/patients" className="underline">
+                      Revenir à la liste des patients
+                    </Link>
+                    .
+                  </>
+                )}
               </p>
             </div>
           ) : etatDossier === 'erreur' ? (
@@ -2456,7 +2469,9 @@ export function FichePatientPanel({
               du rail, inbox du Fil) — la ramener vers la liste héritage
               perdait le praticien. Le paramètre d'entrée est le seul signal
               fiable dont la fiche dispose. */}
-          {ongletInitial === 'trajectoire' ? (
+          {/* [[D-354]] amendement DOC-15 (Q10) : en mode consultation, on ne
+              quitte la fiche que par « Quitter ». */}
+          {modeConsultationActif ? null : ongletInitial === 'trajectoire' ? (
             <Link href="/dashboard/trajectoires" className="text-sm text-muted-foreground hover:text-foreground hover:underline">
               ← Retour aux fiches-trajectoires
             </Link>
