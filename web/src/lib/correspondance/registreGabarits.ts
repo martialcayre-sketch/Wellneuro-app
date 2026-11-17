@@ -767,39 +767,6 @@ export const REGISTRE_GABARITS_PATIENT: readonly VersionGabaritPatient[] = Objec
     valideLe: '2026-11-12',
     hash: '5f421e43e495faa67fe2d48c20fb8189c8b3038037161d5b1f1be2419dfb0979',
   },
-  // [[D-292]] §5 — conditions v7 : les parties « Vos données personnelles » et
-  // « L'intelligence artificielle » passent en v24 et en v9 ([[D-513]] §12,
-  // H95 part B). Même patron que la @6 : la phrase de tête dit ce qui change,
-  // puis les paragraphes de la @6 au caractère près. VALIDÉ par le responsable
-  // le 2026-11-17 (question `20261117-0901-b`,
-  // `docs/claude/propositions/2026-11-17-h95b-code-textes/README.md`, 6b).
-  // L'envoi reste le geste du responsable, après le déploiement ([[D-292]] §3).
-  {
-    key: 'conditions_utilisation',
-    version: 7,
-    titre: "Annonce d'une nouvelle version des conditions d'utilisation aux patients suivis",
-    sujet: 'Wellneuro — les conditions d’utilisation de votre espace évoluent',
-    corps:
-      'Bonjour,\n\n' +
-      'Les conditions d’utilisation de votre espace Wellneuro évoluent : vos ' +
-      'résultats d’analyses et les circonstances de leur prélèvement peuvent ' +
-      'désormais être transmis à l’outil qui prépare le brouillon de la synthèse ' +
-      'destinée à votre praticien.\n\n' +
-      'Rien d’autre ne change dans votre accompagnement.\n\n' +
-      'Pour lire cette nouvelle version et la valider, ouvrez ce lien : {{lien}}\n\n' +
-      'Ce lien est valable 24 heures et ne s’ouvre qu’une fois. Passé ce délai, ' +
-      'connectez-vous à votre espace comme d’habitude : le document vous attend ' +
-      'dans « Informations, confidentialité et droits ».\n\n' +
-      'Le lien ouvre le texte. Rien n’est validé tant que vous n’avez pas cliqué ' +
-      'sur « J’en ai pris connaissance ».\n\n' +
-      'Pour toute question, répondez simplement à ce message.\n\n' +
-      'Wellneuro',
-    variables: ['lien'],
-    donneesSante: { statut: 'conforme' },
-    redigeLe: '2026-11-17',
-    valideLe: '2026-11-17',
-    hash: '4893393193368858b043a103943082f8bfef7cd993f956ca34b65040ceaaddc4',
-  },
   // ── PROTOCOLE DIFFUSÉ ───────────────────────────────────────────────────
   // [[D-317]] §3 (PA-2) — part au clic « Valider pour diffusion » qui diffuse
   // une NOUVELLE version, et vaut alors l'annonce des fiches et du courrier
