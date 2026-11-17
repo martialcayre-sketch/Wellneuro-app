@@ -395,7 +395,8 @@ export function AssignationsPacksPanel() {
               ({assignationsTronquees ? `${filteredAssignations.length} sur ${meta?.total}` : filteredAssignations.length})
             </span>
           </h3>
-          <select value={statutFilter} onChange={e => setStatutFilter(e.target.value as StatutFilter)} className={`text-xs border border-border rounded-lg px-2 py-1 bg-surface text-muted-foreground ${CLASSE_SELECT}`}>
+          {/* Nom accessible T-79 (D-488, DOC-17), comme « Filtrer par catégorie ». */}
+          <select aria-label="Filtrer par statut" value={statutFilter} onChange={e => setStatutFilter(e.target.value as StatutFilter)} className={`text-xs border border-border rounded-lg px-2 py-1 bg-surface text-muted-foreground ${CLASSE_SELECT}`}>
             {(Object.keys(STATUT_LABELS) as StatutFilter[]).map(s => (
               <option key={s} value={s}>{STATUT_LABELS[s]}</option>
             ))}

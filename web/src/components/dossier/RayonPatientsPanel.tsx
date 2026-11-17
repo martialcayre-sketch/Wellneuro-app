@@ -475,7 +475,8 @@ export function RayonPatientsPanel({ lienMagiqueActif = false }: { lienMagiqueAc
       <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
           <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher (nom, prénom, email)" className="w-full sm:w-72" />
-          <Select value={sortBy} onChange={e => setSortBy(e.target.value as SortBy)}>
+          {/* Nom accessible T-77 (D-488, DOC-17) : la liste n'en avait aucun. */}
+          <Select value={sortBy} onChange={e => setSortBy(e.target.value as SortBy)} aria-label="Trier la liste des patients">
             <option value="nom">Tri : nom</option>
             <option value="email">Tri : email</option>
           </Select>

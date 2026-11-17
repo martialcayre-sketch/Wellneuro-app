@@ -382,3 +382,20 @@ describe('PacksPanel — un suspendu ne compte pas comme un questionnaire envoy�
     expect(options).not.toContain(`${PACK_AVEC_SUSPENDU.nom} (2)`);
   });
 });
+
+// PRA-6b (D-488, DOC-17) : le premier choix servait de libellé, et la date
+// n'en avait aucun (axe `select-name` et `label`, critiques).
+describe('PacksPanel — noms accessibles de l’assignation (PRA-6b)', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('« Pack », « Patient » et « Date limite (optionnel) » nomment les trois champs', async () => {
+    monter([PACK_ORDINAIRE]);
+    await ligne(PACK_ORDINAIRE.nom);
+    const formulaire = screen
+      .getByRole('heading', { name: 'Assigner un pack à un patient' })
+      .parentElement as HTMLElement;
+    expect(within(formulaire).getByRole('combobox', { name: 'Pack' })).toBeTruthy();
+    expect(within(formulaire).getByRole('combobox', { name: 'Patient' })).toBeTruthy();
+    expect(within(formulaire).getByLabelText('Date limite (optionnel)').getAttribute('type')).toBe('date');
+  });
+});

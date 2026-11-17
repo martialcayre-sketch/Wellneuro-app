@@ -327,3 +327,17 @@ describe('DocumentsPanel — retour d’envoi (Q6)', () => {
   });
 });
 
+
+// PRA-6b (D-488, DOC-17) : les deux listes portaient le même nom, le titre
+// entier (revue `wn-reviewer` de #2224, constat 5). Chacune prend son segment.
+describe('DocumentsPanel — noms accessibles (PRA-6b)', () => {
+  it('les deux listes ont des noms distincts, pris au titre resté entier', async () => {
+    render(<DocumentsPanel initialPatientId="PAT_1" />);
+    await waitFor(() => screen.getByRole('option', { name: /Validée/ }));
+    expect(screen.getByRole('heading', { level: 2, name: 'Patient et synthèse validée' })).toBeTruthy();
+    const patient = screen.getByRole('combobox', { name: 'Patient' });
+    const synthese = screen.getByRole('combobox', { name: 'synthèse validée' });
+    expect(patient).not.toBe(synthese);
+    expect((patient as HTMLSelectElement).value).toBe('PAT_1');
+  });
+});

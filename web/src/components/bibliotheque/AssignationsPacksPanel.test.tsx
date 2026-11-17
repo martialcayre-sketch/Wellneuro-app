@@ -438,3 +438,16 @@ describe('AssignationsPacksPanel — annulation d’une assignation (Fil A)', ()
     await waitFor(() => expect(appels.slice(nbAvant).some(a => a.url === attendue)).toBe(true));
   });
 });
+
+// PRA-6b (D-488, DOC-17) : le filtre des assignations n'avait aucun nom
+// accessible (axe `select-name`, critique, constat PRA-6 §3.1).
+describe('AssignationsPacksPanel — noms accessibles (PRA-6b)', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('le filtre par statut porte T-79, « Filtrer par statut »', async () => {
+    stubFetch();
+    render(<AssignationsPacksPanel />);
+    const filtre = await screen.findByRole('combobox', { name: 'Filtrer par statut' });
+    expect((filtre as HTMLSelectElement).value).toBe('');
+  });
+});
