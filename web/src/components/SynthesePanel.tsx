@@ -159,6 +159,19 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
     finally { if (generation === generationSyntheses.current) setLoading(false); }
   }, []);
 
+  // LA RELECTURE QUI SUIT UNE ACTION VISE LE PATIENT COURANT (PRA-6c). Une
+  // génération, une action ou un envoi relit la liste après sa réponse ; le
+  // patient de la closure est celui du clic. S'il a changé pendant la requête,
+  // relire l'ancien numéroterait cette lecture APRÈS celle du nouveau : la
+  // liste de l'ancien paraîtrait sous le titre du nouveau. Elle ne s'applique
+  // donc que si le patient est encore le courant.
+  const patientCourant = useRef(selectedPatient);
+  patientCourant.current = selectedPatient;
+  const relireSiCourant = async (idPatient: string) => {
+    if (patientCourant.current !== idPatient) return;
+    await loadSyntheses(idPatient);
+  };
+
   // Q5 : l'échec de la liste des patients n'est plus avalé.
   const chargerPatients = useCallback(async () => {
     try {
@@ -280,7 +293,7 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
           return;
         }
         setFeedback(terminal);
-        if ((terminal as { ok: boolean }).ok) await loadSyntheses(selectedPatient);
+        if ((terminal as { ok: boolean }).ok) await relireSiCourant(selectedPatient);
         return;
       }
 
@@ -291,7 +304,7 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
         return;
       }
       setFeedback({ ok: true, msg: msgSucces, zone: 'patient' });
-      await loadSyntheses(selectedPatient);
+      await relireSiCourant(selectedPatient);
     } catch {
       setFeedback({ ok: false, msg: 'Erreur réseau. Réessayez.', zone: 'patient' });
     } finally {
@@ -320,7 +333,7 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
       setManualDirty(false);
       // Le brouillon devient le détail ouvert : le retour suit l'éditeur.
       setFeedback({ ok: true, msg: 'Brouillon praticien enregistré. Validez-le avant de préparer le booklet.', zone: 'edition' });
-      await loadSyntheses(selectedPatient);
+      await relireSiCourant(selectedPatient);
     } catch {
       setFeedback({ ok: false, msg: 'Erreur réseau. Réessayez.', zone: 'brouillon' });
     } finally {
@@ -352,7 +365,7 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
       setEditedManual(d.syntheseJson);
       setManualDirty(false);
       setFeedback({ ok: true, msg: 'Brouillon praticien enregistré.', zone: zoneDuDetail(selectedSynthese.idSynthese, 'edition') });
-      await loadSyntheses(selectedPatient);
+      await relireSiCourant(selectedPatient);
     } catch {
       setFeedback({ ok: false, msg: 'Erreur réseau. Réessayez.', zone: zoneDuDetail(selectedSynthese.idSynthese, 'edition') });
     } finally {
@@ -377,7 +390,7 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
       const labels: Record<string, string> = { valider: 'Synthèse validée.', rejeter: 'Synthèse rejetée.', annoter: 'Notes enregistrées.' };
       // Le détail se ferme : le retour paraît sous le choix du patient.
       setFeedback({ ok: true, msg: labels[action] ?? 'Mis à jour.', zone: 'patient' });
-      await loadSyntheses(selectedPatient);
+      await relireSiCourant(selectedPatient);
       setSelectedSynthese(null);
       setBookletHtml(null);
     } catch {
@@ -435,7 +448,7 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
       setRegistreATrancher(null);
       setConfirmerRegistre(false);
       setFeedback({ ok: true, msg: 'Synthèse vidée. Complétez le brouillon avant validation et booklet.', zone: zoneDuDetail(selectedSynthese.idSynthese, 'actions') });
-      await loadSyntheses(selectedPatient);
+      await relireSiCourant(selectedPatient);
     } catch {
       setFeedback({ ok: false, msg: 'Erreur réseau. Réessayez.', zone: zoneDuDetail(selectedSynthese.idSynthese, 'actions') });
     } finally {
@@ -443,7 +456,18 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
     }
   };
 
+  // L'APERÇU DU BOOKLET APPARTIENT À LA SYNTHÈSE DEMANDÉE (PRA-6c). Si l'on
+  // ouvre une autre synthèse, ou ferme le détail, avant la réponse, le HTML de
+  // la première paraîtrait dans l'aperçu de la seconde — et la case « J'ai
+  // relu… » se cocherait, puis l'envoi partirait, sur un booklet que l'on n'a
+  // pas lu. Chaque prévisualisation prend un numéro ; une réponse qui n'est pas
+  // la dernière, ou dont la synthèse n'est plus ouverte, ne pose rien : ni
+  // aperçu, ni information d'envoi, ni retour.
+  const generationBooklet = useRef(0);
+
   const onLoadBooklet = async (idSynthese: string) => {
+    const generation = ++generationBooklet.current;
+    const perimee = () => generation !== generationBooklet.current || syntheseOuverte.current !== idSynthese;
     setLoadingBooklet(true);
     setBookletHtml(null);
     setBookletInfo(null);
@@ -455,6 +479,7 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
     try {
       const r = await fetch(`/api/praticien/booklet?idSynthese=${encodeURIComponent(idSynthese)}`);
       const d = await r.json() as { html?: string; error?: string; dejaEnvoye?: boolean; dernierEnvoiEmailMasque?: string | null };
+      if (perimee()) return;
       if (!r.ok || !d.html) {
         setFeedback({ ok: false, msg: d.error ?? 'Impossible de générer le booklet.', zone: zoneDuDetail(idSynthese, 'booklet') });
         return;
@@ -462,9 +487,10 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
       setBookletHtml(d.html);
       setBookletInfo({ dejaEnvoye: d.dejaEnvoye ?? false, emailMasque: d.dernierEnvoiEmailMasque ?? null });
     } catch {
+      if (perimee()) return;
       setFeedback({ ok: false, msg: 'Erreur réseau. Réessayez.', zone: zoneDuDetail(idSynthese, 'booklet') });
     } finally {
-      setLoadingBooklet(false);
+      if (generation === generationBooklet.current) setLoadingBooklet(false);
     }
   };
 
@@ -492,11 +518,16 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
         body: JSON.stringify({ idSynthese, relectureConfirmee, forceSend, confirmerRegistre }),
       });
       const d = await r.json() as { success?: boolean; error?: string; warning?: string; needsConfirmation?: boolean; reason?: string; terme?: string; emailMasque?: string };
+      // Les cases de l'aperçu sont celles de la synthèse OUVERTE (PRA-6c) : si
+      // une autre l'est devenue pendant l'envoi, la réponse n'y touche pas —
+      // sinon le mot signalé dans A ferait paraître, sous B, une case qui
+      // lèverait la garde du registre de B.
+      const casesDeCetteSynthese = syntheseOuverte.current === idSynthese;
       if (d.needsConfirmation) {
         // Deux confirmations distinctes, deux cases distinctes : le renvoi
         // (déjà envoyé) et le registre (un mot du texte patient). La route
         // refuse de faire valoir l'une pour l'autre ; l'écran non plus.
-        if (d.reason === 'REGISTRE_ANXIOGENE') setRegistreATrancher(d.terme ?? '');
+        if (casesDeCetteSynthese && d.reason === 'REGISTRE_ANXIOGENE') setRegistreATrancher(d.terme ?? '');
         setFeedback({ ok: false, msg: d.warning ?? 'Booklet déjà envoyé. Cochez le renvoi forcé pour confirmer.', zone: zoneDuDetail(idSynthese, 'booklet') });
         return;
       }
@@ -505,11 +536,13 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
         return;
       }
       setFeedback({ ok: true, msg: `Booklet envoyé à ${d.emailMasque ?? 'patient'}.`, zone: zoneDuDetail(idSynthese, 'booklet') });
-      setRelectureConfirmee(false);
-      setForceSend(false);
-      setRegistreATrancher(null);
-      setConfirmerRegistre(false);
-      await loadSyntheses(selectedPatient);
+      if (casesDeCetteSynthese) {
+        setRelectureConfirmee(false);
+        setForceSend(false);
+        setRegistreATrancher(null);
+        setConfirmerRegistre(false);
+      }
+      await relireSiCourant(selectedPatient);
     } catch {
       setFeedback({ ok: false, msg: 'Erreur réseau. Réessayez.', zone: zoneDuDetail(idSynthese, 'booklet') });
     } finally {
