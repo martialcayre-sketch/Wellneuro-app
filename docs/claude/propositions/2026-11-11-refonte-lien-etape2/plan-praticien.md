@@ -209,6 +209,11 @@ compris après la PR 3 de PRA-5. Une correction minime, PRA-6a (#2227) ; lots
 nommés PRA-6b à PRA-6j proposés dans [`pra6-constat.md`](pra6-constat.md),
 questions `20261117-1421-d` à `1423-d` de la liste commune.
 
+**PRA-6b** : noms accessibles des champs de P02 et P37, et des deux listes de
+P52. Textes T-77 à T-79 et trois réemplois acceptés le 2026-11-17
+(`20261117-2150-d`), inscrits dans [[D-488]] par DOC-17 ; posés par la PR de
+PRA-6b, après le merge de DOC-17.
+
 ## 4. Coordination avec le plan patient
 
 - Aucune dépendance entre PRA-n et PAT-n. Les deux sessions avancent à leur

@@ -16,7 +16,8 @@ Numérotation par famille, avec des trous voulus : praticien T-01 à T-19
 textes du prototype PRA-2, ajoutés par DOC-6, §1.4), T-60 à T-66
 (textes du prototype PRA-3b, ajoutés par DOC-8, §1.5) et T-67 à T-73
 (textes du prototype PRA-4, ajoutés par DOC-13, §1.6), T-74 à T-76
-(textes du prototype PRA-5, ajoutés par DOC-15, §1.7),
+(textes du prototype PRA-5, ajoutés par DOC-15, §1.7), T-77 à T-79
+(noms accessibles de PRA-6b, ajoutés par DOC-17, §1.8),
 rail patient T-21 à T-23, textes patient T-30 à T-34 ; T-35 est ajouté
 le 2026-11-12 comme proposition non acceptée pour U02. DOC-5 ajoute
 T-36 à T-39 ; DOC-7 inscrit T-40 à T-44 et T-48 (PAT-4), puis T-49/T-50
@@ -167,6 +168,29 @@ T-15 (repli du panneau de contexte du copilote, dès 1 024 px). Les textes en
 service restent mot pour mot, « Booklet » compris (Q12). Aucun texte de
 consentement, de droits ni de sécurité n’est touché. Chaque texte est posé
 par la PR de PRA-5 indiquée, et T-15 par la PR 2.
+
+### 1.8 Noms accessibles de PRA-6b — acceptés (D-488)
+
+Le responsable accepte mot pour mot le 2026-11-17 (« Oui, les six »,
+question `20261117-2150-d`) les noms accessibles proposés pour les champs
+relevés par le constat PRA-6 (`pra6-constat.md` §3.1). Inscription par
+DOC-17 dans [[D-488]], amendement du 2026-11-17. Existant lu au commit
+`8b35cec3`. Ces noms ne s'affichent pas (`aria-label` ou
+`aria-labelledby`) : aucun libellé visible n'est ajouté.
+
+| Id | Proposé | Où | Sens | Existant | Lot | Statut |
+|---|---|---|---|---|---|---|
+| T-77 | Trier la liste des patients | Patients (P02), liste de tri (`components/dossier/RayonPatientsPanel.tsx:478`) | dit ce que la liste commande | aucun : liste sans nom | PRA-6b | **Accepté (D-488)** |
+| T-78 | Date limite (optionnel) | Questionnaires (P37), « Assigner un pack à un patient », champ de date (`components/PacksPanel.tsx:576`) | ce que la date fixe, et qu'elle est facultative | aucun : ni libellé ni texte indicatif | PRA-6b | **Accepté (D-488)** |
+| T-79 | Filtrer par statut | Questionnaires (P37), « Assignations récentes », filtre (`components/bibliotheque/AssignationsPacksPanel.tsx:398`) | ce que la liste filtre, comme « Filtrer par catégorie » | aucun : liste sans nom | PRA-6b | **Accepté (D-488)** |
+
+Inscrits par le même amendement de [[D-488]], comme noms accessibles, trois
+réemplois sans texte neuf : « Pack » et « Patient » (premiers choix « Pack * »
+et « Patient * » de P37, `components/PacksPanel.tsx:560`, `:570`, sans
+l'astérisque), et, sur Documents (P52), « Patient » et « synthèse validée »,
+segments du titre « Patient et synthèse validée », chacun à sa liste
+(`components/patient-cockpit/DocumentsPanel.tsx:339-363`). Aucun texte de
+consentement, de droits ni de sécurité n'est touché.
 
 ## 2. Patient
 
@@ -402,5 +426,5 @@ amendement DOC-14, et [[D-481]], complément DOC-14. Lot :
 
 | Plan | Textes à accepter avant le lot |
 |---|---|
-| Praticien | T-01 à T-05, T-07, T-10, T-12, T-13 (PRA-1) ; T-14, T-15 (PRA-3) ; T-16 (PRA-2a, inscrit par DOC-1) ; T-17 (PRA-2a), T-18, T-19 (PRA-2b), acceptés et inscrits dans D-488 par DOC-6 ; T-60 à T-66 (PRA-3b), acceptés et inscrits dans D-488 par DOC-8 ; T-67 à T-73 (PRA-4), acceptés et inscrits dans D-488 par DOC-13 ; T-74 à T-76 (PRA-5), acceptés et inscrits dans D-488 par DOC-15 |
+| Praticien | T-01 à T-05, T-07, T-10, T-12, T-13 (PRA-1) ; T-14, T-15 (PRA-3) ; T-16 (PRA-2a, inscrit par DOC-1) ; T-17 (PRA-2a), T-18, T-19 (PRA-2b), acceptés et inscrits dans D-488 par DOC-6 ; T-60 à T-66 (PRA-3b), acceptés et inscrits dans D-488 par DOC-8 ; T-67 à T-73 (PRA-4), acceptés et inscrits dans D-488 par DOC-13 ; T-74 à T-76 (PRA-5), acceptés et inscrits dans D-488 par DOC-15 ; T-77 à T-79 et trois réemplois (PRA-6b), acceptés et inscrits dans D-488 par DOC-17 |
 | Patient | T-21 à T-23, T-32 (PAT-1) ; T-31 (PAT-2) ; T-30 (PAT-3) ; T-33, T-34 (PAT-5), avec l'emplacement neuf de T-36 inscrit par DOC-9 (celui de la phrase vide de U28 retiré par DOC-10) ; T-36 à T-39 inscrits par DOC-5 ; emplacements neufs de T-36 et du message de session expirée inscrits par DOC-11 (PAT-6) ; T-40 à T-44, T-48 et nouvel emplacement T-36 inscrits par DOC-7 (PAT-4), T-49/T-50 inscrits pour Q5b ; T-51 et l'emplacement neuf de la mention de sécurité de U40 inscrits par DOC-12 (garde serveur, préalable de Q2a et Q3a), puis emplacements neufs de T-51 inscrits par DOC-14 ; T-34 refusé, T-35 reste proposé, T-45 sans objet |
