@@ -1,0 +1,9 @@
+- **Mise à jour (2026-11-17, besoin 5 : positions v0.3 signées, D-538 acceptée)** : forme opaque (`D-251` §4), agrégats et mécanismes seulement. Suite du fragment `2026-11-17-01`.
+  - **Contre-revue de Codex des positions v0.3** (dépôt privé des revues) : GO avec corrections, un P1 et six P2, tous traités ; les verrous de déclenchement résistent. Le contrôle d'un constat a révélé une erreur portée depuis la v0.1 : une pièce du cabinet compte une bande de moins que ce qu'écrivaient les positions (passage relu en base, lecture seule). Six claims réétiquetés dans l'atelier (délégation, `D-325` §5), constat par conteneur.
+  - **Signature** : les vingt-huit positions v0.3 signées par le responsable le 2026-11-17. P28 amendée ensuite sur trois faits relus au registre et dans le code (la publication que cite la note du MFI est au registre et concorde avec elle ; les trous de l'Epworth ont été comblés le 2026-07-30 ; les supports du cabinet portent les mêmes trous que les grilles publiées), case décochée, puis re-signée le même jour.
+  - **`D-538`, acceptée par le responsable le 2026-11-17** : trois questions cliniques versées à la liste commune avec l'avis de Codex (`D-505`), tranchées par le responsable le 2026-11-17 sur la recommandation de la session, que Codex rejoignait :
+    - `20261117-0140-b` (A) : le trou du bas de la grille de Horne suit la table publiée, comme celui du haut ;
+    - `20261117-0141-b` (B) : la meilleure cote de l'efficacité du PSQI suit l'inégalité stricte de la grille publiée ;
+    - `20261117-0142-b` (C) : la grille de Horne reste celle d'origine, avec une note au praticien qui renvoie à sa validation française.
+  - **Contre-revue de `D-538`** par Codex (`D-505`) : un constat P1 sur la forme opaque et un P2 sur un temps verbal du guide, tous deux corrigés.
+  - **Suite** : J3-12f applique `D-538`, après relecture du texte de la note par le responsable.
