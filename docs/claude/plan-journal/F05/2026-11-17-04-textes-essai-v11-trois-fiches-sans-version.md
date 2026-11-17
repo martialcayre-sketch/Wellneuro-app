@@ -2,4 +2,5 @@
   - POLY P6 « options » (un fait réglementaire non porté par les claims) et « precautions » (conditions de sécurité omises ou affaiblies sous le marqueur « oui ») ;
   - POLY P8 « question » (un élément ajouté à la désignation approuvée de l'usage), « interpretations » (une association in vitro qui ne dit pas ce qu'un résultat de l'examen permet), « precautions » (un usage « indispensable » sans attribution, septième passage depuis la v8 avec ce motif) et « limites » (une conséquence ajoutée à la limite du marqueur) ;
   - MG P5 « options » (une généralisation au-delà du contexte du claim) et « argument_preference » (un débordement vers les options et une durée de prise exclue).
-  - État inchangé sur les dix fiches : sept acceptées et déposées, dont cinq validées ; POLY P7 et MG P4 attendent leur validation ; POLY P6, P8 et MG P5 restent sans version. Aucun nouvel essai sans un nouvel arbitrage.
+  - État inchangé sur les dix fiches : sept acceptées et déposées, dont cinq validées ; POLY P7 et MG P4 attendent leur validation ; POLY P6, P8 et MG P5 restent sans version.
+  - **Arbitrage `20261117-0815-b` : arrêter.** Les trois fiches restent sans version ; F05 s'en tient à sept fiches déposées. Aucun nouvel essai ni consigne v12 sans un nouvel arbitrage.

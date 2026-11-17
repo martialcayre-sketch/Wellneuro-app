@@ -3,7 +3,7 @@
 ## Branche et état Git
 
 - Worktree `.claude/worktrees/b-fiche-usage-iode-selenium`, session concurrente, cycle en git/gh direct.
-- Branche `f05-essai-v11-trois-fiches`, depuis `origin/main` (`da2e48b5`, merge de #2216, qui contient #2210 et #2213). Le lot ne contient que la consignation.
+- Branche `f05-essai-v11-trois-fiches`, depuis `origin/main` (`da2e48b5`, merge de #2216, qui contient #2210 et #2213). Le lot ne contient que la consignation. Mise à niveau par `git merge origin/main` (sans fichier commun, autorisation F05 du 2026-11-13) avant d'y consigner l'arbitrage `20261117-0815-b`.
 
 ## Objectif
 
@@ -13,6 +13,7 @@ Jouer le nouvel essai arbitré par le responsable (`20261117-0750-b`) sur les tr
 
 - `20261117-0750-b` : nouvel essai, trois fiches (POLY P6, POLY P8, MG P5), consigne v11 inchangée, une passe.
 - POLY P7 et MG P4 n° 1 ne sont pas rejouées : elles attendent la validation du responsable.
+- `20261117-0815-b` : arrêter ; les trois fiches restent sans version. Options écartées : consigne v12 ciblée (elle ne couvre pas les motifs dispersés) et rejeu tel quel (un tirage de plus).
 
 ## Fichiers modifiés
 
@@ -28,11 +29,11 @@ Jouer le nouvel essai arbitré par le responsable (`20261117-0750-b`) sur les tr
 ## Problèmes ouverts
 
 - POLY P7 n° 1 et MG P4 n° 1 attendent la validation du responsable.
-- POLY P6, P8 et MG P5 restent sans version. POLY P8 « precautions » est refusée pour le même motif à chaque passage depuis la v8 ; MG P5 déborde cette fois de « argument_preference » vers les options (refusée au rejeu précédent pour une condition de dose omise). Seule une consigne v12 (Codex P0 puis approbation) changerait ces deux motifs ; un rejeu tel quel ne fait que retirer au sort.
+- POLY P6, P8 et MG P5 restent sans version. POLY P8 « precautions » est refusée pour le même motif à chaque passage depuis la v8 ; MG P5 déborde cette fois de « argument_preference » vers les options (refusée au rejeu précédent pour une condition de dose omise). Le responsable a arbitré l'arrêt (`20261117-0815-b`) : aucun nouvel essai ni consigne v12 sans un nouvel arbitrage.
 
 ## Prochaine action exacte
 
-CI et PR-Agent à 0, puis déclarer cette PR « prête » à l'intégrateur. La suite des trois fiches attend l'arbitrage du responsable.
+CI et PR-Agent à 0, puis déclarer cette PR « prête » à l'intégrateur. Ensuite, il ne reste à F05 qu'à constater, par conteneur en lecture seule, la validation de POLY P7 et MG P4 quand le responsable l'annonce.
 
 ## Interdits encore actifs
 
