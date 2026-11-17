@@ -44,6 +44,8 @@ describe('PanneauRail', () => {
     expect(screen.getByRole('heading', { name: 'File d’envoi' })).toBeTruthy();
     expect(screen.getByText('File vide')).toBeTruthy();
     expect(screen.getByText(/La file est vide/)).toBeTruthy();
+    // Cible de 44 px pour la ligne repliée (PRA-6d, constat à l'écran : 23 px).
+    expect(panneau.querySelector('summary')?.className).toContain('min-h-11');
   });
 
   it('garde le nom accessible du panneau quand il est replié', () => {

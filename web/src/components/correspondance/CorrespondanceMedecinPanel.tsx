@@ -512,7 +512,7 @@ export function CorrespondanceMedecinPanel({ idPatient }: { idPatient: string })
                     id="correspondance-synthese"
                     value={idSynthese}
                     onChange={(evenement) => setIdSynthese(evenement.target.value)}
-                    className="mt-1 min-h-11 rounded-lg border border-border bg-surface p-2 text-base text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                    className="mt-1 min-h-11 h-11 rounded-lg border border-border bg-surface p-2 text-base text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                   >
                     <option value="">Aucune</option>
                     {syntheses.map((synthese) => (

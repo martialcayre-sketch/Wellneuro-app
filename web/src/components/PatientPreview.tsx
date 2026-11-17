@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Eye } from 'lucide-react';
+import { TRAIT_ICONE } from '@/components/ui/icone';
 import { ConsultationScreen } from '@/components/patient/ConsultationScreen';
 import { MonEquilibreAccueil } from '@/components/patient/MonEquilibreAccueil';
 import { MonEquilibreDetail } from '@/components/patient/MonEquilibreDetail';
@@ -42,7 +43,7 @@ export function PatientPreview({ assignationId }: { patientId: string; assignati
           onClick={() => setVue('consultation')}
           className="flex min-h-11 items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
         >
-          <Eye aria-hidden="true" size={16} strokeWidth={2} />
+          <Eye aria-hidden="true" size={16} strokeWidth={TRAIT_ICONE} />
           Voir ce que recevra le patient
         </button>
       }

@@ -292,7 +292,7 @@ export function SelectionPrioritePanel({
                     <select
                       value={domaineLibre}
                       onChange={event => setDomaineLibre(event.target.value as DomainePrioriteLibre | '')}
-                      className="mt-1 block min-h-11 w-full rounded-lg border border-border bg-surface p-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                      className="mt-1 block min-h-11 h-11 w-full rounded-lg border border-border bg-surface p-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                     >
                       <option value="">Choisir un domaine</option>
                       {DOMAINES_PRIORITE_LIBRE.map(domaine => (

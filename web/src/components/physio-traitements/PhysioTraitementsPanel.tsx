@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AlertTriangle } from 'lucide-react';
+import { TRAIT_ICONE } from '@/components/ui/icone';
 import { formaterDatePeriode, formaterJour, valeurDatePeriode } from '@/lib/physio-traitements/dates';
 import {
   BLOCS_PATIENT,
@@ -278,7 +279,7 @@ export function PhysioTraitementsPanel({ idPatient }: { idPatient: string }) {
         )}
         {c.discordant && (
           <p className="flex items-center gap-1 text-xs font-medium text-foreground">
-            <AlertTriangle aria-hidden="true" size={14} className="text-accent" />
+            <AlertTriangle aria-hidden="true" strokeWidth={TRAIT_ICONE} size={14} className="text-accent" />
             Discordance avec l’anamnèse — à reprendre avec le patient.
           </p>
         )}

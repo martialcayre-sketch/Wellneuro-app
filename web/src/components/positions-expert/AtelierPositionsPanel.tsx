@@ -39,7 +39,7 @@ type ReponseEcriture = { ok: true } | { ok: false; error: string; claims?: strin
 const CHAMP =
   'w-full min-h-11 bg-surface border border-border rounded-lg px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring';
 const CLASSE_SELECT =
-  'min-h-11 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring';
+  'min-h-11 h-11 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring';
 const ANNEAU_CASE = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring';
 
 function formatDate(iso: string): string {

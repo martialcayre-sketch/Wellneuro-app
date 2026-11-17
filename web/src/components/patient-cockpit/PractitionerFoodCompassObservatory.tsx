@@ -73,7 +73,7 @@ export function PractitionerFoodCompassObservatory({
         <p className="mt-1 text-base text-muted-foreground">Lecture praticien chiffrée, sourcée et non diffusée automatiquement.</p>
         <div className="mt-4 flex flex-wrap items-end gap-3">
           <label className="text-sm font-medium">Aliment vedette
-            <select value={foodRef} disabled={loading} onChange={event => changeFood(event.target.value)} className="mt-1 block min-h-11 rounded-lg border border-border bg-background px-3 disabled:opacity-50">
+            <select value={foodRef} disabled={loading} onChange={event => changeFood(event.target.value)} className="mt-1 block min-h-11 h-11 rounded-lg border border-border bg-background px-3 disabled:opacity-50">
               {C5_PRACTITIONER_FOODS.map(food => <option key={food.foodRef} value={food.foodRef}>{food.label}</option>)}
             </select>
           </label>

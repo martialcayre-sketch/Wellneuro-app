@@ -3,6 +3,7 @@
 import { useId, useState } from 'react';
 import type { ReactNode } from 'react';
 import { ChevronDown } from 'lucide-react';
+import { TRAIT_ICONE } from '@/components/ui/icone';
 
 // Mécanisme générique de double niveau de lecture (résumé/détail). Ne connaît
 // aucun contenu clinique — le contenu est fourni par l'appelant (cf.
@@ -54,7 +55,7 @@ export function TwoLevelReading({
           className="flex min-h-11 shrink-0 items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
         >
           {label}
-          <ChevronDown aria-hidden="true" size={14} strokeWidth={2} className={`transition-transform ${expanded ? 'rotate-180' : ''}`} />
+          <ChevronDown aria-hidden="true" size={14} strokeWidth={TRAIT_ICONE} className={`transition-transform ${expanded ? 'rotate-180' : ''}`} />
         </button>
       </div>
       {expanded && (
