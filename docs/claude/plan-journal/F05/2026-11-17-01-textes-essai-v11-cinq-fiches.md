@@ -5,4 +5,4 @@
   - *conditions altérées* : POLY P6 « precautions » (un avertissement omis), MG P4 « argument_preference » (une condition de dose omise) ;
   - *hors objet* : POLY P8 « interpretations ».
   - **Validation constatée** : le responsable a validé à l'écran FU_POLY_AOX_P2 n° 1 (v10). Constat par conteneur (one-off-2683) : 4 actes `validee`, avec relecture intégrale. Les cinq fiches acceptées sous les v9 et v10 sont toutes validées.
-  - Bilan des essais des 2026-11-16 et 17 sur les quatorze fiches sans version : six fiches acceptées (MG P6, MG P7, POLY P2, P3, P4, P7), quatre encore sans version (POLY P6, P8 ; MG P4, P5). Aucun rejeu sans arbitrage.
+  - À l'issue de cet essai, sur les dix fiches essayées les 2026-11-16 et 17 (MG P4 à P7 ; POLY P2, P3, P4, P6, P7, P8) : six acceptées (MG P6, MG P7, POLY P2, P3, P4, P7), quatre encore sans version (POLY P6, P8 ; MG P4, P5). Suite au rang 02.
