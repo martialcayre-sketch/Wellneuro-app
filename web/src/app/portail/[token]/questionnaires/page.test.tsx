@@ -53,7 +53,8 @@ describe('QuestionnairesHubPage — texte des mineurs', () => {
     }));
   }
 
-  const TITRE = 'Avant 18 ans, un parent donne d’abord son accord';
+  // Sans tranche rendue par la route : la variante des moins de 15 ans (D-537 §7).
+  const TITRE = 'Avant 15 ans, l’accompagnement ne se fait pas ici';
   const lienVersTest = () =>
     screen.queryAllByRole('link').filter(l => l.getAttribute('href') === '/portail/PAT_TEST/questionnaires/ASS_TEST');
 
@@ -68,11 +69,23 @@ describe('QuestionnairesHubPage — texte des mineurs', () => {
     }
   });
 
+  it('★ un dossier mineur de 15 à 17 ans voit la variante de sa tranche (D-537 §7)', async () => {
+    stubAssignations({ statutAge: 'mineur', dossierOuvert: true, trancheMineur: '15_17' });
+    render(<QuestionnairesHubPage />);
+    await waitFor(() =>
+      expect(screen.getByText('Avant 18 ans, ton accompagnement attend encore')).not.toBeNull(),
+    );
+    expect(screen.queryByText(TITRE)).toBeNull();
+    expect(lienVersTest()).toHaveLength(0);
+  });
+
   it('★ un dossier mineur clos ne voit pas le texte des mineurs, mais garde l’encart d’urgence', async () => {
-    stubAssignations({ statutAge: 'mineur', dossierOuvert: false });
+    // Tranche 15-17 rendue : un dossier clos ne sert aucune variante pour autant.
+    stubAssignations({ statutAge: 'mineur', dossierOuvert: false, trancheMineur: '15_17' });
     render(<QuestionnairesHubPage />);
     await waitFor(() => expect(screen.queryByText('Chargement de vos questionnaires…')).toBeNull());
     expect(screen.queryByText(TITRE)).toBeNull();
+    expect(screen.queryByText('Avant 18 ans, ton accompagnement attend encore')).toBeNull();
     expect(screen.queryByText('Ton avis compte')).toBeNull();
     expect(screen.getByRole('heading', { name: 'En cas d’urgence' })).not.toBeNull();
     for (const numero of ['15', '112', '119']) {

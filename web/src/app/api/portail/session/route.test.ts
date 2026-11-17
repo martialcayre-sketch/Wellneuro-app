@@ -70,15 +70,22 @@ describe('POST /api/portail/session', () => {
 
   it('★ dit au portail le statut d’âge du dossier (D-284 §3 et §4)', async () => {
     const quinzeAns = new Date(Date.now() - 15 * 366 * 24 * 3600 * 1000).toISOString().slice(0, 10);
-    for (const [dateNaissance, attendu] of [
-      [undefined, 'date_manquante'],
-      ['1985-02-31', 'date_manquante'],
-      [quinzeAns, 'mineur'],
-      ['1985-03-12', 'majeur'],
+    const douzeAns = new Date(Date.now() - 12 * 366 * 24 * 3600 * 1000).toISOString().slice(0, 10);
+    // D-537 §7 : la tranche d'un mineur choisit la variante du texte 2B.
+    for (const [dateNaissance, attendu, tranche] of [
+      [undefined, 'date_manquante', null],
+      ['1985-02-31', 'date_manquante', null],
+      [douzeAns, 'mineur', 'moins_15'],
+      [quinzeAns, 'mineur', '15_17'],
+      ['1985-03-12', 'majeur', null],
     ] as const) {
       prisma.patient.findUnique.mockResolvedValueOnce({ ...patient, dateNaissance });
-      const corps = (await (await POST(request(cookieValide()))).json()) as { statutAge?: string };
+      const corps = (await (await POST(request(cookieValide()))).json()) as {
+        statutAge?: string;
+        trancheMineur?: string | null;
+      };
       expect(corps.statutAge, String(dateNaissance)).toBe(attendu);
+      expect(corps.trancheMineur, String(dateNaissance)).toBe(tranche);
     }
   });
 

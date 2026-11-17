@@ -38,6 +38,29 @@ export function statutAge(dateNaissance: string | null | undefined, maintenantMs
   return age >= AGE_MAJORITE ? 'majeur' : 'mineur';
 }
 
+/**
+ * Plancher d'âge du circuit des mineurs ([[D-537]] §4) — seuil juridique, pas
+ * clinique. J3-mineurs ne vise que les 15-17 ans ; les moins de 15 ans restent
+ * en pause, sans circuit d'admission.
+ */
+export const AGE_PLANCHER_MINEURS = 15;
+
+/** La tranche d'un mineur : elle choisit la variante du texte 2B, rien d'autre. */
+export type TrancheMineur = 'moins_15' | '15_17';
+
+/**
+ * La tranche d'un dossier mineur, ou `null` s'il ne l'est pas (majeur ou date
+ * illisible). Elle ne rouvre rien : la pause reste celle de `statutAge`.
+ */
+export function trancheMineur(
+  dateNaissance: string | null | undefined,
+  maintenantMs: number,
+): TrancheMineur | null {
+  const age = ageAnnees(dateNaissance, maintenantMs);
+  if (age === null || age >= AGE_MAJORITE) return null;
+  return age >= AGE_PLANCHER_MINEURS ? '15_17' : 'moins_15';
+}
+
 /** Questionnaires et biologie ne s'ouvrent qu'à un patient majeur. */
 export function accepteSaisieSante(statut: StatutAge): boolean {
   return statut === 'majeur';
