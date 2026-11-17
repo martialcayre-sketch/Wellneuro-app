@@ -961,7 +961,11 @@ d'avocat. Ses références ont été vérifiées par la session.
   par fonction et par risque (H2). Chaque droit garde son régime (H3). Aucun
   nouveau consentement n'est exigé du seul fait de l'âge, mais un
   consentement initial non valable se régularise (H4) (§3).
-- **Plancher** : 15 ans. Les moins de 15 ans restent en pause (§4).
+- **Plancher** : 15 ans. Les moins de 15 ans restent en pause (§4). —
+  2026-11-17 : l'analyse de proportionnalité est écrite et arbitrée (voir
+  plus bas, « Analyse de proportionnalité des règles d'âge »). Le plancher,
+  l'accord parental jusqu'à 18 ans et la pause sont justifiés. L'émancipé
+  sera admis comme un majeur, sur justificatif.
 - **Admission d'un premier mineur de 15 à 17 ans** : elle n'attend pas
   l'avocat. Elle attend J3-mineurs, le texte 2B réécrit, la notice adaptée,
   l'analyse de proportionnalité et la revue de nécessité de l'AIPD, puis
@@ -1037,6 +1041,140 @@ mineur. Buts envisagés :
 - l'exercice conjoint de l'autorité parentale ;
 - la sensibilité des données ;
 - la prévention des conflits entre le jeune et ses parents.
+
+**Analyse de proportionnalité des règles d'âge ([[D-537]] §4, H2)** — rédigée
+le 2026-11-17 (lot `proportionnalite-mineurs`). *Les trois conclusions ont
+été arbitrées par le responsable en session le 2026-11-17, chacune sur la
+question de la liste commune citée à sa règle, toutes selon l'option
+recommandée.* Les références sont celles de [[D-537]],
+vérifiées par la session le 2026-11-17. Ce n'est pas un avis de juriste.
+
+Grille appliquée à chaque restriction (loi n° 2008-496, art. 2, 3°) :
+1. le but poursuivi, qui doit être légitime ;
+2. la mesure est-elle *nécessaire* ? Le but ne doit pas pouvoir s'atteindre
+   par un moyen moins restrictif ;
+3. est-elle *adaptée* ? Elle doit servir réellement le but ;
+4. est-elle *proportionnée* ? La gêne imposée au jeune ne doit pas dépasser
+   ce que le but justifie.
+
+Les alternatives sont écrites à côté de chaque mesure, avec le motif qui les
+écarte.
+
+*R1 — Plancher à 15 ans : les moins de 15 ans restent en pause, sans circuit
+d'admission ([[D-537]] §4).*
+- **But.** Avant 15 ans, le consentement en ligne aux traitements visés par
+  l'art. 45 LIL est conjoint : celui du mineur et celui du titulaire de
+  l'autorité parentale. Chaque fonction du portail demanderait donc deux
+  consentements, en plus de l'accord à la prestation. S'y ajoutent la
+  sensibilité des données (questionnaires de santé, lecture des comptes
+  rendus biologiques par l'IA) et une capacité contractuelle plus faible
+  encore qu'à 15 ans.
+- **Nécessaire.** Le moyen moins restrictif serait un second circuit, à
+  consentement conjoint, pour les moins de 15 ans. Ce circuit n'existe pas, et
+  aucun circuit de mineur n'est encore livré (J3-mineurs).
+- **Adaptée.** Le seuil reprend la ligne que la loi trace elle-même (LIL
+  art. 45) : il ne fixe pas un âge arbitraire.
+- **Proportionnée.** Le jeune de moins de 15 ans n'est pas privé de tout :
+  - il reçoit une information adaptée, la variante « moins de 15 ans » du
+    texte 2B ;
+  - il garde l'encart d'urgence (15, 112, 119), le signalement, les
+    demandes de droits et les documents déjà remis.
+
+  La pause n'est pas une exclusion définitive : la règle se réexamine.
+- **Alternatives écartées.**
+  - Pas de plancher, avec un consentement conjoint avant 15 ans (option de
+    la question `20261117-0131-c-7`) : écartée, car elle exige un second
+    circuit, pour le public le plus vulnérable.
+  - Instruction manuelle, au cas par cas, avant 15 ans : écartée. Sans
+    critère écrit, deux jeunes du même âge seraient traités différemment.
+  - Seuil à 16 ans : écarté, car plus restrictif sans appui dans la loi.
+- **Conclusion arbitrée.** Le plancher est justifié pendant la bêta. Il se
+  réexamine à la commercialisation, avec l'avocat (point 7 de [[D-449]] §6).
+  Question `20261117-2200-c`.
+
+*R2 — Accord parental à la prestation, de 15 à 17 ans ([[D-537]] §1, §5 et
+§8).*
+- **But.**
+  - La capacité à contracter : le mineur non émancipé est incapable de
+    contracter (C. civ. art. 1146). Il peut accomplir seul les actes
+    courants conclus à des conditions normales (art. 1148), mais un tel acte
+    reste annulable pour simple lésion (art. 1149).
+  - L'exercice conjoint de l'autorité parentale (art. 371-1).
+  - Le considérant 38 est écarté ([[D-537]] §8) : WellNeuro n'est pas un
+    service de prévention ou de conseil offert directement à l'enfant.
+- **Nécessaire.** Tant que la durée, l'engagement et l'arrêt de
+  l'accompagnement ne sont pas documentés ([[D-537]] §9), rien ne permet de
+  dire que l'accompagnement est un acte courant conclu à des conditions
+  normales. Sans accord, le contrat est exposé à l'annulation, au détriment
+  du jeune comme du praticien.
+- **Adaptée.** L'accord porte sur la prestation seule :
+  - pour les fonctions de l'art. 45, le jeune consent lui-même au traitement
+    de ses données (H1) ;
+  - l'accord n'ouvre aux parents aucun accès au portail ([[D-537]] §2).
+- **Proportionnée.**
+  - C'est un geste unique, à l'entrée.
+  - Le retrait de son consentement par le jeune n'est pas retardé (H3).
+  - Les pouvoirs fondés sur l'autorité parentale prennent fin à 18 ans ou à
+    l'émancipation (H4).
+  - L'accord des deux titulaires, tant que l'« acte usuel » n'est pas
+    qualifié ([[D-537]] §1 et §5), est déjà arbitré. Il tient parce qu'il est
+    transitoire, et parce que la présomption de l'art. 372-2 ne couvre pas
+    un désaccord connu. Il n'est pas reposé ici.
+- **Écart constaté au code (2026-11-17).** La garde d'âge
+  (`web/src/lib/patient/gardeAge.ts`) ne connaît que la date de naissance :
+  un jeune émancipé de 16 ou 17 ans reste en pause comme un mineur. Or
+  l'émancipé est capable comme un majeur (C. civ. art. 413-6). Exiger de lui
+  un accord parental ne sert aucun des buts ci-dessus.
+- **Alternatives écartées.**
+  - Le jeune de 15 ans ou plus contracte seul : écartée par l'art. 1146 du
+    C. civ. et par [[D-537]] §8.
+  - Un accord parental fonction par fonction : écartée. L'accord vise la
+    prestation, qui est une, et le service en ligne en est indissociable
+    (CEPD, lignes directrices 05/2020, §129).
+  - Informer les parents au lieu de leur demander l'accord : écartée, car
+    cela ne lève pas l'incapacité.
+- **Conclusion arbitrée.** L'accord est justifié jusqu'à 18 ans, avec deux
+  ajustements :
+  - l'émancipé est admis comme un majeur, sur justificatif, après une
+    instruction manuelle ; l'exigence est transmise au cadrage de
+    J3-mineurs (file A) ;
+  - la nécessité de l'accord se réexamine une fois la durée, l'engagement
+    et l'arrêt documentés : si l'accompagnement se révèle un acte courant à
+    des conditions normales, elle se pose autrement.
+
+  Question `20261117-2200-c-2`.
+
+*R3 — Pause des questionnaires de santé et de la biologie, pour le mineur non
+admis et pour le dossier sans date de naissance ([[D-284]] §4, lot (h)).*
+- **But.** Ne collecter aucune donnée de santé sans un accord et un
+  consentement valables. La garde est fermée par défaut.
+- **Nécessaire.** Sans circuit, aucun accord ne peut être recueilli : toute
+  collecte se ferait sans base.
+- **Adaptée.** La pause est tenue par les routes, pas par l'écran :
+  - la soumission d'un questionnaire ;
+  - l'anamnèse et le pack de base, à leur validation ;
+  - les agendas du sommeil et alimentaire ;
+  - le dépôt d'un compte rendu biologique ou d'un document ;
+  - la déclaration du sexe, du statut menstruel et des traitements en cours.
+- **Proportionnée.**
+  - Le périmètre est borné aux questionnaires (agendas compris) et à la
+    biologie, comme arbitré le 2026-10-14.
+  - Restent ouverts : l'information, le parcours et les documents remis, le
+    suivi du protocole, l'alliance, le signalement d'un effet indésirable et
+    les demandes de droits.
+  - Pour le dossier sans date, il ne s'agit pas d'une règle d'âge mais d'une
+    incertitude : un seul geste la lève, la date demandée à la connexion.
+  - La pause est transitoire : pour le jeune de 15 à 17 ans, elle prend fin
+    à son admission.
+- **Alternatives écartées.**
+  - Fermer tout le portail : écartée. Le jeune y perdrait l'information,
+    l'urgence et ses droits.
+  - Laisser les questionnaires ouverts et ne bloquer que leur lecture :
+    écartée, car la collecte elle-même se ferait sans base.
+- **Conclusion arbitrée.** La pause est justifiée telle qu'elle est servie.
+  Toute restriction propre à une fonction que J3-mineurs garderait après
+  l'admission doit être motivée ici avant d'être servie (H2). Question
+  `20261117-2200-c-3`.
 
 **Information du jeune.** L'écran de pause du mineur sert le texte 2B depuis
 le 2026-10-21 ([[D-341]]). Le texte est gardé mot pour mot jusqu'à l'avis de
