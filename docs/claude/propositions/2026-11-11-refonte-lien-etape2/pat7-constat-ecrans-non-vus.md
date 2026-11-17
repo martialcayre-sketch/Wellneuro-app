@@ -35,6 +35,24 @@ code*, *non vu*. Aucun constat ne dit ce que vit un patient réel.
   - Jennifer Martin (`PAT_SEED_02`) : U41, mise en reprise par
     `preparerReprisePourTest`, puis nettoyée par `nettoyerReprise`.
   - Aucun choix n'a été enregistré, aucun signalement envoyé.
+- **Sonde, pour rejouer sans le spec.** Le spec reste local : la consigne
+  de la session interdit de verser l'outillage de mesure. La méthode suffit
+  à le refaire. Pour chaque état, à chaque largeur, la page est rechargée
+  puis mesurée dans le navigateur :
+  - débordement : `document.documentElement.scrollWidth - clientWidth`.
+    Pour le nommer, chaque élément et chaque nœud de texte non vide (par un
+    `Range`) dont le bord droit dépasse la largeur de la fenêtre, sauf
+    s'il est `position: fixed` ou contenu dans un ancêtre en
+    `overflow-x: auto | scroll | hidden | clip` ;
+  - cibles : `a[href]`, `button`, `[role=button]`, `input`, `select`,
+    `textarea`, `summary` et `[role=tab]` visibles, de moins de 44 px une
+    fois réunis à leurs libellés (`input.labels`). Les liens dans une phrase
+    et le contenu d'un `<details>` fermé sont exclus ;
+  - axe-core, balises `wcag2a`, `wcag2aa`, `wcag21a` et `wcag21aa`, à
+    1 024 px (bureau) et 390 px (iPhone) ;
+  - clavier : jusqu'à 60 tabulations depuis le haut. Pour chaque arrêt, on
+    relève l'anneau (`outline` non nul ou `box-shadow`), la présence dans
+    la vue et la taille.
 
 ## 2. Résultat par écran
 
@@ -65,7 +83,9 @@ Chaque écran a un seul `h1`.
 Seulement à 195 px, la largeur que le dépôt utilise pour le zoom 200 % au
 téléphone ([[D-506]]). À 320 px, la largeur du critère WCAG 1.4.10, il n'y
 en a aucun. C'est la classe d'écarts que PAT-7e a corrigée par des retours
-à la ligne en CSS (question `20261116-1509-d`).
+à la ligne en CSS : #2201, handoff
+`docs/claude/handoffs/2026-11-16-2330-refonte-lien-pat7e-zoom195.md`,
+choix du responsable `20261116-1509-d`.
 - **U15 détail, 44 px.** *Observé sur fixture* : la légende du graphe
   (« Corps », « Ancrage », « Esprit ») sort à droite. Les mentions « Pas
   encore de données » à côté de chaque besoin dépassent aussi, la plus large
