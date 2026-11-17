@@ -96,6 +96,8 @@ describe('GET /api/praticien/synthese', () => {
           idPatient: 'PAT_1',
           patient: { praticienEmail: { equals: 'p@wellneuro.fr', mode: 'insensitive' } },
         },
+        // Version optimiste : l'écran la renvoie au PATCH.
+        select: expect.objectContaining({ updatedAt: true }),
       }),
     );
   });

@@ -43,6 +43,9 @@ import {
   type EtatDossier
 } from '@/lib/patient/cycleDeVie';
 const MESSAGE_ERREUR_GENERATION = 'Erreur lors de la génération de la synthèse. Réessayez.';
+const MESSAGE_SYNTHESE_MODIFIEE = 'La synthèse a été modifiée entre-temps. Rechargez-la avant de recommencer.';
+// L'écran recharge la synthèse sur ce code (`SynthesePanel`).
+const CODE_SYNTHESE_MODIFIEE = 'synthese_modifiee';
 
 // Gabarit littéral pour le journal des accès (G-TRUST-04) — jamais l'URL reçue.
 const ROUTE_JOURNAL = '/api/praticien/synthese';
@@ -106,6 +109,8 @@ export async function GET(req: Request) {
         dateValidation: true,
         notesPraticien: true,
         syntheseJson: true,
+        // Version optimiste : l'écran la renvoie au PATCH.
+        updatedAt: true,
         // [[D-513]] §5 : lue pour dire, ici, si la synthèse est suspecte. Elle
         // ne part pas au client (retirée ci-dessous).
         donneesEntree: true,
@@ -394,6 +399,7 @@ export async function PUT(req: Request) {
         dateValidation: record.dateValidation,
         notesPraticien: record.notesPraticien,
         syntheseJson: record.syntheseJson,
+        updatedAt: record.updatedAt,
       },
     }), requestContext);
   } catch (err) {
@@ -420,6 +426,8 @@ export async function PATCH(req: Request) {
     action?: 'enregistrer' | 'valider' | 'rejeter' | 'annoter' | 'effacer';
     notes?: string;
     synthese?: unknown;
+    /** `updatedAt` de la synthèse que l'écran affiche (ISO). Facultatif. */
+    version?: unknown;
   };
 
   let body: PatchBody;
@@ -436,6 +444,13 @@ export async function PATCH(req: Request) {
   if (!idSynthese || !action) {
     return withCorrelationHeader(NextResponse.json({ error: 'idSynthese et action sont requis.' }, { status: 400 }), requestContext);
   }
+  // VERSION OPTIMISTE (lot synthese-version-optimiste) : l'écran envoie le
+  // `updatedAt` de la synthèse qu'il affiche. Absente, la fenêtre se réduit à
+  // celle de la requête (lecture d'entrée → verrou).
+  const versionClient = typeof body.version === 'string' ? new Date(body.version) : null;
+  if (body.version != null && (versionClient === null || Number.isNaN(versionClient.getTime()))) {
+    return withCorrelationHeader(NextResponse.json({ error: 'Version de synthèse invalide.' }, { status: 400 }), requestContext);
+  }
 
   const emailSession = emailPraticien(session);
   if (!emailSession) {
@@ -448,6 +463,12 @@ export async function PATCH(req: Request) {
     });
     if (!existing) {
       return withCorrelationHeader(NextResponse.json({ error: 'Synthèse introuvable.' }, { status: 404 }), requestContext);
+    }
+    if (versionClient && versionClient.getTime() !== existing.updatedAt.getTime()) {
+      return withCorrelationHeader(NextResponse.json(
+        { error: MESSAGE_SYNTHESE_MODIFIEE, code: CODE_SYNTHESE_MODIFIEE },
+        { status: 409 },
+      ), requestContext);
     }
 
     let statut = existing.statut;
@@ -582,9 +603,18 @@ export async function PATCH(req: Request) {
     // validée, un brouillon n'a donc jamais été imprimé. « REJETER » relit
     // aussi : un onglet périmé ne retire pas du portail une synthèse validée
     // et envoyée entre-temps (wn-reviewer, P3-1) ; le retrait voulu reste
-    // possible depuis un écran rechargé. Seul « effacer » ne relit pas : il
-    // réinitialise quel que soit le statut, et le contrôle d'impression ci-
-    // dessous, sous le même verrou, garde ce qu'il ne doit pas défaire.
+    // possible depuis un écran rechargé. Seul « effacer » ne relit pas le
+    // statut : il réinitialise quel que soit le statut, et le contrôle
+    // d'impression ci-dessous, sous le même verrou, garde ce qu'il ne doit pas
+    // défaire.
+    //
+    // TOUTES LES ACTIONS, « EFFACER » COMPRIS, COMPARENT `updatedAt` sous le
+    // verrou à la lecture d'entrée — elle-même égale, si l'écran l'a envoyée,
+    // à la version qu'il affiche (contrôlé plus haut). Statut et modèle seuls
+    // laissaient passer un « enregistrer » concurrent qui garde le brouillon
+    // brouillon : un « valider », un second « enregistrer » ou un « effacer »
+    // l'écrasait en silence (P3 de wn-reviewer sur #2221, P3-2 sur #2226 ;
+    // PR-Agent sur les deux). Lot synthese-version-optimiste.
     //
     // « EFFACER » CONTRÔLE AUSSI LE BOOKLET SOUS LE VERROU, que l'envoi du
     // booklet prend avant de réserver sa ligne (`/api/praticien/booklet`). Lu
@@ -594,6 +624,7 @@ export async function PATCH(req: Request) {
     const relitStatut = action !== 'effacer';
     const figeeParImpression = action === 'effacer' || action === 'rejeter' || action === 'enregistrer';
     let changeeEntreTemps = false;
+    let versionPerimee = false;
     let bookletParti = false;
     const record = await prisma.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT id FROM patients WHERE id_patient = ${existing.idPatient} FOR UPDATE`;
@@ -616,15 +647,21 @@ export async function PATCH(req: Request) {
           return null;
         }
       }
-      if (relitStatut) {
-        const courante = await tx.syntheseIA.findUnique({
-          where: { idSynthese },
-          select: { statut: true, modele: true },
-        });
-        if (!courante || courante.statut !== existing.statut || courante.modele !== existing.modele) {
-          changeeEntreTemps = true;
-          return null;
-        }
+      const courante = await tx.syntheseIA.findUnique({
+        where: { idSynthese },
+        select: { statut: true, modele: true, updatedAt: true },
+      });
+      if (!courante) {
+        changeeEntreTemps = true;
+        return null;
+      }
+      if (relitStatut && (courante.statut !== existing.statut || courante.modele !== existing.modele)) {
+        changeeEntreTemps = true;
+        return null;
+      }
+      if (courante.updatedAt.getTime() !== existing.updatedAt.getTime()) {
+        versionPerimee = true;
+        return null;
       }
       if (figeeParImpression) {
         const imprimee = await tx.documentMedecinImprime.findFirst({
@@ -641,13 +678,11 @@ export async function PATCH(req: Request) {
         { status: 409 },
       ), requestContext);
     }
-    if (changeeEntreTemps) {
+    if (changeeEntreTemps || versionPerimee) {
       return withCorrelationHeader(NextResponse.json(
-        {
-          error: action === 'enregistrer'
-            ? 'Seul un brouillon (IA ou praticien) non encore validé peut être modifié.'
-            : 'La synthèse a été modifiée entre-temps. Rechargez-la avant de recommencer.',
-        },
+        changeeEntreTemps && action === 'enregistrer'
+          ? { error: 'Seul un brouillon (IA ou praticien) non encore validé peut être modifié.', code: CODE_SYNTHESE_MODIFIEE }
+          : { error: MESSAGE_SYNTHESE_MODIFIEE, code: CODE_SYNTHESE_MODIFIEE },
         { status: 409 },
       ), requestContext);
     }
@@ -692,6 +727,7 @@ export async function PATCH(req: Request) {
       modele: record.modele,
       dateValidation: record.dateValidation,
       notesPraticien: record.notesPraticien,
+      updatedAt: record.updatedAt,
     }), requestContext);
   } catch (err) {
     logger.error({

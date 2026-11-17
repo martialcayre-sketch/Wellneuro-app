@@ -31,7 +31,13 @@ type SyntheseRecord = {
    * biologie repris hors de ses champs) — calculé côté serveur, qui refuse
    * aussi la validation et les sorties. */
   motifSuspecte?: string | null;
+  /* Version optimiste : renvoyée telle quelle au PATCH, qui répond 409
+   * `synthese_modifiee` si la synthèse a changé depuis. */
+  updatedAt?: string;
 };
+
+// Le 409 sur lequel l'écran recharge la synthèse (route PATCH).
+const CODE_SYNTHESE_MODIFIEE = 'synthese_modifiee';
 
 const STATUT_LABEL: Record<string, string> = {
   Brouillon_IA: 'Brouillon IA',
@@ -135,26 +141,29 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
   // `FichePatientPanel`, et pour la même raison.
   const generationSyntheses = useRef(0);
 
-  const loadSyntheses = useCallback(async (idPatient: string) => {
+  // Rend la liste lue, ou `null` (échec, ou lecture dépassée par une autre).
+  const loadSyntheses = useCallback(async (idPatient: string): Promise<SyntheseRecord[] | null> => {
     const generation = ++generationSyntheses.current;
     setErreurSyntheses(false);
-    if (!idPatient) { setSyntheses([]); return; }
+    if (!idPatient) { setSyntheses([]); return null; }
     setLoading(true);
     try {
       const r = await fetch(`/api/praticien/synthese?idPatient=${encodeURIComponent(idPatient)}`);
       const d = await r.json() as { syntheses?: SyntheseRecord[] };
-      if (generation !== generationSyntheses.current) return;
+      if (generation !== generationSyntheses.current) return null;
       // Une réponse non `ok` est un échec, pas une liste vide (Q4).
       if (!r.ok || !Array.isArray(d.syntheses)) {
         setSyntheses([]);
         setErreurSyntheses(true);
-        return;
+        return null;
       }
       setSyntheses(d.syntheses);
+      return d.syntheses;
     } catch {
-      if (generation !== generationSyntheses.current) return;
+      if (generation !== generationSyntheses.current) return null;
       setSyntheses([]);
       setErreurSyntheses(true);
+      return null;
     }
     finally { if (generation === generationSyntheses.current) setLoading(false); }
   }, []);
@@ -170,6 +179,65 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
   const relireSiCourant = async (idPatient: string) => {
     if (patientCourant.current !== idPatient) return;
     await loadSyntheses(idPatient);
+  };
+
+  // SUR 409 `synthese_modifiee` (lot synthese-version-optimiste), l'écran
+  // relit la synthèse et l'affiche telle qu'elle est enregistrée : le geste
+  // suivant porte alors sur ce que le praticien voit. Le texte non enregistré
+  // de l'éditeur visait une version qui n'existe plus ; il est remplacé, et le
+  // message le dit. Le détail se ferme si la synthèse a disparu. Même garde
+  // que `relireSiCourant` : un autre patient choisi entre-temps n'est pas relu
+  // à la place du sien.
+  const rechargerApresConflit = async (idSynthese: string, zone: ZoneRetour, texteNonEnregistre: boolean) => {
+    // Sous un autre patient, rien n'est relu : le message dit seulement que
+    // le geste n'a pas été appliqué.
+    const msgAutrePatient = 'Votre geste sur la synthèse d’un autre patient n’a pas été appliqué : elle avait été modifiée entre-temps. Rouvrez-la avant de recommencer.';
+    if (patientCourant.current !== selectedPatient) {
+      setFeedback({ ok: false, msg: msgAutrePatient, zone: 'patient' });
+      return;
+    }
+    const liste = await loadSyntheses(selectedPatient);
+    const msg = 'La synthèse a été modifiée entre-temps. Elle est rechargée : vérifiez-la avant de recommencer.'
+      + (texteNonEnregistre ? ' Vos modifications non enregistrées ne sont pas conservées.' : '');
+    if (!liste) {
+      // Rien n'a été relu : jamais « rechargée » ici (P3-2 de wn-reviewer, deux
+      // passes). Patient changé pendant la relecture, elle n'a rien écrit ;
+      // sinon elle a échoué, et le détail reste tel quel, texte saisi compris.
+      setFeedback(patientCourant.current !== selectedPatient
+        ? { ok: false, msg: msgAutrePatient, zone: 'patient' }
+        : {
+            ok: false,
+            msg: 'La synthèse a été modifiée entre-temps et n’a pas pu être relue. Fermez-la puis rouvrez-la avant de recommencer.',
+            zone: zoneDuDetail(idSynthese, zone),
+          });
+      return;
+    }
+    if (syntheseOuverte.current !== idSynthese) {
+      setFeedback({ ok: false, msg, zone: 'patient' });
+      return;
+    }
+    const fraiche = liste.find(s => s.idSynthese === idSynthese);
+    if (!fraiche) {
+      setSelectedSynthese(null);
+      setEditedManual(null);
+      setManualDirty(false);
+      setBookletHtml(null);
+      setBookletInfo(null);
+      setFeedback({ ok: false, msg, zone: 'patient' });
+      return;
+    }
+    const editable = fraiche.statut === 'Brouillon_Praticien' || fraiche.statut === 'Brouillon_IA';
+    const validee = fraiche.statut === 'Validee_Praticien' || fraiche.statut === 'Corrigee_Praticien';
+    setSelectedSynthese(fraiche);
+    setEditedManual(editable ? fraiche.syntheseJson : null);
+    setManualDirty(false);
+    setNotes(fraiche.notesPraticien ?? '');
+    setBookletHtml(null);
+    setBookletInfo(null);
+    // La zone de l'éditeur ou de la note peut disparaître avec le nouveau
+    // statut : le message va alors sous « Vider la synthèse », toujours affiché.
+    const zoneAffichee = (zone === 'edition' && !editable) || (zone === 'note' && !validee) ? 'actions' : zone;
+    setFeedback({ ok: false, msg, zone: zoneAffichee });
   };
 
   // Q5 : l'échec de la liste des patients n'est plus avalé.
@@ -353,15 +421,20 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
           idSynthese: selectedSynthese.idSynthese,
           action: 'enregistrer',
           synthese: editedManual,
+          version: selectedSynthese.updatedAt,
         }),
       });
-      const d = await r.json() as { success?: boolean; error?: string; syntheseJson?: SyntheseSchema; motifSuspecte?: string | null };
+      const d = await r.json() as { success?: boolean; error?: string; code?: string; syntheseJson?: SyntheseSchema; motifSuspecte?: string | null; updatedAt?: string };
+      if (r.status === 409 && d.code === CODE_SYNTHESE_MODIFIEE) {
+        await rechargerApresConflit(selectedSynthese.idSynthese, 'edition', true);
+        return;
+      }
       if (!r.ok || !d.success || !d.syntheseJson) {
         setFeedback({ ok: false, msg: d.error ?? 'Impossible d’enregistrer le brouillon.', zone: zoneDuDetail(selectedSynthese.idSynthese, 'edition') });
         return;
       }
       // [[D-513]] §5 : le verdict recalculé par le serveur sur le texte enregistré.
-      setSelectedSynthese({ ...selectedSynthese, syntheseJson: d.syntheseJson, motifSuspecte: d.motifSuspecte ?? null });
+      setSelectedSynthese({ ...selectedSynthese, syntheseJson: d.syntheseJson, motifSuspecte: d.motifSuspecte ?? null, updatedAt: d.updatedAt });
       setEditedManual(d.syntheseJson);
       setManualDirty(false);
       setFeedback({ ok: true, msg: 'Brouillon praticien enregistré.', zone: zoneDuDetail(selectedSynthese.idSynthese, 'edition') });
@@ -376,13 +449,20 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
   const onAction = async (idSynthese: string, action: 'valider' | 'rejeter' | 'annoter') => {
     setSaving(true);
     setFeedback(null);
+    // La version de la synthèse affichée — celle sur laquelle porte le geste.
+    const version = selectedSynthese?.idSynthese === idSynthese ? selectedSynthese.updatedAt : undefined;
     try {
       const r = await fetch('/api/praticien/synthese', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idSynthese, action, notes }),
+        body: JSON.stringify({ idSynthese, action, notes, version }),
       });
-      const d = await r.json() as { success?: boolean; error?: string; statut?: string };
+      const d = await r.json() as { success?: boolean; error?: string; code?: string; statut?: string };
+      if (r.status === 409 && d.code === CODE_SYNTHESE_MODIFIEE) {
+        const noteNonEnregistree = action === 'annoter' && notes.trim() !== (selectedSynthese?.notesPraticien ?? '').trim();
+        await rechargerApresConflit(idSynthese, action === 'annoter' ? 'note' : 'actions', noteNonEnregistree);
+        return;
+      }
       if (!r.ok || !d.success) {
         setFeedback({ ok: false, msg: d.error ?? 'Erreur.', zone: zoneDuDetail(idSynthese, action === 'annoter' ? 'note' : 'actions') });
         return;
@@ -413,17 +493,23 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
       const r = await fetch('/api/praticien/synthese', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idSynthese: selectedSynthese.idSynthese, action: 'effacer' }),
+        body: JSON.stringify({ idSynthese: selectedSynthese.idSynthese, action: 'effacer', version: selectedSynthese.updatedAt }),
       });
       const d = await r.json() as {
         success?: boolean;
         error?: string;
+        code?: string;
         statut?: string;
         syntheseJson?: SyntheseSchema;
         modele?: string;
         dateValidation?: string | null;
         notesPraticien?: string | null;
+        updatedAt?: string;
       };
+      if (r.status === 409 && d.code === CODE_SYNTHESE_MODIFIEE) {
+        await rechargerApresConflit(selectedSynthese.idSynthese, 'actions', manualDirty);
+        return;
+      }
       if (!r.ok || !d.success || !d.syntheseJson || !d.statut) {
         setFeedback({ ok: false, msg: d.error ?? 'Impossible d’effacer la synthèse.', zone: zoneDuDetail(selectedSynthese.idSynthese, 'actions') });
         return;
@@ -435,6 +521,7 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
         dateValidation: d.dateValidation ?? null,
         notesPraticien: d.notesPraticien ?? null,
         syntheseJson: d.syntheseJson,
+        updatedAt: d.updatedAt,
       };
       setSelectedSynthese(syntheseVide);
       setEditedManual(d.syntheseJson);
