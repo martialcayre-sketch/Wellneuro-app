@@ -11,6 +11,8 @@ import {
 } from '@/lib/documents';
 import { DocumentComposer } from '@/components/patient-cockpit/DocumentComposer';
 import type { ImpressionDocumentMedecinResponse } from '@/app/api/praticien/documents/medecin/impression/route';
+import { Button } from '@/components/ui/Button';
+import { Select } from '@/components/ui/Select';
 
 // Montage praticien de la composition documentaire C3 (LOT-05). Page dédiée
 // `/dashboard/documents`. Sélectionne une synthèse VALIDÉE, compose côté serveur
@@ -39,8 +41,23 @@ const DESTINATAIRE_LABELS: Record<Destinataire, string> = {
   praticien: 'Praticien',
 };
 
-const inputCls = 'bg-surface border border-border rounded-lg px-3 py-2 text-sm text-foreground';
-const btnBase = 'min-h-11 px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-60';
+// Q7 de PRA-5 ([[D-481]] complément DOC-15) : 44 px et focus visible.
+const focus = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring';
+const btnBase = `min-h-11 px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-60 ${focus}`;
+
+// Q6 : le retour d'action paraît une seule fois, sous le geste qui l'a
+// produit — succès en `role=status`, échec en `role=alert`.
+type ZoneRetour = 'selection' | 'impression' | 'envoi';
+type Retour = { ok: boolean; msg: string; zone: ZoneRetour };
+
+function RetourAction({ retour, zone }: { retour: Retour | null; zone: ZoneRetour }) {
+  if (!retour || retour.zone !== zone) return null;
+  return (
+    <p role={retour.ok ? 'status' : 'alert'} className={`text-base ${retour.ok ? 'text-status-success' : 'text-status-danger'}`}>
+      {retour.msg}
+    </p>
+  );
+}
 
 export function DocumentsPanel({ initialPatientId = '' }: { initialPatientId?: string } = {}) {
   const [patients, setPatients] = useState<PatientsPgApiResponse['patients']>([]);
@@ -52,7 +69,17 @@ export function DocumentsPanel({ initialPatientId = '' }: { initialPatientId?: s
   const [destinataireApercu, setDestinataireApercu] = useState<Destinataire>('patient');
   const [relectureConfirmee, setRelectureConfirmee] = useState(false);
   const [sending, setSending] = useState(false);
-  const [feedback, setFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
+  const [feedback, setFeedback] = useState<Retour | null>(null);
+  // Q4 et Q5 de PRA-5 : un échec de lecture n'est pas une absence. Chaque
+  // lecture a son échec et son « Réessayer », qui ne relance qu'elle ; le
+  // focus revient au bouton si la lecture échoue encore.
+  const [erreurPatients, setErreurPatients] = useState(false);
+  const [syntheseLue, setSyntheseLue] = useState<'non' | 'en_cours' | 'lue' | 'erreur'>('non');
+  const reessayerPatients = useRef<HTMLButtonElement>(null);
+  const reessayerSyntheses = useRef<HTMLButtonElement>(null);
+  const [focusApresRelecture, setFocusApresRelecture] = useState<'patients' | 'syntheses' | null>(null);
+  // Une réponse périmée (dossier quitté entre-temps) n'écrase pas la liste.
+  const generationSyntheses = useRef(0);
   const apercuRef = useRef<HTMLIFrameElement>(null);
   // Document pour le médecin ([[D-307]] §2, F38) : l'impression se confirme,
   // s'enregistre côté serveur, puis imprime l'instantané que le serveur a
@@ -67,23 +94,80 @@ export function DocumentsPanel({ initialPatientId = '' }: { initialPatientId?: s
   const selectionCourante = useRef({ idSynthese: selectedIdSynthese, destinataire: destinataireApercu });
   selectionCourante.current = { idSynthese: selectedIdSynthese, destinataire: destinataireApercu };
 
+  // Q5 : l'échec de la liste des patients n'est plus avalé.
+  async function chargerPatients(): Promise<PatientsPgApiResponse['patients'] | null> {
+    try {
+      const r = await fetch('/api/praticien/patients-pg');
+      const d = (await r.json()) as Partial<PatientsPgApiResponse>;
+      if (!r.ok || !Array.isArray(d.patients)) {
+        setErreurPatients(true);
+        return null;
+      }
+      setPatients(d.patients);
+      return d.patients;
+    } catch {
+      setErreurPatients(true);
+      return null;
+    }
+  }
+
   useEffect(() => {
-    fetch('/api/praticien/patients-pg')
-      .then((r) => r.json())
-      .then((d: PatientsPgApiResponse) => {
-        const liste = d.patients ?? [];
-        setPatients(liste);
-        // Continuité `?idPatient=` (audit 2026-09-02) : pré-sélectionner le
-        // dossier transmis par l'URL — seulement s'il existe dans la liste du
-        // praticien, jamais sur la foi du paramètre seul.
-        if (initialPatientId && liste.some((p) => p.idPatient === initialPatientId)) {
-          void onSelectPatient(initialPatientId);
-        }
-      })
-      .catch(() => {});
+    void chargerPatients().then((liste) => {
+      // Continuité `?idPatient=` (audit 2026-09-02) : pré-sélectionner le
+      // dossier transmis par l'URL — seulement s'il existe dans la liste du
+      // praticien, jamais sur la foi du paramètre seul.
+      if (liste && initialPatientId && liste.some((p) => p.idPatient === initialPatientId)) {
+        void onSelectPatient(initialPatientId);
+      }
+    });
     // `initialPatientId` vient de l'URL au montage : une seule lecture.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  async function relirePatients() {
+    setErreurPatients(false);
+    const liste = await chargerPatients();
+    // Même continuité `?idPatient=` qu'au montage, si rien n'est choisi.
+    if (liste && !selectedPatient && initialPatientId && liste.some((p) => p.idPatient === initialPatientId)) {
+      void onSelectPatient(initialPatientId);
+    }
+    setFocusApresRelecture('patients');
+  }
+
+  // Q4 : une réponse non `ok` est un échec, pas une liste vide.
+  async function lireSynthesesValidees(idPatient: string) {
+    const generation = ++generationSyntheses.current;
+    setSyntheseLue('en_cours');
+    try {
+      const r = await fetch(`/api/praticien/synthese?idPatient=${encodeURIComponent(idPatient)}`);
+      const d = (await r.json()) as { syntheses?: SyntheseRecord[] };
+      if (generation !== generationSyntheses.current) return;
+      if (!r.ok || !Array.isArray(d.syntheses)) {
+        setSyntheses([]);
+        setSyntheseLue('erreur');
+        return;
+      }
+      setSyntheses(d.syntheses.filter((s) => STATUTS_VALIDES.has(s.statut)));
+      setSyntheseLue('lue');
+    } catch {
+      if (generation !== generationSyntheses.current) return;
+      setSyntheses([]);
+      setSyntheseLue('erreur');
+    }
+  }
+
+  async function relireSyntheses() {
+    if (!selectedPatient) return;
+    await lireSynthesesValidees(selectedPatient);
+    setFocusApresRelecture('syntheses');
+  }
+
+  // Le bouton n'est rendu que si la lecture a encore échoué : le focus y revient.
+  useEffect(() => {
+    if (!focusApresRelecture) return;
+    (focusApresRelecture === 'patients' ? reessayerPatients : reessayerSyntheses).current?.focus();
+    setFocusApresRelecture(null);
+  }, [focusApresRelecture]);
 
   async function onSelectPatient(idPatient: string) {
     setSelectedPatient(idPatient);
@@ -93,14 +177,12 @@ export function DocumentsPanel({ initialPatientId = '' }: { initialPatientId?: s
     setHtmlImprime(null);
     setFeedback(null);
     setSyntheses([]);
-    if (!idPatient) return;
-    try {
-      const r = await fetch(`/api/praticien/synthese?idPatient=${encodeURIComponent(idPatient)}`);
-      const d = (await r.json()) as { syntheses: SyntheseRecord[] };
-      setSyntheses((d.syntheses ?? []).filter((s) => STATUTS_VALIDES.has(s.statut)));
-    } catch {
-      setSyntheses([]);
+    if (!idPatient) {
+      generationSyntheses.current += 1;
+      setSyntheseLue('non');
+      return;
     }
+    await lireSynthesesValidees(idPatient);
   }
 
   async function onSelectSynthese(idSynthese: string) {
@@ -116,12 +198,12 @@ export function DocumentsPanel({ initialPatientId = '' }: { initialPatientId?: s
       const r = await fetch(`/api/praticien/documents?idSynthese=${encodeURIComponent(idSynthese)}`);
       const d = (await r.json()) as DocumentApiResponse;
       if (!r.ok || !d.ok) {
-        setFeedback({ ok: false, msg: d.error ?? 'Composition impossible.' });
+        setFeedback({ ok: false, msg: d.error ?? 'Composition impossible.', zone: 'selection' });
         return;
       }
       setDoc(d);
     } catch {
-      setFeedback({ ok: false, msg: 'Erreur réseau lors de la composition.' });
+      setFeedback({ ok: false, msg: 'Erreur réseau lors de la composition.', zone: 'selection' });
     } finally {
       setLoading(false);
     }
@@ -176,15 +258,16 @@ export function DocumentsPanel({ initialPatientId = '' }: { initialPatientId?: s
         // Enregistrée, mais l'écran montre désormais autre chose : on le dit,
         // on n'imprime pas.
         setConfirmationImpression(false);
-        setFeedback({ ok: true, msg: 'Impression enregistrée au Fil de correspondance ; la sélection a changé, rien n’a été imprimé.' });
+        // La sélection a changé : le retour paraît sous la sélection, toujours affichée.
+        setFeedback({ ok: true, msg: 'Impression enregistrée au Fil de correspondance ; la sélection a changé, rien n’a été imprimé.', zone: 'selection' });
         return;
       }
       if (!r.ok || !d.ok) {
-        setFeedback({ ok: false, msg: ('error' in d && d.error) || 'Impression impossible.' });
+        setFeedback({ ok: false, msg: ('error' in d && d.error) || 'Impression impossible.', zone: memeSelection ? 'impression' : 'selection' });
         return;
       }
       setConfirmationImpression(false);
-      setFeedback({ ok: true, msg: 'Impression enregistrée : une ligne datée est ajoutée au Fil de correspondance.' });
+      setFeedback({ ok: true, msg: 'Impression enregistrée : une ligne datée est ajoutée au Fil de correspondance.', zone: 'impression' });
       if (d.html === (htmlImprime ?? apercu.html)) {
         apercuRef.current?.contentWindow?.print();
       } else {
@@ -193,7 +276,9 @@ export function DocumentsPanel({ initialPatientId = '' }: { initialPatientId?: s
         setHtmlImprime(d.html);
       }
     } catch {
-      setFeedback({ ok: false, msg: 'Erreur réseau lors de l’impression.' });
+      const memeSelection =
+        selectionCourante.current.idSynthese === idSynthese && selectionCourante.current.destinataire === 'medecin';
+      setFeedback({ ok: false, msg: 'Erreur réseau lors de l’impression.', zone: memeSelection ? 'impression' : 'selection' });
     } finally {
       setImpressionEnCours(false);
     }
@@ -207,13 +292,20 @@ export function DocumentsPanel({ initialPatientId = '' }: { initialPatientId?: s
 
   async function onEnvoyerPatient() {
     if (!selectedIdSynthese || !relectureConfirmee) return;
+    const idSynthese = selectedIdSynthese;
+    // Le retour suit le geste tant que la sélection n'a pas changé ; sinon il
+    // paraît sous la sélection, jamais sous le bouton d'une autre synthèse.
+    const zoneEnvoi = (): ZoneRetour =>
+      selectionCourante.current.idSynthese === idSynthese && selectionCourante.current.destinataire === 'patient'
+        ? 'envoi'
+        : 'selection';
     setSending(true);
     setFeedback(null);
     try {
       const r = await fetch('/api/praticien/booklet', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idSynthese: selectedIdSynthese, relectureConfirmee: true }),
+        body: JSON.stringify({ idSynthese, relectureConfirmee: true }),
       });
       const d = (await r.json()) as { success?: boolean; needsConfirmation?: boolean; reason?: string; terme?: string; warning?: string; error?: string };
       if (d.needsConfirmation) {
@@ -225,14 +317,14 @@ export function DocumentsPanel({ initialPatientId = '' }: { initialPatientId?: s
         const msgDefaut = d.reason === 'REGISTRE_ANXIOGENE'
           ? `Le texte patient emploie « ${d.terme ?? 'un mot signalé'} ». Relisez-le depuis l’écran Synthèse & Booklet, où vous pourrez le reformuler ou l’assumer.`
           : 'Document déjà envoyé — confirmez le renvoi depuis l’écran Synthèse & Booklet.';
-        setFeedback({ ok: false, msg: d.warning ?? msgDefaut });
+        setFeedback({ ok: false, msg: d.warning ?? msgDefaut, zone: zoneEnvoi() });
       } else if (d.success) {
-        setFeedback({ ok: true, msg: 'Document envoyé au patient.' });
+        setFeedback({ ok: true, msg: 'Document envoyé au patient.', zone: zoneEnvoi() });
       } else {
-        setFeedback({ ok: false, msg: d.error ?? 'Envoi impossible.' });
+        setFeedback({ ok: false, msg: d.error ?? 'Envoi impossible.', zone: zoneEnvoi() });
       }
     } catch {
-      setFeedback({ ok: false, msg: 'Erreur réseau lors de l’envoi.' });
+      setFeedback({ ok: false, msg: 'Erreur réseau lors de l’envoi.', zone: zoneEnvoi() });
     } finally {
       setSending(false);
     }
@@ -242,19 +334,25 @@ export function DocumentsPanel({ initialPatientId = '' }: { initialPatientId?: s
     <div className="flex flex-col gap-6">
       {/* Sélection patient + synthèse validée */}
       <div className="bg-surface border border-border rounded-xl p-4 flex flex-col gap-3 shadow-card">
-        <h3 className="font-display text-lg font-semibold text-foreground">Patient et synthèse validée</h3>
+        <h2 id="documents-selection-titre" className="font-display text-lg font-semibold text-foreground">Patient et synthèse validée</h2>
         <div className="flex flex-wrap gap-3">
-          <select value={selectedPatient} onChange={(e) => onSelectPatient(e.target.value)} className={`${inputCls} w-full sm:w-80`}>
+          <Select
+            aria-labelledby="documents-selection-titre"
+            value={selectedPatient}
+            onChange={(e) => onSelectPatient(e.target.value)}
+            className={`min-h-11 w-full sm:w-80 ${focus}`}
+          >
             <option value="">Sélectionner un patient</option>
             {patients.map((p) => (
               <option key={p.idPatient} value={p.idPatient}>{`${p.prenom} ${p.nom} — ${p.email}`}</option>
             ))}
-          </select>
-          <select
+          </Select>
+          <Select
+            aria-labelledby="documents-selection-titre"
             value={selectedIdSynthese}
             onChange={(e) => onSelectSynthese(e.target.value)}
             disabled={!selectedPatient}
-            className={`${inputCls} w-full sm:w-80`}
+            className={`min-h-11 w-full sm:w-80 ${focus}`}
           >
             <option value="">Sélectionner une synthèse validée</option>
             {syntheses.map((s) => (
@@ -262,17 +360,33 @@ export function DocumentsPanel({ initialPatientId = '' }: { initialPatientId?: s
                 {`${s.idSynthese.slice(0, 10)}… — ${s.statut === 'Corrigee_Praticien' ? 'Corrigée' : 'Validée'}`}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
-        {selectedPatient && syntheses.length === 0 && (
+        {erreurPatients && (
+          <div role="alert" className="flex flex-wrap items-center gap-3 text-base text-status-danger">
+            <span>La liste des patients n’a pas pu être lue.</span>
+            <Button ref={reessayerPatients} type="button" variant="outline" onClick={() => void relirePatients()}>
+              Réessayer
+            </Button>
+          </div>
+        )}
+        {selectedPatient && syntheseLue === 'erreur' && (
+          <div role="alert" className="flex flex-wrap items-center gap-3 text-base text-status-danger">
+            <span>Les synthèses validées n’ont pas pu être lues. Ce n’est pas une absence de synthèse validée.</span>
+            <Button ref={reessayerSyntheses} type="button" variant="outline" onClick={() => void relireSyntheses()}>
+              Réessayer
+            </Button>
+          </div>
+        )}
+        {selectedPatient && syntheseLue === 'lue' && syntheses.length === 0 && (
           <p className="text-base text-muted-foreground">
             Aucune synthèse validée pour ce patient. Validez une synthèse dans « Synthèse IA & Booklet » d’abord.
           </p>
         )}
-        {feedback && <p className={`text-base ${feedback.ok ? 'text-status-success' : 'text-status-danger'}`}>{feedback.msg}</p>}
+        <RetourAction retour={feedback} zone="selection" />
       </div>
 
-      {loading && <p className="text-sm text-muted-foreground">Composition en cours…</p>}
+      {loading && <p role="status" className="text-sm text-muted-foreground">Composition en cours…</p>}
 
       {doc && (
         <>
@@ -284,7 +398,7 @@ export function DocumentsPanel({ initialPatientId = '' }: { initialPatientId?: s
           {/* Aperçu imprimable par destinataire */}
           <div className="bg-surface border border-border rounded-xl p-4 flex flex-col gap-3 shadow-card">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <h3 className="font-display text-lg font-semibold text-foreground">Aperçu imprimable</h3>
+              <h2 className="font-display text-lg font-semibold text-foreground">Aperçu imprimable</h2>
               <div role="group" aria-label="Destinataire de l’aperçu imprimable" className="flex flex-wrap gap-2">
                 {DESTINATAIRES.map((d) => (
                   <button
@@ -312,17 +426,12 @@ export function DocumentsPanel({ initialPatientId = '' }: { initialPatientId?: s
               className="w-full h-[420px] border border-border rounded-lg bg-surface"
             />
             <div className="flex flex-wrap items-center gap-3">
-              <button
-                type="button"
-                onClick={onImprimer}
-                disabled={impressionEnCours}
-                className={`${btnBase} border bg-surface text-foreground`}
-              >
+              <Button type="button" variant="outline" onClick={onImprimer} disabled={impressionEnCours}>
                 Imprimer cet aperçu
-              </button>
+              </Button>
               {destinataireApercu === 'patient' && (
                 <>
-                  <label className="flex items-center gap-2 text-sm text-foreground">
+                  <label className="flex min-h-11 items-center gap-2 text-sm text-foreground">
                     <input
                       type="checkbox"
                       checked={relectureConfirmee}
@@ -330,17 +439,13 @@ export function DocumentsPanel({ initialPatientId = '' }: { initialPatientId?: s
                     />
                     J’ai relu et je valide l’envoi au patient
                   </label>
-                  <button
-                    type="button"
-                    onClick={onEnvoyerPatient}
-                    disabled={!relectureConfirmee || sending}
-                    className={`${btnBase} bg-status-success text-white`}
-                  >
+                  <Button type="button" onClick={onEnvoyerPatient} disabled={!relectureConfirmee || sending}>
                     {sending ? 'Envoi…' : 'Envoyer au patient'}
-                  </button>
+                  </Button>
                 </>
               )}
             </div>
+            <RetourAction retour={feedback} zone="envoi" />
             {destinataireApercu === 'medecin' && confirmationImpression && (
               <div role="group" aria-label="Confirmer l’impression" className="flex flex-col gap-2 rounded-lg border border-border p-3">
                 <p className="text-sm text-foreground">
@@ -350,25 +455,21 @@ export function DocumentsPanel({ initialPatientId = '' }: { initialPatientId?: s
                   Wellneuro n’envoie ce document à personne.
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => void onConfirmerImpressionMedecin()}
-                    disabled={impressionEnCours}
-                    className={`${btnBase} bg-foreground text-surface`}
-                  >
+                  <Button type="button" onClick={() => void onConfirmerImpressionMedecin()} disabled={impressionEnCours}>
                     {impressionEnCours ? 'Enregistrement…' : 'Confirmer et imprimer'}
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="button"
+                    variant="outline"
                     onClick={() => setConfirmationImpression(false)}
                     disabled={impressionEnCours}
-                    className={`${btnBase} border bg-surface text-foreground`}
                   >
                     Annuler
-                  </button>
+                  </Button>
                 </div>
               </div>
             )}
+            <RetourAction retour={feedback} zone="impression" />
             <p className="text-xs text-muted-foreground">
               Le rendu médecin et praticien s’imprime en HTML (PDF différé). L’envoi patient réutilise le canal
               e-mail existant (booklet).

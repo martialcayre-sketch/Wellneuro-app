@@ -60,7 +60,8 @@ type Options = {
 function stubFetch(o: Options = {}) {
   const appels: string[] = [];
   const retenues: Array<() => void> = [];
-  const reponse = (corps: unknown) => ({ json: async () => corps }) as unknown as Response;
+  // `ok: true` : depuis PRA-5 (Q4, Q5), une réponse non `ok` est un échec de lecture.
+  const reponse = (corps: unknown) => ({ ok: true, json: async () => corps }) as unknown as Response;
 
   vi.stubGlobal(
     'fetch',

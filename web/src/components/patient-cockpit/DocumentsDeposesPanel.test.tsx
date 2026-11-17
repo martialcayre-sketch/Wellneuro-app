@@ -2,6 +2,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { DocumentsDeposesPanel } from './DocumentsDeposesPanel';
+import { ChiffresMasquesProvider } from './ChiffresMasques';
 
 // L'encart praticien de la collecte ([[D-330]]) : muet tant que la surface
 // patient est fermée et que rien n'a été déposé ; sinon chaque document, son
@@ -126,5 +127,20 @@ describe('DocumentsDeposesPanel', () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ ok: false }), { status: 500 })));
     render(<DocumentsDeposesPanel idPatient="PAT_SOPHIE" />);
     expect(await screen.findByText('Les documents déposés n’ont pas pu être lus.')).toBeTruthy();
+  });
+
+  // [[D-354]] amendement DOC-15 (Q10) : en mode consultation, la fiche ne rend
+  // aucun lien qui la quitte. Le contexte des chiffres masqués est celui que la
+  // fiche pose en mode ; les autres gestes restent.
+  it('en mode consultation, « Ouvrir le document » n’est pas rendu', async () => {
+    repondre({ ok: true, ouvert: true, documents: [DOC] });
+    render(
+      <ChiffresMasquesProvider masques>
+        <DocumentsDeposesPanel idPatient="PAT_SOPHIE" />
+      </ChiffresMasquesProvider>,
+    );
+    expect(await screen.findByText('Déposé le 08/10/2026')).toBeTruthy();
+    expect(screen.queryByRole('link')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Corriger la catégorie' })).toBeTruthy();
   });
 });
