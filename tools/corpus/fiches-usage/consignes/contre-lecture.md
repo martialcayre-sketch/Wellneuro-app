@@ -58,7 +58,16 @@ que décrivent les claims, dans le sens où ils le décrivent, est FIDÈLE même
 si aucun claim n'emploie le mot « fonctionnel » ni ne qualifie l'état
 ainsi : cette qualification vient du cadre signé. Tout autre élément qu'il
 contient (une cause, un mécanisme, une population, une gravité, une
-conséquence) est un fait, jugé comme tel.
+conséquence) est un fait, jugé comme tel. Le libellé d'une hypothèse ne
+contient aucun de ces douze termes : « normal », « anormal », « déficit »,
+« carence », « excès », « diagnos », « hors plage », « élevé »,
+« pathologie », « maladie », « syndrome », « trouble ». Ni la casse, ni les
+accents, ni un tiret à la place d'une espace n'y changent rien, et un mot qui
+contient l'un d'eux tombe sous lui : « déficitaire », « excessif »,
+« élevée », mais aussi « relevé ». Un libellé qui reformule ainsi le terme
+qu'emploient les claims n'est pas infidèle pour cela, s'il garde le
+nutriment et le sens bas qu'ils décrivent. Cette liste ne vise pas le
+libellé d'une population.
 
 Il est INFIDÈLE s'il contient au moins un des défauts suivants :
 
@@ -135,7 +144,8 @@ Il est INFIDÈLE s'il contient au moins un des défauts suivants :
 - pour le libellé d'une hypothèse : un nom qui désigne un marqueur, le
   résultat d'un dosage, un seuil, une comparaison à un seuil ou une
   qualification diagnostique, plutôt qu'un état fonctionnel d'un seul
-  nutriment dans le sens bas.
+  nutriment dans le sens bas ; ou un nom qui contient l'un des douze termes
+  écartés, même dérivé ou contenu dans un autre mot.
 
 Un claim porte sur l'objet d'une rubrique quand il en traite le contenu
 même, pas seulement son sujet. Pour « interpretations », il dit ce qu'un
