@@ -1,0 +1,17 @@
+- **Mise à jour (2026-11-17, dossier du besoin 5, pièces attendues : publication fondatrice de l'inventaire de fatigue et son adaptation canadienne-française)** : forme opaque (`D-251` §4), identifiants, comptes et mécanismes seulement. Suite de `2026-11-17-01` (#2204). Le responsable a fourni l'adaptation canadienne-française de l'inventaire de fatigue, seule et dans une archive Academia.edu qui contenait aussi la publication fondatrice ; il a donné son accord à l'ingestion des deux, texte par texte (nouvelles notices `0701` et `0702`). Il a aussi collé le résumé de `0609`, dont le texte intégral reste introuvable, et a choisi de l'ingérer seul.
+  - **Envoi** : deux lots, par la route d'ingestion, depuis des conteneurs `scalingo run -d`. `LOT_076` compte 15 passages et 20 claims ; `LOT_077` compte un passage, le résumé de `0609`, et 3 claims. Tous les claims sont en attente de validation, et rien n'est étiqueté.
+  - **Contrôles** :
+    - deux fichiers reçus identiques à leur empreinte n'ont été traités qu'une fois ; les autres articles de l'archive, non demandés, ne sont ni lus ni versés ;
+    - chaque phrase des passages a été cherchée dans deux extractions de sa source, indépendantes de celle qui a construit le passage ; les segments absents sont des corrections de la couche OCR de la publication fondatrice, relues sur l'image des pages, et des coupures de colonne ou de page des extractions de référence ;
+    - chaque claim a été relu contre son seul passage cité, et trois ont été resserrés avant l'envoi ;
+    - chaque charge est passée par les parseurs de la route avant l'envoi ;
+    - le résumé collé de `0609` a été comparé à la notice Europe PMC de l'article : il concorde à la normalisation près ;
+    - les prélectures (one-off-4817, 8404) ont confirmé que les lots et les notices étaient libres ;
+    - les relectures (one-off-5513, puis 6056 pour les deux lots) ont confirmé 39 empreintes identiques à la charge, 16 passages actifs et 23 claims en attente.
+  - **Registre** : deux notices ajoutées (`0701`, `0702`), droits à vérifier ; `0609` mentionne son lot et son résumé seul ; le README du corpus compte 674 notices.
+  - **Constats** (détail au dossier privé, aucune correction) :
+    - les items de l'annexe de `0702` sont, mot pour mot à la typographie près, ceux de l'instrument servi (`0700`) ; or la clé servie suit la structure de `0701`, que `0702` ne reproduit pas, et les auteurs de `0702` valident une version réduite, cotée autrement ;
+    - les résultats de structure de `0701` portent sur une version d'essai dont le format de réponse diffère de celui de l'instrument servi ;
+    - le résumé de `0609` annonce pour la version française une structure en quatre dimensions, différente des cinq sous-échelles servies.
+  - **Reste ouvert** : le texte intégral de `0609`.
+  - **Suite** : signature des claims, étiquetage et positions. Aucun code : l'instrument servi relève d'une décision distincte, appliquée par J3-12f après signature (`D-312` §3).

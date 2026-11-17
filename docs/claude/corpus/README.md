@@ -1,8 +1,8 @@
 # Registre sanitaire du corpus clinique
 
-`source_registry.json` contient 672 notices normalisées : 391 issues du pack WN
+`source_registry.json` contient 674 notices normalisées : 391 issues du pack WN
 Ultimate v2 (`NNFC1_Annee1`, `NNPP2_Annee2`), 116 instruments du cabinet
-(`INSTRUMENTS_CABINET`), et 165 sources externes (`SOURCES_EXTERNES` — BP-07 :
+(`INSTRUMENTS_CABINET`), et 167 sources externes (`SOURCES_EXTERNES` — BP-07 :
 avis d'agence, recommandation, essai, règlement, `WN-SRC-0508` à `0511`, puis
 pour la position P5 v0.3 une recommandation de l'OMS, `WN-SRC-0555` ; besoin 2 :
 trois avis d'agence, un rapport d'évaluation, une recommandation de pratique,
@@ -38,7 +38,8 @@ ingéré ;
 mesure distincte de la fatigue et du sommeil (D-425, m39) : cinq études de
 validation, deux études de différence minimale et deux pages d'ayants droit,
 `WN-SRC-0606` à `0614`, et une source secondaire sur les droits du MFI-20,
-`WN-SRC-0621`, sans extrait ingéré (sauf `0607`, versé au besoin 5) ;
+`WN-SRC-0621`, sans extrait ingéré (sauf `0607`, versé au besoin 5, et le
+résumé seul de `0609`) ;
 borne des axes prioritaires et `DC-29` (D-426, D/45) : six sources de
 contexte, `WN-SRC-0615` à `0620`, sans extrait ingéré ;
 fenêtres de fraîcheur de l'orientation (D-430, D/46) : trois études de
@@ -74,7 +75,9 @@ responsable le 2026-11-16, les textes intégraux de `0575`, `0666` et `0667`,
 versés sur leur notice, et deux publications d'instruments, `WN-SRC-0697` et
 `0698`, puis, le 2026-11-17, le texte intégral de `0607`, versé sur sa notice,
 un formulaire d'un tiers, `WN-SRC-0699`, et les pages d'un manuel qui
-reproduisent un instrument du cabinet, `WN-SRC-0700` ;
+reproduisent un instrument du cabinet, `WN-SRC-0700`, puis, le même jour, la
+publication fondatrice de l'inventaire de fatigue, `WN-SRC-0701`, et la
+validation de son adaptation canadienne-française, `WN-SRC-0702` ;
 besoin 9, sensations-émotions fondamentales et gestion du stress : publications
 et traductions des instruments servis, recommandations de méthode sur deux
 biomarqueurs, une monographie communautaire, une revue systématique, une
