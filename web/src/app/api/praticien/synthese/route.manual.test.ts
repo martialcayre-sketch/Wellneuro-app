@@ -296,12 +296,53 @@ describe('brouillon praticien /api/praticien/synthese', () => {
     }));
   });
 
-  it('valider n’entre pas dans le contrôle d’impression', async () => {
+  // « valider » passe sous le verrou et relit le statut, sans entrer au
+  // contrôle d'impression : il n'atteint qu'un brouillon, jamais imprimé
+  // (lot synthese-valider-annoter-conditionnels).
+  it('valider relit le statut sous le verrou, sans entrer au contrôle d’impression', async () => {
     prisma.documentMedecinImprime.findFirst.mockResolvedValue({ id: 'IMP_1' });
     prisma.syntheseIA.findFirst.mockResolvedValue({ ...ligneSynthese(), statut: 'Brouillon_IA', modele: 'claude-test' });
-    await PATCH(requete('PATCH', { idSynthese: 'SYN_MANUEL_1', action: 'valider' }));
-    expect(prisma.$transaction).not.toHaveBeenCalled();
+    const response = await PATCH(requete('PATCH', { idSynthese: 'SYN_MANUEL_1', action: 'valider' }));
+    expect(response.status).toBe(200);
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(String((prisma.$queryRaw.mock.calls[0] as unknown[])[0])).toContain('FOR UPDATE');
+    expect(prisma.syntheseIA.findUnique).toHaveBeenCalledTimes(1);
     expect(prisma.documentMedecinImprime.findFirst).not.toHaveBeenCalled();
+  });
+
+  it.each(['Validee_Praticien', 'Corrigee_Praticien', 'Rejetee', 'Inconnu'])('refuse de valider une synthèse au statut %s (onglet périmé)', async (statut) => {
+    prisma.syntheseIA.findFirst.mockResolvedValue({ ...ligneSynthese(), statut });
+    const response = await PATCH(requete('PATCH', { idSynthese: 'SYN_MANUEL_1', action: 'valider' }));
+    expect(response.status).toBe(409);
+    expect((await response.json()).error).toBe('Seul un brouillon (IA ou praticien) peut être validé.');
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(prisma.syntheseIA.update).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['valider', { statut: 'Brouillon_IA', modele: 'claude-test' }, { statut: 'Validee_Praticien', modele: 'claude-test' }],
+    ['annoter', { statut: 'Brouillon_Praticien' }, { statut: 'Validee_Praticien', modele: MODELE_REDACTION_PRATICIEN }],
+    ['annoter', { statut: 'Validee_Praticien' }, null],
+    ['rejeter', { statut: 'Brouillon_Praticien' }, { statut: 'Validee_Praticien', modele: MODELE_REDACTION_PRATICIEN }],
+  ])('refuse de %s une synthèse changée entre la lecture et le verrou', async (action, lue, sousVerrou) => {
+    prisma.syntheseIA.findFirst.mockResolvedValue({ ...ligneSynthese(), ...lue });
+    prisma.syntheseIA.findUnique.mockResolvedValue(sousVerrou);
+    const response = await PATCH(requete('PATCH', { idSynthese: 'SYN_MANUEL_1', action, notes: 'Note.' }));
+    expect(response.status).toBe(409);
+    expect((await response.json()).error).toBe('La synthèse a été modifiée entre-temps. Rechargez-la avant de recommencer.');
+    expect(prisma.syntheseIA.update).not.toHaveBeenCalled();
+  });
+
+  it('annote une synthèse imprimée pour le médecin : la note va au booklet', async () => {
+    prisma.documentMedecinImprime.findFirst.mockResolvedValue({ id: 'IMP_1' });
+    prisma.syntheseIA.findFirst.mockResolvedValue({ ...ligneSynthese(), statut: 'Validee_Praticien' });
+    const response = await PATCH(requete('PATCH', { idSynthese: 'SYN_MANUEL_1', action: 'annoter', notes: 'Note.' }));
+    expect(response.status).toBe(200);
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(prisma.documentMedecinImprime.findFirst).not.toHaveBeenCalled();
+    expect(prisma.syntheseIA.update).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ statut: 'Corrigee_Praticien', notesPraticien: 'Note.' }),
+    }));
   });
 
   it('refuse de valider un brouillon praticien vide', async () => {
