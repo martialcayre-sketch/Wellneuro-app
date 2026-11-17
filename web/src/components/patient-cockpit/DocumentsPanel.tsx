@@ -334,10 +334,14 @@ export function DocumentsPanel({ initialPatientId = '' }: { initialPatientId?: s
     <div className="flex flex-col gap-6">
       {/* Sélection patient + synthèse validée */}
       <div className="bg-surface border border-border rounded-xl p-4 flex flex-col gap-3 shadow-card">
-        <h2 id="documents-selection-titre" className="font-display text-lg font-semibold text-foreground">Patient et synthèse validée</h2>
+        {/* Chaque liste prend son segment du titre (D-488, DOC-17) : les deux
+            portaient le même nom, le titre entier. Le titre reste mot pour mot. */}
+        <h2 id="documents-selection-titre" className="font-display text-lg font-semibold text-foreground">
+          <span id="documents-selection-patient">Patient</span> et <span id="documents-selection-synthese">synthèse validée</span>
+        </h2>
         <div className="flex flex-wrap gap-3">
           <Select
-            aria-labelledby="documents-selection-titre"
+            aria-labelledby="documents-selection-patient"
             value={selectedPatient}
             onChange={(e) => onSelectPatient(e.target.value)}
             className={`min-h-11 w-full sm:w-80 ${focus}`}
@@ -348,7 +352,7 @@ export function DocumentsPanel({ initialPatientId = '' }: { initialPatientId?: s
             ))}
           </Select>
           <Select
-            aria-labelledby="documents-selection-titre"
+            aria-labelledby="documents-selection-synthese"
             value={selectedIdSynthese}
             onChange={(e) => onSelectSynthese(e.target.value)}
             disabled={!selectedPatient}
