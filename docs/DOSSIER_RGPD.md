@@ -944,6 +944,35 @@ l'avis d'un avocat, consulté le 2026-10-22 ([[D-344]] §5). Cette version
 reprend deux avis préparatoires écrits, qui ne sont pas une consultation
 d'avocat, confrontés au dépôt ([[D-344]] §1 et §6).
 
+**Arbitrages du 2026-11-17 ([[D-537]]), sur l'avis GPT du 2026-11-17 ; ils
+priment sur tout le reste de cette version provisoire, titre et « Statut »
+compris : les règles des 15–17 ans n'attendent plus l'avocat.** L'avis est celui d'un
+assistant d'IA ([[D-536]] §3). Ce n'est ni un avis de juriste ni un avis
+d'avocat. Ses références ont été vérifiées par la session.
+- **Accord d'un seul titulaire** : il suffit seulement si l'acte est usuel,
+  si l'autorité parentale est vérifiée et si aucune opposition n'est connue.
+  Sinon, le dossier s'instruit à la main (§1).
+- **« Aucun secret opposable aux parents »** : la formule est abandonnée.
+  Chaque demande parentale s'examine une à une. Il n'y a aucun accès
+  automatique, et rien n'est promis au jeune, ni confidentialité absolue ni
+  communication intégrale (§2).
+- **Hypothèses** : le consentement autonome du jeune s'applique fonction par
+  fonction, et le contrat se juge à part (H1). Chaque seuil d'âge se motive
+  par fonction et par risque (H2). Chaque droit garde son régime (H3). Aucun
+  nouveau consentement n'est exigé du seul fait de l'âge, mais un
+  consentement initial non valable se régularise (H4) (§3).
+- **Plancher** : 15 ans. Les moins de 15 ans restent en pause (§4).
+- **Admission d'un premier mineur de 15 à 17 ans** : elle n'attend pas
+  l'avocat. Elle attend J3-mineurs, le texte 2B réécrit, la notice adaptée,
+  l'analyse de proportionnalité et la revue de nécessité de l'AIPD, puis
+  l'AIPD elle-même si cette revue la requiert (§5, §6). Elle attend aussi
+  deux points : la durée, l'engagement et l'arrêt de l'accompagnement,
+  documentés ; l'accord des deux titulaires tant que l'« acte usuel » n'est
+  pas qualifié (§1, §9).
+- **Texte 2B** : il est réécrit maintenant, en entier. Le responsable le
+  valide mot pour mot, puis un lot de code le sert (§7).
+- **Considérant 38** : écarté. L'accord parental reste requis (§8).
+
 **Périmètre.** Le responsable exerce un accompagnement en neuronutrition qui
 relève du bien-être, sans diagnostic médical. Il n'est pas professionnel de
 santé au sens du Code de la santé publique. Le service traite des données
@@ -1094,7 +1123,13 @@ provisoire et rien ne change pour le mineur.
 - RGPD art. 4 point 25, 5 à 9, 12 à 22, 35 ;
 - directive (UE) 2015/1535, art. 1 §1 b) ;
 - loi n° 78-17 du 6 janvier 1978, art. 45, et art. 70 (régime spécial de la
-  recherche en santé, non transposable ici) ;
+  recherche en santé, non transposable ici) ; *corrigé le 2026-11-17
+  ([[D-537]] §2)* : le premier alinéa de l'art. 70 vaut pour toute la
+  section « santé » de la loi, et pas seulement pour la recherche ; l'art.
+  65, 1° (version issue de la loi n° 2026-534 du 25 juin 2026) écarte cette
+  section pour les traitements fondés sur l'art. 9 §2 a) RGPD ;
+- ajoutés le 2026-11-17 ([[D-537]]) : C. civ. art. 413-6 ; RGPD considérant
+  38 ; CEPD, lignes directrices 05/2020, §129, 130 et 147 à 150 ;
 - loi n° 2008-496 du 27 mai 2008, art. 2, 3° ;
 - C. civ. art. 9, 371-1, 372-2, 388, 1102, 1146, 1148, 1149 ;
 - CSP art. L1111-5, L1111-5-1 ;
@@ -2358,7 +2393,7 @@ dossier en garde alors la conclusion, la date et l'emplacement.
 | 1 | Responsable | Identité juridique exacte | Responsable | 2027-06-30 (était 2026-10-21) | ici, rubrique 1 |
 | 1 | Responsable | **Clos le 2026-10-13 ([[D-284]] §6) : pas d'obligation de désigner un DPO à cette échelle, selon l'avis reçu ; analyse datée à revoir à chaque changement d'échelle.** *Historique :* aucun DPO désigné, le responsable est le point de contact ([[D-283]] §7). Contradiction DPO (G-TRUST-02 vs D-005) | Responsable | fermé | `docs/DECISIONS.md` |
 | 3 | Base légale | ~~Qualification, non rédigée à ce jour~~ — **qualifiée le 2026-10-04** par déclaration du responsable ([[D-265]] §3) | Responsable | fermé | ici, rubrique 3 |
-| 4 | Personnes | **2026-10-13 ([[D-284]] §3-4) : mineur jusqu'à 18 ans, entrée validée par un titulaire de l'autorité parentale, âge inconnu demandé avant toute fonction de santé ; 2026-10-22 ([[D-344]]) : version provisoire de la rubrique ; « un seul titulaire suffit » et « aucun secret opposable » suspendus ; avocat consulté (six questions : art. 8, consentement du jeune aux données de santé, acte usuel, accès parental, droits du jeune, seuils d'âge) ; 2026-11-17 ([[D-536]]) : avocat reporté à la commercialisation, point 7 de [[D-449]] §6, avis GPT d'abord.** *Historique :* encadrés, non exclus ([[D-283]] §5). Cas des mineurs | Responsable | 2027-06-30 (était 2026-10-21) | `SOURCES_ET_VALIDATIONS.md` |
+| 4 | Personnes | **2026-10-13 ([[D-284]] §3-4) : mineur jusqu'à 18 ans, entrée validée par un titulaire de l'autorité parentale, âge inconnu demandé avant toute fonction de santé ; 2026-10-22 ([[D-344]]) : version provisoire de la rubrique ; « un seul titulaire suffit » et « aucun secret opposable » suspendus ; avocat consulté (six questions : art. 8, consentement du jeune aux données de santé, acte usuel, accès parental, droits du jeune, seuils d'âge) ; 2026-11-17 ([[D-536]]) : avocat reporté à la commercialisation, point 7 de [[D-449]] §6, avis GPT d'abord ; 2026-11-17 ([[D-537]]) : huit arbitrages sur l'avis GPT — formule (a) sous conditions, (b) abandonnée, H1-H4 réécrites, plancher à 15 ans, admission sans l'avocat, revue de nécessité de l'AIPD, texte 2B à réécrire.** *Historique :* encadrés, non exclus ([[D-283]] §5). Cas des mineurs | Responsable | 2027-06-30 (était 2026-10-21) | `SOURCES_ET_VALIDATIONS.md` |
 | 5 | Catégories | **Soldé le 2026-10-13 ([[D-283]] §3) : les six classées en catégorie particulière, la liste du banc est vide.** *Historique — constat d'origine :* **Six tables filles de `patients` ne sont pas déclarées** — dix-sept au 2026-09-09, mesuré en comparant `schema.prisma` à cette rubrique (38 modèles portaient alors une relation vers `Patient`, 21 y étaient cités ; ils sont 46 et 40 au 2026-09-13). ONZE noms sont sortis de la liste depuis, dont dix le 2026-09-13 : `DecisionPrioritySelection`, déclarée avec `EcartementProposition` sous une même entrée ; et neuf **dettes périmées** — déjà déclarées depuis le rattrapage `D-167`, mais laissées dans la liste, donc DISPENSÉES de vérification alors qu'elles n'en avaient plus besoin. Les qualifier (art. 9 ou non) reste un acte juridique, pas une écriture de code ; la liste vit dans `rubrique5.modeles.test.ts`, qui **rougit sur toute table ajoutée après cette date** et, depuis la purge, sur toute déclaration retirée pour l'une des dix — le passif est ouvert, la récidive est fermée | Responsable + conseil | fermé | ici, rubrique 5 |
 | 5 | Catégories | ~~Catégorie « résultats biologiques » absente~~ — **déclarée le 2026-09-09** (quatre tables du rayon), mais **après** la pose de `WN_CB_RESULTS_ENABLED` que la rubrique 2 posait comme conditionnée à cette déclaration préalable. Écart daté en rubrique 2 ; portée nulle sur les données (0 ligne au constat) | — | fermé | ici, rubriques 2 et 5 |
 | 6 | Sous-traitants | Aucun DPA archivé — forme connue depuis la réponse du 2026-08-11 (DPA + annexe HDS distincte, signature séparée requise) mais ~~**signature et archivage non faits**~~ — **annexe HDS signée le 2026-08-30** (déclaration du responsable, consignée le 2026-08-31, `D-121`) ; **restent dus : l'archivage du document signé, et la signature + archivage du DPA** | Responsable | 2027-06-30 (était : ~~avant bascule Scalingo~~ — ordre suspendu par `D-078` : **dès réception de l'annexe** (demandée 2026-08-12, relancée 2026-08-19 — **canal et dates vérifiés au fil le 2026-08-20**, rubrique 6 ; **signée le 2026-08-30**) ; ~~en tout état de cause **avant tout décommissionnement**~~ — **plus depuis `D-080`** (2026-08-22) ; archivage dû **avant la revue du 2026-10-21**) | `CHECKLIST_FINALISATION.md` §F |
