@@ -122,6 +122,11 @@ describe('FilDuJour — timeline et hiérarchie (maquette Spirale)', () => {
     const liens = screen.getAllByRole('link', { name: /Ouvrir la fiche/ });
     expect(liens[0].className).toContain('bg-primary');
     expect(liens[1].className).not.toContain('bg-primary');
+    // Cible de 44 px pour les deux formes (PRA-6, constat à l'écran : 36 px).
+    for (const lien of liens) {
+      expect(lien.className).toContain('min-h-11');
+      expect(lien.className).not.toContain('min-h-9');
+    }
   });
 
   it('l’heure s’affiche pour un événement du jour, « — » pour une carte sans date', async () => {
