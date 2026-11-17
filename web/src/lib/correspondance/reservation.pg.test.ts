@@ -15,6 +15,10 @@
 //   5. VIDER UNE SYNTHÈSE CONTRE L'ENVOI DE SON BILAN (lot
 //      synthese-effacer-booklet-verrou) : un envoi en vol empêche le vidage ;
 //      un vidage glissé avant la réservation fait refuser l'envoi.
+//   6. VERSION OPTIMISTE DU PATCH DES SYNTHÈSES (lot
+//      synthese-version-optimiste) : un « enregistrer » qui garde le brouillon
+//      brouillon fait refuser le geste suivant, lu avant lui — enregistrer,
+//      valider ou vider ; une version périmée envoyée par l'écran aussi.
 //
 // LE CROISEMENT EST FORCÉ, pas espéré (patron de
 // `physio-traitements/physioTraitements.pg.test.ts`) : l'observateur tient le
@@ -531,5 +535,128 @@ describe.skipIf(!ACTIF)('réservation avant l’envoi — base réelle ([[D-398]
     expect(sendMail).not.toHaveBeenCalled();
     expect(await lignesJournal(idPatient, 'booklet')).toEqual([]);
     expect(await statutSynthese(idSynthese)).toBe('Brouillon_Praticien');
+  });
+
+  // §6 — VERSION OPTIMISTE (P3 de wn-reviewer sur #2221, P3-2 sur #2226 ;
+  // PR-Agent sur les deux). Statut et modèle relus sous le verrou laissaient
+  // passer un « enregistrer » qui garde le brouillon brouillon : le geste lu
+  // avant lui l'écrasait en silence.
+  async function brouillonIA(): Promise<{ idPatient: string; idSynthese: string }> {
+    const idPatient = await dossier();
+    const idSynthese = `SYN_BANC_RES_${RUN}_${numero}`;
+    await prisma.syntheseIA.create({
+      data: {
+        idSynthese,
+        idPatient,
+        emailPatient: 'banc@example.test',
+        modele: 'banc',
+        donneesEntree: {},
+        syntheseJson: SYNTHESE_JSON,
+        statut: 'Brouillon_IA',
+      },
+    });
+    return { idPatient, idSynthese };
+  }
+
+  function patchSynthese(corps: Record<string, unknown>): Promise<Response> {
+    return syntheseRoute(new Request('http://localhost/api/praticien/synthese', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(corps),
+    }));
+  }
+
+  /** Attend que `n` requêtes attendent un verrou de LIGNE (celui du dossier). */
+  async function attendreAttentesLigne(n: number): Promise<void> {
+    const limite = Date.now() + 10_000;
+    for (;;) {
+      const { rows } = await observateur.query(
+        `SELECT count(DISTINCT pid)::int AS n FROM pg_locks
+          WHERE NOT granted AND locktype IN ('transactionid', 'tuple') AND pid <> pg_backend_pid()`,
+      );
+      if (rows[0].n >= n) return;
+      if (Date.now() > limite) throw new Error(`${n} requête(s) n'attendent pas la ligne du dossier`);
+      await new Promise(r => setTimeout(r, 20));
+    }
+  }
+
+  /**
+   * Une connexion à part tient la ligne du dossier (`FOR UPDATE`, comme la
+   * route). La première requête la lit puis l'attend ; la seconde, lancée
+   * ensuite, l'attend derrière elle. Les deux ont lu la synthèse AVANT toute
+   * écriture ; la file d'attente de Postgres les sert dans l'ordre.
+   */
+  async function enSuiteSurDossier(idPatient: string, premiere: () => Promise<Response>, seconde: () => Promise<Response>): Promise<[Response, Response]> {
+    const teneur = new pg.Client({ connectionString: URL_BASE });
+    await teneur.connect();
+    try {
+      await teneur.query('BEGIN');
+      await teneur.query('SELECT id FROM patients WHERE id_patient = $1 FOR UPDATE', [idPatient]);
+      let a: Promise<Response> | undefined;
+      let b: Promise<Response> | undefined;
+      try {
+        a = premiere();
+        await attendreAttentesLigne(1);
+        b = seconde();
+        await attendreAttentesLigne(2);
+      } finally {
+        await teneur.query('COMMIT');
+      }
+      return [await a!, await b!];
+    } finally {
+      await teneur.end();
+    }
+  }
+
+  async function ligneSynthese(idSynthese: string): Promise<{ statut: string; narratif: string }> {
+    const { rows } = await observateur.query(
+      `SELECT statut, synthese_json->>'narratif_patient' AS narratif FROM syntheses_ia WHERE id_synthese = $1`,
+      [idSynthese],
+    );
+    return rows[0] as { statut: string; narratif: string };
+  }
+
+  const TEXTE_A = { ...SYNTHESE_JSON, narratif_patient: 'Texte enregistré en premier.' };
+
+  it.each([
+    ['un second enregistrer', { action: 'enregistrer', synthese: { ...SYNTHESE_JSON, narratif_patient: 'Texte écrasé.' } }],
+    ['une validation', { action: 'valider' }],
+    ['un vidage', { action: 'effacer' }],
+  ])('synthèse : un enregistrer passé devant fait refuser %s lu avant lui', async (_cas, geste) => {
+    const { idPatient, idSynthese } = await brouillonIA();
+    const [premier, second] = await enSuiteSurDossier(
+      idPatient,
+      () => patchSynthese({ idSynthese, action: 'enregistrer', synthese: TEXTE_A }),
+      () => patchSynthese({ idSynthese, ...geste }),
+    );
+    expect(premier.status).toBe(200);
+    expect(second.status).toBe(409);
+    expect(await second.json()).toEqual({
+      error: 'La synthèse a été modifiée entre-temps. Rechargez-la avant de recommencer.',
+      code: 'synthese_modifiee',
+    });
+    expect(await ligneSynthese(idSynthese)).toEqual({ statut: 'Brouillon_IA', narratif: TEXTE_A.narratif_patient });
+  });
+
+  it('synthèse : la version lue par l’écran fait passer le geste ; périmée, elle le fait refuser', async () => {
+    const { idSynthese } = await brouillonIA();
+    // La version telle que l'écran la reçoit : `updatedAt` passé par JSON.
+    const lue = await prisma.syntheseIA.findUniqueOrThrow({ where: { idSynthese }, select: { updatedAt: true } });
+    const version = JSON.parse(JSON.stringify(lue.updatedAt)) as string;
+
+    const premier = await patchSynthese({ idSynthese, action: 'enregistrer', synthese: TEXTE_A, version });
+    expect(premier.status).toBe(200);
+    const nouvelle = (await premier.json()).updatedAt as string;
+    expect(nouvelle).not.toBe(version);
+
+    // Un second onglet, resté sur la version d'avant.
+    const perime = await patchSynthese({ idSynthese, action: 'valider', version });
+    expect(perime.status).toBe(409);
+    expect((await perime.json()).code).toBe('synthese_modifiee');
+    expect(await ligneSynthese(idSynthese)).toEqual({ statut: 'Brouillon_IA', narratif: TEXTE_A.narratif_patient });
+
+    // L'onglet rechargé, sur la version rendue.
+    expect((await patchSynthese({ idSynthese, action: 'valider', version: nouvelle })).status).toBe(200);
+    expect((await ligneSynthese(idSynthese)).statut).toBe('Validee_Praticien');
   });
 });

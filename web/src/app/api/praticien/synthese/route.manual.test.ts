@@ -84,8 +84,11 @@ function ligneSynthese() {
     statut: 'Brouillon_Praticien',
     dateValidation: null,
     notesPraticien: null,
+    updatedAt: new Date('2026-07-25T10:05:00.000Z'),
   };
 }
+const VERSION_LUE = '2026-07-25T10:05:00.000Z';
+const MESSAGE_MODIFIEE = 'La synthèse a été modifiée entre-temps. Rechargez-la avant de recommencer.';
 
 describe('brouillon praticien /api/praticien/synthese', () => {
   beforeEach(() => {
@@ -128,7 +131,11 @@ describe('brouillon praticien /api/praticien/synthese', () => {
         statut: 'Brouillon_Praticien',
       }),
     });
-    expect((await response.json()).success).toBe(true);
+    const corps = await response.json();
+    expect(corps.success).toBe(true);
+    // Version optimiste : sans elle, le premier enregistrement du brouillon
+    // créé partirait sans version (wn-reviewer, P3-4).
+    expect(corps.synthese.updatedAt).toBe(VERSION_LUE);
   });
 
   it('masque comme introuvable le patient d’un autre praticien', async () => {
@@ -490,7 +497,7 @@ describe('brouillon praticien /api/praticien/synthese', () => {
     expect(String((prisma.$queryRaw.mock.calls[0] as unknown[])[0])).toContain('FOR UPDATE');
     expect(prisma.syntheseIA.findUnique).toHaveBeenCalledWith({
       where: { idSynthese: 'SYN_MANUEL_1' },
-      select: { statut: true, modele: true },
+      select: { statut: true, modele: true, updatedAt: true },
     });
     expect(prisma.syntheseIA.update).toHaveBeenCalledTimes(1);
   });
@@ -536,6 +543,73 @@ describe('brouillon praticien /api/praticien/synthese', () => {
     expect(corps.reason).toBe('synthese_imprimee_pour_medecin');
     expect(corps.error).toContain('Impossible de modifier');
     expect(prisma.syntheseIA.update).not.toHaveBeenCalled();
+  });
+
+  // VERSION OPTIMISTE (lot synthese-version-optimiste ; P3 de wn-reviewer sur
+  // #2221, P3-2 sur #2226). Statut et modèle inchangés ne suffisent pas : un
+  // « enregistrer » concurrent garde le brouillon brouillon.
+  describe('version optimiste', () => {
+    const CORPS: Record<string, Record<string, unknown>> = {
+      enregistrer: { action: 'enregistrer', synthese: brouillon },
+      valider: { action: 'valider' },
+      annoter: { action: 'annoter', notes: 'Note.' },
+      rejeter: { action: 'rejeter' },
+      effacer: { action: 'effacer' },
+    };
+
+    it.each(Object.keys(CORPS))('refuse %s si la synthèse a été réécrite, même statut, entre la lecture et le verrou', async (action) => {
+      prisma.syntheseIA.findUnique.mockResolvedValue({
+        statut: 'Brouillon_Praticien',
+        modele: MODELE_REDACTION_PRATICIEN,
+        updatedAt: new Date('2026-07-25T10:06:00.000Z'),
+      });
+      const response = await PATCH(requete('PATCH', { idSynthese: 'SYN_MANUEL_1', ...CORPS[action] }));
+      expect(response.status).toBe(409);
+      expect(await response.json()).toEqual({ error: MESSAGE_MODIFIEE, code: 'synthese_modifiee' });
+      expect(prisma.syntheseIA.update).not.toHaveBeenCalled();
+      expect(prisma.auditSynthese.create).not.toHaveBeenCalled();
+    });
+
+    it.each(Object.keys(CORPS))('refuse %s sur une version d’écran périmée, avant tout verrou', async (action) => {
+      const response = await PATCH(requete('PATCH', {
+        idSynthese: 'SYN_MANUEL_1',
+        ...CORPS[action],
+        version: '2026-07-25T10:04:59.999Z',
+      }));
+      expect(response.status).toBe(409);
+      expect(await response.json()).toEqual({ error: MESSAGE_MODIFIEE, code: 'synthese_modifiee' });
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+      expect(prisma.syntheseIA.update).not.toHaveBeenCalled();
+    });
+
+    it.each(Object.keys(CORPS))('passe %s sur la version affichée, et rend la nouvelle version', async (action) => {
+      prisma.syntheseIA.update.mockResolvedValue({ ...ligneSynthese(), updatedAt: new Date('2026-07-25T10:07:00.000Z') });
+      const response = await PATCH(requete('PATCH', { idSynthese: 'SYN_MANUEL_1', ...CORPS[action], version: VERSION_LUE }));
+      expect(response.status).toBe(200);
+      expect(prisma.syntheseIA.update).toHaveBeenCalledTimes(1);
+      expect((await response.json()).updatedAt).toBe('2026-07-25T10:07:00.000Z');
+    });
+
+    it.each([['une chaîne qui n’est pas une date', 'hier'], ['un nombre', 42], ['un objet', {}]])('refuse une version qui est %s (400)', async (_cas, version) => {
+      const response = await PATCH(requete('PATCH', { idSynthese: 'SYN_MANUEL_1', action: 'valider', version }));
+      expect(response.status).toBe(400);
+      expect(prisma.syntheseIA.findFirst).not.toHaveBeenCalled();
+    });
+
+    it('vider une synthèse disparue sous le verrou répond 409, pas une erreur technique', async () => {
+      prisma.syntheseIA.findUnique.mockResolvedValue(null);
+      const response = await PATCH(requete('PATCH', { idSynthese: 'SYN_MANUEL_1', action: 'effacer' }));
+      expect(response.status).toBe(409);
+      expect((await response.json()).code).toBe('synthese_modifiee');
+      expect(prisma.syntheseIA.update).not.toHaveBeenCalled();
+    });
+
+    it('un enregistrer dont le brouillon a été validé entre-temps porte aussi le code de rechargement', async () => {
+      prisma.syntheseIA.findUnique.mockResolvedValue({ statut: 'Validee_Praticien', modele: MODELE_REDACTION_PRATICIEN, updatedAt: new Date() });
+      const response = await PATCH(requete('PATCH', { idSynthese: 'SYN_MANUEL_1', ...CORPS.enregistrer }));
+      expect(response.status).toBe(409);
+      expect((await response.json()).code).toBe('synthese_modifiee');
+    });
   });
 });
 
