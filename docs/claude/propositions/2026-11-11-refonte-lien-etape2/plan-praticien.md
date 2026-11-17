@@ -204,6 +204,11 @@ dégradés, Chromium et WebKit. Relecture `ui-ux-pro-max` de l'ensemble.
 Comparaison aux prototypes de l'étape 3. Les écarts restants deviennent des
 lots nommés, pas des corrections silencieuses.
 
+**Constat du 2026-11-17** : vérification locale sur fixtures, P51, P52 et Q10
+compris après la PR 3 de PRA-5. Une correction minime, PRA-6a (#2227) ; lots
+nommés PRA-6b à PRA-6j proposés dans [`pra6-constat.md`](pra6-constat.md),
+questions `20261117-1421-d` à `1423-d` de la liste commune.
+
 ## 4. Coordination avec le plan patient
 
 - Aucune dépendance entre PRA-n et PAT-n. Les deux sessions avancent à leur
