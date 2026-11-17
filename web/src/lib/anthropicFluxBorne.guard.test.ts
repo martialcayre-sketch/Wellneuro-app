@@ -122,13 +122,17 @@ describe('appels en flux au SDK Anthropic', () => {
     const incertains: string[] = [];
     for (const fichier of sources(RACINE)) {
       const source = readFileSync(fichier, 'utf8');
+      // Le masquage ne fait que retirer du texte : un fichier sans appel brut
+      // n'en a pas de masqué. Le masquer quand même coûtait ~1,5 s sur tout
+      // `src/`, et le délai de 5 s cédait sous la charge du contrôle de fusion.
+      const bruts = source.match(APPEL)?.length ?? 0;
+      if (bruts === 0) continue;
       const r = fluxSansSignal(source, path.relative(RACINE, fichier));
       flux += r.flux;
       fautifs.push(...r.fautifs);
       // Le masquage ne lit pas les littéraux regex : une apostrophe dans `/'/`
       // ouvrirait une fausse chaîne et blanchirait un vrai appel. Tout écart
       // entre le texte brut et le texte masqué se signale ici.
-      const bruts = source.match(APPEL)?.length ?? 0;
       const lus = sansChainesNiCommentaires(source).match(APPEL)?.length ?? 0;
       if (bruts !== lus) incertains.push(`${path.relative(RACINE, fichier)} (${bruts} appels, ${lus} lus)`);
     }
