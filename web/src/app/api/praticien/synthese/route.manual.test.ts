@@ -7,6 +7,7 @@ const { getServerSession, prisma, journaliserAccesDossier } = vi.hoisted(() => (
     patient: { findFirst: vi.fn() },
     syntheseIA: { create: vi.fn(), findFirst: vi.fn(), findUnique: vi.fn(), update: vi.fn() },
     bookletEnvoi: { findFirst: vi.fn() },
+    correspondancePatient: { findFirst: vi.fn() },
     auditSynthese: { create: vi.fn() },
     documentMedecinImprime: { findFirst: vi.fn() },
     $queryRaw: vi.fn(),
@@ -103,6 +104,7 @@ describe('brouillon praticien /api/praticien/synthese', () => {
     // lecture d'entrée (la dernière que `findFirst` a rendue).
     prisma.syntheseIA.findUnique.mockImplementation(async () => prisma.syntheseIA.findFirst.mock.results.at(-1)?.value);
     prisma.bookletEnvoi.findFirst.mockResolvedValue(null);
+    prisma.correspondancePatient.findFirst.mockResolvedValue(null);
     prisma.auditSynthese.create.mockResolvedValue({});
     prisma.documentMedecinImprime.findFirst.mockResolvedValue(null);
     prisma.$queryRaw.mockResolvedValue([]);
@@ -241,6 +243,13 @@ describe('brouillon praticien /api/praticien/synthese', () => {
       where: { idSynthese: 'SYN_MANUEL_1', statut: 'Envoye' },
       select: { id: true },
     });
+    // Les deux lectures du booklet se font SOUS LE VERROU du dossier, avant
+    // l'écriture (P3-3 de wn-reviewer sur #2226).
+    const verrou = prisma.$queryRaw.mock.invocationCallOrder[0];
+    expect(String((prisma.$queryRaw.mock.calls[0] as unknown[])[0])).toContain('FOR UPDATE');
+    expect(prisma.correspondancePatient.findFirst.mock.invocationCallOrder[0]).toBeGreaterThan(verrou);
+    expect(prisma.bookletEnvoi.findFirst.mock.invocationCallOrder[0]).toBeGreaterThan(verrou);
+    expect(prisma.syntheseIA.update.mock.invocationCallOrder[0]).toBeGreaterThan(prisma.bookletEnvoi.findFirst.mock.invocationCallOrder[0]);
     expect(prisma.syntheseIA.update).toHaveBeenCalledWith(expect.objectContaining({
       data: expect.objectContaining({
         statut: 'Brouillon_Praticien',
@@ -259,7 +268,7 @@ describe('brouillon praticien /api/praticien/synthese', () => {
     });
   });
 
-  it('refuse de vider une synthèse dont le booklet a déjà été envoyé', async () => {
+  it('refuse de vider une synthèse dont le booklet a déjà été envoyé, contrôlé sous le verrou du dossier', async () => {
     prisma.bookletEnvoi.findFirst.mockResolvedValue({ id: 'BE_1' });
     const response = await PATCH(requete('PATCH', {
       idSynthese: 'SYN_MANUEL_1',
@@ -267,8 +276,53 @@ describe('brouillon praticien /api/praticien/synthese', () => {
     }));
 
     expect(response.status).toBe(409);
+    expect((await response.json()).error).toBe('Impossible de vider une synthèse dont le booklet a déjà été envoyé.');
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(String((prisma.$queryRaw.mock.calls[0] as unknown[])[0])).toContain('FOR UPDATE');
+    expect(prisma.bookletEnvoi.findFirst.mock.invocationCallOrder[0])
+      .toBeGreaterThan(prisma.$queryRaw.mock.invocationCallOrder[0]);
     expect(prisma.syntheseIA.update).not.toHaveBeenCalled();
+    expect(prisma.auditSynthese.create).not.toHaveBeenCalled();
   });
+
+  // L'envoi du booklet réserve sa ligne de journal sous le même verrou, AVANT
+  // l'e-mail (`/api/praticien/booklet`) : un envoi en partance compte. Sans
+  // cette lecture, un vidage passait entre la réservation et le solde, et le
+  // booklet partait d'une synthèse vidée (P3-3 de wn-reviewer sur #2226).
+  it('refuse de vider une synthèse dont le booklet part en ce moment ou est parti au journal', async () => {
+    prisma.correspondancePatient.findFirst.mockResolvedValue({ id: 'COR_1' });
+    const response = await PATCH(requete('PATCH', {
+      idSynthese: 'SYN_MANUEL_1',
+      action: 'effacer',
+    }));
+
+    expect(response.status).toBe(409);
+    expect((await response.json()).error).toBe('Impossible de vider une synthèse dont le booklet a déjà été envoyé.');
+    expect(prisma.correspondancePatient.findFirst).toHaveBeenCalledWith({
+      where: {
+        idPatient: 'PAT_SEED_01',
+        type: 'booklet',
+        referenceId: 'SYN_MANUEL_1',
+        OR: [{ statut: 'Envoye' }, { statut: 'Non_envoye', erreurCourte: 'réservé : envoi en cours' }],
+      },
+      select: { id: true },
+    });
+    expect(prisma.correspondancePatient.findFirst.mock.invocationCallOrder[0])
+      .toBeGreaterThan(prisma.$queryRaw.mock.invocationCallOrder[0]);
+    expect(prisma.syntheseIA.update).not.toHaveBeenCalled();
+    expect(prisma.auditSynthese.create).not.toHaveBeenCalled();
+  });
+
+  it.each(['enregistrer', 'valider', 'rejeter', 'annoter'])(
+    '« %s » ne consulte pas le booklet : seul « effacer » le garde',
+    async (action) => {
+      prisma.correspondancePatient.findFirst.mockResolvedValue({ id: 'COR_1' });
+      prisma.bookletEnvoi.findFirst.mockResolvedValue({ id: 'BE_1' });
+      await PATCH(requete('PATCH', { idSynthese: 'SYN_MANUEL_1', action, synthese: {} }));
+      expect(prisma.correspondancePatient.findFirst).not.toHaveBeenCalled();
+      expect(prisma.bookletEnvoi.findFirst).not.toHaveBeenCalled();
+    },
+  );
 
   // D-307 (F38), arbitrage du 2026-10-19 : une synthèse imprimée pour le
   // médecin ne se vide ni ne se rejette — contrôlé sous le verrou du dossier.

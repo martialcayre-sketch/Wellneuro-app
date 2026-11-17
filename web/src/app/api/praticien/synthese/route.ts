@@ -22,6 +22,8 @@ import { logger } from '@/lib/observability/logger';
 import { motifAffiche, verdictContamination } from '@/lib/synthese/contaminationBiologie';
 import { motifBlocageContamination } from '@/lib/synthese/gardeContamination';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
+import { TYPES_CORRESPONDANCE_PATIENT } from '@/lib/correspondance/patient';
+import { FILTRE_ENVOIS_PARTIS } from '@/lib/correspondance/reservation';
 import {
   createRequestContext,
   finalizeLogContext,
@@ -528,16 +530,7 @@ export async function PATCH(req: Request) {
       statut = existing.statut === 'Validee_Praticien' && notes ? 'Corrigee_Praticien' : existing.statut;
       notesPraticien = notes;
     } else if (action === 'effacer') {
-      const bookletEnvoye = await prisma.bookletEnvoi.findFirst({
-        where: { idSynthese, statut: 'Envoye' },
-        select: { id: true },
-      });
-      if (bookletEnvoye) {
-        return withCorrelationHeader(NextResponse.json(
-          { error: 'Impossible de vider une synthèse dont le booklet a déjà été envoyé.' },
-          { status: 409 },
-        ), requestContext);
-      }
+      // Le contrôle du booklet envoyé se fait plus bas, SOUS LE VERROU.
       statut = 'Brouillon_Praticien';
       syntheseJson = nouveauBrouillonPraticien() as Prisma.InputJsonValue;
       dateValidation = null;
@@ -592,11 +585,37 @@ export async function PATCH(req: Request) {
     // possible depuis un écran rechargé. Seul « effacer » ne relit pas : il
     // réinitialise quel que soit le statut, et le contrôle d'impression ci-
     // dessous, sous le même verrou, garde ce qu'il ne doit pas défaire.
+    //
+    // « EFFACER » CONTRÔLE AUSSI LE BOOKLET SOUS LE VERROU, que l'envoi du
+    // booklet prend avant de réserver sa ligne (`/api/praticien/booklet`). Lu
+    // hors verrou, un envoi concurrent pouvait partir d'une synthèse vidée
+    // entre-temps (P3-3 de wn-reviewer sur #2226). Le journal compte l'envoi
+    // parti OU en partance ; l'audit couvre les envois d'avant le journal.
     const relitStatut = action !== 'effacer';
     const figeeParImpression = action === 'effacer' || action === 'rejeter' || action === 'enregistrer';
     let changeeEntreTemps = false;
+    let bookletParti = false;
     const record = await prisma.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT id FROM patients WHERE id_patient = ${existing.idPatient} FOR UPDATE`;
+      if (action === 'effacer') {
+        const journal = await tx.correspondancePatient.findFirst({
+          where: {
+            idPatient: existing.idPatient,
+            type: TYPES_CORRESPONDANCE_PATIENT.booklet,
+            referenceId: idSynthese,
+            ...FILTRE_ENVOIS_PARTIS,
+          },
+          select: { id: true },
+        });
+        const audit = journal ?? await tx.bookletEnvoi.findFirst({
+          where: { idSynthese, statut: 'Envoye' },
+          select: { id: true },
+        });
+        if (audit) {
+          bookletParti = true;
+          return null;
+        }
+      }
       if (relitStatut) {
         const courante = await tx.syntheseIA.findUnique({
           where: { idSynthese },
@@ -616,6 +635,12 @@ export async function PATCH(req: Request) {
       }
       return tx.syntheseIA.update({ where: { idSynthese }, data });
     });
+    if (bookletParti) {
+      return withCorrelationHeader(NextResponse.json(
+        { error: 'Impossible de vider une synthèse dont le booklet a déjà été envoyé.' },
+        { status: 409 },
+      ), requestContext);
+    }
     if (changeeEntreTemps) {
       return withCorrelationHeader(NextResponse.json(
         {

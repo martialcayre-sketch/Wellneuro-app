@@ -12,6 +12,9 @@
 //   3. PREMIER ENVOI D'UN BILAN : deux clics simultanés, un seul envoi.
 //   4. CE QUI COMPTE COMME ENVOI : « Erreur », messagerie absente et refus de
 //      garde ne comptent pas ; un envoi parti ou en partance, si.
+//   5. VIDER UNE SYNTHÈSE CONTRE L'ENVOI DE SON BILAN (lot
+//      synthese-effacer-booklet-verrou) : un envoi en vol empêche le vidage ;
+//      un vidage glissé avant la réservation fait refuser l'envoi.
 //
 // LE CROISEMENT EST FORCÉ, pas espéré (patron de
 // `physio-traitements/physioTraitements.pg.test.ts`) : l'observateur tient le
@@ -58,6 +61,16 @@ vi.mock('@/lib/email/transportSmtp', () => ({ creerTransportSmtp: () => ({ sendM
 vi.mock('@/lib/anthropic', () => ({
   maskEmail: (e: string) => `masqué(${e.length})`,
   sanitizeAuditError: (e: unknown) => (e instanceof Error ? e.message : String(e)),
+  // La route des synthèses (§5) importe aussi ceux-ci ; aucun n'est appelé.
+  anthropic: {},
+  CLAUDE_MODEL: 'claude-banc',
+  SYSTEM_PROMPT_SYNTHESE: '',
+  VERSION_CORPUS_SYNTHESE: 'v-banc',
+  VERSION_PROMPT_SYNTHESE: 'v-banc',
+  VERSION_SCHEMA_SYNTHESE: 'v-banc',
+  validateSyntheseSchema: (value: unknown) => value,
+  analyserSortieSynthese: (value: unknown) => ({ ok: true, synthese: value }),
+  CORPUS_CLINIQUE_ACTIF: '',
 }));
 
 const SYNTHESE_JSON = {
@@ -78,6 +91,7 @@ describe.skipIf(!ACTIF)('réservation avant l’envoi — base réelle ([[D-398]
   let MARQUE_ENVOI_EN_COURS: typeof import('./reservation').MARQUE_ENVOI_EN_COURS;
   let relance: typeof import('@/app/api/praticien/assignations/relance/route').POST;
   let booklet: typeof import('@/app/api/praticien/booklet/route').POST;
+  let syntheseRoute: typeof import('@/app/api/praticien/synthese/route').PATCH;
   let acces: typeof import('@/app/api/praticien/token/route').POST;
   let revoquer: typeof import('@/app/api/praticien/token/route').DELETE;
   let observateur: pg.Client;
@@ -143,6 +157,22 @@ describe.skipIf(!ACTIF)('réservation avant l’envoi — base réelle ([[D-398]
     return issues;
   }
 
+  /** Attend que `n` requêtes attendent le verrou de `cle` que tient l'observateur. */
+  async function attendreAttentes(cle: string, n: number): Promise<void> {
+    const limite = Date.now() + 10_000;
+    for (;;) {
+      const { rows } = await observateur.query(
+        `SELECT count(*)::int AS n FROM pg_locks
+          WHERE locktype = 'advisory' AND NOT granted AND objsubid = 1
+            AND objid::bigint = (hashtext($1)::bigint & 4294967295) AND pid <> pg_backend_pid()`,
+        [cle],
+      );
+      if (rows[0].n >= n) return;
+      if (Date.now() > limite) throw new Error(`${n} requête(s) n'attendent pas le verrou « ${cle} »`);
+      await new Promise(r => setTimeout(r, 20));
+    }
+  }
+
   function valeurs<T>(issues: PromiseSettledResult<T>[]): T[] {
     return issues.map(r => {
       if (r.status === 'rejected') throw r.reason;
@@ -167,6 +197,7 @@ describe.skipIf(!ACTIF)('réservation avant l’envoi — base réelle ([[D-398]
     ({ reserverSousGarde, FILTRE_ENVOIS_PARTIS, MOTIFS_GARDE_ENVOI, MARQUE_ENVOI_EN_COURS } = await import('./reservation'));
     ({ POST: relance } = await import('@/app/api/praticien/assignations/relance/route'));
     ({ POST: booklet } = await import('@/app/api/praticien/booklet/route'));
+    ({ PATCH: syntheseRoute } = await import('@/app/api/praticien/synthese/route'));
     ({ POST: acces, DELETE: revoquer } = await import('@/app/api/praticien/token/route'));
   });
 
@@ -415,5 +446,90 @@ describe.skipIf(!ACTIF)('réservation avant l’envoi — base réelle ([[D-398]
       ['Envoye', null],
       ['Non_envoye', MARQUE_ENVOI_EN_COURS],
     ]);
+  });
+
+  // §5 — VIDER UNE SYNTHÈSE CONTRE L'ENVOI DE SON BILAN (P3-3 de wn-reviewer
+  // sur #2226). « Vider » lisait l'envoi hors verrou, et l'envoi ne prenait pas
+  // le verrou du dossier : le bilan pouvait partir d'une synthèse vidée.
+  async function syntheseValidee(): Promise<{ idPatient: string; idSynthese: string }> {
+    const idPatient = await dossier();
+    const idSynthese = `SYN_BANC_RES_${RUN}_${numero}`;
+    await prisma.syntheseIA.create({
+      data: {
+        idSynthese,
+        idPatient,
+        emailPatient: 'banc@example.test',
+        modele: 'banc',
+        donneesEntree: {},
+        syntheseJson: SYNTHESE_JSON,
+        statut: 'Validee_Praticien',
+        dateValidation: new Date(),
+      },
+    });
+    return { idPatient, idSynthese };
+  }
+
+  function vider(idSynthese: string): Promise<Response> {
+    return syntheseRoute(new Request('http://localhost/api/praticien/synthese', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ idSynthese, action: 'effacer' }),
+    }));
+  }
+
+  async function statutSynthese(idSynthese: string): Promise<string> {
+    const { rows } = await observateur.query('SELECT statut FROM syntheses_ia WHERE id_synthese = $1', [idSynthese]);
+    return rows[0].statut as string;
+  }
+
+  it('bilan : un envoi en vol (réservé, e-mail en cours) empêche de vider la synthèse', async () => {
+    const { idSynthese } = await syntheseValidee();
+    let relacher!: () => void;
+    const relais = new Promise<void>(r => { relacher = r; });
+    let atteint!: () => void;
+    const smtpAtteint = new Promise<void>(r => { atteint = r; });
+    sendMail.mockImplementationOnce(async () => {
+      atteint();
+      await relais;
+      return {};
+    });
+
+    const envoi = booklet(requete('http://localhost/api/praticien/booklet', { idSynthese, relectureConfirmee: true }));
+    await smtpAtteint;
+    let vidage: Response;
+    try {
+      // La réservation est commitée, l'e-mail n'est pas soldé : seule la
+      // ligne marquée dit qu'un bilan part.
+      vidage = await vider(idSynthese);
+    } finally {
+      relacher();
+    }
+    expect(vidage.status).toBe(409);
+    expect((await vidage.json()).error).toBe('Impossible de vider une synthèse dont le booklet a déjà été envoyé.');
+    expect((await envoi).status).toBe(200);
+    expect(await statutSynthese(idSynthese)).toBe('Validee_Praticien');
+  });
+
+  it('bilan : un vidage glissé entre la lecture et la réservation fait refuser l’envoi, et rien ne part', async () => {
+    const { idPatient, idSynthese } = await syntheseValidee();
+    const cle = `envoi_patient:booklet:${idSynthese}`;
+    // L'observateur tient le verrou du bilan : l'envoi a lu la synthèse et
+    // rendu le document, puis l'attend. Le vidage, qui ne le prend pas, passe.
+    await observateur.query('SELECT pg_advisory_lock(hashtext($1))', [cle]);
+    let envoi: Promise<Response> | undefined;
+    try {
+      envoi = booklet(requete('http://localhost/api/praticien/booklet', { idSynthese, relectureConfirmee: true }));
+      await attendreAttentes(cle, 1);
+      expect((await vider(idSynthese)).status).toBe(200);
+    } finally {
+      await observateur.query('SELECT pg_advisory_unlock(hashtext($1))', [cle]);
+    }
+
+    const res = await envoi!;
+    expect(res.status).toBe(409);
+    expect((await res.json()).error).toBe('La synthèse a été modifiée entre-temps. Rechargez-la avant de recommencer.');
+    expect(sendMail).not.toHaveBeenCalled();
+    expect(await lignesJournal(idPatient, 'booklet')).toEqual([]);
+    expect(await statutSynthese(idSynthese)).toBe('Brouillon_Praticien');
   });
 });
