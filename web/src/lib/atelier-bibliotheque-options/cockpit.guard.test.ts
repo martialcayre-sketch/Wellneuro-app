@@ -181,6 +181,35 @@ function dansLeDepot(atteint: string | null): string | null {
 
 const estBorne = (atteint: string) => atteint === CLIENT || atteint.startsWith(CLIENT_GENERE);
 
+/**
+ * Résolution et accès MÉMOÏSÉS par contexte, chemin et texte : une
+ * contre-épreuve ne change qu'un fichier, et ré-analyser toute la fermeture à
+ * chaque essai coûtait ~0,5 s au banc — assez pour céder au délai de 5 s sous
+ * la charge du contrôle de fusion (signalement de l'intégrateur, 2026-11-17).
+ * Le texte entre dans la clé : une source surchargée n'est jamais servie
+ * depuis la mémoire d'une autre.
+ */
+const memoires = new WeakMap<ContexteResolution, { imports: Map<string, ReturnType<typeof importsResolus>>; acces: Map<string, string[]> }>();
+function memoire(contexte: ContexteResolution) {
+  let m = memoires.get(contexte);
+  if (!m) memoires.set(contexte, (m = { imports: new Map(), acces: new Map() }));
+  return m;
+}
+function importsMemoises(chemin: string, contexte: ContexteResolution, texte: string) {
+  const m = memoire(contexte).imports;
+  const cle = `${chemin}\0${texte}`;
+  let r = m.get(cle);
+  if (!r) m.set(cle, (r = importsResolus(chemin, contexte, texte)));
+  return r;
+}
+function accesMemoises(contexte: ContexteResolution, texte: string, chemin: string) {
+  const m = memoire(contexte).acces;
+  const cle = `${chemin}\0${texte}`;
+  let r = m.get(cle);
+  if (!r) m.set(cle, (r = accesNommes(texte, chemin)));
+  return r;
+}
+
 /** La fermeture des imports de valeur depuis `depart` ; `surcharges` remplace la source d'un fichier (contre-épreuves). */
 function fermetureDuCockpit(
   contexte: ContexteResolution,
@@ -192,9 +221,10 @@ function fermetureDuCockpit(
   const entreesDuClient = new Set<string>();
   const exterieurs = new Set<string>();
   const indetermines: string[] = [];
+  const source = (f: string) => surcharges.get(f) ?? readFileSync(join(contexte.racine, f), 'utf8');
   while (file.length > 0) {
     const chemin = file.shift() as string;
-    for (const i of importsResolus(chemin, contexte, surcharges.get(chemin))) {
+    for (const i of importsMemoises(chemin, contexte, source(chemin))) {
       if (i.typeSeul) continue;
       if (i.indetermine) {
         indetermines.push(`${chemin}:${i.specificateur}`);
@@ -202,7 +232,7 @@ function fermetureDuCockpit(
       }
       const atteint = dansLeDepot(i.atteint);
       if (atteint !== null && estBorne(atteint)) {
-        const liaisons = liaisonsImportees(surcharges.get(chemin) ?? readFileSync(join(contexte.racine, chemin), 'utf8'), chemin, i.specificateur);
+        const liaisons = liaisonsImportees(source(chemin), chemin, i.specificateur);
         entreesDuClient.add(`${chemin} -> ${atteint} {${liaisons.join(', ')}}`);
       } else if (atteint !== null && atteint.startsWith('web/src/') && !/(^|\/)node_modules\//.test(atteint) && estFichierSource(atteint)) {
         if (!vus.has(atteint)) {
@@ -214,8 +244,7 @@ function fermetureDuCockpit(
       }
     }
   }
-  const source = (f: string) => surcharges.get(f) ?? readFileSync(join(contexte.racine, f), 'utf8');
-  const acces = [...vus].sort().flatMap(f => accesNommes(source(f), f).map(nom => `${f}:${nom}`));
+  const acces = [...vus].sort().flatMap(f => accesMemoises(contexte, source(f), f).map(nom => `${f}:${nom}`));
   return {
     fichiers: [...vus].sort(),
     entreesDuClient: [...entreesDuClient].sort(),
