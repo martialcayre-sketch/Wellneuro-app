@@ -128,3 +128,57 @@ test.describe('Lecture d’un état passé (SP-TT)', () => {
     expect(requetesMutantes).toEqual([]);
   });
 });
+
+// P34 (PRA-5 PR 2 ; D-481 complément DOC-15, Q1 à Q3 ; T-15) : h1, contexte
+// repliable dès 1 024 px, escamoté d'office de 1 024 à 1 279 px, tout empilé
+// et sans commande dessous. Patient fictif Sophie Nicola (PAT_SEED_01).
+test.describe('Consultation copilote — panneau de contexte (P34)', () => {
+  test('h1, puis le contexte se replie et se rouvre, le focus suivant la commande', async ({
+    page,
+    context,
+    viewport,
+  }) => {
+    test.skip((viewport?.width ?? 0) < 1280, 'Contexte affiché d’office à partir de 1 280 px.');
+    await context.addCookies([await praticienSessionCookie()]);
+    await page.goto(`/dashboard/copilote?idPatient=${PATIENT_ID}`);
+
+    await expect(page.getByRole('heading', { level: 1, name: 'Consultation copilote' })).toBeVisible();
+    const panneau = page.locator('#panneau-cloture');
+    await expect(panneau).toBeVisible();
+
+    const masquer = page.getByRole('button', { name: 'Masquer le contexte' });
+    expect((await masquer.boundingBox())?.height).toBeGreaterThanOrEqual(44);
+    await masquer.click();
+    await expect(panneau).toBeHidden();
+    const afficher = page.getByRole('button', { name: 'Afficher le contexte' });
+    await expect(afficher).toBeFocused();
+
+    await afficher.click();
+    await expect(panneau).toBeVisible();
+    await expect(masquer).toBeFocused();
+  });
+
+  test('de 1 024 à 1 279 px, le contexte est escamoté d’office', async ({ page, context, viewport }) => {
+    test.skip((viewport?.width ?? 0) < 1024, 'Sous 1 024 px, tout s’empile.');
+    await context.addCookies([await praticienSessionCookie()]);
+    await page.setViewportSize({ width: 1100, height: 800 });
+    await page.goto(`/dashboard/copilote?idPatient=${PATIENT_ID}`);
+
+    await expect(page.getByRole('heading', { name: 'Ce qui a changé' })).toBeVisible();
+    await expect(page.locator('#panneau-cloture')).toBeHidden();
+    await expect(page.getByRole('button', { name: 'Afficher le contexte' })).toBeVisible();
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth),
+    ).toBe(true);
+  });
+
+  test('sous 1 024 px, tout s’empile, sans commande de repli', async ({ page, context, viewport }) => {
+    test.skip((viewport?.width ?? 0) >= 1024, 'Au bureau, le contexte a sa colonne.');
+    await context.addCookies([await praticienSessionCookie()]);
+    await page.goto(`/dashboard/copilote?idPatient=${PATIENT_ID}`);
+
+    await expect(page.locator('#panneau-cloture').getByRole('heading', { name: 'La minute d’après' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Masquer le contexte' })).toBeHidden();
+    await expect(page.getByRole('button', { name: 'Afficher le contexte' })).toBeHidden();
+  });
+});
