@@ -96,13 +96,13 @@ export function NavBar({ email, buildLabel, children }: NavBarProps) {
 
   return (
     <Dialog.Root open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
-      <div className="flex min-h-screen flex-col bg-background text-foreground">
+      <div className="flex min-h-screen flex-col bg-background text-foreground print:min-h-0">
         {/* Premier arrêt de tabulation de chaque page du tableau de bord
             ([[D-488]] T-16) : il vise le <main id="contenu"> ci-dessous. */}
         <a href={`#${ID_CONTENU}`} className={CLASSES_LIEN_EVITEMENT}>
           {LIEN_EVITEMENT_PRATICIEN}
         </a>
-        <header className="sticky top-0 z-40 flex h-16 items-center gap-3 border-b border-border bg-surface px-4">
+        <header className="sticky top-0 z-40 flex h-16 items-center gap-3 border-b border-border bg-surface px-4 print:hidden">
           <Dialog.Trigger asChild>
             <button
               type="button"
@@ -158,14 +158,14 @@ export function NavBar({ email, buildLabel, children }: NavBarProps) {
           </details>
         </header>
 
-        <div className="mx-auto flex w-full max-w-[1600px] flex-1 gap-6 px-4 py-4 sm:px-6 lg:py-6">
+        <div className="mx-auto flex w-full max-w-[1600px] flex-1 gap-6 px-4 py-4 sm:px-6 lg:py-6 print:max-w-none print:p-0">
           {/* Escamoté, le rail quitte la page, le parcours clavier et l'arbre
               d'accessibilité (`hidden`) ; la colonne de contenu récupère sa
               place. Il reste monté : ses compteurs ne sont pas relus. */}
           <aside
             id="rail-praticien"
             hidden={escamote}
-            className={`hidden shrink-0 flex-col gap-4 transition-[width] duration-panel ease-lien motion-reduce:transition-none lg:sticky lg:top-20 lg:z-30 lg:self-start ${
+            className={`hidden shrink-0 flex-col gap-4 transition-[width] duration-panel ease-lien motion-reduce:transition-none lg:sticky lg:top-20 lg:z-30 lg:self-start print:hidden ${
               escamote ? '' : 'lg:flex'
             } ${expanded ? 'lg:w-[252px]' : 'lg:w-16'}`}
           >
@@ -202,7 +202,7 @@ export function NavBar({ email, buildLabel, children }: NavBarProps) {
             </div>
           </aside>
 
-          <main id={ID_CONTENU} tabIndex={-1} className="min-w-0 flex-1 pb-24 focus:outline-none md:pb-6 lg:pb-8">
+          <main id={ID_CONTENU} tabIndex={-1} className="min-w-0 flex-1 pb-24 focus:outline-none md:pb-6 lg:pb-8 print:pb-0">
             {children}
           </main>
         </div>
@@ -212,10 +212,10 @@ export function NavBar({ email, buildLabel, children }: NavBarProps) {
               conteneur [data-theme="praticien"] posé par dashboard/layout.tsx —
               sans cet attribut, les tokens --rail- ne résolvent à rien (--foreground
               reste défini sur :root, donc pas affecté). */}
-          <Dialog.Overlay data-theme="praticien" className="fixed inset-0 z-50 hidden bg-foreground/35 md:block lg:hidden" />
+          <Dialog.Overlay data-theme="praticien" className="fixed inset-0 z-50 hidden bg-foreground/35 md:block lg:hidden print:hidden" />
           <Dialog.Content
             data-theme="praticien"
-            className="fixed inset-y-0 left-0 z-50 hidden h-full w-72 max-w-[80vw] flex-col gap-4 overflow-y-auto border-r border-rail-border bg-rail p-4 shadow-pop focus:outline-none md:flex lg:hidden"
+            className="fixed inset-y-0 left-0 z-50 hidden h-full w-72 max-w-[80vw] flex-col gap-4 overflow-y-auto border-r border-rail-border bg-rail p-4 shadow-pop focus:outline-none md:flex lg:hidden print:hidden"
           >
             <Dialog.Description className="sr-only">Panneau de navigation praticien</Dialog.Description>
             <div className="flex items-center justify-between">

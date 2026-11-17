@@ -47,7 +47,7 @@ export function MobileBottomNav() {
     <>
       <nav
         aria-label="Navigation principale"
-        className="fixed inset-x-0 bottom-0 z-40 flex h-16 items-stretch border-t border-rail-border bg-rail md:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 flex h-16 items-stretch border-t border-rail-border bg-rail md:hidden print:hidden"
       >
         {RACCOURCIS_TELEPHONE.map((raccourci) => {
           const active = estActive(raccourci, pathname);
@@ -81,10 +81,10 @@ export function MobileBottomNav() {
                 conteneur [data-theme="praticien"] posé par dashboard/layout.tsx —
                 sans cet attribut, les tokens --rail- ne résolvent à rien (--foreground
                 reste défini sur :root, donc pas affecté). */}
-            <Dialog.Overlay data-theme="praticien" className="fixed inset-0 z-50 bg-foreground/35 md:hidden" />
+            <Dialog.Overlay data-theme="praticien" className="fixed inset-0 z-50 bg-foreground/35 md:hidden print:hidden" />
             <Dialog.Content
               data-theme="praticien"
-              className="fixed inset-x-0 bottom-0 z-50 w-full rounded-t-[1.5rem] border-t border-rail-border bg-rail p-4 shadow-pop focus:outline-none md:hidden"
+              className="fixed inset-x-0 bottom-0 z-50 w-full rounded-t-[1.5rem] border-t border-rail-border bg-rail p-4 shadow-pop focus:outline-none md:hidden print:hidden"
             >
               <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-rail-border" aria-hidden="true" />
               <Dialog.Description className="sr-only">Menu de navigation supplémentaire</Dialog.Description>

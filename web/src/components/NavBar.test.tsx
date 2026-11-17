@@ -174,3 +174,37 @@ describe('NavBar — lien d’évitement (D-488 T-16, lot PRA-2a)', () => {
     expect(screen.getByRole('link', { name: LIEN_EVITEMENT })).toBeTruthy();
   });
 });
+
+// PRA-5, PR 1 (X06 ; [[D-481]], complément DOC-15, Q9 a) : le chrome ne
+// s'imprime pas, le contenu prend toute la largeur. jsdom n'applique pas
+// Tailwind : on lit les classes `print:` ; l'aperçu se contrôle à l'écran.
+describe('NavBar — impression sans rail ni menu (X06)', () => {
+  const imprimeCache = (el: Element | null) => expect(el?.getAttribute('class') ?? '').toMatch(/(^|\s)print:hidden(\s|$)/);
+
+  it('en-tête, rail et barre du téléphone portent print:hidden', () => {
+    const { container } = rendre();
+    imprimeCache(container.querySelector('header'));
+    imprimeCache(rail(container));
+    // Le rail porte le même nom accessible que la barre : on prend la barre fixe.
+    const barre = screen
+      .getAllByRole('navigation', { name: 'Navigation principale' })
+      .find((nav) => !rail(container).contains(nav));
+    expect(barre).toBeTruthy();
+    imprimeCache(barre ?? null);
+  });
+
+  it('le contenu reste imprimé, en pleine largeur et sans marge réservée à la barre basse', () => {
+    rendre();
+    const principal = screen.getByRole('main');
+    expect(principal.className).not.toMatch(/print:hidden/);
+    expect(principal.className).toMatch(/\bprint:pb-0\b/);
+    expect(principal.parentElement?.className).toMatch(/\bprint:max-w-none\b/);
+    expect(principal.parentElement?.className).toMatch(/\bprint:p-0\b/);
+  });
+
+  it('le tiroir de tablette, ouvert, ne s’imprime pas', () => {
+    rendre();
+    fireEvent.click(screen.getByRole('button', { name: 'Ouvrir la navigation' }));
+    imprimeCache(screen.getByRole('dialog'));
+  });
+});

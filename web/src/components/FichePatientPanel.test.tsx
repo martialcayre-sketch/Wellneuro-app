@@ -3586,6 +3586,18 @@ describe('FichePatientPanel — replis des phases et du contexte (PRA-3a)', () =
     expect(screen.getByRole('button', { name: 'Afficher les phases' }).className).not.toContain('lg:inline-flex');
   });
 
+  it('les quatre commandes de repli ne s’impriment pas ; les colonnes, contenu, restent (X06, PRA-5)', async () => {
+    await rendreFiche({ runtime: 'ready' });
+    const imprimeCache = /(^|\s)print:hidden(\s|$)/;
+    expect(screen.getByRole('button', { name: 'Afficher les phases' }).className).toMatch(imprimeCache);
+    expect(screen.getByRole('button', { name: 'Afficher le contexte' }).className).toMatch(imprimeCache);
+    expect(screen.getByRole('button', { name: 'Masquer le contexte' }).className).toMatch(imprimeCache);
+    // « Masquer les phases » vit seule dans son pied bordé : c'est le pied qui part.
+    expect(screen.getByRole('button', { name: 'Masquer les phases' }).parentElement?.className).toMatch(imprimeCache);
+    expect(colonnePhases().className).not.toMatch(/print:hidden/);
+    expect(colonneContexte().className).not.toMatch(/print:hidden/);
+  });
+
   it('contexte : escamoté d’office de 1 024 à 1 279 px tant que rien n’est choisi, puis suit la commande', async () => {
     await rendreFiche({ runtime: 'ready' });
     expect(colonneContexte().className).toContain('lg:max-xl:hidden');

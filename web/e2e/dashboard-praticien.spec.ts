@@ -556,3 +556,41 @@ test.describe('rail praticien escamotable', () => {
     await expect(rail.getByRole('link', { name: 'Fiche-trajectoire' })).toHaveAttribute('aria-current', 'page');
   });
 });
+
+// PRA-5, PR 1 (X06 ; D-481, complément DOC-15, Q9 a) : à l'impression, le
+// chrome s'efface et le contenu prend toute la largeur. À 1 280 px, la
+// variante `lg:flex` du rail est active : la feuille en paysage est couverte.
+// Les deux projets jouent : Chromium au bureau, WebKit au téléphone.
+test.describe('impression du tableau de bord (X06)', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.context().addCookies([await praticienSessionCookie(PRATICIEN_EMAIL)]);
+  });
+
+  for (const chemin of ['/dashboard/synthese', '/dashboard/documents']) {
+    test(`${chemin} : seul le contenu s’imprime, sur toute la largeur`, async ({ page }, testInfo) => {
+      if (testInfo.project.name === 'Desktop Chromium') await page.setViewportSize({ width: 1280, height: 800 });
+      await page.goto(chemin);
+      const principal = page.locator('main#contenu');
+      await expect(principal.locator('h1, h2').first()).toBeVisible({ timeout: 10_000 });
+      const navigation = page.getByRole('navigation', { name: 'Navigation principale' });
+      const entete = page.locator('header', { has: page.locator('summary', { hasText: 'Profil' }) });
+      await expect(navigation.first()).toBeVisible();
+      await expect(entete).toBeVisible();
+
+      await page.emulateMedia({ media: 'print' });
+      await expect(entete).toBeHidden();
+      await expect(navigation).toHaveCount(0);
+      await expect(page.locator('#rail-praticien')).toBeHidden();
+      await expect(principal).toBeVisible();
+      const part = await principal.evaluate(
+        (element) => element.getBoundingClientRect().width / document.documentElement.clientWidth,
+      );
+      expect(part).toBeGreaterThan(0.95);
+
+      // À l'écran, rien n'a changé.
+      await page.emulateMedia({ media: 'screen' });
+      await expect(entete).toBeVisible();
+      await expect(navigation.first()).toBeVisible();
+    });
+  }
+});
