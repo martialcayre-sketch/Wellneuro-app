@@ -2782,7 +2782,7 @@ export function FichePatientPanel({
                 refsReplis.current.afficherPhases = element;
               }}
               onClick={() => replier('afficherPhases')}
-              className={`${classesCommandeAfficherPhases} min-h-11 shrink-0 items-center gap-1.5 rounded-lg border border-control-border bg-surface px-3 py-1.5 text-sm font-medium text-foreground hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring`}
+              className={`${classesCommandeAfficherPhases} min-h-11 print:hidden shrink-0 items-center gap-1.5 rounded-lg border border-control-border bg-surface px-3 py-1.5 text-sm font-medium text-foreground hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring`}
             >
               <PanelLeftOpen aria-hidden="true" size={18} strokeWidth={TRAIT_ICONE} />
               Afficher les phases
@@ -2860,7 +2860,7 @@ export function FichePatientPanel({
                 refsReplis.current.afficherContexte = element;
               }}
               onClick={() => replier('afficherContexte')}
-              className={`${classesCommandeAfficherContexte} min-h-11 shrink-0 items-center gap-1.5 rounded-lg border border-control-border bg-surface px-3 py-1.5 text-sm font-medium text-foreground hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring`}
+              className={`${classesCommandeAfficherContexte} min-h-11 print:hidden shrink-0 items-center gap-1.5 rounded-lg border border-control-border bg-surface px-3 py-1.5 text-sm font-medium text-foreground hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring`}
             >
               <PanelRightOpen aria-hidden="true" size={18} strokeWidth={TRAIT_ICONE} />
               Afficher le contexte
@@ -2929,7 +2929,7 @@ export function FichePatientPanel({
               })}
             </div>
             {/* Hors du tablist : une commande n'est pas un onglet. */}
-            <div className="hidden border-t border-border p-2 lg:block">
+            <div className="hidden border-t border-border p-2 lg:block print:hidden">
               <button
                 type="button"
                 ref={element => {
@@ -3021,7 +3021,7 @@ export function FichePatientPanel({
                   refsReplis.current.masquerContexte = element;
                 }}
                 onClick={() => replier('masquerContexte')}
-                className="hidden min-h-11 w-full items-center gap-2 rounded-[10px] px-2 py-2 text-left text-14 font-medium text-muted-foreground hover:bg-surface hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring lg:flex"
+                className="hidden min-h-11 w-full items-center gap-2 rounded-[10px] px-2 py-2 text-left text-14 font-medium text-muted-foreground hover:bg-surface hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring lg:flex print:hidden"
               >
                 <PanelRightClose aria-hidden="true" size={18} strokeWidth={TRAIT_ICONE} className="shrink-0" />
                 Masquer le contexte
