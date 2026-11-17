@@ -22,15 +22,23 @@ Aucun constat ne dit ce que vit le praticien sur un dossier réel.
   possible, en local, sans compte réel.
 - **Base E2E (T2).** Le CI de `main` à `c5f99846` (Chromium et WebKit, build
   de production, 39 specs praticien) était vert au départ. Celui de
-  `f18545d2` est rouge sur un seul test, patient et hors de ce lot :
-  `portail-rail-lateral.spec.ts:128`, 1 échec sur 423. Il est vert dans le
-  T2 local de PRA-6a (423 sur 423) ; il est signalé, pas instruit ici.
+  `f18545d2` est rouge sur un seul test, patient :
+  `portail-rail-lateral.spec.ts:128`, 1 échec sur 423. Il est jugé étranger
+  au lot sur trois faits. Entre `e9d1bd04` (merge de #2224, CI vert) et
+  `f18545d2`, seuls trois fichiers de garde du cockpit changent, aucun du
+  portail. Le même test est vert dans le T2 local de PRA-6a (423 sur 423).
+  Le CI de `58993aac`, tête suivante, est vert. Ce rouge reste à instruire
+  s'il revient : un rouge ne se relance pas.
 - **Code servi.** Build de production local (`next start`) :
   - `c5f99846` pour la passe principale (35 écrans) ;
   - `f18545d2` pour P51, P52 et la fiche, après le merge de la PR 3 de PRA-5
     (#2224), avec les trois fichiers de PRA-6a.
 
-  Les numéros de ligne cités sont ceux de `58993aac`.
+  Les numéros de ligne cités sont ceux de `58993aac`, tête de `main` à la
+  rédaction et base de PRA-6a. Aucun des fichiers cités ne change entre
+  `f18545d2` et `58993aac`. Entre `c5f99846` et `f18545d2`, seuls
+  `FichePatientPanel.tsx` et `SynthesePanel.tsx` changent (#2224) : leurs
+  constats ont été revus sur `f18545d2`.
 - **Base.** Base PostgreSQL locale du worktree (`scripts/wn-dev-db.sh --seed
   --demo`). La fiche est vue sur `PAT_DEMO_01` (Sophie Nicola,
   démonstration) : anamnèse et passations y sont renseignées.
@@ -264,7 +272,7 @@ le code* sauf mention.
 
 ## 5. Lots nommés proposés
 
-Seul PRA-6a est ouvert (#2227). Les autres attendent le choix du responsable, posé dans la liste commune : `20261117-1421-d` (quels lots, dans quel ordre), `20261117-1422-d` (PRA-6j, clinique) et `20261117-1423-d` (PRA-6e).
+Seul PRA-6a est ouvert (#2227). Les autres attendent le choix du responsable, posé dans la liste commune (collection `questions` de la page de suivi de la file D, `docs/ROLES_MACHINES.md`, « La liste commune de questions et le guichet ») : `20261117-1421-d` (quels lots, dans quel ordre), `20261117-1422-d` (PRA-6j, clinique) et `20261117-1423-d` (PRA-6e).
 
 | Lot | Objet | Texte neuf ? | Préalable |
 |---|---|---|---|
