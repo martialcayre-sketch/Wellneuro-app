@@ -104,6 +104,13 @@ const LECTEURS_PUBLIES = [
   // cinquième lecteur hors biologie (2026-11-14).
   'web/src/lib/export-dossier/assembler.ts',
   'web/src/lib/export-dossier/biologieExport.ts',
+  // Le bloc de biologie de la synthèse ([[D-513]] §2, H95 part B) : la série
+  // de la fiche, le contexte de prélèvement et les faits du laboratoire avec
+  // les silences de [[D-267]] §5, sous son drapeau propre — par l'entrée
+  // publiée, sixième lecteur hors biologie (2026-11-17).
+  'web/src/lib/clinical/blocBiologieSynthese.ts',
+  'web/src/lib/clinical/blocBiologieSyntheseService.ts',
+  'web/src/lib/clinical/syntheseBiologieDrapeau.ts',
 ];
 
 const DOSSIER = 'web/src/lib/biology-library/';
