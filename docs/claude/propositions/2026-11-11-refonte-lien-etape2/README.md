@@ -50,6 +50,7 @@ mergés.
 | `plan-patient.md` | plan du Jardin, PAT-1 à PAT-7 |
 | `pat7-constat-partiel.md` | PAT-7 en partie (2026-11-16) : constat à l'écran local des écrans patient livrés, lots nommés proposés |
 | `pat7-constat-ecrans-non-vus.md` | PAT-7, suite (2026-11-17) : constat des écrans non vus U13-U17, U39-U41 ; PAT-7f proposé |
+| `pra6-constat.md` | PRA-6 (2026-11-17) : constat à l'écran local des écrans praticien livrés, comparaison aux prototypes ; PRA-6a ouvert, PRA-6b à PRA-6j proposés |
 
 ## 3. Les deux plans en parallèle
 
