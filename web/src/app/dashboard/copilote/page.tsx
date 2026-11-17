@@ -3,9 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
-import { PreVolPanel } from '@/components/copilote/PreVolPanel';
-import { LectureEtatPassePanel } from '@/components/copilote/LectureEtatPassePanel';
-import { ClotureMinuteApresPanel } from '@/components/copilote/ClotureMinuteApresPanel';
+import { CopiloteConsultation } from '@/components/copilote/CopiloteConsultation';
 
 // Consultation copilote — pré-vol T-10 min (SP-COP LOT-01) et minute d'après
 // (LOT-02). L'entrée de rail était réservée dans la maquette 5.0 sans écran
@@ -40,16 +38,14 @@ export default async function CopilotePage({
     return (
       <div className="flex flex-col gap-6">
         <div>
-          <h2 className="font-display text-3xl font-bold tracking-[-0.02em] text-foreground">Consultation copilote</h2>
+          <h1 className="font-display text-3xl font-bold tracking-[-0.02em] text-foreground">Consultation copilote</h1>
           <p className="mt-1 text-base text-muted-foreground">
             {patient
               ? `Pré-vol — ${patient.prenom} ${patient.nom}. Lecture seule : rien n’est enregistré ni envoyé depuis cet écran.`
               : 'Patient introuvable.'}
           </p>
         </div>
-        {patient && <PreVolPanel idPatient={idValide} />}
-        {patient && <ClotureMinuteApresPanel idPatient={idValide} />}
-        {patient && <LectureEtatPassePanel idPatient={idValide} />}
+        {patient && <CopiloteConsultation idPatient={idValide} />}
         <Link
           href="/dashboard/copilote"
           className="inline-flex min-h-11 w-fit items-center rounded-lg border border-border px-3 py-1 text-sm text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
@@ -72,7 +68,7 @@ export default async function CopilotePage({
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h2 className="font-display text-3xl font-bold tracking-[-0.02em] text-foreground">Consultation copilote</h2>
+        <h1 className="font-display text-3xl font-bold tracking-[-0.02em] text-foreground">Consultation copilote</h1>
         <p className="mt-1 text-base text-muted-foreground">
           Dix minutes avant la consultation : ce qui a changé depuis la précédente, et les questions que cela ouvre.
           Choisissez le patient à préparer.
