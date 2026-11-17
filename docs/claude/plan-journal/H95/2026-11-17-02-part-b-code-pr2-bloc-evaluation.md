@@ -3,10 +3,11 @@
   **La PR 2 livre**, sous `web/src/lib/clinical/` (`release-db`, sans migration) :
   - le constructeur du bloc de biologie (`blocBiologieSynthese.ts`), qui reproduit au caractère près l'exemple de la décision ;
   - son lecteur ;
-  - le drapeau `WN_SYNTHESE_BIOLOGIE_ENABLED`, créé éteint ;
-  - les textes du §12, validés le 2026-11-17 : « Vos données personnelles » v24, IA v9, conditions v7, e-mail `conditions_utilisation@7`, §2 quater du dossier RGPD.
+  - le drapeau `WN_SYNTHESE_BIOLOGIE_ENABLED`, créé éteint.
 
   **Elle les livre SANS APPELANT** : aucune synthèse ne reçoit le bloc.
+
+  **Textes du §12 reportés** (choix du responsable, sur la réserve P1 du recours `wn-reviewer`) : « Vos données personnelles » v24, IA v9, conditions v7, e-mail `conditions_utilisation@7` et §2 quater du dossier RGPD, validés le 2026-11-17. Ils décrivaient un flux dans l'appel principal que E exclut. Ils seront réécrits selon E et F3, validés à nouveau et publiés avec le second appel.
 
   **Évaluation sur dossiers fictifs**, rendue le même jour avec le bloc dans l'appel principal (constat *observé sur fixtures*) :
   - **Conditions.** Vraie consigne `synthese-v36`, modèle de production `claude-sonnet-4-6`, trois dossiers fictifs construits chacun pour tenter le modèle sur un interdit du §3, deux passages, dont un avec le contexte anamnestique déclaré.
