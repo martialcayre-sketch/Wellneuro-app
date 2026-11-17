@@ -31,9 +31,11 @@ Jouer le nouvel essai arbitré par le responsable (`20261117-0750-b`) sur les tr
 - POLY P7 n° 1 et MG P4 n° 1 attendent la validation du responsable.
 - POLY P6, P8 et MG P5 restent sans version. POLY P8 « precautions » est refusée pour le même motif à chaque passage depuis la v8 ; MG P5 déborde cette fois de « argument_preference » vers les options (refusée au rejeu précédent pour une condition de dose omise). Le responsable a arbitré l'arrêt (`20261117-0815-b`) : aucun nouvel essai ni consigne v12 sans un nouvel arbitrage.
 
+- Hors de ces dix fiches, F05 garde ouverts le fer (`FU_FER_P1`, `P2`, `P5`, `P6`, rédigées puis refusées) et le zinc, tenus hors du périmètre des essais v9 à v11 (fragments `2026-11-16-01` et `2026-11-16-03`).
+
 ## Prochaine action exacte
 
-CI et PR-Agent à 0, puis déclarer cette PR « prête » à l'intégrateur. Ensuite, il ne reste à F05 qu'à constater, par conteneur en lecture seule, la validation de POLY P7 et MG P4 quand le responsable l'annonce.
+CI et PR-Agent à 0, puis déclarer cette PR « prête » à l'intégrateur. Ensuite, au périmètre polyphénols et magnésium, il ne reste qu'à constater, par conteneur en lecture seule, la validation de POLY P7 et MG P4 quand le responsable l'annonce. Le fer et le zinc restent ouverts dans F05 (voir « Problèmes ouverts »).
 
 ## Interdits encore actifs
 
