@@ -118,7 +118,7 @@ export async function lireSyntheseCitable(idPatient: string): Promise<MatiereSyn
     orderBy: { dateValidation: 'desc' },
     // `donneesEntree` : lue pour le seul contrôle de contamination ([[D-513]] §5),
     // jamais transmise.
-    select: { idSynthese: true, syntheseJson: true, donneesEntree: true },
+    select: { idSynthese: true, statut: true, syntheseJson: true, donneesEntree: true },
   });
   if (ligne === null) return null;
 
@@ -128,6 +128,7 @@ export async function lireSyntheseCitable(idPatient: string): Promise<MatiereSyn
     idSynthese: ligne.idSynthese,
     syntheseJson: ligne.syntheseJson,
     donneesEntree: ligne.donneesEntree,
+    statut: ligne.statut,
     sortie: 'priorite_objectif',
   }) !== null) return null;
   const blob = projeterSynthese(ligne.syntheseJson, CHAMPS_APPEL_PRIORITE);

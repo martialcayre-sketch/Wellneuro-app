@@ -30,6 +30,9 @@ Lot `h95-b-code` du carnet (ordre 72) : le code de D-513, bloc déterministe de 
   - P2-6 noté : le GET lit `donneesEntree`. C'est voulu, et à surveiller.
   - P2-7 écarté : la ligne de journal de l'impression porte `route: interne:impression_medecin`, ce qui reste lisible.
   - P2-8 routé : voir « Problèmes ouverts ».
+- Contre-revue Codex P0 (`wn-codex-avis.mjs --mode revue`, avis conforme, déposé sur la PR) : deux P2, aucun P0 ni P1. Verdicts :
+  - premier P2 corrigé : un bloc présent mais illisible, sous un schéma antérieur à v4, échappait à la règle des anciennes synthèses. La présence du bloc se juge désormais avant sa lecture détaillée ;
+  - second P2 corrigé : le motif suit le statut de la synthèse à chaque sortie. Une synthèse validée renvoie donc à une nouvelle synthèse, et non à l'éditeur.
 
 ## Fichiers modifiés
 
@@ -61,7 +64,8 @@ Lot `h95-b-code` du carnet (ordre 72) : le code de D-513, bloc déterministe de 
 
 - `npm run check:rapide` vert, puis `npm run check` vert.
 - Suites touchées : vertes (1 208 tests, puis 67 après les corrections de la revue).
-- Premier T3 (`npm run test:worktree`) : rouge sur deux bornes de temps de `masquage.test.ts`. Ce fichier n'est pas touché par le lot, il passe seul (170/170), et ses bornes cèdent sous la charge du T3 complet. Le segment E2E n'avait pas tourné. Second T3 : voir la PR.
+- Premier T3 (`npm run test:worktree`) : rouge sur deux bornes de temps de `masquage.test.ts`. Ce fichier n'est pas touché par le lot, il passe seul (170/170), et ses bornes cèdent sous la charge du T3 complet. Le segment E2E n'avait pas tourné. Second T3, sur l'état d'avant la contre-revue Codex : vert en entier, E2E compris (412 passés, 10 min 57 s).
+- Après les corrections Codex : `npm run check` rouge sur un seul banc, `scripts/wn-codex-avis.test.mjs` (« dossier temporaire supprimé »), qui a trouvé un dossier temporaire d'un passage concurrent. Ce script n'est pas touché par le lot et passe seul (30/30). Les suites touchées passent : 213, puis 1 254 tests.
 - `promptBiologie.guard.test.ts` compare la section de la consigne au texte cité dans D-513 §3 : elle est identique au caractère près. `wn-reviewer` l'a vérifié de son côté par `diff`.
 
 ## Problèmes ouverts

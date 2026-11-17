@@ -132,6 +132,6 @@ describe('sortie 4 — appel de priorité de l’objectif', () => {
   it('lit `donneesEntree` pour le seul contrôle', async () => {
     prisma.syntheseIA.findFirst.mockResolvedValue(null);
     await lireSyntheseCitable('PAT_FICTIF');
-    expect(prisma.syntheseIA.findFirst.mock.calls[0][0].select).toEqual({ idSynthese: true, syntheseJson: true, donneesEntree: true });
+    expect(prisma.syntheseIA.findFirst.mock.calls[0][0].select).toEqual({ idSynthese: true, statut: true, syntheseJson: true, donneesEntree: true });
   });
 });

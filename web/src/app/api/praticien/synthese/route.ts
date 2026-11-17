@@ -496,6 +496,7 @@ export async function PATCH(req: Request) {
         idSynthese,
         syntheseJson: syntheseJson ?? existing.syntheseJson,
         donneesEntree: existing.donneesEntree,
+        statut: existing.statut,
         sortie: 'validation',
         requestContext,
       });

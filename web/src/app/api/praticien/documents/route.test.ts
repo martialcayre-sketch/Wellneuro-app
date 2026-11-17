@@ -105,6 +105,8 @@ describe('GET /api/praticien/documents', () => {
     const corps = await res.json();
     expect(corps.code).toBe('synthese_suspecte');
     expect(corps.blocs).toBeUndefined();
+    // Une synthèse validée ne se corrige plus dans l'éditeur (contre-revue Codex).
+    expect(corps.error).toContain('générez-en une nouvelle');
   });
 
   it('lecture journalisée au gabarit littéral (G-TRUST-04), idPatient issu de la synthèse', async () => {

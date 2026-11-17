@@ -142,6 +142,12 @@ describe('anciennes synthèses — schéma conservé antérieur à v4 (D-513 §5
     expect(versionSchemaConservee({ metadonneesPrompt: { versionSchema: 'synthese-json-v3' } })).toBe('synthese-json-v3');
   });
 
+  it('un bloc illisible sous un schéma antérieur reste bloqué (contre-revue Codex)', () => {
+    expect(verdictContamination(synthese(), donnees({ texte: '' }, 'synthese-json-v3')).suspecte).toBe(true);
+    expect(verdictContamination(synthese(), donnees('illisible', 'synthese-json-v3')).suspecte).toBe(true);
+    expect(verdictContamination(synthese(), donnees({ texte: '' }, 'synthese-json-v4'))).toEqual({ suspecte: false });
+  });
+
   it('sans bloc, une ancienne synthèse n’est pas suspecte', () => {
     expect(verdictContamination(synthese(), { metadonneesPrompt: { versionSchema: 'synthese-json-v3' } })).toEqual({ suspecte: false });
   });

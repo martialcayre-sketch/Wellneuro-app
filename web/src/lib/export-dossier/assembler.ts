@@ -593,6 +593,7 @@ export async function assemblerDossierExport(params: {
     idSynthese: validee.idSynthese,
     syntheseJson: validee.syntheseJson,
     donneesEntree: validee.donneesEntree,
+    statut: validee.statut,
     sortie: 'export_dossier',
   }) !== null;
   const synthese: SyntheseExport | null = validee && !syntheseSuspecte

@@ -79,6 +79,7 @@ export async function POST(req: Request): Promise<NextResponse<ImpressionDocumen
       idSynthese,
       syntheseJson: synthese.syntheseJson,
       donneesEntree: synthese.donneesEntree,
+      statut: synthese.statut,
       sortie: 'impression_medecin',
     });
     if (motifSuspecte) return echec('synthese_suspecte', motifSuspecte, 422);

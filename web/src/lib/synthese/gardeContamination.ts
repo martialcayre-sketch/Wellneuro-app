@@ -38,6 +38,8 @@ export function motifBlocageContamination(args: {
   idSynthese: string;
   syntheseJson: unknown;
   donneesEntree: unknown;
+  /** Le statut de la synthèse : il décide de l'issue dite (corriger, ou en générer une nouvelle). */
+  statut: string;
   sortie: SortieGardee;
   requestContext?: RequestContext;
 }): string | null {
@@ -52,5 +54,5 @@ export function motifBlocageContamination(args: {
     message: `${args.idSynthese} bloquée (${args.sortie}) : ${formes}`,
     context: contexte(args.requestContext, args.sortie),
   });
-  return motifAffiche(verdict);
+  return motifAffiche(verdict, args.statut);
 }

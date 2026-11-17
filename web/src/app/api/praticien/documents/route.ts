@@ -74,6 +74,7 @@ export async function GET(req: Request) {
       idSynthese,
       syntheseJson: synthese.syntheseJson,
       donneesEntree: synthese.donneesEntree,
+      statut: synthese.statut,
       sortie: 'document_medecin',
       requestContext,
     });

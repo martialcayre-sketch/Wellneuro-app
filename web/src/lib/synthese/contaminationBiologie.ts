@@ -159,11 +159,16 @@ export function releverFormes(syntheseJson: unknown, trace: TraceBlocBiologie): 
  * - sinon : suspecte dès qu'une forme est relevée dans un champ ordinaire.
  */
 export function verdictContamination(syntheseJson: unknown, donneesEntree: unknown): VerdictContamination {
-  const trace = lireTraceBlocBiologie(donneesEntree);
-  if (trace === null) return { suspecte: false };
+  // La PRÉSENCE d'un bloc se juge avant sa lecture : un bloc illisible sous un
+  // schéma antérieur reste une ancienne synthèse qui a reçu de la biologie.
+  const blocPresent = estObjet(donneesEntree)
+    && donneesEntree.blocBiologie !== undefined && donneesEntree.blocBiologie !== null;
+  if (!blocPresent) return { suspecte: false };
   if (!schemaAuMoinsV4(versionSchemaConservee(donneesEntree))) {
     return { suspecte: true, motif: 'schema_anterieur', releves: [] };
   }
+  const trace = lireTraceBlocBiologie(donneesEntree);
+  if (trace === null) return { suspecte: false };
   const releves = releverFormes(syntheseJson, trace);
   return releves.length > 0 ? { suspecte: true, motif: 'formes_relevees', releves } : { suspecte: false };
 }
