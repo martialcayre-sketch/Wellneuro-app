@@ -5,7 +5,7 @@ const { getServerSession, prisma, journaliserAccesDossier } = vi.hoisted(() => (
   journaliserAccesDossier: vi.fn(),
   prisma: {
     patient: { findFirst: vi.fn() },
-    syntheseIA: { create: vi.fn(), findFirst: vi.fn(), update: vi.fn() },
+    syntheseIA: { create: vi.fn(), findFirst: vi.fn(), findUnique: vi.fn(), update: vi.fn() },
     bookletEnvoi: { findFirst: vi.fn() },
     auditSynthese: { create: vi.fn() },
     documentMedecinImprime: { findFirst: vi.fn() },
@@ -99,6 +99,9 @@ describe('brouillon praticien /api/praticien/synthese', () => {
     prisma.syntheseIA.create.mockResolvedValue(ligneSynthese());
     prisma.syntheseIA.findFirst.mockResolvedValue(ligneSynthese());
     prisma.syntheseIA.update.mockResolvedValue(ligneSynthese());
+    // Relue sous le verrou : par défaut, la synthèse n'a pas changé depuis la
+    // lecture d'entrée (la dernière que `findFirst` a rendue).
+    prisma.syntheseIA.findUnique.mockImplementation(async () => prisma.syntheseIA.findFirst.mock.results.at(-1)?.value);
     prisma.bookletEnvoi.findFirst.mockResolvedValue(null);
     prisma.auditSynthese.create.mockResolvedValue({});
     prisma.documentMedecinImprime.findFirst.mockResolvedValue(null);
@@ -378,6 +381,67 @@ describe('brouillon praticien /api/praticien/synthese', () => {
     expect(response.status).toBe(409);
     expect(prisma.syntheseIA.update).not.toHaveBeenCalled();
   });
+
+  // Course relevée par wn-reviewer sur #2215 : le brouillon est lu hors verrou ;
+  // une validation puis une impression peuvent passer avant l'écriture.
+  it('enregistre sous le verrou du dossier', async () => {
+    const response = await PATCH(requete('PATCH', {
+      idSynthese: 'SYN_MANUEL_1',
+      action: 'enregistrer',
+      synthese: brouillon,
+    }));
+    expect(response.status).toBe(200);
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(String((prisma.$queryRaw.mock.calls[0] as unknown[])[0])).toContain('FOR UPDATE');
+    expect(prisma.syntheseIA.findUnique).toHaveBeenCalledWith({
+      where: { idSynthese: 'SYN_MANUEL_1' },
+      select: { statut: true, modele: true },
+    });
+    expect(prisma.syntheseIA.update).toHaveBeenCalledTimes(1);
+  });
+
+  it('refuse d’enregistrer un brouillon validé entre la lecture et le verrou', async () => {
+    prisma.syntheseIA.findUnique.mockResolvedValue({ statut: 'Validee_Praticien', modele: MODELE_REDACTION_PRATICIEN });
+    const response = await PATCH(requete('PATCH', {
+      idSynthese: 'SYN_MANUEL_1',
+      action: 'enregistrer',
+      synthese: brouillon,
+    }));
+    expect(response.status).toBe(409);
+    expect((await response.json()).error).toBe('Seul un brouillon (IA ou praticien) non encore validé peut être modifié.');
+    expect(prisma.syntheseIA.update).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['un brouillon IA validé', { statut: 'Brouillon_IA', modele: 'claude-test' }, { statut: 'Validee_Praticien', modele: 'claude-test' }],
+    ['une synthèse supprimée', { statut: 'Brouillon_Praticien', modele: MODELE_REDACTION_PRATICIEN }, null],
+  ])('refuse d’enregistrer %s entre la lecture et le verrou, avant le contrôle d’impression', async (_cas, lue, sousVerrou) => {
+    prisma.syntheseIA.findFirst.mockResolvedValue({ ...ligneSynthese(), ...lue });
+    prisma.syntheseIA.findUnique.mockResolvedValue(sousVerrou);
+    prisma.documentMedecinImprime.findFirst.mockResolvedValue({ id: 'IMP_1' });
+    const response = await PATCH(requete('PATCH', {
+      idSynthese: 'SYN_MANUEL_1',
+      action: 'enregistrer',
+      synthese: brouillon,
+    }));
+    expect(response.status).toBe(409);
+    expect((await response.json()).error).toBe('Seul un brouillon (IA ou praticien) non encore validé peut être modifié.');
+    expect(prisma.syntheseIA.update).not.toHaveBeenCalled();
+  });
+
+  it('refuse d’enregistrer une synthèse imprimée pour le médecin', async () => {
+    prisma.documentMedecinImprime.findFirst.mockResolvedValue({ id: 'IMP_1' });
+    const response = await PATCH(requete('PATCH', {
+      idSynthese: 'SYN_MANUEL_1',
+      action: 'enregistrer',
+      synthese: brouillon,
+    }));
+    expect(response.status).toBe(409);
+    const corps = await response.json();
+    expect(corps.reason).toBe('synthese_imprimee_pour_medecin');
+    expect(corps.error).toContain('Impossible de modifier');
+    expect(prisma.syntheseIA.update).not.toHaveBeenCalled();
+  });
 });
 
 // [[D-513]] §5 et §11 : une synthèse suspecte ne se valide pas, quel que soit
@@ -408,6 +472,11 @@ describe('validation — contrôle de contamination (D-513 §5)', () => {
     vi.clearAllMocks();
     getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
     prisma.syntheseIA.update.mockResolvedValue(ligneSynthese());
+    // « enregistrer » passe sous le verrou du dossier : ce bloc pose ses
+    // propres mocks, sans hériter de ceux du bloc précédent (wn-reviewer).
+    prisma.syntheseIA.findUnique.mockImplementation(async () => prisma.syntheseIA.findFirst.mock.results.at(-1)?.value);
+    prisma.$queryRaw.mockResolvedValue([]);
+    prisma.$transaction.mockImplementation(async (fn: (tx: typeof prisma) => unknown) => fn(prisma));
     prisma.auditSynthese.create.mockResolvedValue({});
     prisma.documentMedecinImprime.findFirst.mockResolvedValue(null);
     journaliserAccesDossier.mockResolvedValue(undefined);

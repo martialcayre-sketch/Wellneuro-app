@@ -564,10 +564,27 @@ export async function PATCH(req: Request) {
     // SOUS LE VERROU DU DOSSIER que l'impression prend aussi
     // (`documentMedecinImprime.ts`) : une impression concurrente passe avant
     // ou après le contrôle, jamais entre le contrôle et l'écriture.
-    const figeeParImpression = action === 'effacer' || action === 'rejeter';
+    //
+    // « ENREGISTRER » PREND LE MÊME VERROU et relit le statut sous lui : le
+    // brouillon a été lu plus haut, hors verrou, et `data` réécrit ce statut
+    // lu. Une validation suivie d'une impression entre la lecture et
+    // l'écriture était sinon remise en brouillon, son texte remplacé — celui
+    // que « Mon bilan » lit vivant (constat de wn-reviewer sur #2215).
+    const figeeParImpression = action === 'effacer' || action === 'rejeter' || action === 'enregistrer';
+    let plusUnBrouillon = false;
     const record = figeeParImpression
       ? await prisma.$transaction(async (tx) => {
           await tx.$queryRaw`SELECT id FROM patients WHERE id_patient = ${existing.idPatient} FOR UPDATE`;
+          if (action === 'enregistrer') {
+            const courante = await tx.syntheseIA.findUnique({
+              where: { idSynthese },
+              select: { statut: true, modele: true },
+            });
+            if (!courante || courante.statut !== existing.statut || courante.modele !== existing.modele) {
+              plusUnBrouillon = true;
+              return null;
+            }
+          }
           const imprimee = await tx.documentMedecinImprime.findFirst({
             where: { idSynthese },
             select: { id: true },
@@ -576,10 +593,17 @@ export async function PATCH(req: Request) {
           return tx.syntheseIA.update({ where: { idSynthese }, data });
         })
       : await prisma.syntheseIA.update({ where: { idSynthese }, data });
+    if (plusUnBrouillon) {
+      return withCorrelationHeader(NextResponse.json(
+        { error: 'Seul un brouillon (IA ou praticien) non encore validé peut être modifié.' },
+        { status: 409 },
+      ), requestContext);
+    }
     if (!record) {
+      const geste = action === 'effacer' ? 'vider' : action === 'rejeter' ? 'rejeter' : 'modifier';
       return withCorrelationHeader(NextResponse.json(
         {
-          error: `Impossible de ${action === 'effacer' ? 'vider' : 'rejeter'} une synthèse dont le document pour le médecin a été imprimé. Pour corriger, créez une nouvelle synthèse et imprimez-la : elle remplacera ce document pour le patient.`,
+          error: `Impossible de ${geste} une synthèse dont le document pour le médecin a été imprimé. Pour corriger, créez une nouvelle synthèse et imprimez-la : elle remplacera ce document pour le patient.`,
           reason: 'synthese_imprimee_pour_medecin',
         },
         { status: 409 },
