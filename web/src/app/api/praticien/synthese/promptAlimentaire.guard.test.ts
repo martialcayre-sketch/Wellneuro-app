@@ -174,7 +174,10 @@ const SOURCE_ROUTE = readFileSync(join(__dirname, '../../../../lib/synthese/gene
 // Retouché avant tout service (revue P0) : le mot pour mot réservé au texte validé,
 // tout autre motif repris en son sens, et un motif de passation incomplète
 // n'établit aucune valeur, pas même un apport nul (D-517 §3, seconde passe Codex).
-const EMPREINTE_V35 = '3c34ec7b753f0119';
+// v36 (2026-11-17, D-513, H95 part B) : section « Résultats de biologie » après celle des
+// besoins, et trois retouches (§4) ; textes validés mot pour mot par le responsable.
+// Gardés à part par `promptBiologie.guard.test.ts`.
+const EMPREINTE_V36 = '0aca795efa750264';
 
 /**
  * La seule phrase de la consigne autorisée à attribuer une validité — parce
@@ -296,7 +299,7 @@ describe('garde-fou alimentaire — consigne système', () => {
     expect(
       { version: VERSION_PROMPT_SYNTHESE, empreinte },
       "consigne modifiée : incrémenter VERSION_PROMPT_SYNTHESE et reporter la nouvelle empreinte ici. CE GESTE N'EST PAS MÉCANIQUE — la consigne est du clinique (`DC-17`) : relire ce qui a changé, et si un interdit a bougé, une décision `D-xxx` et un fragment `changelog.d/` sont dus AVANT de reporter l'empreinte. C'est ici que passe une clause affaiblie qu'aucune assertion de vocabulaire ne voit.",
-    ).toEqual({ version: 'synthese-v35', empreinte: EMPREINTE_V35 });
+    ).toEqual({ version: 'synthese-v36', empreinte: EMPREINTE_V36 });
   });
 
   it('ne présente pas les questionnaires comme validés, et dit pourquoi (D-034)', () => {

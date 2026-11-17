@@ -19,6 +19,8 @@ import {
   validerBrouillonPraticien
 } from '@/lib/synthese-praticien';
 import { logger } from '@/lib/observability/logger';
+import { motifAffiche, verdictContamination } from '@/lib/synthese/contaminationBiologie';
+import { motifBlocageContamination } from '@/lib/synthese/gardeContamination';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
 import {
   createRequestContext,
@@ -102,6 +104,9 @@ export async function GET(req: Request) {
         dateValidation: true,
         notesPraticien: true,
         syntheseJson: true,
+        // [[D-513]] §5 : lue pour dire, ici, si la synthèse est suspecte. Elle
+        // ne part pas au client (retirée ci-dessous).
+        donneesEntree: true,
       },
     });
 
@@ -123,10 +128,16 @@ export async function GET(req: Request) {
         select: { idQuestionnaire: true },
       });
       const ids = passations.map(p => p.idQuestionnaire);
-      return syntheses.map(s => ({
-        ...s,
-        avertissementMesureRetiree: avertissementSyntheseAnterieure(ids, s.dateGeneration),
-      }));
+      return syntheses.map(({ donneesEntree, ...s }) => {
+        // Affichage seulement : le blocage, et sa ligne de journal, se font à la
+        // validation et aux sorties (`motifBlocageContamination`).
+        const verdict = verdictContamination(s.syntheseJson, donneesEntree);
+        return {
+          ...s,
+          avertissementMesureRetiree: avertissementSyntheseAnterieure(ids, s.dateGeneration),
+          motifSuspecte: verdict.suspecte ? motifAffiche(verdict, s.statut) : null,
+        };
+      });
     })();
 
     return withCorrelationHeader(
@@ -478,6 +489,26 @@ export async function PATCH(req: Request) {
         }
         syntheseJson = validation.synthese as Prisma.InputJsonValue;
       }
+      // [[D-513]] §5 : une synthèse suspecte ne se valide pas, quel que soit
+      // l'auteur du texte. Le contrôle se rejoue à chaque validation ; une
+      // correction dans l'éditeur le lève.
+      const motifSuspecte = motifBlocageContamination({
+        idSynthese,
+        syntheseJson: syntheseJson ?? existing.syntheseJson,
+        donneesEntree: existing.donneesEntree,
+        sortie: 'validation',
+        requestContext,
+      });
+      if (motifSuspecte) {
+        return withCorrelationHeader(NextResponse.json(
+          { error: motifSuspecte, code: 'synthese_suspecte' },
+          { status: 409 },
+        ), requestContext);
+      }
+      // Le texte validé est CELUI QUI VIENT D'ÊTRE CONTRÔLÉ : réécrit tel quel,
+      // pour qu'un enregistrement concurrent ne fasse pas valider un texte que
+      // le contrôle n'a pas vu. « Validée » vaut donc « contrôlée ».
+      syntheseJson ??= existing.syntheseJson as Prisma.InputJsonValue;
       statut = 'Validee_Praticien';
       dateValidation = new Date();
     } else if (action === 'rejeter') {
@@ -573,9 +604,13 @@ export async function PATCH(req: Request) {
       methode: 'PATCH',
     });
 
+    // [[D-513]] §5 : le verdict RECALCULÉ sur ce qui vient d'être écrit — une
+    // correction dans l'éditeur lève le blocage à l'écran sans relecture.
+    const verdictApres = verdictContamination(record.syntheseJson, record.donneesEntree);
     return withCorrelationHeader(NextResponse.json({
       success: true,
       statut,
+      motifSuspecte: verdictApres.suspecte ? motifAffiche(verdictApres, statut) : null,
       syntheseJson: record.syntheseJson,
       modele: record.modele,
       dateValidation: record.dateValidation,

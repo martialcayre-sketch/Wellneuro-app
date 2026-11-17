@@ -63,6 +63,8 @@ import { sectionPerimetre } from './sectionPerimetre';
 import { sectionQuestionnaires } from './sectionQuestionnaires';
 import { sectionRenseignements } from './sectionRenseignements';
 import { sectionSynthese } from './sectionSynthese';
+import { motifBlocageContamination } from '@/lib/synthese/gardeContamination';
+import { CHAMPS_EXPORT_DOSSIER, projeterSynthese } from '@/lib/synthese/projectionSorties';
 
 const STATUTS_BROUILLON = ['Brouillon_IA', 'Brouillon_Praticien'];
 
@@ -508,6 +510,8 @@ export async function assemblerDossierExport(params: {
         modele: true,
         syntheseJson: true,
         notesPraticien: true,
+        // [[D-513]] §5 : lue pour le seul contrôle de contamination, jamais exportée.
+        donneesEntree: true,
       },
     }),
     // Une lecture qui échoue lève : jamais un « non renseigné » de repli.
@@ -581,9 +585,25 @@ export async function assemblerDossierExport(params: {
       return recueil ? { ...envoi, recueilEnCours: recueil } : envoi;
     }));
 
-  const synthese: SyntheseExport | null = validee
+  // [[D-513]] §5 et §7 : une synthèse suspecte n'entre pas à l'export, et la
+  // projection par liste de champs autorisés précède le masquage de la version
+  // « Pour une IA externe » ([[D-512]], `masquerSynthese`), qui ne retire aucun
+  // contenu.
+  const syntheseSuspecte = validee !== null && motifBlocageContamination({
+    idSynthese: validee.idSynthese,
+    syntheseJson: validee.syntheseJson,
+    donneesEntree: validee.donneesEntree,
+    sortie: 'export_dossier',
+  }) !== null;
+  const synthese: SyntheseExport | null = validee && !syntheseSuspecte
     ? {
-        ...validee,
+        idSynthese: validee.idSynthese,
+        statut: validee.statut,
+        dateGeneration: validee.dateGeneration,
+        dateValidation: validee.dateValidation,
+        modele: validee.modele,
+        notesPraticien: validee.notesPraticien,
+        syntheseJson: projeterSynthese(validee.syntheseJson, CHAMPS_EXPORT_DOSSIER),
         avertissementMesureRetiree: avertissementSyntheseAnterieure(
           [...new Set(passationsDb.map(p => p.idQuestionnaire))],
           validee.dateGeneration,
@@ -614,7 +634,7 @@ export async function assemblerDossierExport(params: {
           dateur,
         ),
         ...sectionQuestionnaires(passations.map(p => masquerPassation(p, masquer)), sansReponse, dateur),
-        ...sectionSynthese(synthese ? masquerSynthese(synthese, masquer) : null, brouillonPlusRecent, dateur),
+        ...sectionSynthese(synthese ? masquerSynthese(synthese, masquer) : null, brouillonPlusRecent, dateur, syntheseSuspecte),
         ...sectionBiologie(masquerBiologie(biologie, masquer), dateur),
       ],
     };
@@ -631,7 +651,7 @@ export async function assemblerDossierExport(params: {
       ...sectionAdministrative(patient, version, maintenant),
       ...sectionRenseignements(consultations, porteuse?.idConsultation ?? null, donneesDatees),
       ...sectionQuestionnaires(passations, sansReponse),
-      ...sectionSynthese(synthese, brouillonPlusRecent),
+      ...sectionSynthese(synthese, brouillonPlusRecent, undefined, syntheseSuspecte),
       ...sectionBiologie(biologie),
     ],
   };

@@ -110,12 +110,22 @@ export function sectionSynthese(
   synthese: SyntheseExport | null,
   brouillonPlusRecent: BrouillonPlusRecentExport,
   dateur: Dateur = DATEUR_CALENDAIRE,
+  /** [[D-513]] §5 : la dernière synthèse validée est suspecte, donc exclue. */
+  syntheseSuspecteExclue = false,
 ): BlocExport[] {
   const le = dateur.relatif ? 'à' : 'le';
   const blocs: BlocExport[] = [{ type: 'titre', niveau: 1, texte: '4. Dernière synthèse validée' }];
 
   if (!synthese) {
-    blocs.push({ type: 'paragraphe', texte: "Aucune synthèse n'a encore été validée par le praticien." });
+    // Une synthèse exclue n'est pas une synthèse absente : le dire autrement
+    // laisserait croire qu'aucune n'a été validée.
+    blocs.push(syntheseSuspecteExclue
+      ? {
+          type: 'paragraphe',
+          texte: "La dernière synthèse validée n'est pas incluse : un résultat de biologie y a été repris hors des champs qui lui sont réservés. Une nouvelle synthèse doit être générée et validée.",
+          ton: 'alerte',
+        }
+      : { type: 'paragraphe', texte: "Aucune synthèse n'a encore été validée par le praticien." });
     if (brouillonPlusRecent) {
       blocs.push(discret(
         `Un brouillon (${libelleBrouillon(brouillonPlusRecent.statut)}) généré `

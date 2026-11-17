@@ -10,6 +10,7 @@ import { journaliserAccesDossier } from '@/lib/praticien/journalAcces';
 import { accepteNouvelEnvoi, MESSAGE_DOSSIER_CLOS, RAISON_DOSSIER_CLOS } from '@/lib/patient/cycleDeVie';
 import { refusPartage, verdictPartageMedecin } from '@/lib/trust/consentementPartage';
 import { classeEtCode } from '@/lib/observability/classeEtCode';
+import { motifBlocageContamination } from '@/lib/synthese/gardeContamination';
 
 // POST /api/praticien/documents/medecin/impression — « Imprimer » le document
 // pour le médecin, CONFIRMÉ ([[D-307]] §2, F38).
@@ -70,6 +71,17 @@ export async function POST(req: Request): Promise<NextResponse<ImpressionDocumen
         422,
       );
     }
+
+    // [[D-513]] §5 : une synthèse suspecte ne s'imprime pas — et ce qui ne
+    // s'imprime pas n'est jamais téléchargeable au portail, qui ne sert que le
+    // document figé ici.
+    const motifSuspecte = motifBlocageContamination({
+      idSynthese,
+      syntheseJson: synthese.syntheseJson,
+      donneesEntree: synthese.donneesEntree,
+      sortie: 'impression_medecin',
+    });
+    if (motifSuspecte) return echec('synthese_suspecte', motifSuspecte, 422);
 
     const patient = await prisma.patient.findUnique({
       where: { idPatient: synthese.idPatient },

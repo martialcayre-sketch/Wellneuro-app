@@ -30,6 +30,11 @@ const BLOCKED_KEYS = new Set([
   'systemprompt',
   'narratif_patient',
   'resume_praticien',
+  // [[D-513]] §6 : la restitution biologique ne part pas plus au journal. Sous
+  // la forme NORMALISÉE (`normalizeSensitiveKey` retire les soulignés) : les
+  // deux entrées à soulignés ci-dessus ne peuvent pas correspondre.
+  'resumebiologiepraticien',
+  'pointsdevigilancebiologie',
 ]);
 
 function normalizeSensitiveKey(key: string): string {

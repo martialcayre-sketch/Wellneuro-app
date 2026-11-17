@@ -197,6 +197,14 @@ export const EVENT_CODES = {
    */
   SYNTHESE_NARRATIF_FORME_DE_SCORE: 'SYNTHESE_IA.NARRATIF.FORME_DE_SCORE',
   /**
+   * H95 part B ([[D-513]] §5) — une synthèse SUSPECTE a été bloquée : une forme
+   * tirée du bloc de biologie transmis (`valeur_unite`, `intervalle`) a été
+   * relevée dans un champ ordinaire, ou une trace porte un bloc sous un schéma
+   * antérieur à v4. Le contexte nomme la synthèse, le champ et le code, jamais
+   * le texte.
+   */
+  SYNTHESE_BIOLOGIE_HORS_CHAMPS: 'SYNTHESE_IA.BIOLOGIE_HORS_CHAMPS',
+  /**
    * [[D-335]] §8 — les traitements en vigueur (lignes datées) n'ont pas pu
    * être lus : la ligne de vigilance ne porte que ceux de l'anamnèse. Code
    * distinct pour la même raison que le précédent (revue CodeRabbit).

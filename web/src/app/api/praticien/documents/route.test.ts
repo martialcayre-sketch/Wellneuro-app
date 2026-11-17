@@ -18,7 +18,7 @@ vi.mock('@/lib/prisma', () => ({
     },
   },
 }));
-vi.mock('@/lib/observability/logger', () => ({ logger: { error: vi.fn(), security: vi.fn() } }));
+vi.mock('@/lib/observability/logger', () => ({ logger: { error: vi.fn(), warn: vi.fn(), security: vi.fn() } }));
 vi.mock('@/lib/observability/requestContext', () => ({
   createRequestContext: () => ({}),
   finalizeLogContext: (_c: unknown, x: unknown) => x,
@@ -88,6 +88,23 @@ describe('GET /api/praticien/documents', () => {
     const res = await GET(req('http://x/api/praticien/documents?idSynthese=SYN_1'));
     expect(res.status).toBe(422);
     expect(createJournal).toHaveBeenCalledTimes(1);
+  });
+
+  // [[D-513]] §5 : une synthèse suspecte n'entre pas à l'aperçu du document.
+  it('422 si synthèse suspecte — aucun bloc composé', async () => {
+    findFirst.mockResolvedValue({
+      ...syntheseFixture('Validee_Praticien'),
+      syntheseJson: { ...syntheseFixture('Validee_Praticien').syntheseJson, narratif_patient: 'Ferritine 32 µg/L.' },
+      donneesEntree: {
+        blocBiologie: { texte: '## Résultats de biologie', formes: { valeursUnites: [{ valeur: '32', unite: 'µg/L' }], intervalles: [] } },
+        metadonneesPrompt: { versionSchema: 'synthese-json-v4' },
+      },
+    });
+    const res = await GET(req('http://x/api/praticien/documents?idSynthese=SYN_1'));
+    expect(res.status).toBe(422);
+    const corps = await res.json();
+    expect(corps.code).toBe('synthese_suspecte');
+    expect(corps.blocs).toBeUndefined();
   });
 
   it('lecture journalisée au gabarit littéral (G-TRUST-04), idPatient issu de la synthèse', async () => {
