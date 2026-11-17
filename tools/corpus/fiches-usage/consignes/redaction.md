@@ -269,7 +269,15 @@ point final) qui désigne l'hypothèse ou la population d'usage telle que les
 claims la décrivent. Le libellé d'une hypothèse nomme un état fonctionnel,
 portant sur un seul nutriment, dans le sens bas ; il ne nomme jamais un
 marqueur, le résultat d'un dosage, un seuil, une comparaison à un seuil, ni
-une qualification diagnostique. Réponds par un seul objet JSON, sans texte
-autour :
+une qualification diagnostique. Le libellé d'une hypothèse ne contient aucun
+de ces douze termes : « normal », « anormal », « déficit », « carence »,
+« excès », « diagnos », « hors plage », « élevé », « pathologie »,
+« maladie », « syndrome », « trouble ». Ni la casse, ni les accents, ni un
+tiret à la place d'une espace n'y changent rien, et un mot qui contient l'un
+d'eux tombe sous lui : « déficitaire », « excessif », « élevée », mais aussi
+« relevé ». Ces termes ne s'y écrivent pas, même quand les claims les
+emploient : le libellé se reformule en gardant le nutriment et le sens bas
+que décrivent les claims. Cette liste ne vise pas le libellé d'une
+population. Réponds par un seul objet JSON, sans texte autour :
 
 {"libelle": "<texte>"}

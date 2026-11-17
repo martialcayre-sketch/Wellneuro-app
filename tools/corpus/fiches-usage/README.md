@@ -83,7 +83,7 @@ rejoué rend `BROUILLON_INCHANGE`.
 
 ## La consigne versionnée
 
-`versionConsigne` vaut `fiche-usage-v11+<empreinte des deux consignes>`,
+`versionConsigne` vaut `fiche-usage-v12+<empreinte des deux consignes>`,
 épinglée dans `lib/consigne.mjs` et gardée par `lib/consigne.test.mjs`.
 
 Depuis la v2 (`D-501`), le message d'une fiche porte ses cinq axes signés,
@@ -169,6 +169,13 @@ une option ne porte pas sur « limites » ; un argument de causalité ne porte
 pas sur « surveillance_arret » ; dans « resultats_consequences », un résultat
 se nomme sans être interprété, et sous « preuves_limitees » aucune
 conséquence décisionnelle ne s'y écrit.
+
+Depuis la v12 (`D-501` §16), le mode « libellé » cite, des deux côtés, les
+douze termes que `D-535` refuse dans le libellé d'une hypothèse, tels que
+les tient `web/src/lib/fiches-usage/registreLibelleHypothese.ts` : un mot qui
+en contient un tombe sous lui, et le libellé se reformule en gardant le
+nutriment et le sens bas. La liste ne vise pas les populations. Le banc v12
+relit le registre du code : un terme ajouté ou retiré d'un seul côté rougit.
 
 ## Ce que l'outil ne voit pas
 
