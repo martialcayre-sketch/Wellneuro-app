@@ -2521,7 +2521,9 @@ sien, tel qu'il l'a retenu en session :
 Conclusion du responsable : **AIPD non requise à ce stade.** Il statuera à
 nouveau quand le produit sera achevé, ce qui est encore loin d'être le cas.
 Déclaration rendue en session le 2026-10-04, consignée par l'assistant. Les
-critères ci-dessus n'ont pas été renseignés un à un.
+critères ci-dessus n'ont pas été renseignés un à un. — 2026-11-18 : cette
+conclusion ne vaut plus que pour les adultes. Pour le volet mineurs, l'AIPD
+est requise (voir plus bas, « Revue de nécessité du 2026-11-18 »).
 
 **Note du 2026-10-05, versée au réexamen ([[D-267]] §8).** Le relevé de la
 rubrique 2 ter conserve désormais aussi l'intervalle de référence et la marque
@@ -2542,7 +2544,9 @@ des cinq événements de [[D-286]] §2, à l'ouverture de l'étage assistant, à
 nouveau destinataire ou nouvelle catégorie de données, et au plus tard le
 2027-06-30. Conclusion du responsable maintenue au 2026-10-15 : **AIPD non
 requise**. Les neuf critères ci-dessus restent à cocher de sa main, chacun avec
-son motif ([[D-283]] §9) ; ce motif porte la conclusion.
+son motif ([[D-283]] §9) ; ce motif porte la conclusion. — 2026-11-18 : les
+neuf critères sont cochés ou laissés vides, chacun avec son motif (revue
+qui suit).
 
 **Revue de nécessité du 2026-11-18 ([[D-537]] §6), avant le premier
 mineur.** Elle pèse le cumul que relève l'avis GPT : données de santé,
