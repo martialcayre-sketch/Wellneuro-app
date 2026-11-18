@@ -3,7 +3,9 @@
 ## Branche et état Git
 
 - Worktree `.claude/worktrees/b-h95-second-appel`, session concurrente, cycle en git/gh direct.
-- Branche `worktree-b-h95-second-appel`, depuis `origin/main`, avancée par `--ff-only` jusqu'à `1354683d` (aucun fichier commun).
+- Branche `worktree-b-h95-second-appel`, depuis `origin/main` :
+  - avancée par `--ff-only` jusqu'à `1354683d`, sans fichier commun ;
+  - puis fusion de `origin/main` à `0ffd9d20`. Un fichier était commun, `docs/DOSSIER_RGPD.md`, touché par #2248. La fusion a été autorisée par le responsable le 2026-11-19 et s'est faite sans conflit.
 - Lot du carnet `h95-b-code` (file B) : il reste à l'état `pr` après le merge de cette PR ; l'évaluation rejouée suit.
 - PR de code sous `release-db` (chemin `web/src/lib/clinical/`), sans migration ni `schema.prisma`.
 
@@ -41,7 +43,8 @@ Livrer D-539 §2, §4, §5 et §7 : le second appel qui restitue la biologie au 
   - réécrit : `promptBiologie.guard.test.ts` ;
   - empreintes v37 : `promptAlimentaire.guard.test.ts` et `anthropic.corpusActif.guard.test.ts` ;
   - fixtures sans clés biologiques ;
-  - `registre.test.ts`, `registreGabarits.test.ts`.
+  - `registre.test.ts`, `registreGabarits.test.ts` ;
+  - `sitesAppelIa.guard.test.ts` : le second appel déclaré au registre des sites d'appel IA. C'est lui qui a fait rougir le premier T3.
 - Docs :
   - `docs/DOSSIER_RGPD.md` (7a à 7c ter) ;
   - `docs/FEATURE_FLAGS.md` (ligne du drapeau) ;
