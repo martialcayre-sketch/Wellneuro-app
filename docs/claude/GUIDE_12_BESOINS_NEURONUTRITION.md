@@ -214,8 +214,8 @@ déséquilibre le système nerveux autonome (sympathique/parasympathique).
 - **Règle de décision** : un constat par instrument. Aucun claim du dossier ne
   fonde un déclenchement sur un seuil ou une grille ; la grille servie du
   total de la PSS-10 est une lecture du cabinet, sans source publiée, et les
-  trois lignes existantes qui lisent une bande de la PSS-10 ou du BMS-10
-  restent régies par leurs décisions (`D-541` §6.1). Les options (prise en
+  quatre lignes existantes qui lisent une bande de la PSS-10, du BMS-10 ou du
+  DASS-21 resteraient régies par leurs décisions (proposition, `D-541` §6.1). Les options (prise en
   charge selon la HAS, rhodiole en usage traditionnel, magnésium, régulation
   émotionnelle) sont à la main du praticien, aucun score ne les déclenche. La
   règle précédente (« protocole d'urgence » sur un cortisol au réveil altéré

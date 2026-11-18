@@ -24,20 +24,21 @@ Consigner la signature des positions v0.2 du besoin 9 et rédiger la décision d
 
 ## Validations exécutées
 
-- Lecture de l'onglet en lecture seule ; lecture du code pour les trois lignes qui lisent une bande de la PSS-10 ou du BMS-10 (`R-STR-01`, `R-STR-02`, `BIO-STR-01`).
-- Avis de Codex : trois appels à l'aveugle, état conforme.
-- T1 partiel et anti-secrets : résultats donnés dans la PR. Pas de T2 : documentation seule.
+- Lecture de l'onglet en lecture seule ; lecture du code pour les lignes qui lisent une bande d'un instrument du besoin 9 : `R-STR-01`, `R-STR-02`, `BIO-STR-01`, et `C-STR` et `STOP-STR` relevées par la revue de la PR.
+- Avis de Codex : quatre appels à l'aveugle (le premier sujet repris sur quatre lignes), état conforme.
+- `wn-reviewer` sur 0f273d432 : GO avec corrections (une contradiction active omise, la section du guide réécrite avant l'acceptation, deux présentations d'options ouvertes comme acquises), corrigées dans le commit suivant.
+- type-check, decisions-check, plan-journal-check, campaign-audit-check, ancres-check verts ; anti-secrets (indexé) vert ; vitest non joué en local (worktree sans `npm ci`). Pas de T2 : documentation seule.
 
 ## Problèmes ouverts
 
-- Acceptation de `D-541` par le responsable, et réponses à `20261118-2355-b`, `2356-b`, `2357-b`. Si l'option A du premier est retenue, la position P32 est amendée dans le dossier privé et à re-signer.
+- Acceptation de `D-541` par le responsable, et réponses à `20261118-2355-b` (quatre lignes, avis de Codex C, proposition A), `2356-b`, `2357-b`. Si l'option A du premier est retenue, la position P32 est amendée dans le dossier privé et à re-signer. La PR ne se merge qu'après l'acceptation (la section du guide est dans la PR).
 - Le bandeau périmé de l'onglet des positions (« rien n'est signé »).
 - Le lot `besoin9-decision-guide` reste `pris` jusqu'à l'acceptation. Les parts des strates et la pondération des besoins se décident avec J3-12f.
 
 ## Prochaine action exacte
 
-1. Contrôles, puis PR ; CI (`wn-attendre-ci.mjs`, seul `0` vaut), revue PR-Agent prouvée sinon `wn-reviewer` sur le sha de tête, un verdict par remarque, boîte B relue, « prête @<sha> ».
-2. S'arrêter à l'acceptation ou aux questions du responsable.
+1. S'arrêter à l'acceptation ou aux questions du responsable ; la PR #2250 reste en brouillon.
+2. Après l'acceptation, reporter les réponses dans `D-541` (statut, §6), CI (`wn-attendre-ci.mjs`, seul `0` vaut), revue sur le sha de tête, boîte B relue, puis « prête @<sha> ».
 
 ## Interdits encore actifs
 
