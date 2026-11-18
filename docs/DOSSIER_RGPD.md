@@ -1247,6 +1247,10 @@ non-discrimination »).
 avant l'admission d'un premier mineur : un public mineur est un critère de
 vulnérabilité. — 2026-11-18 : revue faite ([[D-537]] §6). Une AIPD est
 requise pour le volet mineurs, et elle précède l'admission (rubrique 13).
+— 2026-11-18 : le projet est écrit (`docs/rgpd/AIPD_MINEURS.md`) et les
+risques sont jugés. La validation datée attend le cadrage de J3-mineurs.
+L'AIPD ajoute une condition à l'admission : le jeune donne sa propre
+adresse e-mail.
 
 **État au 2026-10-21.** 31 dossiers ouverts, aucun mineur. Le circuit
 parental en ligne et le texte 2A, au titulaire, ne sont pas servis.
@@ -2576,6 +2580,22 @@ Conclusion du responsable au 2026-11-18 (`-c-5`) :
   au carnet par le lot C `aipd-mineurs`, préalable à l'admission. La pièce
   va hors dépôt si elle décrit des failles exploitables.
 
+**Projet d'AIPD du volet mineurs, 2026-11-18** (lot `aipd-mineurs`) :
+`docs/rgpd/AIPD_MINEURS.md`. Il reste dans le dépôt, car il ne décrit aucune
+faille exploitable. Jugements du responsable en session (questions
+`20261118-2227-c` à `-c-7`) :
+- accès illégitime : gravité importante, vraisemblance limitée ;
+- modification non désirée : gravité limitée, vraisemblance limitée ;
+- disparition : gravité limitée, vraisemblance négligeable ;
+- une mesure nouvelle est retenue comme condition de l'admission : le jeune
+  donne sa propre adresse e-mail. Trois sont écartées ;
+- risque résiduel acceptable ; l'accès illégitime reste à suivre ;
+- avis des personnes concernées non recueilli, avec motif écrit.
+
+**L'AIPD n'est pas encore validée.** Sa validation datée vient après le
+cadrage de J3-mineurs, quand les passages qui en dépendent sont complétés,
+et avant la première admission.
+
 **B. Si elle est requise : l'AIPD elle-même**, en pièce dédiée.
 
 1. Description du traitement : finalités (rubrique 2), données (rubrique 5),
@@ -2618,7 +2638,7 @@ dossier en garde alors la conclusion, la date et l'emplacement.
 | 11 | Information | **Clos le 2026-10-13 ([[D-283]] §8) : l'information orale est consignée comme non datée.** *Historique — constat d'origine :* **Date de délivrance non établie** et **modalité de retrait non consignée** — deux des quatre composantes du trou d'origine ; la période déclarée (« en continu depuis la souscription HDS ») ne fournit pas de point de départ tenu pour établi par le dépôt | Responsable | fermé | ici, rubrique 11 |
 | 11 | Information | **Clos le 2026-10-13 ([[D-283]] §8) : les accusés des versions écrites en tiennent lieu.** *Historique — constat d'origine :* **Aucune trace écrite par participant** de l'information sur l'écart HDS — aucun acquittement individuel ne la porte ; périmètre des personnes couvertes non établi | Responsable | fermé | ici, rubrique 11 |
 | 11 | Information | **2026-10-13 ([[D-283]] §8) : un seul dossier reste à la v8 (agrégats, conteneur) ; le praticien l'informe lui-même, geste daté à consigner.** **Deux patients ont accusé `donnees_confidentialite@v8` sans avoir vu `v9`**, qui corrige la promesse inexacte sur le partage. L'accusé de `v9` étant exigé **au portail**, il ne les atteindra qu'à leur prochaine visite — or la production dit qu'on y entre le jour même ou jamais. Deux personnes, mesurées le 2026-09-19 : ce n'est pas un mécanisme à construire mais un geste à décider. Ce qui part vers un patient reste un geste du responsable | Responsable | 2027-06-30 (était : **à fixer** — au plus tôt, en tout état de cause avant le 2026-10-21) | ici, rubrique 11 |
-| 13 | AIPD | ~~Absente~~ — **non requise à ce stade**, déclaration du responsable du 2026-10-04 ([[D-265]] §3), **critères du seuil non renseignés** ; à réexaminer à l'achèvement du produit ; **maintenue au 2026-10-15, déclencheur remplacé** ([[D-313]]) ; **2026-11-18 ([[D-537]] §6) : critères cochés un à un. AIPD requise pour le volet mineurs, préalable à la première admission (lot `aipd-mineurs`). Pour les adultes, « non requise » est maintenue malgré trois critères cochés (1, 4, 8), sans motif écrit d'absence de risque élevé : écart ouvert.** | Responsable | AIPD mineurs : avant la première admission ; adultes : réexamen au premier événement de [[D-313]] §2, au plus tard 2027-06-30 | ici, rubrique 13 |
+| 13 | AIPD | ~~Absente~~ — **non requise à ce stade**, déclaration du responsable du 2026-10-04 ([[D-265]] §3), **critères du seuil non renseignés** ; à réexaminer à l'achèvement du produit ; **maintenue au 2026-10-15, déclencheur remplacé** ([[D-313]]) ; **2026-11-18 ([[D-537]] §6) : critères cochés un à un. AIPD requise pour le volet mineurs, préalable à la première admission (lot `aipd-mineurs`). Pour les adultes, « non requise » est maintenue malgré trois critères cochés (1, 4, 8), sans motif écrit d'absence de risque élevé : écart ouvert.** **2026-11-18 : projet d'AIPD mineurs écrit et risques jugés (`docs/rgpd/AIPD_MINEURS.md`) ; validation après le cadrage de J3-mineurs.** | Responsable | AIPD mineurs : avant la première admission ; adultes : réexamen au premier événement de [[D-313]] §2, au plus tard 2027-06-30 | ici, rubrique 13 |
 
 Le **2026-10-21** était l'échéance par défaut, date de revue de la dérogation.
 La dérogation est reconduite sans terme ([[D-265]] §1) : le responsable a fixé
