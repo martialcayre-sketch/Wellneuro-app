@@ -177,7 +177,9 @@ const SOURCE_ROUTE = readFileSync(join(__dirname, '../../../../lib/synthese/gene
 // v36 (2026-11-17, D-513, H95 part B) : section « Résultats de biologie » après celle des
 // besoins, et trois retouches (§4) ; textes validés mot pour mot par le responsable.
 // Gardés à part par `promptBiologie.guard.test.ts`.
-const EMPREINTE_V36 = '0aca795efa750264';
+// v37 (2026-11-18, D-539, H95 part B) : la section « Résultats de biologie » dit désormais
+// au modèle qu'il ne reçoit aucun résultat ; deux retouches ; textes validés mot pour mot.
+const EMPREINTE_V37 = '7deb342782ee3e12';
 
 /**
  * La seule phrase de la consigne autorisée à attribuer une validité — parce
@@ -299,7 +301,7 @@ describe('garde-fou alimentaire — consigne système', () => {
     expect(
       { version: VERSION_PROMPT_SYNTHESE, empreinte },
       "consigne modifiée : incrémenter VERSION_PROMPT_SYNTHESE et reporter la nouvelle empreinte ici. CE GESTE N'EST PAS MÉCANIQUE — la consigne est du clinique (`DC-17`) : relire ce qui a changé, et si un interdit a bougé, une décision `D-xxx` et un fragment `changelog.d/` sont dus AVANT de reporter l'empreinte. C'est ici que passe une clause affaiblie qu'aucune assertion de vocabulaire ne voit.",
-    ).toEqual({ version: 'synthese-v36', empreinte: EMPREINTE_V36 });
+    ).toEqual({ version: 'synthese-v37', empreinte: EMPREINTE_V37 });
   });
 
   it('ne présente pas les questionnaires comme validés, et dit pourquoi (D-034)', () => {

@@ -2163,6 +2163,122 @@ const CONDITIONS_UTILISATION_V6: VersionDocumentTrust = {
   hash: 'eea578fbefa888f825c83a7b0e4e9160d154b3ea8963e7f22d60ee902884a92c',
 };
 
+// « VOS DONNÉES PERSONNELLES » v24, « L'INTELLIGENCE ARTIFICIELLE » v9 ET LES
+// CONDITIONS v7 ([[D-539]] §7, qui réécrit [[D-513]] §12 selon E, N3 et T1).
+// La biologie part, seule, à un appel distinct qui la met en forme pour le
+// praticien ; la v23 promettait que le contexte du prélèvement ne partait à
+// aucun outil d'IA. Textes validés mot pour mot par le responsable le
+// 2026-11-18 ; les bancs les relisent dans la décision.
+//
+// DÉCLARER AVANT D'OUVRIR : publiés dans le déploiement du code, qui n'ouvre
+// rien — `WN_SYNTHESE_BIOLOGIE_ENABLED` reste éteint. Sa pose, geste du
+// responsable, exige que ces versions soient servies et constatées
+// ([[D-539]] §7b, « Ouverture »).
+//
+// ACCUSÉS : la v24 en demande un, comme la v23 ; la v9 se recueille sur
+// l'écran de dépôt, comme la v8 ; les conditions v7 par l'e-mail
+// `conditions_utilisation@7` (envoi en une fois par le responsable, [[D-292]]
+// §3), par l'accueil ou au filet du dépôt du compte rendu.
+const PHRASE_CONTEXTE_SANS_IA_D497 =
+  'Seul votre praticien les voit ; l’application ne les envoie à aucun outil d’intelligence artificielle.';
+const PHRASE_CONTEXTE_APPEL_DISTINCT_D539 =
+  'Ces informations sont destinées à votre praticien. Elles sont également transmises avec vos résultats, et sans vos réponses aux questionnaires, à l’outil d’intelligence artificielle qui les met en forme pour votre praticien seul (voir « L’intelligence artificielle dans Wellneuro »).';
+const PARAGRAPHE_CONTEXTE_PRELEVEMENT_D539 = PARAGRAPHE_CONTEXTE_PRELEVEMENT_D497.replace(
+  PHRASE_CONTEXTE_SANS_IA_D497,
+  PHRASE_CONTEXTE_APPEL_DISTINCT_D539,
+);
+const ANTHROPIC_SYNTHESES_D539 =
+  'pour la préparation des synthèses et la mise en forme de vos résultats d’analyses biologiques pour votre praticien';
+
+const DONNEES_CONFIDENTIALITE_V24: VersionDocumentTrust = {
+  key: 'donnees_confidentialite',
+  type: 'privacy',
+  version: 'v24',
+  titre: 'Vos données personnelles et leur confidentialité',
+  resume:
+    'Quelles données sont recueillies, pourquoi, qui peut y accéder, où elles sont hébergées, et comment exercer vos droits.',
+  sections: DONNEES_CONFIDENTIALITE_V23.sections.map(section => ({
+    ...section,
+    paragraphes: section.paragraphes.map(paragraphe =>
+      paragraphe === PARAGRAPHE_CONTEXTE_PRELEVEMENT_D497 ? PARAGRAPHE_CONTEXTE_PRELEVEMENT_D539 : paragraphe,
+    ),
+    ...(section.points
+      ? {
+          points: section.points.map(point =>
+            point.startsWith('Anthropic — ')
+              ? point.replace('pour la préparation des synthèses', ANTHROPIC_SYNTHESES_D539)
+              : point,
+          ),
+        }
+      : {}),
+  })),
+  changeLevel: 'information_substantielle',
+  changeSummary:
+    'Vos résultats d’analyses et les circonstances de leur prélèvement peuvent désormais être transmis à un outil d’intelligence artificielle, à part de vos réponses aux questionnaires, pour être mis en forme à l’intention de votre praticien seul. Le reste ne change pas.',
+  publieLe: '2026-11-19',
+  requiresAcknowledgement: true,
+  hash: 'ca7745a04b7df40cd4bc129bb1601b9e131aa735ad90c564d03a510903f5d55d',
+};
+
+const PREPARATION_SYNTHESE_IA_V3 =
+  'La préparation du brouillon de la synthèse de votre bilan, à partir de vos réponses aux questionnaires et des éléments transmis à votre praticien.';
+const PREPARATION_SYNTHESE_IA_D539 =
+  'La préparation du brouillon de la synthèse de votre bilan, à partir de vos réponses aux questionnaires et des éléments transmis à votre praticien. S’il y en a, les résultats de vos analyses biologiques, avec les circonstances de leur prélèvement, sont transmis à part, dans un échange qui ne contient rien d’autre : l’outil les met en forme pour votre praticien seul, avec la consigne de ne pas les déclarer normaux ou anormaux et de n’en tirer aucune conclusion. La synthèse que vous recevez mentionne seulement que votre praticien a reçu un bilan, à sa date.';
+
+const USAGE_IA_V9: VersionDocumentTrust = {
+  key: 'usage_ia',
+  type: 'ai_transparency',
+  version: 'v9',
+  titre: USAGE_IA_V8.titre,
+  resume: USAGE_IA_V8.resume,
+  sections: USAGE_IA_V8.sections.map(section =>
+    section.titre === 'Où l’IA intervient'
+      ? {
+          ...section,
+          paragraphes: section.paragraphes.map(paragraphe =>
+            paragraphe === PREPARATION_SYNTHESE_IA_V3 ? PREPARATION_SYNTHESE_IA_D539 : paragraphe,
+          ),
+        }
+      : section,
+  ),
+  changeLevel: 'information_substantielle',
+  changeSummary:
+    'Les résultats de vos analyses biologiques peuvent désormais être mis en forme par l’outil pour votre praticien seul, à part de vos réponses aux questionnaires. Le reste ne change pas.',
+  publieLe: '2026-11-19',
+  requiresAcknowledgement: false,
+  hash: '448bcbfd19ad09b53919c93ea6426cce0187f16cc2f888549decd2bfc20163e3',
+};
+
+// LES CONDITIONS v7 ([[D-292]] §5, [[D-539]] §7f) : la partie 3 reprend « Vos
+// données personnelles » v24 et la partie 4 « L'intelligence artificielle »
+// v9 ; les deux premières parties et la partie 5 sont celles de la v6. Titre et
+// résumé inchangés ; résumé du changement validé le 2026-11-18.
+export const PARTIES_REPRISES_CONDITIONS_V7: readonly { partie: string; source: VersionDocumentTrust }[] =
+  Object.freeze([
+    { partie: 'Le cadre de votre accompagnement', source: CADRE_ACCOMPAGNEMENT_V1 },
+    { partie: 'Limites et sécurité médicale', source: LIMITES_SECURITE_V1 },
+    { partie: 'Vos données personnelles et leur confidentialité', source: DONNEES_CONFIDENTIALITE_V24 },
+    { partie: 'L’intelligence artificielle', source: USAGE_IA_V9 },
+  ]);
+
+const CONDITIONS_UTILISATION_V7: VersionDocumentTrust = {
+  key: 'conditions_utilisation',
+  type: 'terms_of_use',
+  version: 'v7',
+  titre: CONDITIONS_UTILISATION_V1.titre,
+  resume: CONDITIONS_UTILISATION_V1.resume,
+  sections: [
+    ...PARTIES_REPRISES_CONDITIONS_V7.flatMap(({ partie, source }) => sectionsDeLaPartie(partie, source)),
+    ...CONDITIONS_UTILISATION_V6.sections.filter(section => section.partie === PARTIE_5_CONDITIONS),
+  ],
+  changeLevel: 'information_substantielle',
+  changeSummary:
+    'Les parties “Vos données personnelles” et “L’intelligence artificielle” disent que vos résultats d’analyses peuvent désormais être transmis à un outil d’intelligence artificielle, à part de vos réponses aux questionnaires, pour être mis en forme à l’intention de votre praticien seul. Le reste ne change pas.',
+  publieLe: '2026-11-19',
+  requiresAcknowledgement: true,
+  hash: '21ca4bc49c747a10f6e1ff736ff041614c87bbee11700c961f739074513aaf46',
+};
+
 /** Toutes les versions, les plus récentes en premier par clé. */
 export const REGISTRE_DOCUMENTS_TRUST: readonly VersionDocumentTrust[] = Object.freeze([
   CADRE_ACCOMPAGNEMENT_V1,
@@ -2190,6 +2306,7 @@ export const REGISTRE_DOCUMENTS_TRUST: readonly VersionDocumentTrust[] = Object.
   DONNEES_CONFIDENTIALITE_V21,
   DONNEES_CONFIDENTIALITE_V22,
   DONNEES_CONFIDENTIALITE_V23,
+  DONNEES_CONFIDENTIALITE_V24,
   USAGE_IA_V1,
   USAGE_IA_V2,
   USAGE_IA_V3,
@@ -2198,6 +2315,7 @@ export const REGISTRE_DOCUMENTS_TRUST: readonly VersionDocumentTrust[] = Object.
   USAGE_IA_V6,
   USAGE_IA_V7,
   USAGE_IA_V8,
+  USAGE_IA_V9,
   DROITS_PATIENT_V1,
   DROITS_PATIENT_V2,
   CONSENTEMENT_SUIVI_V2,
@@ -2208,6 +2326,7 @@ export const REGISTRE_DOCUMENTS_TRUST: readonly VersionDocumentTrust[] = Object.
   CONDITIONS_UTILISATION_V4,
   CONDITIONS_UTILISATION_V5,
   CONDITIONS_UTILISATION_V6,
+  CONDITIONS_UTILISATION_V7,
 ]);
 
 export function getDocumentCourant(key: TrustDocumentKey): VersionDocumentTrust {

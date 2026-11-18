@@ -20,11 +20,10 @@ import { isSyntheseBiologieEnabled } from './syntheseBiologieDrapeau';
 // laboratoire, les plages fonctionnelles et de référence, les statuts posés,
 // les constats du praticien. Ce lecteur ne peut donc pas les transmettre.
 //
-// SANS APPELANT À CE JOUR : l'évaluation sur dossiers fictifs a été rendue
-// non conforme (2026-11-17), et la restitution passe par un appel IA distinct,
-// qui ne voit ni l'anamnèse ni les questionnaires (arbitrage
-// `20261117-0816-b`, [[D-539]]). Ce lecteur n'est branché à aucune synthèse
-// avant ce second appel : l'appel principal ne reçoit jamais le bloc.
+// SON SEUL APPELANT EST LE SECOND APPEL ([[D-539]] §2, arbitrage
+// `20261117-0816-b`) : `preparerGeneration` lit le bloc, et seul
+// `appelerRestitutionBiologie` le transmet, après la réussite de l'appel
+// principal, qui ne le reçoit jamais.
 //
 // DRAPEAU ÉTEINT, AUCUNE LECTURE (§11) : `WN_SYNTHESE_BIOLOGIE_ENABLED` et
 // l'étage des résultats sont jugés AVANT toute requête.

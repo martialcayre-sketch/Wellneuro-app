@@ -80,8 +80,6 @@ const CONFORME = JSON.stringify({
   questions_entretien: ['Une question ?'],
   narratif_patient: 'Un texte accessible.',
   limites: 'À valider par le praticien.',
-  resume_biologie_praticien: '',
-  points_de_vigilance_biologie: [],
 });
 
 /**
@@ -97,8 +95,6 @@ const HORS_SCHEMA = JSON.stringify({
   questions_entretien: ['Une question ?'],
   narratif_patient: 'Un texte accessible.',
   limites: 'À valider par le praticien.',
-  resume_biologie_praticien: '',
-  points_de_vigilance_biologie: [],
 });
 
 function reponseModele(texte: string, usage: Record<string, number> = {}) {
