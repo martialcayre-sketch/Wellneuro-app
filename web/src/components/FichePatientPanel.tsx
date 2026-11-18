@@ -2917,6 +2917,13 @@ export function FichePatientPanel({
                   : statut === 'en_attente'
                     ? 'bg-accent/10 font-semibold text-foreground shadow-[inset_3px_0_0_var(--color-accent)] hover:bg-accent/[.14]'
                     : 'text-muted-foreground hover:text-foreground';
+                // Statut en encre sur le fond argile de la phase due : le gris
+                // atténué y tombait à 4,5:1 sur la sauge du rail, 4,35:1 au
+                // survol (PRA-6f, axe `color-contrast`) ; l'encre y tient
+                // 8,9:1 et 8,6:1. Ailleurs, le gris atténué reste au-dessus
+                // de 4,5:1 (4,9:1 sur sauge, 5,8:1 sur la carte active).
+                const classesStatut =
+                  !actif && statut === 'en_attente' ? 'text-foreground' : 'text-muted-foreground';
                 return (
                   <button
                     key={phase.id}
@@ -2938,7 +2945,7 @@ export function FichePatientPanel({
                         libellés se lisaient comme des catégories
                         indépendantes, pas comme un cycle à parcourir. */}
                     <span className="min-w-0 flex-1 truncate">{index + 1}. {phase.libelle}</span>
-                    <span className="shrink-0 text-2xs text-muted-foreground">{libelleStatut(phase.id, statut)}</span>
+                    <span className={`shrink-0 text-2xs ${classesStatut}`}>{libelleStatut(phase.id, statut)}</span>
                   </button>
                 );
               })}

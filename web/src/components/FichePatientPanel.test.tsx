@@ -1185,6 +1185,36 @@ describe('FichePatientPanel — poste de pilotage (A6-R1)', () => {
     expect(onglet.textContent).toMatch(/renseignée/i);
   });
 
+  // PRA-6f (axe `color-contrast`) : sur le fond argile de la phase due, posé
+  // sur la sauge du rail, le gris atténué tombait à 4,5:1 (4,35:1 au survol).
+  // Le statut y passe en encre ; ailleurs il garde le gris atténué.
+  it('LE STATUT D’UNE PHASE EN ATTENTE EST EN ENCRE, PAS EN GRIS ATTÉNUÉ', async () => {
+    await rendreFiche({ phase3: 'vide' });
+    // Les statuts arrivent après le nom du patient, et la phase initiale est la
+    // première phase due (D5) : choisir la phase 1 laisse « Compréhension » due
+    // et NON affichée — l'état qui porte le fond argile.
+    await waitFor(() =>
+      expect(screen.getByRole('tab', { name: /Compréhension/i }).textContent).toMatch(/à traiter/i),
+    );
+    fireEvent.click(screen.getAllByRole('tab', { name: /^1\./ })[0]);
+    await waitFor(() =>
+      expect(screen.getByRole('tab', { name: /Compréhension/i }).className).toContain('bg-accent/10'),
+    );
+    const onglets = screen.getAllByRole('tab', { name: /^\d\./ });
+    const statutDe = (onglet: HTMLElement) => onglet.lastElementChild as HTMLElement;
+    const dues = onglets.filter(
+      onglet => onglet.getAttribute('aria-selected') !== 'true' && onglet.className.includes('bg-accent/10'),
+    );
+    expect(dues.length).toBeGreaterThan(0);
+    for (const onglet of dues) {
+      expect(statutDe(onglet).className).toContain('text-foreground');
+      expect(statutDe(onglet).className).not.toContain('text-muted-foreground');
+    }
+    for (const onglet of onglets.filter(o => !dues.includes(o))) {
+      expect(statutDe(onglet).className).toContain('text-muted-foreground');
+    }
+  });
+
   it('UNE LECTURE EN ÉCHEC REND « indéterminée », jamais un état par défaut', async () => {
     // Même discipline que les phases du runtime : un échec de lecture ne vaut
     // pas « rien en attente », et surtout pas « fait ».
