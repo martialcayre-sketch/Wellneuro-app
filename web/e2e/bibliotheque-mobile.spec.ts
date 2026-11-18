@@ -8,8 +8,61 @@
 //
 // Tourne sur les deux projets ; sur Desktop il est trivialement vert, c'est
 // iPhone 13 qui le rend utile.
-import { test, expect } from '@playwright/test';
+//
+// Depuis PRA-6g, il tient aussi le reflow à 320 px (WCAG 1.4.10 : zoom 200 %
+// sur un téléphone) de deux écrans praticien que le constat PRA-6 (§3.7) a vus
+// déborder : le rayon Connaissances (P46) et l'import d'un compte rendu dans
+// l'onglet Biologie du dossier (P25). La largeur est posée par le test :
+// Chromium et WebKit le jouent tous deux à 320 px.
+import { test, expect, type Page } from '@playwright/test';
 import { PRATICIEN_EMAIL, praticienSessionCookie } from './helpers/auth';
+
+/**
+ * Les éléments, et les TEXTES, qui dépassent le bord droit de la page. Sur
+ * échec, les fautifs sont nommés (balise et classes). Un élément dans un
+ * conteneur à défilement horizontal VOULU (le tableau des assignations,
+ * `overflow-x-auto`) n'est pas un débordement de la page.
+ *
+ * Les nœuds de texte comptent à part : un mot sans espace qui dépasse sa boîte
+ * (un nom de drapeau dans un message) fait défiler la page sans qu'aucun
+ * élément ne dépasse — c'était le cas de P46.
+ */
+async function debordantsDeLaPage(page: Page): Promise<string[]> {
+  return page.evaluate(() => {
+    const largeur = document.documentElement.clientWidth;
+    if (document.documentElement.scrollWidth <= largeur) return [];
+    const dansUnDefilement = (e: Element | null) => {
+      for (let p = e; p; p = p.parentElement) {
+        const x = getComputedStyle(p).overflowX;
+        if (x === 'auto' || x === 'scroll' || x === 'hidden') return true;
+      }
+      return false;
+    };
+    const nom = (e: Element) => `${e.tagName.toLowerCase()}[${String(e.getAttribute('class') ?? '').slice(0, 120)}]`;
+    const elements = [...document.querySelectorAll('body *')]
+      .filter(e => e.getBoundingClientRect().right > largeur + 1 && !dansUnDefilement(e.parentElement))
+      .map(nom);
+    const textes: string[] = [];
+    const parcours = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    for (let n = parcours.nextNode(); n; n = parcours.nextNode()) {
+      if (!n.textContent?.trim() || !n.parentElement) continue;
+      const plage = document.createRange();
+      plage.selectNodeContents(n);
+      if (plage.getBoundingClientRect().right > largeur + 1 && !dansUnDefilement(n.parentElement)) {
+        textes.push(`texte dans ${nom(n.parentElement)}`);
+      }
+    }
+    return [...elements, ...textes].slice(0, 8);
+  });
+}
+
+async function attendreAucunDebordement(page: Page) {
+  const debordants = await debordantsDeLaPage(page);
+  expect(debordants, `Débordement horizontal : ${debordants.join(' | ')}`).toEqual([]);
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth),
+  ).toBe(true);
+}
 
 test.describe('Bibliothèque — aucun défilement horizontal de la page', () => {
   test('le rayon Questionnaires, assignations et packs compris, tient dans la largeur de l’écran', async ({ page }) => {
@@ -24,27 +77,37 @@ test.describe('Bibliothèque — aucun défilement horizontal de la page', () =>
     await expect(page.getByRole('heading', { name: 'Nouveau pack de questionnaires' })).toBeVisible({ timeout: 10000 });
     await expect(page.getByText('Chargement des packs...')).toHaveCount(0, { timeout: 10000 });
 
-    // Sur échec, les éléments fautifs sont nommés (balise et classes). Un
-    // élément dans un conteneur à défilement horizontal VOULU (le tableau des
-    // assignations, `overflow-x-auto`) n'est pas un débordement de la page.
-    const debordants = await page.evaluate(() => {
-      const largeur = document.documentElement.clientWidth;
-      if (document.documentElement.scrollWidth <= largeur) return [];
-      const dansUnDefilement = (e: Element) => {
-        for (let p = e.parentElement; p; p = p.parentElement) {
-          const x = getComputedStyle(p).overflowX;
-          if (x === 'auto' || x === 'scroll' || x === 'hidden') return true;
-        }
-        return false;
-      };
-      return [...document.querySelectorAll('body *')]
-        .filter(e => e.getBoundingClientRect().right > largeur + 1 && !dansUnDefilement(e))
-        .slice(0, 8)
-        .map(e => `${e.tagName.toLowerCase()}[${String(e.getAttribute('class') ?? '').slice(0, 120)}]`);
-    });
-    expect(debordants, `Débordement horizontal : ${debordants.join(' | ')}`).toEqual([]);
-    expect(
-      await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth),
-    ).toBe(true);
+    await attendreAucunDebordement(page);
+  });
+});
+
+test.describe('Reflow à 320 px (WCAG 1.4.10) — PRA-6g', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 568 });
+    await page.context().addCookies([await praticienSessionCookie(PRATICIEN_EMAIL)]);
+  });
+
+  // Deux états selon `WN_RECHERCHE_CORPUS_ENABLED`, qui n'est pas posé au banc
+  // (le `.env.local` d'un poste peut le poser) : le message d'indisponibilité,
+  // celui qui débordait de 5 px, ou le formulaire de recherche. Les deux
+  // doivent tenir.
+  test('P46 — le rayon Connaissances tient à 320 px', async ({ page }) => {
+    await page.goto('/dashboard/bibliotheque/connaissances');
+    await expect(page.getByRole('heading', { name: 'Connaissances', exact: true })).toBeVisible({ timeout: 10000 });
+    await expect(
+      page.getByRole('status').filter({ hasText: 'La recherche corpus clinique' }).or(page.getByRole('button', { name: 'Rechercher' })),
+    ).toBeVisible({ timeout: 10000 });
+
+    await attendreAucunDebordement(page);
+  });
+
+  // Sophie Nicola (PAT_SEED_01), déjà seedée. L'import vit derrière
+  // `WN_BIO_INGEST_ENABLED`, posé au banc (`webServer.env` et build).
+  test('P25 — l’import d’un compte rendu, onglet Biologie, tient à 320 px', async ({ page }) => {
+    await page.goto('/dashboard/patients/PAT_SEED_01?onglet=biologie');
+    await expect(page.getByRole('heading', { name: 'Importer un compte rendu de laboratoire' })).toBeVisible({ timeout: 15000 });
+    await expect(page.getByLabel(/Compte rendu \(PDF de 10 Mo/)).toBeVisible();
+
+    await attendreAucunDebordement(page);
   });
 });
