@@ -976,7 +976,10 @@ d'avocat. Ses références ont été vérifiées par la session.
   remplies, le texte 2B réécrit et servi, et l'analyse de proportionnalité,
   écrite et arbitrée. Restent J3-mineurs, la notice adaptée, la revue de
   nécessité de l'AIPD, la durée, l'engagement et l'arrêt, ainsi que l'accord
-  des deux titulaires.
+  des deux titulaires. — 2026-11-18 : la revue de nécessité est faite, et
+  elle requiert une AIPD pour le volet mineurs (rubrique 13). Cette AIPD
+  s'ajoute aux conditions restantes : elle doit être finie et validée avant
+  la première admission.
 - **Texte 2B** : il est réécrit maintenant, en entier. Le responsable le
   valide mot pour mot, puis un lot de code le sert (§7). — 2026-11-17 :
   validé mot pour mot (questions `20261117-1346-c` et `-1919-c`) et servi en deux
@@ -1242,7 +1245,8 @@ non-discrimination »).
 
 **AIPD.** La conclusion « non requise à ce stade » (rubrique 13) se revoit
 avant l'admission d'un premier mineur : un public mineur est un critère de
-vulnérabilité.
+vulnérabilité. — 2026-11-18 : revue faite ([[D-537]] §6). Une AIPD est
+requise pour le volet mineurs, et elle précède l'admission (rubrique 13).
 
 **État au 2026-10-21.** 31 dossiers ouverts, aucun mineur. Le circuit
 parental en ligne et le texte 2A, au titulaire, ne sont pas servis.
@@ -2483,20 +2487,43 @@ l'AIPD elle-même.
 directrices du G29 (WP248 rév. 01, reprises par le CEPD), à cocher ou non par
 le responsable, chacun avec son motif :
 
-- [ ] données sensibles ou à caractère hautement personnel —
-- [ ] personnes vulnérables —
-- [ ] traitement à grande échelle —
-- [ ] évaluation ou notation —
-- [ ] décision automatisée avec effet juridique ou similaire —
-- [ ] surveillance systématique —
-- [ ] croisement ou combinaison d'ensembles de données —
-- [ ] usage innovant ou nouvelle solution technologique (modèles d'IA des rubriques 2 bis et 2 ter compris) —
-- [ ] traitement qui empêche d'exercer un droit ou de bénéficier d'un service —
+Cochés par le responsable le 2026-11-18, à la revue de nécessité de
+[[D-537]] §6 (questions `20261118-2120-c` à `-c-3`). Chaque motif est le
+sien, tel qu'il l'a retenu en session :
+
+- [x] données sensibles ou à caractère hautement personnel — données de
+  santé (art. 9), et informations intrusives : une question sur le suicide
+  dans quatre questionnaires et dans l'anamnèse, d'autres sur le tabac,
+  l'alcool et le cancer.
+- [x] personnes vulnérables — **pour les mineurs seuls**, dès la première
+  admission d'un jeune de 15 à 17 ans.
+- [ ] traitement à grande échelle — cabinet unique en bêta (considérant 91),
+  à revoir à la commercialisation ([[D-286]] §2). Le considérant 91 vise le
+  médecin, l'autre professionnel de santé ou l'avocat qui exerce seul. Il ne
+  vaut ici que par analogie, car le responsable n'est pas professionnel de
+  santé (rubrique 4, « Périmètre »).
+- [x] évaluation ou notation — scores, bandes et orientation calculés sur
+  des données de santé, servis au praticien seul.
+- [ ] décision automatisée avec effet juridique ou similaire — le praticien
+  relit chaque document avant qu'il parte au patient ; la garde d'âge
+  applique une règle de protection arbitrée, sans profil.
+- [ ] surveillance systématique — saisie volontaire, sans observation ni
+  capteur ; l'alerte de sécurité au praticien n'en est pas une.
+- [ ] croisement ou combinaison d'ensembles de données — une seule source,
+  la personne, pour une seule finalité.
+- [x] usage innovant ou nouvelle solution technologique (modèles d'IA des rubriques 2 bis et 2 ter compris) —
+  IA générative appliquée à des données de santé (synthèse, relevé en
+  vision des comptes rendus biologiques).
+- [ ] traitement qui empêche d'exercer un droit ou de bénéficier d'un
+  service — la garde d'âge est une règle d'organisation du service, pas un
+  traitement qui évalue la personne pour lui refuser quelque chose.
 
 Conclusion du responsable : **AIPD non requise à ce stade.** Il statuera à
 nouveau quand le produit sera achevé, ce qui est encore loin d'être le cas.
 Déclaration rendue en session le 2026-10-04, consignée par l'assistant. Les
-critères ci-dessus n'ont pas été renseignés un à un.
+critères ci-dessus n'ont pas été renseignés un à un. — 2026-11-18 : cette
+conclusion ne vaut plus que pour les adultes. Pour le volet mineurs, l'AIPD
+est requise (voir plus bas, « Revue de nécessité du 2026-11-18 »).
 
 **Note du 2026-10-05, versée au réexamen ([[D-267]] §8).** Le relevé de la
 rubrique 2 ter conserve désormais aussi l'intervalle de référence et la marque
@@ -2517,7 +2544,37 @@ des cinq événements de [[D-286]] §2, à l'ouverture de l'étage assistant, à
 nouveau destinataire ou nouvelle catégorie de données, et au plus tard le
 2027-06-30. Conclusion du responsable maintenue au 2026-10-15 : **AIPD non
 requise**. Les neuf critères ci-dessus restent à cocher de sa main, chacun avec
-son motif ([[D-283]] §9) ; ce motif porte la conclusion.
+son motif ([[D-283]] §9) ; ce motif porte la conclusion. — 2026-11-18 : les
+neuf critères sont cochés ou laissés vides, chacun avec son motif (revue
+qui suit).
+
+**Revue de nécessité du 2026-11-18 ([[D-537]] §6), avant le premier
+mineur.** Elle pèse le cumul que relève l'avis GPT : données de santé,
+mineurs, IA et informations intrusives. Les neuf critères sont désormais
+cochés de la main du responsable, chacun avec son motif (ci-dessus). Pour
+les adultes, trois critères sont remplis (1, 4, 8), et quatre dès qu'un
+mineur est admis (2 en plus). Selon la CNIL et WP248, un traitement qui
+remplit deux critères appelle en principe une AIPD. Pour l'écarter, il faut
+un motif écrit qui montre l'absence de risque élevé.
+
+Le responsable avait d'abord conclu « non requise, avec motif ». Invité à
+écrire ce motif, il est revenu sur cette conclusion (questions
+`20261118-2120-c-3` et `-c-4`).
+
+Conclusion du responsable au 2026-11-18 (`-c-5`) :
+
+- **AIPD requise pour le volet mineurs**, c'est-à-dire l'admission des
+  jeunes de 15 à 17 ans. Elle est finie et validée avant la première
+  admission d'un mineur ([[D-537]] §5). La pause reste en service d'ici là.
+- **Pour les adultes, la conclusion « non requise » est maintenue en
+  l'état.** Elle repose sur trois critères cochés, sans motif écrit
+  d'absence de risque élevé. Cet écart est porté à la rubrique 14.
+- **Ouverture** : la session prépare un projet suivant la trame B
+  ci-dessous, à partir du dossier et des faits du code, sans conclure sur
+  les risques. Le responsable juge la vraisemblance, la gravité et le
+  risque résiduel, puis valide le projet en le datant. Le projet est suivi
+  au carnet par le lot C `aipd-mineurs`, préalable à l'admission. La pièce
+  va hors dépôt si elle décrit des failles exploitables.
 
 **B. Si elle est requise : l'AIPD elle-même**, en pièce dédiée.
 
@@ -2561,7 +2618,7 @@ dossier en garde alors la conclusion, la date et l'emplacement.
 | 11 | Information | **Clos le 2026-10-13 ([[D-283]] §8) : l'information orale est consignée comme non datée.** *Historique — constat d'origine :* **Date de délivrance non établie** et **modalité de retrait non consignée** — deux des quatre composantes du trou d'origine ; la période déclarée (« en continu depuis la souscription HDS ») ne fournit pas de point de départ tenu pour établi par le dépôt | Responsable | fermé | ici, rubrique 11 |
 | 11 | Information | **Clos le 2026-10-13 ([[D-283]] §8) : les accusés des versions écrites en tiennent lieu.** *Historique — constat d'origine :* **Aucune trace écrite par participant** de l'information sur l'écart HDS — aucun acquittement individuel ne la porte ; périmètre des personnes couvertes non établi | Responsable | fermé | ici, rubrique 11 |
 | 11 | Information | **2026-10-13 ([[D-283]] §8) : un seul dossier reste à la v8 (agrégats, conteneur) ; le praticien l'informe lui-même, geste daté à consigner.** **Deux patients ont accusé `donnees_confidentialite@v8` sans avoir vu `v9`**, qui corrige la promesse inexacte sur le partage. L'accusé de `v9` étant exigé **au portail**, il ne les atteindra qu'à leur prochaine visite — or la production dit qu'on y entre le jour même ou jamais. Deux personnes, mesurées le 2026-09-19 : ce n'est pas un mécanisme à construire mais un geste à décider. Ce qui part vers un patient reste un geste du responsable | Responsable | 2027-06-30 (était : **à fixer** — au plus tôt, en tout état de cause avant le 2026-10-21) | ici, rubrique 11 |
-| 13 | AIPD | ~~Absente~~ — **non requise à ce stade**, déclaration du responsable du 2026-10-04 ([[D-265]] §3), **critères du seuil non renseignés** ; à réexaminer à l'achèvement du produit ; **maintenue au 2026-10-15, déclencheur remplacé** ([[D-313]]) | Responsable | réexamen au premier événement de [[D-313]] §2, au plus tard 2027-06-30 (était : à l'achèvement du produit ; avant, 2026-10-21) | ici, rubrique 13 |
+| 13 | AIPD | ~~Absente~~ — **non requise à ce stade**, déclaration du responsable du 2026-10-04 ([[D-265]] §3), **critères du seuil non renseignés** ; à réexaminer à l'achèvement du produit ; **maintenue au 2026-10-15, déclencheur remplacé** ([[D-313]]) ; **2026-11-18 ([[D-537]] §6) : critères cochés un à un. AIPD requise pour le volet mineurs, préalable à la première admission (lot `aipd-mineurs`). Pour les adultes, « non requise » est maintenue malgré trois critères cochés (1, 4, 8), sans motif écrit d'absence de risque élevé : écart ouvert.** | Responsable | AIPD mineurs : avant la première admission ; adultes : réexamen au premier événement de [[D-313]] §2, au plus tard 2027-06-30 | ici, rubrique 13 |
 
 Le **2026-10-21** était l'échéance par défaut, date de revue de la dérogation.
 La dérogation est reconduite sans terme ([[D-265]] §1) : le responsable a fixé
