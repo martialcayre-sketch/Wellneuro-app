@@ -37,6 +37,7 @@ import {
 } from '@/lib/praticien/objectifNegocie';
 import { LONGUEUR_MAX_MOTIF_ECART } from '@/lib/praticien/propositionObjectif';
 import { PRIORITE_REPRISE, REFORMULATION_REPRISE } from '@/lib/objectif/marquesProvenance';
+import { useFocusApresRelecture } from '@/components/ui/useFocusApresRelecture';
 
 // L'objectif négocié (Alliance 6.0-A, LOT-02) — surface praticien, phase
 // « Compréhension » du poste de pilotage.
@@ -716,6 +717,10 @@ export function ObjectifNegociePanel({
   onDemanderAssemblage?: () => void;
 }) {
   const [etat, setEtat] = useState<EtatDossier>('chargement');
+  // Un hook par relecture : le dossier (titre du panneau) et les propositions
+  // (titre de leur encart).
+  const relectureDossier = useFocusApresRelecture();
+  const relecturePropositions = useFocusApresRelecture();
   const [erreur, setErreur] = useState('');
   const [objectifs, setObjectifs] = useState<ObjectifExpose[]>([]);
   const [trajectoires, setTrajectoires] = useState<TrajectoireObjectif[]>([]);
@@ -1275,7 +1280,7 @@ export function ObjectifNegociePanel({
 
   return (
     <section aria-labelledby="objectif-negocie" className="rounded-xl border border-border bg-surface p-4">
-      <h4 id="objectif-negocie" className="text-sm font-semibold text-foreground">
+      <h4 ref={relectureDossier.titreRef} tabIndex={-1} id="objectif-negocie" className="text-sm font-semibold text-foreground">
         Objectif négocié
       </h4>
       <p className="mt-1 text-xs text-muted-foreground">
@@ -1299,8 +1304,9 @@ export function ObjectifNegociePanel({
         >
           <span>{erreur} Ce n’est pas une absence d’objectif : la lecture a échoué.</span>
           <button
+            ref={relectureDossier.boutonRef}
             type="button"
-            onClick={() => void chargerDossier()}
+            onClick={() => void relectureDossier.relire(chargerDossier)}
             className="min-h-11 self-start rounded-lg border border-accent px-3 py-1 text-xs font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
           >
             Réessayer
@@ -1376,7 +1382,7 @@ export function ObjectifNegociePanel({
               aria-label="Propositions d’objectif"
               className="rounded-lg border border-border bg-surface p-3"
             >
-              <h5 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              <h5 ref={relecturePropositions.titreRef} tabIndex={-1} className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Ce que Wellneuro peut citer
               </h5>
               <p className="mt-1 text-sm text-muted-foreground">
@@ -1394,8 +1400,9 @@ export function ObjectifNegociePanel({
                     lecture a échoué.
                   </span>
                   <button
+                    ref={relecturePropositions.boutonRef}
                     type="button"
-                    onClick={() => void chargerPropositions()}
+                    onClick={() => void relecturePropositions.relire(chargerPropositions)}
                     className="min-h-11 self-start rounded-lg border border-accent px-3 py-1 text-xs font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                   >
                     Réessayer

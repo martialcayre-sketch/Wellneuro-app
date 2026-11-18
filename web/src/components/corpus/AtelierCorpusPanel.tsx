@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKe
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { GesteConfirme } from '@/components/ui/GesteConfirme';
+import { useFocusApresRelecture } from '@/components/ui/useFocusApresRelecture';
 import { Input } from '@/components/ui/Input';
 import type { ClaimEnRevue, ClaimStatut } from '@/lib/rag/claims/revue';
 import type { CorpusClaimsApiResponse } from '@/app/api/praticien/corpus/claims/route';
@@ -90,6 +91,10 @@ type Etat = 'chargement' | 'chargee' | 'erreur';
 
 export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
   const [statut, setStatut] = useState<ClaimStatut>('EN_ATTENTE_VALIDATION');
+  // « Réessayer » (PRA-6h) : le focus revient au bouton si la lecture échoue
+  // encore. Le panneau n'a pas de titre propre (les titres sont par source) :
+  // aucun n'est créé, la réussite ne déplace pas le focus.
+  const { boutonRef: reessayerRef, relire } = useFocusApresRelecture();
   const [offset, setOffset] = useState(0);
   /** Recherche par identifiant appliquée (D/22) — `WN-CL-…` normalisé, ou null. */
   const [recherche, setRecherche] = useState<string | null>(null);
@@ -571,10 +576,12 @@ export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
             >
               {compteurs.empreintesDerivees}
             </dd>
-            <p className="mt-1 text-xs text-muted-foreground">
+            {/* Un `<dd>`, pas un `<p>` : un groupe de `<dl>` ne porte que des
+                `<dt>` et des `<dd>` (axe `definition-list`, PRA-6h). */}
+            <dd className="mt-1 text-xs text-muted-foreground">
               {compteurs.sourcesSupersedees} version{compteurs.sourcesSupersedees > 1 ? 's' : ''}{' '}
               supersédée{compteurs.sourcesSupersedees > 1 ? 's' : ''}
-            </p>
+            </dd>
           </div>
         </dl>
       )}
@@ -688,7 +695,7 @@ export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
         {etat === 'erreur' && (
           <div role="alert" className="flex flex-col gap-3 rounded-xl border border-accent bg-status-warning/10 p-4 text-base text-status-warning">
             <span>{erreur}</span>
-            <Button variant="outline" className="self-start" onClick={() => void charger(statut, offset, recherche, seulementExclus)}>
+            <Button ref={reessayerRef} variant="outline" className="self-start" onClick={() => void relire(() => charger(statut, offset, recherche, seulementExclus))}>
               Réessayer
             </Button>
           </div>

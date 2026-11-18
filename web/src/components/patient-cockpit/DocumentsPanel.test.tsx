@@ -290,6 +290,11 @@ describe('DocumentsPanel — échecs de lecture (Q4, Q5)', () => {
     await waitFor(() => expect(screen.getByRole('option', { name: /Validée/ })).toBeTruthy());
     expect(screen.queryByText(T75)).toBeNull();
     expect(lectures('/api/praticien/patients-pg')).toBe(1);
+    // PRA-6h, arbitrage 20261118-2228-d : relue avec succès, le focus va au
+    // titre du panneau, jamais à `body`.
+    const titre = screen.getByRole('heading', { name: 'Patient et synthèse validée' });
+    await waitFor(() => expect(document.activeElement).toBe(titre));
+    expect(titre.getAttribute('tabindex')).toBe('-1');
   });
 
   it('une réponse saine sans synthèse validée garde le message vide, sans alerte', async () => {

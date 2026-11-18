@@ -72,11 +72,14 @@ export function DocumentsPanel({ initialPatientId = '' }: { initialPatientId?: s
   const [feedback, setFeedback] = useState<Retour | null>(null);
   // Q4 et Q5 de PRA-5 : un échec de lecture n'est pas une absence. Chaque
   // lecture a son échec et son « Réessayer », qui ne relance qu'elle ; le
-  // focus revient au bouton si la lecture échoue encore.
+  // focus revient au bouton si la lecture échoue encore, et au titre du
+  // panneau relu si elle réussit (arbitrage 20261118-2228-d, PRA-6h) — jamais
+  // sur `body`.
   const [erreurPatients, setErreurPatients] = useState(false);
   const [syntheseLue, setSyntheseLue] = useState<'non' | 'en_cours' | 'lue' | 'erreur'>('non');
   const reessayerPatients = useRef<HTMLButtonElement>(null);
   const reessayerSyntheses = useRef<HTMLButtonElement>(null);
+  const titreSelection = useRef<HTMLHeadingElement>(null);
   const [focusApresRelecture, setFocusApresRelecture] = useState<'patients' | 'syntheses' | null>(null);
   // Une réponse périmée (dossier quitté entre-temps) n'écrase pas la liste.
   const generationSyntheses = useRef(0);
@@ -162,10 +165,12 @@ export function DocumentsPanel({ initialPatientId = '' }: { initialPatientId?: s
     setFocusApresRelecture('syntheses');
   }
 
-  // Le bouton n'est rendu que si la lecture a encore échoué : le focus y revient.
+  // Le bouton n'est rendu que si la lecture a encore échoué : le focus y
+  // revient ; sinon il va au titre du panneau relu.
   useEffect(() => {
     if (!focusApresRelecture) return;
-    (focusApresRelecture === 'patients' ? reessayerPatients : reessayerSyntheses).current?.focus();
+    const bouton = focusApresRelecture === 'patients' ? reessayerPatients : reessayerSyntheses;
+    (bouton.current ?? titreSelection.current)?.focus();
     setFocusApresRelecture(null);
   }, [focusApresRelecture]);
 
@@ -336,7 +341,7 @@ export function DocumentsPanel({ initialPatientId = '' }: { initialPatientId?: s
       <div className="bg-surface border border-border rounded-xl p-4 flex flex-col gap-3 shadow-card">
         {/* Chaque liste prend son segment du titre (D-488, DOC-17) : les deux
             portaient le même nom, le titre entier. Le titre reste mot pour mot. */}
-        <h2 id="documents-selection-titre" className="font-display text-lg font-semibold text-foreground">
+        <h2 ref={titreSelection} tabIndex={-1} id="documents-selection-titre" className="font-display text-lg font-semibold text-foreground">
           <span id="documents-selection-patient">Patient</span> et <span id="documents-selection-synthese">synthèse validée</span>
         </h2>
         <div className="flex flex-wrap gap-3">

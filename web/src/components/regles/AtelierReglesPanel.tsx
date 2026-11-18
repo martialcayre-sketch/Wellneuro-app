@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { useFocusApresRelecture } from '@/components/ui/useFocusApresRelecture';
 import { CLASSE_BARRE_ONGLETS, classeOnglet } from '@/components/corpus/habillageAtelier';
 import {
   GRADES_PREUVE_SCIENTIFIQUE,
@@ -1470,6 +1471,8 @@ function EncartCatalogueC4({ desactive }: { desactive: boolean }) {
 
 export function AtelierReglesPanel() {
   const [statut, setStatut] = useState<StatutRegle>('brouillon');
+  // Aucun titre propre à ce panneau : seul le bouton reçoit le focus (échec).
+  const { boutonRef, relire } = useFocusApresRelecture();
   const [offset, setOffset] = useState(0);
   const [regles, setRegles] = useState<RegleAtelier[]>([]);
   const [total, setTotal] = useState(0);
@@ -1736,7 +1739,7 @@ export function AtelierReglesPanel() {
         {etat === 'erreur' && (
           <div role="alert" className="flex flex-col gap-3 rounded-xl border border-accent bg-status-warning/10 p-4 text-base text-status-warning">
             <span>{erreur}</span>
-            <Button variant="outline" className="self-start" onClick={() => void charger(statut, offset)}>
+            <Button ref={boutonRef} variant="outline" className="self-start" onClick={() => void relire(() => charger(statut, offset))}>
               Réessayer
             </Button>
           </div>

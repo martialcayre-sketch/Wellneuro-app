@@ -5,6 +5,7 @@ import type {
   EntreeCeQuiCompteExposee,
   PraticienCeQuiCompteApiResponse,
 } from '@/app/api/praticien/ce-qui-compte/route';
+import { useFocusApresRelecture } from '@/components/ui/useFocusApresRelecture';
 
 // « Ce qui compte pour moi aujourd'hui » — lecture praticien (Alliance 6.0-A,
 // LOT-03), onglet Trajectoire de la fiche patient.
@@ -33,6 +34,7 @@ export function CeQuiComptePanel({ idPatient }: { idPatient: string }) {
   const [etat, setEtat] = useState<Etat>('chargement');
   const [erreur, setErreur] = useState('');
   const [entrees, setEntrees] = useState<EntreeCeQuiCompteExposee[]>([]);
+  const { titreRef, boutonRef, relire } = useFocusApresRelecture();
 
   const charger = useCallback(async () => {
     setEtat('chargement');
@@ -61,7 +63,7 @@ export function CeQuiComptePanel({ idPatient }: { idPatient: string }) {
 
   return (
     <section className="rounded-xl border border-border bg-surface p-4">
-      <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+      <h3 ref={titreRef} tabIndex={-1} className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
         Ce qui compte pour le patient
       </h3>
       <p className="mt-1 text-xs text-muted-foreground">
@@ -115,8 +117,9 @@ export function CeQuiComptePanel({ idPatient }: { idPatient: string }) {
         >
           <span>{erreur}</span>
           <button
+            ref={boutonRef}
             type="button"
-            onClick={() => void charger()}
+            onClick={() => void relire(charger)}
             className="min-h-9 self-start rounded-lg border border-accent px-3 py-1 text-xs font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
           >
             {/* Nom accessible QUALIFIÉ, et ce n'est pas cosmétique : l'onglet

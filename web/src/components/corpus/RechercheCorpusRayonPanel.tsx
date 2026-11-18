@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { useFocusApresRelecture } from '@/components/ui/useFocusApresRelecture';
 import type { CorpusRayonsApiResponse } from '@/app/api/praticien/corpus/rayons/route';
 import type { ClaimRayon } from '@/lib/supplement-library/rayonCorpus';
 
@@ -52,6 +53,8 @@ export function RechercheCorpusRayonPanel() {
   const [resultat, setResultat] = useState<CorpusRayonsApiResponse | null>(null);
   const [enCours, setEnCours] = useState(false);
   const [messageEchec, setMessageEchec] = useState<string | null>(null);
+  // Aucun titre dans ce panneau : seul le bouton reçoit le focus (échec).
+  const { boutonRef, relire } = useFocusApresRelecture();
 
   // Jeton de séquence : seule la dernière requête émise a le droit d'écrire à
   // l'écran (une réponse lente arrivée après une réponse rapide afficherait
@@ -151,7 +154,7 @@ export function RechercheCorpusRayonPanel() {
         ) : messageEchec ? (
           <div role="alert" className="flex flex-col gap-2 text-sm text-status-danger">
             <p>{messageEchec}</p>
-            <Button type="button" variant="outline" onClick={() => void rechercher()}>
+            <Button ref={boutonRef} type="button" variant="outline" onClick={() => void relire(rechercher)}>
               Réessayer
             </Button>
           </div>

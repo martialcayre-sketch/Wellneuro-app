@@ -36,8 +36,8 @@ function stubFetch(implementationFil: () => Promise<unknown>) {
     'fetch',
     vi.fn(async (url: string) =>
       url.includes('meteo-adhesion')
-        ? ({ json: async () => ({ ok: true, determinees: [], nbIndeterminees: 0 }) } as unknown as Response)
-        : ({ json: implementationFil } as unknown as Response),
+        ? ({ ok: true, json: async () => ({ ok: true, determinees: [], nbIndeterminees: 0 }) } as unknown as Response)
+        : ({ ok: true, json: implementationFil } as unknown as Response),
     ),
   );
 }
@@ -175,7 +175,7 @@ describe('FilDuJour — timeline et hiérarchie (maquette Spirale)', () => {
                 nbIndeterminees: 0,
               }),
             } as unknown as Response)
-          : ({ json: async () => ({ cartes: [carte()] }) } as unknown as Response),
+          : ({ ok: true, json: async () => ({ cartes: [carte()] }) } as unknown as Response),
       ),
     );
     render(<FilDuJour />);
@@ -187,8 +187,8 @@ describe('FilDuJour — timeline et hiérarchie (maquette Spirale)', () => {
       'fetch',
       vi.fn(async (url: string) =>
         url.includes('meteo-adhesion')
-          ? ({ json: async () => ({ ok: false, determinees: [], nbIndeterminees: 0, unavailable: true }) } as unknown as Response)
-          : ({ json: async () => ({ cartes: [carte()] }) } as unknown as Response),
+          ? ({ ok: true, json: async () => ({ ok: false, determinees: [], nbIndeterminees: 0, unavailable: true }) } as unknown as Response)
+          : ({ ok: true, json: async () => ({ cartes: [carte()] }) } as unknown as Response),
       ),
     );
     render(<FilDuJour />);
@@ -410,6 +410,7 @@ describe('FilDuJour — rappeler un questionnaire en retard', () => {
         return { json: relance } as unknown as Response;
       }
       return {
+        ok: true,
         json: async () => ({
           ok: true,
           cartes: [carte({ idAssignation: 'ASG_1' })],
@@ -530,6 +531,7 @@ describe('FilDuJour — débloquer un questionnaire échu', () => {
         return { json: deblocage } as unknown as Response;
       }
       return {
+        ok: true,
         json: async () => ({
           ok: true,
           cartes: [carte({ idAssignation: 'ASG_1', statutReponses })],
@@ -734,8 +736,8 @@ describe('FilDuJour — Météo d’adhésion indisponible (T-18)', () => {
       'fetch',
       vi.fn(async (url: string) =>
         url.includes('meteo-adhesion')
-          ? ({ json: async () => ({ ok: false, determinees: [], nbIndeterminees: 0, unavailable: true }) } as unknown as Response)
-          : ({ json: async () => ({ cartes: [carte()] }) } as unknown as Response),
+          ? ({ ok: true, json: async () => ({ ok: false, determinees: [], nbIndeterminees: 0, unavailable: true }) } as unknown as Response)
+          : ({ ok: true, json: async () => ({ cartes: [carte()] }) } as unknown as Response),
       ),
     );
     render(<FilDuJour />);
@@ -748,7 +750,7 @@ describe('FilDuJour — Météo d’adhésion indisponible (T-18)', () => {
       'fetch',
       vi.fn(async (url: string) => {
         if (url.includes('meteo-adhesion')) throw new Error('réseau');
-        return { json: async () => ({ cartes: [carte()] }) } as unknown as Response;
+        return { ok: true, json: async () => ({ cartes: [carte()] }) } as unknown as Response;
       }),
     );
     render(<FilDuJour />);
