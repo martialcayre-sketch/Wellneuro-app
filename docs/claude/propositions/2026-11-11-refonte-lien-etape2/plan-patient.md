@@ -270,6 +270,11 @@ PAT-7f proposé, U29 toujours non vu, dans
 **M1 clos le 2026-11-17** (DOC-16) : le rail revient déplié au retour d'un
 questionnaire, limite acceptée et inscrite dans [[D-482]] §1.
 
+**Comparaison aux prototypes le 2026-11-18** : PAT-2 à PAT-6 comparés au
+build de `da125214`, PAT-7g (commandes à l'impression) et PAT-7h (titres)
+proposés, forme transverse à décider, dans
+[`pat7-constat-prototypes.md`](pat7-constat-prototypes.md).
+
 ## 4. Coordination avec le plan praticien
 
 - Aucune dépendance entre PAT-n et PRA-n.
