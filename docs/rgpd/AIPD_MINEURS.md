@@ -5,13 +5,14 @@
 > rubrique 13, à la suite de la revue de nécessité du même jour
 > ([[D-537]] §6, questions `20261118-2120-c` à `-c-5`).
 >
-> **Ce projet ne conclut sur aucun risque.** La vraisemblance, la gravité et
-> le risque résiduel sont jugés par le responsable du traitement (§3, §4), qui
-> valide ensuite l'AIPD en la datant (§5). Tant que ce n'est pas fait, aucune
-> admission d'un mineur ne s'appuie sur ce document.
+> **L'assistant ne conclut sur aucun risque.** La vraisemblance, la gravité
+> et le risque résiduel sont jugés par le responsable du traitement (§3, §4),
+> qui valide ensuite l'AIPD en la datant (§5).
 >
-> — 2026-11-18 : risques et risque résiduel jugés par le responsable en
-> session (§6). La validation datée attend le cadrage de J3-mineurs.
+> **État au 2026-11-18 : risques et risque résiduel jugés par le responsable
+> en session (§6) ; AIPD non validée.** La validation datée attend le cadrage
+> de J3-mineurs. D'ici là, aucune admission d'un mineur ne s'appuie sur ce
+> document.
 >
 > **Alerte, pas avis juridique** — même réserve que le dossier RGPD :
 > l'assistant n'est pas juriste. Les références aux textes sont celles du
@@ -169,9 +170,10 @@ restreinte au domaine), base PostgreSQL chez l'hébergeur, e-mail.
 ## 3. Risques pour le jeune
 
 Les trois événements redoutés de la trame. Pour chacun : sources, menaces,
-impacts propres au mineur. **La vraisemblance et la gravité sont laissées
-au responsable**, sur l'échelle de la CNIL : négligeable, limitée,
-importante, maximale.
+impacts propres au mineur. La vraisemblance et la gravité sont celles que
+le responsable a jugées le 2026-11-18, sur l'échelle de la CNIL
+(négligeable, limitée, importante, maximale) ; le motif qui suit chaque
+jugement est celui de l'option qu'il a retenue.
 
 ### 3.1 Accès illégitime aux données
 
@@ -237,13 +239,23 @@ Communes (dossier, rubrique 10) :
 - courriel d'alerte sans contenu, carte du Fil du jour en filet ;
 - journal des correspondances, échec d'envoi tracé.
 
-Propres au mineur :
+Propres au mineur, **tenues par le code** :
 - garde d'âge fail-closed tenue par les routes ; date illisible traitée
   comme manquante ;
 - plancher à 15 ans ; pause jusqu'à l'admission ;
-- aucun accès parental automatique ni permanent ; chaque demande examinée ;
-- texte 2B de la tranche, servi ; encart d'urgence toujours accessible ;
-- retrait du consentement du jeune non retardé par un conflit parental.
+- texte 2B de la tranche, servi ; encart d'urgence toujours accessible.
+
+Propres au mineur, **tenues par l'absence de fonction** : aucun accès
+parental au portail. Aucune route ni aucun compte ne vise un titulaire de
+l'autorité parentale (constat au code du 2026-11-18). Cette mesure ne
+tient que tant que J3-mineurs n'ouvre rien de tel ([[D-537]] §2).
+
+Propres au mineur, **procédures manuelles** (rubrique 9, étape 7) :
+- chaque demande parentale est examinée une à une ;
+- le retrait de son consentement par le jeune n'est pas retardé par un
+  conflit parental.
+
+Le circuit en ligne de ces demandes est **[J3]**.
 
 ### 4.2 Mesures prévues ou à décider
 
@@ -260,13 +272,17 @@ Mesures que l'analyse fait apparaître, arbitrées par le responsable le
   propre adresse e-mail, et pas une adresse familiale ou partagée. La règle
   est transmise au cadrage de J3-mineurs (file A), qui en fixe la forme
   **[J3]** ;
-- **écartées**, sans motif exprimé :
+- **écartées** par le responsable, **sans motif exprimé** :
   - fermer par le code l'export « Pour une IA externe » pour un dossier
-    mineur — la suspension manuelle du 2026-11-05 reste la seule tenue ;
-  - examiner la nécessité des questions intrusives pour un mineur (décision
-    clinique, qui aurait suivi sa propre voie) ;
-  - faire précéder la première admission du test d'intrusion, qui reste
-    exigé avant toute offre commerciale (dossier, rubrique 14, ligne 10).
+    mineur ;
+  - examiner la nécessité des questions intrusives pour un mineur ;
+  - faire précéder la première admission du test d'intrusion.
+
+  *Note de l'assistant — un état des lieux, pas le motif du responsable.*
+  Pour l'export, la suspension manuelle du 2026-11-05 reste la seule
+  tenue. L'examen des questions aurait été une décision clinique, avec sa
+  propre voie (D-xxx). Le test d'intrusion reste exigé avant toute offre
+  commerciale (dossier, rubrique 14, ligne 10).
 
 Obligation qui ne se discute pas, rappelée ici : les catégories propres au
 mineur (§1.3) seront déclarées à la rubrique 5 avec J3-mineurs, et leur durée
