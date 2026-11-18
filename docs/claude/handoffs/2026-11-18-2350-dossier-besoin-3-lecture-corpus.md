@@ -26,7 +26,7 @@
 
 - Lecture de production seule, par `scalingo run -d`, transactions en lecture seule annulées ; comptes issus de motifs de texte, donc des ordres de grandeur.
 - Avis de Codex : cinq appels à l'aveugle, état conforme.
-- T1 partiel : type-check, lint, scoring, plan-journal, decisions, campaign-audit, ancres, anti-secrets (indexé) verts ; suites vitest non jouées en local (worktree sans `npm ci`), jouées par le CI de la PR. Pas de T2 : documentation seule.
+- T1 partiel : type-check, lint, scoring, plan-journal, decisions, campaign-audit, ancres, anti-secrets (indexé) verts ; suites vitest non jouées, ni en local (worktree sans `npm ci`) ni par le CI (diff de documentation seule, type-check, Vitest, build et E2E sautés). Pas de T2 : documentation seule.
 
 ## Problèmes ouverts
 
