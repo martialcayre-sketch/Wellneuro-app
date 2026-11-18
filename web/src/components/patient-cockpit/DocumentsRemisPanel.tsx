@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { DocumentRemis, DocumentsRemisResponse } from '@/app/api/praticien/documents-remis/route';
 import { libelleLecture } from '@/lib/portail/lectureDatee';
+import { useFocusApresRelecture } from '@/components/ui/useFocusApresRelecture';
 
 /*
  * « DOCUMENTS REMIS » ([[D-297]] §5, encart arbitré le 2026-10-18).
@@ -30,6 +31,7 @@ function jourDeRemise(iso: string): string {
 
 export function DocumentsRemisPanel({ idPatient }: { idPatient: string }) {
   const [etat, setEtat] = useState<Etat>({ statut: 'chargement' });
+  const { titreRef, boutonRef, relire } = useFocusApresRelecture();
 
   const charger = useCallback(async () => {
     setEtat({ statut: 'chargement' });
@@ -49,7 +51,7 @@ export function DocumentsRemisPanel({ idPatient }: { idPatient: string }) {
   return (
     <section className="rounded-xl border border-border bg-surface p-4">
       {/* h4 sous la phase « Patient » (h3), PRA-3b Q2 a. */}
-      <h4 className="text-base font-semibold text-foreground">Documents remis</h4>
+      <h4 ref={titreRef} tabIndex={-1} className="text-base font-semibold text-foreground">Documents remis</h4>
 
       {etat.statut === 'chargement' && <p className="mt-2 text-sm text-muted-foreground">Chargement…</p>}
 
@@ -58,8 +60,9 @@ export function DocumentsRemisPanel({ idPatient }: { idPatient: string }) {
         <div role="alert" className="mt-2 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
           <span>Les documents remis n’ont pas pu être lus.</span>
           <button
+            ref={boutonRef}
             type="button"
-            onClick={() => void charger()}
+            onClick={() => void relire(charger)}
             className="min-h-11 rounded-lg border border-accent px-3 py-1 text-sm font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
           >
             Réessayer la lecture des documents remis

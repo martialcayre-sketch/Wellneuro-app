@@ -11,7 +11,7 @@ afterEach(() => {
 });
 
 function stub(payload: unknown) {
-  vi.stubGlobal('fetch', vi.fn(async () => ({ json: async () => payload }) as unknown as Response));
+  vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => payload }) as unknown as Response));
 }
 
 function source(over: Partial<SourceNouveauPatient> = {}): SourceNouveauPatient {

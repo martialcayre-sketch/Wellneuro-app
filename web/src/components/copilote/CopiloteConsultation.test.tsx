@@ -143,6 +143,72 @@ describe('CopiloteConsultation', () => {
     expect(appels('/api/praticien/copilote/prevol')).toBe(prevolAvant);
   });
 
+  // PRA-6h, arbitrage 20261118-2228-d : après un « Réessayer », le focus va au
+  // titre du panneau relu s'il réussit, au bouton s'il échoue encore — jamais
+  // à `body`.
+  function servirEchecPuisSucces(cible: 'prevol' | 'cloture') {
+    let echec = true;
+    fetchMock.mockImplementation(async (url: string) => {
+      if (url.startsWith(`/api/praticien/copilote/${cible}`) && echec) {
+        echec = false;
+        return { ok: false, json: async () => ({ ok: false, error: 'Lecture impossible.' }) };
+      }
+      if (url.startsWith('/api/praticien/copilote/prevol')) return { ok: true, json: async () => ({ ok: true, prevol }) };
+      if (url.startsWith('/api/praticien/copilote/cloture')) return { ok: true, json: async () => ({ ok: true, cloture: bloquee }) };
+      return { ok: true, json: async () => ({ ok: true, reperes: [] }) };
+    });
+  }
+
+  it('pré-vol relu avec succès : le focus va au titre « Ce qui a changé »', async () => {
+    servirEchecPuisSucces('prevol');
+    render(<CopiloteConsultation idPatient="PAT_SEED_01" />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Réessayer' }));
+
+    const titre = await screen.findByRole('heading', { name: 'Ce qui a changé' });
+    await waitFor(() => expect(document.activeElement).toBe(titre));
+    expect(titre.getAttribute('tabindex')).toBe('-1');
+  });
+
+  it('minute d’après relue avec succès : le focus va au titre « La minute d’après »', async () => {
+    servirEchecPuisSucces('cloture');
+    render(<CopiloteConsultation idPatient="PAT_SEED_01" />);
+    const bouton = (await screen.findAllByRole('button', { name: 'Réessayer' })).find((b) => contexte().contains(b));
+    fireEvent.click(bouton!);
+
+    const titre = await screen.findByRole('heading', { name: 'La minute d’après' });
+    await waitFor(() => expect(document.activeElement).toBe(titre));
+  });
+
+  it('minute d’après encore en échec : le focus revient au « Réessayer » relu', async () => {
+    servir({ clotureEnEchec: true });
+    render(<CopiloteConsultation idPatient="PAT_SEED_01" />);
+    const bouton = (await screen.findAllByRole('button', { name: 'Réessayer' })).find((b) => contexte().contains(b));
+    fireEvent.click(bouton!);
+
+    await waitFor(() => expect(appels('/api/praticien/copilote/cloture')).toBe(2));
+    await waitFor(() => {
+      const actif = document.activeElement as HTMLElement | null;
+      expect(actif?.textContent).toBe('Réessayer');
+      expect(contexte().contains(actif)).toBe(true);
+    });
+  });
+
+  it('replié, une minute d’après encore en échec rend le focus au « Réessayer » du centre', async () => {
+    servir({ clotureEnEchec: true });
+    render(<CopiloteConsultation idPatient="PAT_SEED_01" />);
+    await waitFor(() => expect(screen.getAllByRole('button', { name: 'Réessayer' })).toHaveLength(2));
+    fireEvent.click(screen.getByRole('button', { name: 'Masquer le contexte' }));
+    const auCentre = screen.getAllByRole('button', { name: 'Réessayer' }).find((b) => !contexte().contains(b));
+    fireEvent.click(auCentre!);
+
+    await waitFor(() => expect(appels('/api/praticien/copilote/cloture')).toBe(2));
+    await waitFor(() => {
+      const actif = document.activeElement as HTMLElement | null;
+      expect(actif?.textContent).toBe('Réessayer');
+      expect(contexte().contains(actif)).toBe(false);
+    });
+  });
+
   it('l’état de repli vaut pour la session : il survit au changement de patient', async () => {
     servir();
     const { unmount } = render(<CopiloteConsultation idPatient="PAT_SEED_01" />);

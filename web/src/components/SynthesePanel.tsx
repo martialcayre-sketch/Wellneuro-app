@@ -117,11 +117,15 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
   const [feedback, setFeedback] = useState<Retour | null>(null);
   // Q4 et Q5 de PRA-5 : un échec de lecture n'est pas une absence. Chaque
   // lecture a son état d'échec et son « Réessayer », qui ne relance qu'elle ;
-  // le focus revient au bouton si la lecture échoue encore.
+  // le focus revient au bouton si la lecture échoue encore, et au titre du
+  // panneau relu si elle réussit (arbitrage 20261118-2228-d, PRA-6h) — jamais
+  // sur `body`.
   const [erreurPatients, setErreurPatients] = useState(false);
   const [erreurSyntheses, setErreurSyntheses] = useState(false);
   const reessayerPatients = useRef<HTMLButtonElement>(null);
   const reessayerSyntheses = useRef<HTMLButtonElement>(null);
+  const titrePatients = useRef<HTMLHeadingElement>(null);
+  const titreSyntheses = useRef<HTMLHeadingElement>(null);
   const [focusApresRelecture, setFocusApresRelecture] = useState<'patients' | 'syntheses' | null>(null);
   // La synthèse ouverte AU RENDU : un retour arrivé après la fermeture du
   // détail, ou l'ouverture d'une autre synthèse, paraît sous le choix du
@@ -270,10 +274,14 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
     setFocusApresRelecture('syntheses');
   };
 
-  // Le bouton n'est rendu que si la lecture a encore échoué : le focus y revient.
+  // Le bouton n'est rendu que si la lecture a encore échoué : le focus y
+  // revient ; sinon il va au titre du panneau relu.
   useEffect(() => {
     if (!focusApresRelecture) return;
-    (focusApresRelecture === 'patients' ? reessayerPatients : reessayerSyntheses).current?.focus();
+    const [bouton, titre] = focusApresRelecture === 'patients'
+      ? [reessayerPatients, titrePatients]
+      : [reessayerSyntheses, titreSyntheses];
+    (bouton.current ?? titre.current)?.focus();
     setFocusApresRelecture(null);
   }, [focusApresRelecture]);
 
@@ -653,7 +661,7 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
 
       {/* Sélection patient */}
       <div className="bg-surface border border-border rounded-xl shadow-card p-4">
-        <h2 id="synthese-patient-titre" className="font-display text-lg font-semibold text-foreground mb-3">Patient</h2>
+        <h2 ref={titrePatients} tabIndex={-1} id="synthese-patient-titre" className="font-display text-lg font-semibold text-foreground mb-3">Patient</h2>
         <div className="flex flex-wrap gap-3 items-center">
           <Select
             aria-labelledby="synthese-patient-titre"
@@ -730,7 +738,7 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
       {selectedPatient && (
         <div className="bg-surface border border-border rounded-xl shadow-card overflow-hidden">
           <div className="px-4 py-3 border-b border-border">
-            <h2 className="font-display text-lg font-semibold text-foreground">
+            <h2 ref={titreSyntheses} tabIndex={-1} className="font-display text-lg font-semibold text-foreground">
               Synthèses de {patient ? `${patient.prenom} ${patient.nom}` : selectedPatient}
               {!loading && !erreurSyntheses && (
                 <span className="ml-2 text-muted-foreground font-normal">({syntheses.length})</span>
