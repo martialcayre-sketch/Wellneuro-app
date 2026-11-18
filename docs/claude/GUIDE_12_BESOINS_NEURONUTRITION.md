@@ -199,11 +199,33 @@ plaisir sensoriel et la satisfaction, pour contrer l'anhédonie.
 Besoin de repères émotionnels clairs. L'accumulation de stresseurs
 déséquilibre le système nerveux autonome (sympathique/parasympathique).
 
-- **Variables d'entrée** : échelles de stress (Cohen, Cungi, SIIN).
-  Biomarqueurs : Cortisol Awakening Response (CAR), ratio Cortisol/DHEA
-  vespéral.
-- **Règle de décision** : si CAR altéré ou score de stress élevé, déclencher
-  un protocole d'urgence (adaptogènes, magnésium, accueil de l'émotion).
+- **Section réécrite sur le dossier de preuve signé** (`D-541`, proposée le
+  2026-11-18, en attente d'acceptation, `D-312` §3). Les claims, valeurs et
+  sources sont au dossier privé du besoin 9 ; ici, les mécanismes seulement
+  (`D-251` §4).
+- **Variables d'entrée** : le stress perçu, par la PSS-10 (`Q_STR_02`), seule
+  source du score (cible du 2026-10-18, niveau A). Le SIIN (`Q_STR_01`) et le
+  Cungi (`Q_STR_03`) sont des repères du cabinet, hors score, sans référence
+  publiée. Le DASS-21, le BMS-10, le questionnaire de Karasek et le WART sont
+  lus au praticien, hors score, un constat chacun. La régulation émotionnelle
+  est documentée, non servie. Biologie : le cortisol au réveil et le ratio
+  cortisol/DHEA sont documentés et hors score ; le ratio est « non évalué ».
+  Le système nerveux autonome est « non évalué ».
+- **Règle de décision** : un constat par instrument. Aucun claim du dossier ne
+  fonde un déclenchement sur un seuil ou une grille ; la grille servie du
+  total de la PSS-10 est une lecture du cabinet, sans source publiée, et les
+  trois lignes existantes qui lisent une bande de la PSS-10 ou du BMS-10
+  restent régies par leurs décisions (`D-541` §6.1). Les options (prise en
+  charge selon la HAS, rhodiole en usage traditionnel, magnésium, régulation
+  émotionnelle) sont à la main du praticien, aucun score ne les déclenche. La
+  règle précédente (« protocole d'urgence » sur un cortisol au réveil altéré
+  ou un score de stress élevé) est retirée : aucun claim ne fonde son
+  déclencheur ni la notion de protocole d'urgence.
+- **Références citées** : identifiants au dossier privé ; seuls les claims
+  cités par une position signée fondent un constat, dans le rôle qu'elle leur
+  donne. Les claims de provenance ou de limite seulement sont au `D-541` §5.5.
+- **Population visée et « non évalué »** : `D-541` §4.
+- **Application** : lot J3-12f.
 
 ---
 
