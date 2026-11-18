@@ -24,8 +24,8 @@ Dernière étape nommée de PAT-7 dans le plan patient : comparer les écrans li
   - **PAT-7g** : `print:hidden` sur « Lire la fiche » (`CarteFicheRemise.tsx`) et « J'en ai pris connaissance » (`ConditionsUtilisation.tsx`). Application de Q5a de PAT-5 (D-481, DOC-9).
   - **PAT-7h** :
     - un `h1` sur U09, où « Merci ! » est un `h2` ;
-    - la police Lora sur les `h1` en sans de U26, U29 à U34 et U36 ;
-    - en option, la largeur de la carte de fin, qui coupe la frise.
+    - la police Lora sur les `h1` en sans de U26, U29 à U34 et U36.
+  - La frise coupée de U09 (largeur de la carte de fin) est rangée avec la forme transverse, sur la remarque de PR-Agent.
 - **Forme transverse** (variantes de boutons, messages d'erreur et de succès, champs, rayons, radios et accordéons natifs) : aucun lot avant une décision d'ensemble. Ces écarts passent par des composants partagés, et l'app a parfois choisi autrement pour une raison écrite.
 
 ## Fichiers modifiés

@@ -54,7 +54,9 @@ patient réel.
 Partout, ce qui est conforme l'emporte : titres, ordre des blocs,
 navigation et textes suivent les prototypes et [[D-488]] mot pour mot,
 sauf les points listés. Les arbitrages inscrits sont appliqués, à une
-exception près (§3.1).
+exception près : Q5a de PAT-5 (§3.1). Deux points restent sans décision
+écrite : la consigne des agendas (§2.3) et « (N questionnaires) » de U41,
+Q2 du prototype PAT-3 (§2.2). Ils sont listés au §3.3.
 
 ### 2.1 PAT-2 — entrée (U01–U09)
 
@@ -170,7 +172,6 @@ exception près (§3.1).
     PAT-7b : un `h1`, titre existant ;
   - **police des `h1`** sur U26, U29 à U34 et U36 : sans au lieu de Lora,
     contre les prototypes et `PatientPageHeader`, qui titre les autres pages.
-- **Frise de U09** : coupée par la largeur `max-w-md` de la carte de fin.
 
 ### 3.2 Forme transverse : décision de design system
 
@@ -183,6 +184,8 @@ composants partagés de tout le portail (`PatientButton`,
 - champs en 16 px et 48 px ;
 - rayons des cartes intérieures et des boutons ;
 - options en cartes de 48 px au lieu de radios natifs (U33, U35, U07) ;
+- largeurs de colonne, dont la carte de fin de U09 en `max-w-md`, qui
+  coupe la frise (§2.1) : établi sur capture, mais c'est une largeur ;
 - champ fichier habillé ;
 - accordéons natifs remplacés par des volets à chevron (U10 « Transmis »,
   U37, conditions).
@@ -218,7 +221,7 @@ familles. Ils demandent une décision d'ensemble avant tout lot.
   commandes du §3.1. Cela applique Q5a telle qu'inscrite ; aucun texte.
 - **PAT-7h — titres** : un `h1` sur U09 (titre existant, comme PAT-7b) et
   la police Lora sur les `h1` de U26, U29 à U34 et U36. Aucun texte. La
-  frise de U09 peut s'y joindre (largeur de la carte de fin).
+  frise de U09 n'en fait pas partie : c'est une largeur, rangée au §3.2.
 - **Forme transverse (§3.2)** : pas de lot avant une décision d'ensemble.
 - **PAT-7d** : inchangé, il attend `20261117-1243-d`.
 
