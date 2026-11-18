@@ -1,8 +1,8 @@
-# Handoff — 2026-11-18 — besoin 9 : décision du guide D-541 proposée (D-312, H15), lot de la file B
+# Handoff — 2026-11-18 — besoin 9 : décision du guide D-541 acceptée (D-312, H15), lot de la file B
 
 ## Branche et état Git
 
-- Branche `docs/besoin9-decision-guide`, créée sur `origin/main` 1354683df (#2246 mergée). Worktree `.claude/worktrees/agent-a81c34a8d1130b0ce`.
+- Branche `docs/besoin9-decision-guide`, créée sur `origin/main` 1354683df (#2246 mergée), puis fusionnée avec `origin/main` (4e90a1f98, `git merge`, sans rebase) sur arbitrage du responsable du 2026-11-19 (`D-518`), pour cette branche et ce lot seulement. Worktree `.claude/worktrees/agent-a81c34a8d1130b0ce`.
 - Session concurrente (file B), mission « 12 besoins, séquentiel » du 2026-11-18. `git` et `gh` en direct.
 
 ## Objectif
@@ -12,8 +12,9 @@ Consigner la signature des positions v0.2 du besoin 9 et rédiger la décision d
 ## Décisions prises
 
 - Constat de l'onglet à la révision 36 : trente-cinq cases sur trente-cinq. La case de la règle du guide signe la position (règle non signable, objets documentés), pas la règle. Le paragraphe d'introduction de l'onglet, périmé, n'est pas touché (document de signature du responsable).
-- `D-541` réservée par `wn-reserver-decision` (le numéro 540 était déjà pris), statut « proposée ». Transposition des positions sans rien y ajouter ; les trois arbitrages (§6) sont des questions ouvertes avec l'avis de Codex à l'aveugle (`20261118-2355-b` à `2357-b`), l'option proposée par la session est écrite aux §3 et §5.
-- Choix de rédaction à confirmer : le système nerveux autonome est « non évalué par défaut » parce qu'aucune position ne le retient (la source réunie est sans texte) ; les claims listés au §5.5 le sont d'après le rôle de provenance ou de limite que leur donnent les positions P4, P5, P29 et P35.
+- `D-541` réservée par `wn-reserver-decision` (le numéro 540 était déjà pris), statut « accepté » par le responsable le 2026-11-18 (rédaction générale et deux choix de rédaction). Transposition des positions sans rien y ajouter. Arbitrages du §6 tranchés le même jour : `2355-b` = C (suspendre les quatre lignes pour les relire une à une, par décision et lot distincts ; aucune extinction par D-541 ; P32 non amendée), `2356-b` = A (deux libellés du BMS-10 distingués), `2357-b` = B (correction de trois items du DASS-21).
+- Choix de rédaction acceptés : le système nerveux autonome est « non évalué par défaut » parce qu'aucune position ne le retient (la source réunie est sans texte) ; les claims listés au §5.5 le sont d'après le rôle de provenance ou de limite que leur donnent les positions P4, P5, P29 et P35.
+- Lot de suspension des quatre lignes inscrit au carnet (file A, `besoin9-suspension-lignes-stress`), message à la file A.
 - Rang du journal H15 : `05` (le `04` est pris sur `origin/main` par #2246).
 
 ## Fichiers modifiés
@@ -31,14 +32,14 @@ Consigner la signature des positions v0.2 du besoin 9 et rédiger la décision d
 
 ## Problèmes ouverts
 
-- Acceptation de `D-541` par le responsable, et réponses à `20261118-2355-b` (quatre lignes, avis de Codex C, proposition A), `2356-b`, `2357-b`. Si l'option A du premier est retenue, la position P32 est amendée dans le dossier privé et à re-signer. La PR ne se merge qu'après l'acceptation (la section du guide est dans la PR).
+- Lot de suspension des quatre lignes (`besoin9-suspension-lignes-stress`, file A) : à arbitrer par la file A (lot distinct ou fondu dans J3-12f) ; il part après le merge de `D-541`. Aucune ligne n'est éteinte par `D-541`.
 - Le bandeau périmé de l'onglet des positions (« rien n'est signé »).
-- Le lot `besoin9-decision-guide` reste `pris` jusqu'à l'acceptation. Les parts des strates et la pondération des besoins se décident avec J3-12f.
+- Le lot `besoin9-decision-guide` passe à `fait` au merge de la PR #2250. Les parts des strates et la pondération des besoins se décident avec J3-12f.
 
 ## Prochaine action exacte
 
-1. S'arrêter à l'acceptation ou aux questions du responsable ; la PR #2250 reste en brouillon.
-2. Après l'acceptation, reporter les réponses dans `D-541` (statut, §6), CI (`wn-attendre-ci.mjs`, seul `0` vaut), revue sur le sha de tête, boîte B relue, puis « prête @<sha> ».
+1. CI de la tête (`wn-attendre-ci.mjs`, seul `0` vaut), revue sur le sha de tête, sortie de brouillon, boîte B relue, puis « prête @<sha> ».
+2. S'arrêter à « prête » : l'intégrateur merge ; le lot de suspension des quatre lignes est à la file A.
 
 ## Interdits encore actifs
 

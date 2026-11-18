@@ -199,8 +199,8 @@ plaisir sensoriel et la satisfaction, pour contrer l'anhédonie.
 Besoin de repères émotionnels clairs. L'accumulation de stresseurs
 déséquilibre le système nerveux autonome (sympathique/parasympathique).
 
-- **Section réécrite sur le dossier de preuve signé** (`D-541`, proposée le
-  2026-11-18, en attente d'acceptation, `D-312` §3). Les claims, valeurs et
+- **Section réécrite sur le dossier de preuve signé** (`D-541`, acceptée le
+  2026-11-18, `D-312` §3). Les claims, valeurs et
   sources sont au dossier privé du besoin 9 ; ici, les mécanismes seulement
   (`D-251` §4).
 - **Variables d'entrée** : le stress perçu, par la PSS-10 (`Q_STR_02`), seule
@@ -215,7 +215,8 @@ déséquilibre le système nerveux autonome (sympathique/parasympathique).
   fonde un déclenchement sur un seuil ou une grille ; la grille servie du
   total de la PSS-10 est une lecture du cabinet, sans source publiée, et les
   quatre lignes existantes qui lisent une bande de la PSS-10, du BMS-10 ou du
-  DASS-21 resteraient régies par leurs décisions (proposition, `D-541` §6.1). Les options (prise en
+  DASS-21 sont à suspendre pour relecture une à une, par décision et lot de
+  code distincts (`D-541` §6.1) ; la décision n'en éteint aucune. Les options (prise en
   charge selon la HAS, rhodiole en usage traditionnel, magnésium, régulation
   émotionnelle) sont à la main du praticien, aucun score ne les déclenche. La
   règle précédente (« protocole d'urgence » sur un cortisol au réveil altéré
