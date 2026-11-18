@@ -136,8 +136,8 @@ beforeEach(() => {
   // Par défaut, la synthèse relue sous le verrou est celle lue en tête.
   findUniqueSynthese.mockReset();
   findUniqueSynthese.mockImplementation(async () => {
-    const lue = (await findFirst.mock.results.at(-1)?.value) as { updatedAt: Date } | null | undefined;
-    return lue ? { updatedAt: new Date(lue.updatedAt.getTime()) } : null;
+    const lue = (await findFirst.mock.results.at(-1)?.value) as { updatedAt: Date; emailPatient: string } | null | undefined;
+    return lue ? { updatedAt: new Date(lue.updatedAt.getTime()), emailPatient: lue.emailPatient } : null;
   });
   // `actif` manquait : `phaseDossier` lit `!etat.actif` et concluait
   // « désactivé » sur un dossier censé être en suivi. Aucun test n'allait
@@ -785,7 +785,7 @@ describe('POST /api/praticien/booklet — ce que le journal de correspondance di
         const [gabarit, ...valeurs] = queryRaw.mock.calls[0] as [TemplateStringsArray, ...unknown[]];
         expect(gabarit.join('?')).toContain('FROM patients WHERE id_patient = ? FOR UPDATE');
         expect(valeurs).toEqual(['PAT_1']);
-        expect(findUniqueSynthese).toHaveBeenCalledWith({ where: { idSynthese: 'SYN_1' }, select: { updatedAt: true } });
+        expect(findUniqueSynthese).toHaveBeenCalledWith({ where: { idSynthese: 'SYN_1' }, select: { updatedAt: true, emailPatient: true } });
 
         // Le verrou du bilan d'abord : le banc sur base réelle
         // (`reservation.pg.test.ts`) compte deux envois en attente de lui.
@@ -806,6 +806,25 @@ describe('POST /api/praticien/booklet — ce que le journal de correspondance di
     ])('une synthèse %s ne part pas : 409, rien de réservé ni d’envoyé', async (_cas, relue) => {
       for (const corps of [{}, { forceSend: true }]) {
         findUniqueSynthese.mockResolvedValueOnce(relue);
+        const res = await envoyer(corps);
+
+        expect(res.status).toBe(409);
+        expect((await res.json()).error).toBe('La synthèse a été modifiée entre-temps. Rechargez-la avant de recommencer.');
+      }
+      expect(createCorrespondance).not.toHaveBeenCalled();
+      expect(sendMail).not.toHaveBeenCalled();
+      expect(createBookletEnvoi).not.toHaveBeenCalled();
+    });
+
+    // Changer l'e-mail du dossier réécrit `email_patient` sans toucher
+    // `updatedAt` (lot synthese-conflit-texte-conserve) : la version seule ne
+    // voit plus le changement, l'adresse relue le voit (P2-1 de wn-reviewer).
+    it('une adresse changée entre-temps ne reçoit pas le livret de l’ancienne : 409, rien de réservé ni d’envoyé', async () => {
+      for (const corps of [{}, { forceSend: true }]) {
+        findUniqueSynthese.mockImplementationOnce(async () => {
+          const lue = (await findFirst.mock.results.at(-1)?.value) as { updatedAt: Date };
+          return { updatedAt: new Date(lue.updatedAt.getTime()), emailPatient: 'nouvelle.adresse@fictif.wellneuro.fr' };
+        });
         const res = await envoyer(corps);
 
         expect(res.status).toBe(409);

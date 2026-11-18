@@ -17,7 +17,11 @@ const { getServerSession, prisma } = vi.hoisted(() => ({
     // PAS, et son absence est une assertion : aucune ligne de ce banc ne doit
     // pouvoir l'écrire par mégarde.
     consultation: { updateMany: vi.fn() },
+    // `syntheses_ia` se réécrit HORS de Prisma (`$executeRaw`) pour garder
+    // `updated_at`, version optimiste des synthèses. `updateMany` reste
+    // simulé : son absence d'appel est une assertion.
     syntheseIA: { updateMany: vi.fn() },
+    $executeRaw: vi.fn(async (..._args: unknown[]) => 0),
   },
 }));
 
@@ -27,6 +31,22 @@ vi.mock('@/lib/prisma', () => ({ prisma }));
 
 import { GET, PATCH, POST } from './route';
 import { jourCourantLocal } from '@/lib/patient-access';
+
+// La copie de l'adresse dans `syntheses_ia` est réécrite SANS toucher
+// `updated_at` (lot synthese-conflit-texte-conserve) : jamais par
+// l'`updateMany` de Prisma, qui pose `@updatedAt` d'office et périmait la
+// version de chaque synthèse ouverte (faux 409 `synthese_modifiee`). Le banc
+// sur base réelle (`correspondance/reservation.pg.test.ts` §7) le constate
+// sur la ligne.
+function attendreCopieSynthesesSansVersion(email: string, idPatient: string) {
+  expect(prisma.syntheseIA.updateMany).not.toHaveBeenCalled();
+  const appels = prisma.$executeRaw.mock.calls.filter(([sql]) =>
+    (sql as unknown as TemplateStringsArray).join('?').includes('syntheses_ia'));
+  expect(appels).toHaveLength(1);
+  const [sql, ...valeurs] = appels[0];
+  expect((sql as unknown as TemplateStringsArray).join('?')).toBe('UPDATE syntheses_ia SET email_patient = ? WHERE id_patient = ?');
+  expect(valeurs).toEqual([email, idPatient]);
+}
 
 function get(query = ''): Request {
   return new Request(`http://localhost/api/praticien/patients${query ? `?${query}` : ''}`);
@@ -664,12 +684,13 @@ describe('PATCH /api/praticien/patients', () => {
       .mockResolvedValueOnce(null);
     const res = await PATCH(patch({ idPatient: 'PAT001', actif: 'NON', email: 'nouveau@fictif.wellneuro.fr' }));
     expect(res.status).toBe(200);
-    for (const table of [prisma.consultation, prisma.assignation, prisma.questionnaireReponse, prisma.syntheseIA]) {
+    for (const table of [prisma.consultation, prisma.assignation, prisma.questionnaireReponse]) {
       expect(table.updateMany).toHaveBeenCalledWith({
         where: { idPatient: 'PAT001' },
         data: { emailPatient: 'nouveau@fictif.wellneuro.fr' },
       });
     }
+    attendreCopieSynthesesSansVersion('nouveau@fictif.wellneuro.fr', 'PAT001');
     expect(prisma.$transaction).toHaveBeenCalledOnce();
     expect(typeof prisma.$transaction.mock.calls[0][0]).toBe('function');
 
@@ -913,13 +934,13 @@ describe('PATCH — changer l’e-mail sans rendre les réponses muettes', () =>
       prisma.consultation,
       prisma.assignation,
       prisma.questionnaireReponse,
-      prisma.syntheseIA,
     ]) {
       expect(table.updateMany).toHaveBeenCalledWith({
         where: { idPatient: 'PAT001' },
         data: { emailPatient: 'nouveau@fictif.wellneuro.fr' },
       });
     }
+    attendreCopieSynthesesSansVersion('nouveau@fictif.wellneuro.fr', 'PAT001');
 
     // ENSEMBLE, et pas l'une après l'autre : entre deux écritures séparées, une
     // lecture verrait le dossier sur la nouvelle adresse et ses réponses sur
