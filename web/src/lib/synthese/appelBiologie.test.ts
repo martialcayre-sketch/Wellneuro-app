@@ -164,6 +164,16 @@ describe('intervalleSuiviDUnite — un intervalle imprimé cité en entier, suiv
     expect(intervalleSuiviDUnite(sortie('« 10 - 20 » µg/L'), formes)).toBe(true);
   });
 
+  it('une unité composée absente du bloc, dont une unité du bloc est le début, n’est pas l’unité (contre-revue Codex, P2)', () => {
+    for (const t of ['30 - 400 µg/L/min', '30 - 400 µg/L·h', '30 - 400 µg/L-1', '30 - 400 µg/L.h', '30 - 400 µg/L²', '30 - 400 µg/L^2']) {
+      expect(intervalleSuiviDUnite(sortie(t), FORMES), t).toBe(false);
+    }
+    // La fin de phrase, une ponctuation ou un tiret entouré d'espaces ne prolongent pas l'unité.
+    for (const t of ['30 - 400 µg/L.', '30 - 400 µg/L, à jeun', '30 - 400 µg/L - prélevé à jeun', '30 - 400 µg/L)']) {
+      expect(intervalleSuiviDUnite(sortie(t), FORMES), t).toBe(true);
+    }
+  });
+
   it('une unité d’une lettre suivie d’une apostrophe et d’une lettre n’est pas l’unité (revue wn-reviewer, P2-3b)', () => {
     const formes = { intervalles: ['25 - 35'], valeursUnites: [{ valeur: '30', unite: 's' }] };
     expect(intervalleSuiviDUnite(sortie('« 25 - 35 » s’il est lu'), formes)).toBe(false);

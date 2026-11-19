@@ -171,10 +171,14 @@ export function intervalleSuiviDUnite(sortie: SortieBiologie, formes: TraceBlocB
   const intervalles = [...new Set(formes.intervalles.map((t) => normaliserEspacesSortie(t).trim()).filter((t) => t !== ''))];
   const unites = [...new Set(formes.valeursUnites.map((f) => normaliserEspacesSortie(f.unite).trim()).filter((u) => u !== ''))];
   if (intervalles.length === 0 || unites.length === 0) return false;
-  // Le séparateur (capturé), puis l'unité, ses espaces internes facultatives ;
-  // après elle, ni lettre ni chiffre, ni apostrophe suivie d'une lettre (« s'il »).
+  // Le séparateur (capturé), puis l'unité, ses espaces internes facultatives.
+  // Après elle, rien qui la prolonge en une autre unité : ni lettre, ni chiffre,
+  // ni exposant, ni opérateur d'unité (« µg/L/min », « mg·L », « g/L-1 »,
+  // « mg.L ») ; ni apostrophe suivie d'une lettre (« s'il »). Contre-revue
+  // Codex : une unité composée absente du bloc n'est pas l'unité d'une valeur.
   const motifUnite = new RegExp(
-    `^(${SEPARATEUR_ESPACES_GUILLEMETS})(?:${unites.map((u) => u.split(' ').map(echapperMotif).join('\\s*')).join('|')})(?![\\p{L}\\p{N}]|['’]\\p{L})`,
+    `^(${SEPARATEUR_ESPACES_GUILLEMETS})(?:${unites.map((u) => u.split(' ').map(echapperMotif).join('\\s*')).join('|')})`
+      + `(?![\\p{L}\\p{N}\\p{No}]|['’]\\p{L}|[/·⋅^*×]|[.\\-−⁻][\\p{L}\\p{N}])`,
     'u',
   );
   const textes = [sortie.resume_biologie_praticien, ...sortie.points_de_vigilance_biologie].map(normaliserEspacesSortie);
