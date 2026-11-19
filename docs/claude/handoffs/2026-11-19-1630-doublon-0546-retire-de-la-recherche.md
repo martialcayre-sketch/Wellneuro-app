@@ -13,8 +13,8 @@ Réponse A du responsable (2026-11-19) à la question `20261119-1311-b` : retire
 
 - Le mécanisme existe sans changement de schéma : `exclu_recherche` pour les claims (`D-490`, journal `exclusion_recherche`), `active = false` pour les passages (seul drapeau de retrait, lu par la recherche). Les passages n'ont pas de marque d'exclusion propre : `active` est donc la voie, et `store.ts` compte les liens vers des passages inactifs comme dérive normale, jamais comme faute.
 - La migration journalise comme l'écrivain de l'atelier (UPDATE et INSERT du journal dans une transaction), au nom du signataire de chaque claim lu sur sa ligne : aucune adresse en dur. Motif : le doublon, l'arbitrage et la question nommés, sans texte clinique.
-- Gardes de la migration : refus si la version publiée n'a ni claim visible ni passage actif ; contrôle de sortie. Sans effet sur une base vide.
-- Preuve par un banc qui rejoue le fichier SQL sur des fixtures de mêmes identifiants dans une transaction annulée, ajouté au CI et à `test:worktree` ; rejoué en local sur la base du worktree (sept étapes vertes, migration appliquée à vide sans erreur).
+- Gardes de la migration : refus si la version publiée n'a pas de claim visible en recherche (mêmes prédicats que la fonction) ou pas de passage visible, avec verrou partagé sur ses lignes pendant la garde (concurrence avec l'écrivain de l'atelier) ; contrôle de sortie. Sans effet sur une base vide. Deux constats P2 de Codex corrigés.
+- Preuve par un banc qui rejoue le fichier SQL sur des fixtures de mêmes identifiants dans une transaction annulée, ajouté au CI et à `test:worktree` ; rejoué en local sur la base du worktree (huit étapes vertes, migration appliquée à vide sans erreur).
 - Registre : `0546` dit son retrait de la recherche ; `0564` ne dit plus « claims en attente de signature » (ils sont signés).
 - Rang du journal H15 : `10`.
 
@@ -27,7 +27,7 @@ Réponse A du responsable (2026-11-19) à la question `20261119-1311-b` : retire
 ## Validations exécutées
 
 - Base locale du worktree migrée (`wn-dev-db.sh --migrate`) : toutes les migrations appliquées, dont celle-ci, à vide.
-- Banc de la migration sur fixtures : sept étapes vertes (exclusion, signature intacte, journal, passages, recherche, rejeu, garde).
+- Banc de la migration sur fixtures : huit étapes vertes (exclusion, signature intacte, journal, passages, recherche, rejeu, deux gardes).
 - Résultats du CI, de Codex P0, de `wn-reviewer` et de PR-Agent : dans la PR.
 
 ## Problèmes ouverts

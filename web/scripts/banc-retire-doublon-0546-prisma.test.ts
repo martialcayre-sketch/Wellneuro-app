@@ -220,7 +220,7 @@ async function main() {
     await c.query('SAVEPOINT garde');
     await assert.rejects(
       c.query(MIGRATION),
-      (err: { message?: string }) => /WN-SRC-0564 n'a ni claim VALIDE visible ni passage actif/.test(err.message ?? ''),
+      (err: { message?: string }) => /WN-SRC-0564 n'a pas de claim visible en recherche ou pas de passage visible/.test(err.message ?? ''),
       'la garde doit refuser quand la version publiée est introuvable en recherche',
     );
     await c.query('ROLLBACK TO SAVEPOINT garde');
@@ -228,7 +228,21 @@ async function main() {
       `SELECT count(*) FILTER (WHERE exclu_recherche)::int AS exclus FROM public.rag_corpus_claims WHERE source_id = 'WN-SRC-0546'`,
     );
     assert.equal(intacts[0].exclus, 0, 'garde déclenchée : aucun claim de 0546 n’est exclu');
-    console.log('ok 6 — garde : la seule version visible n’est jamais retirée');
+    console.log('ok 6 — garde : passage de 0564 inactif, le manuscrit n’est pas retiré');
+
+    // 7. Garde, prédicat de visibilité complet : le passage de 0564 est actif,
+    //    mais son seul claim n'est adossé à aucun passage — la recherche ne le
+    //    rendrait pas (EXISTS du lien) : la garde doit refuser quand même.
+    await c.query(`UPDATE public.rag_corpus_chunks SET active = true WHERE source_id = 'WN-SRC-0564'`);
+    await c.query(`DELETE FROM public.rag_corpus_claim_sources WHERE claim_pk = '__b0564_a__'`);
+    await c.query('SAVEPOINT garde2');
+    await assert.rejects(
+      c.query(MIGRATION),
+      (err: { message?: string }) => /WN-SRC-0564 n'a pas de claim visible en recherche ou pas de passage visible/.test(err.message ?? ''),
+      'la garde doit refuser quand le seul claim de 0564 ne serait pas rendu par la recherche',
+    );
+    await c.query('ROLLBACK TO SAVEPOINT garde2');
+    console.log('ok 7 — garde : un claim de 0564 non adossé à un passage ne compte pas comme visible');
   } finally {
     await c.query('ROLLBACK').catch(() => undefined);
     await c.end();

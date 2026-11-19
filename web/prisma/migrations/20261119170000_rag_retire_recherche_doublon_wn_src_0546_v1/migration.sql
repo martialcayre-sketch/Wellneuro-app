@@ -36,8 +36,12 @@
 --
 -- GARDES, qui annulent toute la migration (RAISE) plutôt que d'avancer :
 --   * si WN-SRC-0546 porte des lignes vivantes mais que WN-SRC-0564 n'a aucun
---     claim VALIDE actif ni aucun passage actif, la migration refuse : elle ne
---     retire jamais la seule version d'une étude ;
+--     claim visible en recherche (VALIDE, actif, non exclu, adossé à un passage,
+--     mêmes prédicats que la fonction de recherche) ou aucun passage visible,
+--     la migration refuse : elle ne retire jamais la seule version d'une étude.
+--     Les lignes de 0564 sont verrouillées en lecture partagée pendant la
+--     garde, pour que l'écrivain de l'atelier ne les exclue pas entre la garde
+--     et le retrait ;
 --   * après coup, plus aucun claim VALIDE actif de WN-SRC-0546 n'est visible
 --     en recherche, plus aucun de ses passages n'est actif, et chaque claim
 --     exclu a son acte au journal.
@@ -64,17 +68,35 @@ BEGIN
   WHERE source_id = 'WN-SRC-0546' AND active = true;
 
   IF n_vivants_claims + n_vivants_passages > 0 THEN
+    -- Verrou partagé sur la version publiée jusqu'à la fin de la transaction :
+    -- l'écrivain de l'atelier (FOR UPDATE, UPDATE) attend, et ne peut pas
+    -- exclure ses derniers claims visibles entre cette garde et le retrait.
+    PERFORM 1 FROM public.rag_corpus_claims WHERE source_id = 'WN-SRC-0564' FOR SHARE;
+    PERFORM 1 FROM public.rag_corpus_chunks WHERE source_id = 'WN-SRC-0564' FOR SHARE;
+
+    -- Visibilité au sens de la recherche, prédicat pour prédicat
+    -- (match_wellneuro_rag_claims, match_wellneuro_rag_chunks).
     SELECT count(*) INTO n_publie_claims
-    FROM public.rag_corpus_claims
-    WHERE source_id = 'WN-SRC-0564' AND statut = 'VALIDE' AND active = true AND exclu_recherche = false;
+    FROM public.rag_corpus_claims AS c
+    WHERE c.source_id = 'WN-SRC-0564'
+      AND c.active = true
+      AND c.statut = 'VALIDE'
+      AND c.patient_identifiable = false
+      AND c.compartment = 'ACTIF'
+      AND c.exclu_recherche = false
+      AND EXISTS (SELECT 1 FROM public.rag_corpus_claim_sources s WHERE s.claim_pk = c.id);
 
     SELECT count(*) INTO n_publie_passages
-    FROM public.rag_corpus_chunks
-    WHERE source_id = 'WN-SRC-0564' AND active = true;
+    FROM public.rag_corpus_chunks AS k
+    WHERE k.source_id = 'WN-SRC-0564'
+      AND k.active = true
+      AND k.indexation_autorisee = true
+      AND k.patient_identifiable = false
+      AND k.compartment = 'ACTIF';
 
     IF n_publie_claims = 0 OR n_publie_passages = 0 THEN
       RAISE EXCEPTION
-        'doublon WN-SRC-0546 : la version publiée WN-SRC-0564 n''a ni claim VALIDE visible ni passage actif (% / %) ; le manuscrit n''est pas retiré.',
+        'doublon WN-SRC-0546 : la version publiée WN-SRC-0564 n''a pas de claim visible en recherche ou pas de passage visible (% / %) ; le manuscrit n''est pas retiré.',
         n_publie_claims, n_publie_passages;
     END IF;
   END IF;

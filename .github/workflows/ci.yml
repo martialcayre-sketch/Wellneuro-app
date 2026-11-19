@@ -1953,7 +1953,7 @@ jobs:
       # une transaction annulée : claims exclus de la recherche (signature
       # intacte) et journalisés, passages inactifs, 0564 intact, recherche qui
       # ne rend plus que la version publiée, rejeu sans nouvel acte, garde
-      # qui refuse de retirer la seule version visible.
+      # qui refuse de retirer la seule version visible (deux cas).
       - name: Duplicate 0546 retirement migration bench
         if: steps.scope.outputs.docs_only != 'true'
         working-directory: web
