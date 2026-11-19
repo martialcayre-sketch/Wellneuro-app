@@ -97,6 +97,30 @@ describe('SynthesePanel — échecs de lecture (Q4, Q5)', () => {
     expect(lectures('/api/praticien/patients-pg')).toBe(1);
   });
 
+  // PRA-6h, arbitrage 20261118-2228-d : un « Réessayer » réussi rend le focus
+  // au titre du panneau relu, jamais à `body`.
+  it('liste des patients relue avec succès : le focus va au titre « Patient »', async () => {
+    stub({ patients: ['reseau', patientsSains] });
+    const { container } = render(<SynthesePanel />);
+    const ecran = within(container);
+
+    fireEvent.click(await ecran.findByRole('button', { name: 'Réessayer' }));
+    const titre = ecran.getByRole('heading', { name: 'Patient' });
+    await waitFor(() => expect(document.activeElement).toBe(titre));
+    expect(titre.getAttribute('tabindex')).toBe('-1');
+  });
+
+  it('synthèses relues avec succès : le focus va au titre du panneau des synthèses', async () => {
+    stub({ patients: [patientsSains], syntheses: ['reseau', { ok: true, corps: { syntheses: [] } }] });
+    const { container } = render(<SynthesePanel initialPatientId="PAT_SEED_01" />);
+    const ecran = within(container);
+
+    fireEvent.click(await ecran.findByRole('button', { name: 'Réessayer' }));
+    await waitFor(() => expect(ecran.getByText(VIDE)).toBeTruthy());
+    const titre = ecran.getByRole('heading', { name: /^Synthèses de/ });
+    await waitFor(() => expect(document.activeElement).toBe(titre));
+  });
+
   it('une réponse saine et vide garde « Aucune synthèse pour ce patient. », sans alerte', async () => {
     stub({ patients: [patientsSains] });
     const { container } = render(<SynthesePanel initialPatientId="PAT_SEED_01" />);

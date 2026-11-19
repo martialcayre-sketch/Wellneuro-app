@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { useFocusApresRelecture } from '@/components/ui/useFocusApresRelecture';
 import Link from 'next/link';
 import type { PreVol, SourcePreVol } from '@/lib/copilote/prevol';
 
@@ -29,6 +30,7 @@ export function PreVolPanel({ idPatient }: { idPatient: string }) {
   const [prevol, setPrevol] = useState<PreVol | null>(null);
   const [etat, setEtat] = useState<Etat>('chargement');
   const [erreur, setErreur] = useState<string>('');
+  const { titreRef, boutonRef, relire } = useFocusApresRelecture();
 
   const charger = useCallback(async () => {
     setEtat('chargement');
@@ -67,8 +69,9 @@ export function PreVolPanel({ idPatient }: { idPatient: string }) {
       <div role="alert" className="flex flex-col gap-3 rounded-xl border border-accent bg-status-warning/10 p-4 text-base text-status-warning">
         <span>{erreur} Rien ne peut être conclu de cet écran tant qu’il n’a pas été relu.</span>
         <button
+          ref={boutonRef}
           type="button"
-          onClick={() => void charger()}
+          onClick={() => void relire(charger)}
           className="min-h-11 self-start rounded-lg border border-accent px-3 py-1 text-sm font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
         >
           Réessayer
@@ -80,7 +83,7 @@ export function PreVolPanel({ idPatient }: { idPatient: string }) {
   return (
     <div className="flex flex-col gap-4">
       <section aria-labelledby="prevol-changements" className="rounded-xl border border-border bg-surface p-4 shadow-card">
-        <h2 id="prevol-changements" className="font-display text-lg font-semibold text-foreground">
+        <h2 ref={titreRef} tabIndex={-1} id="prevol-changements" className="font-display text-lg font-semibold text-foreground">
           Ce qui a changé
         </h2>
         <p className="mt-1 text-xs text-muted-foreground">

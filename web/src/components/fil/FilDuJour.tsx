@@ -417,7 +417,15 @@ export function FilDuJour() {
   const chargerFil = useCallback(async () => {
     try {
       const reponse = await fetch('/api/praticien/fil');
-      setData((await reponse.json()) as FilApiResponse);
+      const json = (await reponse.json()) as FilApiResponse;
+      // Une réponse hors contrat (500 d'un autre émetteur, `{error}`) est un
+      // échec de lecture : le Fil dit son indisponibilité au lieu de faire
+      // tomber la page (PRA-6h).
+      if (!reponse.ok || !Array.isArray(json?.cartes)) {
+        setData({ cartes: [], unavailable: true });
+        return;
+      }
+      setData(json);
     } catch {
       setData({ cartes: [], unavailable: true });
     }

@@ -19,6 +19,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { useFocusApresRelecture } from '@/components/ui/useFocusApresRelecture';
 import type { RayonFichesUsageApiResponse } from '@/app/api/praticien/fiches-usage/route';
 import type { ActeFicheUsageApiResponse } from '@/lib/fiches-usage/actesHttp';
 import type { FicheDuRayon, LibelleDuRayon, RayonFichesUsage, TermeDuRayon } from '@/lib/fiches-usage/lecture';
@@ -80,13 +81,14 @@ export function RayonFichesUsagePanel() {
     };
   }, [charger]);
 
-  const titreRef = useRef<HTMLHeadingElement>(null);
+  // Le titre sert aussi au retour d'une relecture : une seule ref pour les deux.
+  const { titreRef, boutonRef, relire } = useFocusApresRelecture();
   const retourDeRelecture = useRef(false);
   useEffect(() => {
     if (versionOuverte !== null || !retourDeRelecture.current) return;
     retourDeRelecture.current = false;
     titreRef.current?.focus();
-  }, [versionOuverte]);
+  }, [versionOuverte, titreRef]);
 
   async function poserActeLibelle(l: LibelleDuRayon, acte: ActeFicheUsage, relecture: boolean, motifSaisi: string) {
     if (envoiRef.current) return;
@@ -181,7 +183,7 @@ export function RayonFichesUsagePanel() {
       ) : echec || rayon === null ? (
         <div role="alert" className="flex flex-col items-start gap-2 text-sm text-status-danger">
           <p>{echec ?? 'Impossible de charger les fiches d’usage.'}</p>
-          <Button type="button" variant="outline" onClick={() => void charger()}>
+          <Button ref={boutonRef} type="button" variant="outline" onClick={() => void relire(charger)}>
             Réessayer
           </Button>
         </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { PenLine, Sparkles, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
@@ -88,6 +88,92 @@ function RetourAction({ retour, zone, className = '' }: { retour: Retour | null;
   );
 }
 
+// LE TEXTE QU'UN 409 REMPLACE RESTE CONSULTABLE (lot
+// synthese-conflit-texte-conserve). Sur `synthese_modifiee`, l'écran affiche
+// la synthèse telle qu'elle est enregistrée : le texte non enregistré quitte
+// l'éditeur, jusqu'à 12 000 caractères pour le seul texte patient. Il est
+// gardé ici, en lecture seule et sélectionnable, champ par champ, pour ceux
+// que le praticien a changés — différents de la version de départ — et que la
+// version relue ne porte pas. Un champ changé par l'autre onglet seul n'y est
+// pas : le recopier déferait cette modification (P2-2 de wn-reviewer). Cet
+// état vit à part du message : le geste suivant efface le message, pas la
+// copie. Rien n'est enregistré.
+type TexteCopie = { libelle: string; texte: string };
+type CopieNonEnregistree = { idPatient: string; idSynthese: string; zone: ZoneRetour; elements: TexteCopie[] };
+
+function lignesAxes(axes: SyntheseSchema['axes_prioritaires']): string {
+  return axes
+    .map(axe => [
+      PRIORITE_LABEL[axe.niveau_priorite] ? `${axe.axe} (priorité ${PRIORITE_LABEL[axe.niveau_priorite].toLowerCase()})` : axe.axe,
+      ...axe.arguments.map(argument => `  Argument : ${argument}`),
+      ...axe.points_a_confirmer.map(point => `  À confirmer : ${point}`),
+    ].join('\n'))
+    .join('\n\n');
+}
+
+function champsDeSynthese(s: SyntheseSchema): TexteCopie[] {
+  return [
+    { libelle: 'Résumé interne praticien', texte: s.resume_praticien ?? '' },
+    { libelle: 'Texte destiné au patient', texte: s.narratif_patient ?? '' },
+    { libelle: 'Axes prioritaires', texte: lignesAxes(s.axes_prioritaires ?? []) },
+    { libelle: 'Points de vigilance', texte: (s.points_de_vigilance ?? []).join('\n') },
+    { libelle: 'Questions pour la consultation', texte: (s.questions_entretien ?? []).join('\n') },
+    { libelle: 'Limites', texte: s.limites ?? '' },
+  ];
+}
+
+// Les champs saisis, non vides, changés depuis la version de départ et absents
+// de la version relue (`null` : la synthèse a disparu, rien à comparer).
+function textesPerdus(saisis: TexteCopie[], depart: TexteCopie[], relus: TexteCopie[] | null): TexteCopie[] {
+  const meme = (a: string, b: string | undefined) => a.trim() === (b ?? '').trim();
+  return saisis.filter((champ, i) =>
+    champ.texte.trim() !== ''
+    && !meme(champ.texte, depart[i]?.texte)
+    && (!relus || !meme(champ.texte, relus[i]?.texte)));
+}
+
+// Un second conflit sur la même synthèse complète la copie : un champ copié
+// de nouveau prend son dernier texte, les autres restent.
+function fusionnerCopie(
+  avant: CopieNonEnregistree | null,
+  neuve: CopieNonEnregistree,
+): CopieNonEnregistree {
+  if (!avant || avant.idPatient !== neuve.idPatient || avant.idSynthese !== neuve.idSynthese) return neuve;
+  const libelles = new Set(neuve.elements.map(e => e.libelle));
+  return { ...neuve, elements: [...avant.elements.filter(e => !libelles.has(e.libelle)), ...neuve.elements] };
+}
+
+function CopieTexteNonEnregistre({ copie, onFermer }: { copie: CopieNonEnregistree; onFermer: () => void }) {
+  const idTitre = useId();
+  return (
+    <section
+      aria-labelledby={idTitre}
+      className="basis-full flex flex-col gap-3 rounded-lg border border-status-warning/40 bg-status-warning/10 p-3"
+    >
+      <h3 id={idTitre} className="text-sm font-semibold text-foreground">
+        Votre texte non enregistré (copie en lecture seule)
+      </h3>
+      <p className="text-sm text-muted-foreground">
+        Sélectionnez ce que vous voulez garder et recopiez-le dans la synthèse. Cette copie n’est pas enregistrée : elle disparaît si vous la fermez ou changez de patient.
+      </p>
+      {copie.elements.map(element => (
+        <label key={element.libelle} className="grid gap-1 text-sm font-medium text-foreground">
+          {`${element.libelle} (copie)`}
+          <textarea
+            readOnly
+            value={element.texte}
+            rows={Math.min(8, Math.max(2, element.texte.split('\n').length, Math.ceil(element.texte.length / 80)))}
+            className={`${inputCls} resize-y`}
+          />
+        </label>
+      ))}
+      <Button type="button" variant="outline" onClick={onFermer} className="self-start">
+        Fermer la copie
+      </Button>
+    </section>
+  );
+}
+
 export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: string }) {
   const [patients, setPatients] = useState<PatientsPgApiResponse['patients']>([]);
   const [selectedPatient, setSelectedPatient] = useState('');
@@ -115,13 +201,18 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
   const [confirmerRegistre, setConfirmerRegistre] = useState(false);
   const [notes, setNotes] = useState('');
   const [feedback, setFeedback] = useState<Retour | null>(null);
+  const [copie, setCopie] = useState<CopieNonEnregistree | null>(null);
   // Q4 et Q5 de PRA-5 : un échec de lecture n'est pas une absence. Chaque
   // lecture a son état d'échec et son « Réessayer », qui ne relance qu'elle ;
-  // le focus revient au bouton si la lecture échoue encore.
+  // le focus revient au bouton si la lecture échoue encore, et au titre du
+  // panneau relu si elle réussit (arbitrage 20261118-2228-d, PRA-6h) — jamais
+  // sur `body`.
   const [erreurPatients, setErreurPatients] = useState(false);
   const [erreurSyntheses, setErreurSyntheses] = useState(false);
   const reessayerPatients = useRef<HTMLButtonElement>(null);
   const reessayerSyntheses = useRef<HTMLButtonElement>(null);
+  const titrePatients = useRef<HTMLHeadingElement>(null);
+  const titreSyntheses = useRef<HTMLHeadingElement>(null);
   const [focusApresRelecture, setFocusApresRelecture] = useState<'patients' | 'syntheses' | null>(null);
   // La synthèse ouverte AU RENDU : un retour arrivé après la fermeture du
   // détail, ou l'ouverture d'une autre synthèse, paraît sous le choix du
@@ -188,6 +279,12 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
   // message le dit. Le détail se ferme si la synthèse a disparu. Même garde
   // que `relireSiCourant` : un autre patient choisi entre-temps n'est pas relu
   // à la place du sien.
+  //
+  // Ce que le praticien laissait non enregistré — texte de l'éditeur et note,
+  // quel que soit le geste — est lu au moment du remplacement, saisie faite
+  // pendant la requête comprise, et gardé en copie consultable.
+  const saisieCourante = useRef({ editedManual, notes, depart: selectedSynthese });
+  saisieCourante.current = { editedManual, notes, depart: selectedSynthese };
   const rechargerApresConflit = async (idSynthese: string, zone: ZoneRetour, texteNonEnregistre: boolean) => {
     // Sous un autre patient, rien n'est relu : le message dit seulement que
     // le geste n'a pas été appliqué.
@@ -213,17 +310,38 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
       return;
     }
     if (syntheseOuverte.current !== idSynthese) {
+      // Une autre synthèse a été ouverte entre-temps : c'est ce geste-là qui a
+      // quitté le texte, pas le 409. Rien n'est copié sous une autre synthèse.
       setFeedback({ ok: false, msg, zone: 'patient' });
       return;
     }
     const fraiche = liste.find(s => s.idSynthese === idSynthese);
+    // Lu maintenant, comparé champ par champ à la version de départ (celle
+    // qu'affichait le détail) et à la version relue (aucune si la synthèse a
+    // disparu).
+    const { editedManual: saisi, notes: noteSaisie, depart } = saisieCourante.current;
+    const note = (texte: string | null | undefined): TexteCopie[] => [{ libelle: 'Note / correction praticien', texte: texte ?? '' }];
+    const elements = !depart || depart.idSynthese !== idSynthese ? [] : [
+      ...(saisi
+        ? textesPerdus(champsDeSynthese(saisi), champsDeSynthese(depart.syntheseJson), fraiche ? champsDeSynthese(fraiche.syntheseJson) : null)
+        : []),
+      // La note, seulement si sa zone était affichée (synthèse de départ
+      // validée) : hors de là, `notes` peut garder la note d'une autre
+      // synthèse, voire d'un autre patient (P2-A de la seconde relecture).
+      ...(depart.statut === 'Validee_Praticien' || depart.statut === 'Corrigee_Praticien'
+        ? textesPerdus(note(noteSaisie), note(depart.notesPraticien), fraiche ? note(fraiche.notesPraticien) : null)
+        : []),
+    ];
+    const msgCopie = 'La synthèse a été modifiée entre-temps. Elle est rechargée : vérifiez-la avant de recommencer.'
+      + (elements.length > 0 ? ' Votre texte non enregistré a été remplacé : sa copie, en lecture seule, figure ci-dessous.' : '');
     if (!fraiche) {
       setSelectedSynthese(null);
       setEditedManual(null);
       setManualDirty(false);
       setBookletHtml(null);
       setBookletInfo(null);
-      setFeedback({ ok: false, msg, zone: 'patient' });
+      if (elements.length > 0) setCopie(avant => fusionnerCopie(avant, { idPatient: selectedPatient, idSynthese, zone: 'patient', elements }));
+      setFeedback({ ok: false, msg: msgCopie, zone: 'patient' });
       return;
     }
     const editable = fraiche.statut === 'Brouillon_Praticien' || fraiche.statut === 'Brouillon_IA';
@@ -237,7 +355,8 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
     // La zone de l'éditeur ou de la note peut disparaître avec le nouveau
     // statut : le message va alors sous « Vider la synthèse », toujours affiché.
     const zoneAffichee = (zone === 'edition' && !editable) || (zone === 'note' && !validee) ? 'actions' : zone;
-    setFeedback({ ok: false, msg, zone: zoneAffichee });
+    if (elements.length > 0) setCopie(avant => fusionnerCopie(avant, { idPatient: selectedPatient, idSynthese, zone, elements }));
+    setFeedback({ ok: false, msg: msgCopie, zone: zoneAffichee });
   };
 
   // Q5 : l'échec de la liste des patients n'est plus avalé.
@@ -270,10 +389,14 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
     setFocusApresRelecture('syntheses');
   };
 
-  // Le bouton n'est rendu que si la lecture a encore échoué : le focus y revient.
+  // Le bouton n'est rendu que si la lecture a encore échoué : le focus y
+  // revient ; sinon il va au titre du panneau relu.
   useEffect(() => {
     if (!focusApresRelecture) return;
-    (focusApresRelecture === 'patients' ? reessayerPatients : reessayerSyntheses).current?.focus();
+    const [bouton, titre] = focusApresRelecture === 'patients'
+      ? [reessayerPatients, titrePatients]
+      : [reessayerSyntheses, titreSyntheses];
+    (bouton.current ?? titre.current)?.focus();
     setFocusApresRelecture(null);
   }, [focusApresRelecture]);
 
@@ -304,6 +427,7 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
     setBookletHtml(null);
     setBookletInfo(null);
     setFeedback(null);
+    setCopie(null);
     void loadSyntheses(initialPatientId);
   }, [initialPatientId, loadSyntheses, patients]);
 
@@ -316,6 +440,7 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
     setBookletHtml(null);
     setBookletInfo(null);
     setFeedback(null);
+    setCopie(null);
     loadSyntheses(id);
   };
 
@@ -433,10 +558,17 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
         setFeedback({ ok: false, msg: d.error ?? 'Impossible d’enregistrer le brouillon.', zone: zoneDuDetail(selectedSynthese.idSynthese, 'edition') });
         return;
       }
-      // [[D-513]] §5 : le verdict recalculé par le serveur sur le texte enregistré.
-      setSelectedSynthese({ ...selectedSynthese, syntheseJson: d.syntheseJson, motifSuspecte: d.motifSuspecte ?? null, updatedAt: d.updatedAt });
-      setEditedManual(d.syntheseJson);
-      setManualDirty(false);
+      // UN SUCCÈS NE RÉINSTALLE PAS UNE SYNTHÈSE QUI N'EST PLUS OUVERTE (P2-1 de
+      // la seconde relecture de #2235) : fermée, ou remplacée par une autre —
+      // d'un autre patient, peut-être —, elle se rouvrirait sous un autre titre,
+      // et les gestes suivants partiraient avec son identifiant et sa version.
+      // Même garde que `zoneDuDetail` ; le message, lui, paraît sous le patient.
+      if (syntheseOuverte.current === selectedSynthese.idSynthese) {
+        // [[D-513]] §5 : le verdict recalculé par le serveur sur le texte enregistré.
+        setSelectedSynthese({ ...selectedSynthese, syntheseJson: d.syntheseJson, motifSuspecte: d.motifSuspecte ?? null, updatedAt: d.updatedAt });
+        setEditedManual(d.syntheseJson);
+        setManualDirty(false);
+      }
       setFeedback({ ok: true, msg: 'Brouillon praticien enregistré.', zone: zoneDuDetail(selectedSynthese.idSynthese, 'edition') });
       await relireSiCourant(selectedPatient);
     } catch {
@@ -471,8 +603,12 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
       // Le détail se ferme : le retour paraît sous le choix du patient.
       setFeedback({ ok: true, msg: labels[action] ?? 'Mis à jour.', zone: 'patient' });
       await relireSiCourant(selectedPatient);
-      setSelectedSynthese(null);
-      setBookletHtml(null);
+      // Seule la synthèse du geste se ferme : une autre, ouverte entre-temps,
+      // reste ouverte.
+      if (syntheseOuverte.current === idSynthese) {
+        setSelectedSynthese(null);
+        setBookletHtml(null);
+      }
     } catch {
       setFeedback({ ok: false, msg: 'Erreur réseau. Réessayez.', zone: zoneDuDetail(idSynthese, action === 'annoter' ? 'note' : 'actions') });
     } finally {
@@ -523,17 +659,22 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
         syntheseJson: d.syntheseJson,
         updatedAt: d.updatedAt,
       };
-      setSelectedSynthese(syntheseVide);
-      setEditedManual(d.syntheseJson);
-      setManualDraft(null);
-      setManualDirty(false);
-      setNotes('');
-      setBookletHtml(null);
-      setBookletInfo(null);
-      setRelectureConfirmee(false);
-      setForceSend(false);
-      setRegistreATrancher(null);
-      setConfirmerRegistre(false);
+      // Même garde qu'à l'enregistrement : rien de l'état du détail n'est
+      // touché si la synthèse vidée n'est plus ouverte — ni le brouillon neuf
+      // d'un « Rédiger une synthèse » commencé entre-temps.
+      if (syntheseOuverte.current === selectedSynthese.idSynthese) {
+        setSelectedSynthese(syntheseVide);
+        setEditedManual(d.syntheseJson);
+        setManualDraft(null);
+        setManualDirty(false);
+        setNotes('');
+        setBookletHtml(null);
+        setBookletInfo(null);
+        setRelectureConfirmee(false);
+        setForceSend(false);
+        setRegistreATrancher(null);
+        setConfirmerRegistre(false);
+      }
       setFeedback({ ok: true, msg: 'Synthèse vidée. Complétez le brouillon avant validation et booklet.', zone: zoneDuDetail(selectedSynthese.idSynthese, 'actions') });
       await relireSiCourant(selectedPatient);
     } catch {
@@ -639,6 +780,23 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
 
   const patient = patients.find(p => p.idPatient === selectedPatient);
   const brouillonEditable = selectedSynthese?.statut === 'Brouillon_Praticien' || selectedSynthese?.statut === 'Brouillon_IA';
+  const syntheseValidee = selectedSynthese?.statut === 'Validee_Praticien' || selectedSynthese?.statut === 'Corrigee_Praticien';
+  // La copie paraît sous le patient de son geste, et dans le détail de SA
+  // synthèse seulement — sous le choix du patient si cette synthèse a
+  // disparu, tant qu'aucune autre n'est ouverte. Sa zone suit le statut
+  // courant : si l'éditeur ou la note disparaît, elle va sous « Vider la
+  // synthèse », toujours affiché, comme le message.
+  const zoneCopie: ZoneRetour | null = !copie || copie.idPatient !== selectedPatient
+    ? null
+    : copie.zone === 'patient'
+      ? (selectedSynthese ? null : 'patient')
+      : selectedSynthese?.idSynthese !== copie.idSynthese
+        ? null
+        : (copie.zone === 'edition' && !(brouillonEditable && editedManual)) || (copie.zone === 'note' && !syntheseValidee)
+          ? 'actions'
+          : copie.zone;
+  const copieDans = (zone: ZoneRetour) =>
+    copie && zoneCopie === zone ? <CopieTexteNonEnregistre copie={copie} onFermer={() => setCopie(null)} /> : null;
   const validationBrouillonBloquee =
     brouillonEditable
     && (
@@ -653,7 +811,7 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
 
       {/* Sélection patient */}
       <div className="bg-surface border border-border rounded-xl shadow-card p-4">
-        <h2 id="synthese-patient-titre" className="font-display text-lg font-semibold text-foreground mb-3">Patient</h2>
+        <h2 ref={titrePatients} tabIndex={-1} id="synthese-patient-titre" className="font-display text-lg font-semibold text-foreground mb-3">Patient</h2>
         <div className="flex flex-wrap gap-3 items-center">
           <Select
             aria-labelledby="synthese-patient-titre"
@@ -707,6 +865,7 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
           </div>
         )}
         <RetourAction retour={feedback} zone="patient" className="mt-2" />
+        {zoneCopie === 'patient' && <div className="mt-2">{copieDans('patient')}</div>}
       </div>
 
       {manualDraft && selectedPatient && (
@@ -730,7 +889,7 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
       {selectedPatient && (
         <div className="bg-surface border border-border rounded-xl shadow-card overflow-hidden">
           <div className="px-4 py-3 border-b border-border">
-            <h2 className="font-display text-lg font-semibold text-foreground">
+            <h2 ref={titreSyntheses} tabIndex={-1} className="font-display text-lg font-semibold text-foreground">
               Synthèses de {patient ? `${patient.prenom} ${patient.nom}` : selectedPatient}
               {!loading && !erreurSyntheses && (
                 <span className="ml-2 text-muted-foreground font-normal">({syntheses.length})</span>
@@ -837,6 +996,7 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
                 </p>
               )}
               <RetourAction retour={feedback} zone="edition" />
+              {copieDans('edition')}
             </>
           ) : (
             <>
@@ -972,6 +1132,7 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
               {saving ? 'Effacement...' : 'Vider la synthèse'}
             </Button>
             <RetourAction retour={feedback} zone="actions" className="basis-full" />
+            {copieDans('actions')}
           </div>
 
           {/* Notes praticien */}
@@ -991,6 +1152,7 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
                 {saving ? '...' : 'Enregistrer la note'}
               </Button>
               <RetourAction retour={feedback} zone="note" />
+              {copieDans('note')}
             </div>
           )}
 

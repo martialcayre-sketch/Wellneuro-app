@@ -2258,7 +2258,10 @@ jobs:
   # du périmètre — une PR de documentation, d'outillage racine, de `.claude/`
   # ou de `changelog.d/` y saute tout (2026-11-13).
   e2e:
-    runs-on: ubuntu-latest
+    # Épinglé (2026-11-19) : `ubuntu-latest` est passé à 26.04 (libicu78), le
+    # WebKit de Playwright 1.63 lie libicu74 et ne démarre plus. Même image
+    # pour `visual-baselines.yml`, qui produit les références comparées ici.
+    runs-on: ubuntu-24.04
     timeout-minutes: 40
     services: *services
     env: *env

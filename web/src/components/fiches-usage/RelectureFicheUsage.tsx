@@ -17,6 +17,7 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { Badge, type BadgeVariant } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { useFocusApresRelecture } from '@/components/ui/useFocusApresRelecture';
 import type { VersionFicheUsageApiResponse } from '@/app/api/praticien/fiches-usage/version/route';
 import type { ActeFicheUsageApiResponse } from '@/lib/fiches-usage/actesHttp';
 import type { DetailVersionUsage, RubriqueDetaillee } from '@/lib/fiches-usage/lecture';
@@ -57,6 +58,9 @@ export function RelectureFicheUsage({ idVersion, onFermer }: { idVersion: string
   const sequence = useRef(0);
   const envoiRef = useRef(false);
   const titreRef = useRef<HTMLHeadingElement>(null);
+  // Succès : le titre de la version reçoit déjà le focus (effet sur `idAffiche`) ;
+  // échec : le bouton relit et reprend le focus.
+  const { boutonRef, relire } = useFocusApresRelecture();
   const idTitre = useId();
 
   const charger = useCallback(async (): Promise<DetailVersionUsage | null> => {
@@ -183,7 +187,7 @@ export function RelectureFicheUsage({ idVersion, onFermer }: { idVersion: string
           ) : (
             <div role="alert" className="flex flex-col items-start gap-2 text-sm text-status-danger">
               <p>{echec ?? 'Impossible de charger cette version.'}</p>
-              <Button type="button" variant="outline" onClick={() => void charger()}>
+              <Button ref={boutonRef} type="button" variant="outline" onClick={() => void relire(charger)}>
                 Réessayer
               </Button>
             </div>

@@ -19,6 +19,12 @@
 //      synthese-version-optimiste) : un « enregistrer » qui garde le brouillon
 //      brouillon fait refuser le geste suivant, lu avant lui — enregistrer,
 //      valider ou vider ; une version périmée envoyée par l'écran aussi.
+//   7. UN CHANGEMENT D'E-MAIL NE PÉRIME PAS LES SYNTHÈSES (lot
+//      synthese-conflit-texte-conserve) : la route des patients réécrit la
+//      copie de l'adresse dans `syntheses_ia` sans toucher `updated_at` ; le
+//      geste de l'écran, sur la version lue avant, passe. Et le livret, lu
+//      avant un changement d'adresse commité sous ses yeux, ne part pas vers
+//      l'ancienne (P2-1 de wn-reviewer sur ce lot).
 //
 // LE CROISEMENT EST FORCÉ, pas espéré (patron de
 // `physio-traitements/physioTraitements.pg.test.ts`) : l'observateur tient le
@@ -96,6 +102,7 @@ describe.skipIf(!ACTIF)('réservation avant l’envoi — base réelle ([[D-398]
   let relance: typeof import('@/app/api/praticien/assignations/relance/route').POST;
   let booklet: typeof import('@/app/api/praticien/booklet/route').POST;
   let syntheseRoute: typeof import('@/app/api/praticien/synthese/route').PATCH;
+  let patientsRoute: typeof import('@/app/api/praticien/patients/route').PATCH;
   let acces: typeof import('@/app/api/praticien/token/route').POST;
   let revoquer: typeof import('@/app/api/praticien/token/route').DELETE;
   let observateur: pg.Client;
@@ -202,6 +209,7 @@ describe.skipIf(!ACTIF)('réservation avant l’envoi — base réelle ([[D-398]
     ({ POST: relance } = await import('@/app/api/praticien/assignations/relance/route'));
     ({ POST: booklet } = await import('@/app/api/praticien/booklet/route'));
     ({ PATCH: syntheseRoute } = await import('@/app/api/praticien/synthese/route'));
+    ({ PATCH: patientsRoute } = await import('@/app/api/praticien/patients/route'));
     ({ POST: acces, DELETE: revoquer } = await import('@/app/api/praticien/token/route'));
   });
 
@@ -658,5 +666,50 @@ describe.skipIf(!ACTIF)('réservation avant l’envoi — base réelle ([[D-398]
     // L'onglet rechargé, sur la version rendue.
     expect((await patchSynthese({ idSynthese, action: 'valider', version: nouvelle })).status).toBe(200);
     expect((await ligneSynthese(idSynthese)).statut).toBe('Validee_Praticien');
+  });
+
+  it('e-mail : changer l’adresse du dossier réécrit la copie des synthèses sans en périmer la version', async () => {
+    const { idPatient, idSynthese } = await brouillonIA();
+    const lue = await prisma.syntheseIA.findUniqueOrThrow({ where: { idSynthese }, select: { updatedAt: true } });
+    const version = JSON.parse(JSON.stringify(lue.updatedAt)) as string;
+    const adresse = `michel.dogne+banc-res-${RUN.toLowerCase()}_${numero}-nouvelle@example.test`;
+
+    const res = await patientsRoute(new Request('http://localhost/api/praticien/patients', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ idPatient, email: adresse }),
+    }));
+    expect(res.status).toBe(200);
+
+    // Relue par Prisma, comme la route : `pg` lirait `updated_at` (sans
+    // fuseau) à l'heure locale du banc.
+    const apres = await prisma.syntheseIA.findUniqueOrThrow({ where: { idSynthese }, select: { emailPatient: true, updatedAt: true } });
+    expect(apres.emailPatient).toBe(adresse);
+    expect(apres.updatedAt.getTime()).toBe(lue.updatedAt.getTime());
+
+    // L'écran, resté sur la version lue avant le changement d'adresse.
+    expect((await patchSynthese({ idSynthese, action: 'valider', version })).status).toBe(200);
+    expect((await ligneSynthese(idSynthese)).statut).toBe('Validee_Praticien');
+  });
+
+  it('e-mail : un livret lu avant un changement d’adresse commité entre-temps ne part pas vers l’ancienne', async () => {
+    const { idPatient, idSynthese } = await syntheseValidee();
+    const adresse = `michel.dogne+banc-res-${RUN.toLowerCase()}_${numero}-nouvelle@example.test`;
+
+    // Le changement d'adresse attend la ligne du dossier en premier ; le
+    // livret lit la synthèse (ancienne adresse) puis l'attend derrière lui.
+    const [changement, envoi] = await enSuiteSurDossier(
+      idPatient,
+      () => patientsRoute(new Request('http://localhost/api/praticien/patients', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idPatient, email: adresse }),
+      })),
+      () => booklet(requete('http://localhost/api/praticien/booklet', { idSynthese, relectureConfirmee: true })),
+    );
+    expect(changement.status).toBe(200);
+    expect(envoi.status).toBe(409);
+    expect(sendMail).not.toHaveBeenCalled();
+    expect(await lignesJournal(idPatient, 'booklet')).toEqual([]);
   });
 });

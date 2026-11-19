@@ -22,6 +22,7 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { useFocusApresRelecture } from '@/components/ui/useFocusApresRelecture';
 import type { ActeFicheApiResponse } from '@/app/api/praticien/fiches-assiette/actes/route';
 import type { VersionFicheApiResponse } from '@/app/api/praticien/fiches-assiette/version/route';
 import { derniereVersionValidee, MOTIF_MAX, type ActeFiche } from '@/lib/fiches-assiette/etat';
@@ -99,6 +100,9 @@ export function RelectureFicheAssiette({
   const sequence = useRef(0);
   const envoiRef = useRef(false);
   const titreRef = useRef<HTMLHeadingElement>(null);
+  // Succès : le titre de la version reçoit déjà le focus (effet sur `idAffiche`) ;
+  // échec : le bouton relit et reprend le focus.
+  const { boutonRef, relire } = useFocusApresRelecture();
   const idTitre = useId();
   const idMotif = useId();
 
@@ -240,7 +244,7 @@ export function RelectureFicheAssiette({
           ) : (
             <div role="alert" className="flex flex-col items-start gap-2 text-sm text-status-danger">
               <p>{echec ?? 'Impossible de charger cette version.'}</p>
-              <Button type="button" variant="outline" onClick={() => void charger()}>
+              <Button ref={boutonRef} type="button" variant="outline" onClick={() => void relire(charger)}>
                 Réessayer
               </Button>
             </div>

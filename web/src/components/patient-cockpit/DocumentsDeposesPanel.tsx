@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { DocumentsDeposesResponse, GesteDocumentDeposeResponse } from '@/app/api/praticien/documents-deposes/route';
 import type { DocumentDeposeLu } from '@/lib/collecte/documentsDeposesServeur';
+import { useFocusApresRelecture } from '@/components/ui/useFocusApresRelecture';
 import {
   CATEGORIES_DOCUMENT,
   LIBELLES_CATEGORIE_DOCUMENT,
@@ -216,6 +217,7 @@ export function DocumentsDeposesPanel({ idPatient }: { idPatient: string }) {
   // Plusieurs relectures peuvent se croiser (minuteur de l'ouverture, retrait) :
   // seule la réponse de la DERNIÈRE est retenue, jamais une réponse périmée.
   const generation = useRef(0);
+  const { titreRef, boutonRef, relire } = useFocusApresRelecture();
 
   const charger = useCallback(async () => {
     const mienne = ++generation.current;
@@ -243,13 +245,13 @@ export function DocumentsDeposesPanel({ idPatient }: { idPatient: string }) {
   return (
     <section className="rounded-xl border border-border bg-surface p-4">
       {/* h4 sous la phase « Patient » (h3), PRA-3b Q2 a. */}
-      <h4 className="text-base font-semibold text-foreground">Documents déposés par le patient</h4>
+      <h4 ref={titreRef} tabIndex={-1} className="text-base font-semibold text-foreground">Documents déposés par le patient</h4>
 
       {/* Une lecture en échec ne se rend jamais comme une liste vide. */}
       {etat.statut === 'erreur' && (
         <div role="alert" className="mt-2 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
           <span>Les documents déposés n’ont pas pu être lus.</span>
-          <button type="button" onClick={() => void charger()} className={bouton}>
+          <button ref={boutonRef} type="button" onClick={() => void relire(charger)} className={bouton}>
             Réessayer la lecture des documents déposés
           </button>
         </div>

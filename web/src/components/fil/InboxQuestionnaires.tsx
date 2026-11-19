@@ -106,7 +106,14 @@ export function InboxQuestionnaires() {
   const chargerInbox = useCallback(async () => {
     setLoading(true);
     await fetch('/api/praticien/inbox-questionnaires')
-      .then(async r => (await r.json()) as InboxQuestionnairesApiResponse)
+      .then(async r => {
+        // Une réponse hors contrat (500 d'un autre émetteur, `{error}`) est un
+        // échec de lecture, pas une liste : elle tombe dans l'état indisponible
+        // du panneau au lieu de faire tomber la page (PRA-6h).
+        const json = (await r.json()) as InboxQuestionnairesApiResponse;
+        if (!r.ok || !Array.isArray(json?.lignes)) throw new Error('Réponse hors contrat');
+        return json;
+      })
       .then(setData)
       .catch(() => setData({ ok: false, lignes: [], unavailable: true }))
       .finally(() => setLoading(false));

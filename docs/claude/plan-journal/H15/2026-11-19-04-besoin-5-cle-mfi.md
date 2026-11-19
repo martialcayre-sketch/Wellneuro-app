@@ -1,0 +1,12 @@
+- **Mise à jour (2026-11-19, besoin 5 : positions v0.4 signées, D-542 acceptée)** : forme opaque (`D-251` §4), agrégats et mécanismes seulement. Suite du fragment `2026-11-17-03`.
+  - **Contre-revues de Codex des positions v0.4** (dépôt privé des revues) :
+    - la première rend un GO avec corrections : deux P1 sur la position de structure de l'inventaire de fatigue et deux P2, tous corrigés ;
+    - la relecture complète de la version corrigée rend un GO, quinze affirmations sur quinze, aucun constat nouveau.
+  - **Signature** : les vingt-neuf positions v0.4 signées par le responsable le 2026-11-18. Elles remplacent la v0.3.
+  - **Question `20261118-2302-b`** (clé de l'inventaire de fatigue), clinique, versée à la liste commune avec l'avis de Codex rendu à l'aveugle (`D-505`) :
+    - Codex choisit la structure de la validation publiée de la traduction servie (confiance moyenne) ; le responsable choisit B, sur la recommandation de la session ;
+    - un fait du paquet était inexact (population de la validation mal décrite ; la position signée était exacte) : corrigé, Codex relancé sur le paquet corrigé, même avis ;
+    - le responsable confirme B : la clé servie reste, une mention de l'écart s'ajoute à la note du praticien, et la cible se rejuge à l'arrivée du texte intégral de la validation française européenne.
+  - **Texte de la mention** signé le 2026-11-19 au dossier privé (variante courte).
+  - **`D-542` acceptée par le responsable le 2026-11-19.** Sa contre-revue par Codex (`D-505`) a rendu un constat P1 de forme opaque, corrigé.
+  - **Suite** : J3-12f applique `D-542` §5.
