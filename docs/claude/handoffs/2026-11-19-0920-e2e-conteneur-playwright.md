@@ -24,11 +24,11 @@ Rendre l'installation des navigateurs de l'E2E insensible aux miroirs Ubuntu et 
 ## Validations exécutées
 
 - `node --test scripts/*.test.mjs` : 883/883. Les deux workflows se lisent en YAML ; ordre des étapes vérifié.
-- La preuve qui compte est l'E2E de la PR dans le conteneur et `visual-baselines` lancé sur la branche : voir la PR.
+- Première tête : conteneur, relais, migrations, build et 426 tests verts ; 5 baselines visuelles rouges (693 à 16 028 px), les seules dont l'octet changeait.
+- `visual-baselines` lancé sur la branche (run 44518595867, vert) : les 5 captures relues contre l'ancienne référence. Même contenu, même mise en page ; seuls les glyphes de symbole (✕, ←) tombent sur une police de repli plus étroite et décalent le texte voisin de 2 px. Promues. Les 3 autres sont identiques à l'octet.
 
 ## Problèmes ouverts
 
-- Les polices de l'image peuvent décaler les 8 baselines visuelles. Si l'E2E les rougit, les régénérer par `visual-baselines` sur la branche, les relire, les committer.
 - Une montée de Playwright devra changer le tag dans les deux workflows (la garde le rappelle).
 
 ## Prochaine action exacte
