@@ -117,7 +117,7 @@ BEGIN
     SELECT
       'exclusion_recherche',
       'Doublon : le manuscrit soumis WN-SRC-0546 est remplacé par sa version publiée WN-SRC-0564 (arbitrage du responsable du 2026-11-19, question 20261119-1311-b, réponse A ; D-490).',
-      COALESCE(NULLIF(btrim(e.validateur), ''), 'migration'),
+      COALESCE(NULLIF(btrim(e.validateur, E' \t\r\n'), ''), 'migration'),
       e.source_id,
       jsonb_build_array(jsonb_build_object(
         'id', e.id,
