@@ -29,13 +29,14 @@ type Appel = {
   stopReason: string | null;
   usage: Record<string, number>;
 };
-type Contexte = { appels: Appel[]; enregistre: Record<string, unknown> | null };
+type Journal = { niveau: string; event?: string; message?: string };
+/** Par génération (AsyncLocalStorage) : sous parallélisme, rien n'est partagé. */
+type Contexte = { appels: Appel[]; enregistre: Record<string, unknown> | null; logs: Journal[] };
 
 const etat = vi.hoisted(() => ({
   // Renseigné à l'import du module (plus bas) : la fabrique du mock est hissée.
   courant: null as null | (() => Contexte | undefined),
   dossiers: new Map<string, import('./dossiers').Dossier>(),
-  logs: [] as { niveau: string; event?: string; message?: string }[],
 }));
 
 const { getServerSession, prisma, annulationsActives } = vi.hoisted(() => {
@@ -130,8 +131,8 @@ vi.mock('@/lib/biology-library/publie', async (importOriginal) => ({
 vi.mock('@/lib/physio-traitements/lecture', () => ({ lireTraitementsEnVigueur: async () => [] }));
 vi.mock('@/lib/observability/logger', () => ({
   logger: {
-    error: (e: { event?: string; message?: string }) => etat.logs.push({ niveau: 'error', event: e.event, message: e.message }),
-    warn: (e: { event?: string; message?: string }) => etat.logs.push({ niveau: 'warn', event: e.event, message: e.message }),
+    error: (e: { event?: string; message?: string }) => etat.courant?.()?.logs.push({ niveau: 'error', event: e.event, message: e.message }),
+    warn: (e: { event?: string; message?: string }) => etat.courant?.()?.logs.push({ niveau: 'warn', event: e.event, message: e.message }),
     security: () => undefined,
   },
 }));
@@ -180,8 +181,7 @@ type Generation = {
 };
 
 async function generer(d: Dossier, passage: number): Promise<Generation> {
-  const ctx: Contexte = { appels: [], enregistre: null };
-  const logsAvant = etat.logs.length;
+  const ctx: Contexte = { appels: [], enregistre: null, logs: [] };
   let statutHttp = 0;
   let erreur: string | null = null;
   await als.run(ctx, async () => {
@@ -243,7 +243,7 @@ async function generer(d: Dossier, passage: number): Promise<Generation> {
     appelBiologie: donnees?.appelBiologie ?? null,
     syntheseJson: ctx.enregistre?.syntheseJson ?? null,
     entrees: { principalSansBloc, secondBlocSeul, ordre, ecarts },
-    logs: etat.logs.slice(logsAvant),
+    logs: ctx.logs,
   };
 }
 
