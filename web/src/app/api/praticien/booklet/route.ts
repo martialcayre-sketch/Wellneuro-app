@@ -333,11 +333,21 @@ export async function POST(req: Request) {
     const reservee = await prisma.$transaction(async tx => {
       await verrouillerEnvois(tx, `${TYPES_CORRESPONDANCE_PATIENT.booklet}:${idSynthese}`);
       await tx.$queryRaw`SELECT id FROM patients WHERE id_patient = ${synthese.idPatient} FOR UPDATE`;
+      // L'ADRESSE AUSSI EST RELUE (P2-1 de wn-reviewer, lot
+      // synthese-conflit-texte-conserve) : depuis ce lot, changer l'e-mail du
+      // dossier réécrit `email_patient` sans toucher `updatedAt`. Le livret ne
+      // part pas vers une adresse que le praticien vient de remplacer. Le
+      // changement d'adresse verrouille la même ligne du dossier : relue après
+      // ce verrou, la copie est celle du dossier.
       const courante = await tx.syntheseIA.findUnique({
         where: { idSynthese },
-        select: { updatedAt: true },
+        select: { updatedAt: true, emailPatient: true },
       });
-      if (!courante || courante.updatedAt.getTime() !== synthese.updatedAt.getTime()) {
+      if (
+        !courante
+        || courante.updatedAt.getTime() !== synthese.updatedAt.getTime()
+        || courante.emailPatient !== synthese.emailPatient
+      ) {
         return { changee: true as const };
       }
       if (!forceSend) {

@@ -15,7 +15,9 @@ const V1 = '2026-09-01T10:05:00.000Z';
 const V2 = '2026-09-01T10:06:00.000Z';
 const V3 = '2026-09-01T10:07:00.000Z';
 const MESSAGE = 'La synthèse a été modifiée entre-temps. Elle est rechargée : vérifiez-la avant de recommencer.';
-const PERTE = 'Vos modifications non enregistrées ne sont pas conservées.';
+// Depuis le lot synthese-conflit-texte-conserve, le texte remplacé est gardé
+// en copie consultable ; le message le dit.
+const PERTE = 'Votre texte non enregistré a été remplacé : sa copie, en lecture seule, figure ci-dessous.';
 
 function brouillon(updatedAt: string, narratif: string) {
   return {
@@ -133,7 +135,7 @@ describe('SynthesePanel — version optimiste', () => {
     expect(corpsPatch[1]).toMatchObject({ action: 'enregistrer', version: V2 });
   });
 
-  it('enregistrer refusé en 409 : la synthèse est relue, et le message dit que le texte non enregistré n’est pas conservé', async () => {
+  it('enregistrer refusé en 409 : la synthèse est relue, et le message dit que le texte non enregistré est gardé en copie', async () => {
     stub([[brouillon(V1, 'Texte lu.')], [brouillon(V2, 'Texte d’un autre onglet.')]], [CONFLIT]);
     const ecran = await ouvrir();
 
@@ -159,7 +161,7 @@ describe('SynthesePanel — version optimiste', () => {
     expect(ecran.queryByRole('button', { name: 'Vider la synthèse' })).toBeNull();
   });
 
-  it('annoter refusé en 409 : la note modifiée est dite perdue, sous la note si la synthèse reste validée', async () => {
+  it('annoter refusé en 409 : la note modifiée est dite remplacée, sous la note si la synthèse reste validée', async () => {
     const { corpsPatch } = stub([[validee(V1)], [validee(V2, 'Corrigee_Praticien')]], [CONFLIT]);
     const ecran = await ouvrir();
 
