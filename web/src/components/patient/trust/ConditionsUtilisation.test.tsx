@@ -44,6 +44,8 @@ describe('AccueilConditions', () => {
     expect(screen.getByText('112 — numéro d’urgence européen')).toBeTruthy();
     expect(screen.getByText('À quoi sert cet espace').closest('details')?.open).toBe(false);
 
+    // Q5a de PAT-5 (D-481, DOC-9) : la commande ne s'imprime pas (PAT-7g).
+    expect(screen.getByRole('button', { name: 'J’en ai pris connaissance' }).className).toMatch(/(^|\s)print:hidden(\s|$)/);
     fireEvent.click(screen.getByRole('button', { name: 'J’en ai pris connaissance' }));
     await waitFor(() => expect(onDone).toHaveBeenCalledTimes(1));
     expect(fetchMock).toHaveBeenCalledTimes(1);

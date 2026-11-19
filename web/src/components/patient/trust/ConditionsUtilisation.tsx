@@ -67,7 +67,7 @@ export function AccuseConditions({
         loading={envoi}
         loadingLabel="Enregistrement…"
         onClick={() => void accuser()}
-        className="w-full"
+        className="w-full print:hidden"
       >
         J’en ai pris connaissance
       </PatientButton>

@@ -75,6 +75,8 @@ describe('FichesRemises — la liste', () => {
     expect(screen.getByText(MENTION_INDISPONIBLE)).toBeTruthy();
     const liens = screen.getAllByRole('link', { name: 'Lire la fiche' });
     expect(liens.map(l => l.getAttribute('href'))).toEqual(['/portail/TOK/fiches/rem_servie', '/portail/TOK/fiches/rem_ancienne']);
+    // Q5a de PAT-5 (D-481, DOC-9) : la commande ne s'imprime pas (PAT-7g).
+    for (const lien of liens) expect(lien.className).toMatch(/(^|\s)print:hidden(\s|$)/);
   });
 
   it('la liste n’acquitte aucune lecture', async () => {

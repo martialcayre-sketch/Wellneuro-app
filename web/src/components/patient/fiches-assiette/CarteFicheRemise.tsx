@@ -37,7 +37,7 @@ export function CarteFicheRemise({
       {fiche.etat === 'servie' && (
         <a
           href={`/portail/${token}/fiches/${encodeURIComponent(fiche.idRemise)}`}
-          className={patientButtonClassName('ghost', 'mt-3')}
+          className={patientButtonClassName('ghost', 'mt-3 print:hidden')}
         >
           Lire la fiche
         </a>
