@@ -33,6 +33,13 @@ Le responsable a ouvert PAT-7g le 2026-11-18 (« Ouvre PAT-7g »). Il s'agit d'a
 - `npm run check:rapide` : vert.
 - T2 (`npm run test:worktree -- --fast`) : vert en 10 min 8 s, sur la base `1354683d`. La branche a ensuite avancé par `--ff-only` jusqu'à `359a4740`, sans fichier commun avec ce lot.
 - `npm run check` (T1 complet) et `check_no_secrets.sh` : verts après l'avance.
+- CI de la PR (#2259), sur `d3649ccb` :
+  - **premier run rouge** : `ubuntu-latest` était passé à 26.04 (libicu78), et le WebKit de Playwright, qui lie libicu74, ne démarrait plus. Correction de la file D dans `main` (#2261, `e2e` épinglé sur `ubuntu-24.04`) ;
+  - **première réouverture** : le CI a tourné sur un commit de fusion périmé, d'avant #2261 ;
+  - **seconde réouverture** : la bonne image cette fois, mais l'installation apt des navigateurs a dépassé son délai de 10 minutes (miroir lent, aucun test joué) ;
+  - **relance des jobs en échec, autorisée par le responsable** : verte ;
+  - **ce qui bloquait encore** : `wn-attendre-ci` rendait 1, à cause des deux `verify` rouges restés sur la même tête ;
+  - **arbitrage D-518 du responsable du 2026-11-19** (« Oui, fusionne ») : fusion d'`origin/main` dans la branche (merge, sans réécriture), puis ce commit, pour une tête neuve.
 - L'impression rendue n'a pas été regardée : aucune fixture de fiche remise (U29), et U38 est fermée en local (`WN_PORTAIL_CONDITIONS`). La preuve est la classe, testée.
 
 ## Problèmes ouverts
