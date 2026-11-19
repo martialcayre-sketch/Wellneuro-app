@@ -1948,6 +1948,19 @@ jobs:
           WN_EXCLUSION_RECHERCHE_BANC_BASE: wellneuro_ci
         run: node prisma/runWithAlias.js scripts/banc-exclusion-recherche-prisma.test.ts
 
+      # La migration du doublon WN-SRC-0546 / 0564 (D-490, question
+      # 20261119-1311-b) rejouée sur des fixtures de mêmes identifiants, dans
+      # une transaction annulée : claims exclus de la recherche (signature
+      # intacte) et journalisés, passages inactifs, 0564 intact, recherche qui
+      # ne rend plus que la version publiée, rejeu sans nouvel acte, garde
+      # qui refuse de retirer la seule version visible.
+      - name: Duplicate 0546 retirement migration bench
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        env:
+          WN_RETIRE_DOUBLON_0546_BANC_BASE: wellneuro_ci
+        run: node prisma/runWithAlias.js scripts/banc-retire-doublon-0546-prisma.test.ts
+
       # Le VRAI client Prisma contre la garde anti-doublon (D-294, BP-09) :
       # le 23505 du trigger doit arriver en P2002 (le 409 `doublon_mesure` des
       # écrivains en dépend), la place annulée se reprend, REPEATABLE READ est
