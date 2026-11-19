@@ -205,6 +205,21 @@ export const EVENT_CODES = {
    */
   SYNTHESE_BIOLOGIE_HORS_CHAMPS: 'SYNTHESE_IA.BIOLOGIE_HORS_CHAMPS',
   /**
+   * [[D-539]] §2 — échec de CONSTRUCTION du bloc de biologie (lecture des
+   * résultats) : rien n'est parti, aucun second appel, champs vides. La ligne
+   * porte la classe d'erreur, jamais son message.
+   */
+  SYNTHESE_BIOLOGIE_BLOC_INDISPONIBLE: 'SYNTHESE_IA.BIOLOGIE.BLOC_INDISPONIBLE',
+  /**
+   * [[D-539]] §2 — échec du second appel APRÈS l'envoi du bloc (`echec_appel` :
+   * erreur ou délai ; `sortie_rejetee` : rejet après la relance). Les deux
+   * champs restent vides. Ni le bloc, ni la sortie du modèle, ni le message brut
+   * du fournisseur.
+   */
+  SYNTHESE_BIOLOGIE_APPEL_ECHOUE: 'SYNTHESE_IA.BIOLOGIE.APPEL_ECHOUE',
+  /** [[D-539]] §2 — la sortie du second appel a été rejetée, et la relance l'a rendue conforme. */
+  SYNTHESE_BIOLOGIE_SCHEMA_REJETE_RELANCE: 'SYNTHESE_IA.BIOLOGIE.REJETE_RELANCE',
+  /**
    * [[D-335]] §8 — les traitements en vigueur (lignes datées) n'ont pas pu
    * être lus : la ligne de vigilance ne porte que ceux de l'anamnèse. Code
    * distinct pour la même raison que le précédent (revue CodeRabbit).

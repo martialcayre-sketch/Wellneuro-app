@@ -61,21 +61,31 @@ describe('les listes de champs autorisés', () => {
   });
 });
 
-describe('schéma v4 — la sortie du modèle', () => {
-  it('refuse une sortie sans les deux champs biologiques', () => {
-    const { resume_biologie_praticien: _r, points_de_vigilance_biologie: _p, _schema_version: _v, ...sans } = JSON_COMPLET;
-    const analyse = analyserSortieSynthese(sans);
-    expect(analyse.ok).toBe(false);
-    if (!analyse.ok) {
-      expect(analyse.violations.some((v) => v.startsWith('resume_biologie_praticien'))).toBe(true);
-      expect(analyse.violations.some((v) => v.startsWith('points_de_vigilance_biologie'))).toBe(true);
+// [[D-539]] §2 et §5 : l'appel principal ne produit plus les deux champs ; des
+// clés biologiques qu'il produirait quand même sont rejetées par son contrôle.
+// Le schéma enregistré reste v4 : les deux champs y sont posés par le code.
+describe('schéma v4 — la sortie de l’appel principal (D-539)', () => {
+  it('rejette une sortie qui porte une clé biologique, même vide', () => {
+    const { _schema_version: _v, ...avec } = JSON_COMPLET;
+    for (const sortie of [avec, { ...avec, resume_biologie_praticien: '', points_de_vigilance_biologie: [] }]) {
+      const analyse = analyserSortieSynthese(sortie);
+      expect(analyse.ok).toBe(false);
+      if (!analyse.ok) {
+        expect(analyse.violations).toContain('racine : clé inconnue "resume_biologie_praticien"');
+        expect(analyse.violations).toContain('racine : clé inconnue "points_de_vigilance_biologie"');
+      }
     }
   });
 
-  it('accepte les deux champs vides', () => {
-    const { _schema_version: _v, ...base } = JSON_COMPLET;
-    const analyse = analyserSortieSynthese({ ...base, resume_biologie_praticien: '', points_de_vigilance_biologie: [] });
+  it('accepte une sortie sans les deux champs, et les rend vides pour l’assemblage', () => {
+    const { resume_biologie_praticien: _r, points_de_vigilance_biologie: _p, _schema_version: _v, ...sans } = JSON_COMPLET;
+    const analyse = analyserSortieSynthese(sans);
     expect(analyse.ok).toBe(true);
+    if (analyse.ok) {
+      expect(analyse.synthese.resume_biologie_praticien).toBe('');
+      expect(analyse.synthese.points_de_vigilance_biologie).toEqual([]);
+      expect(analyse.synthese._schema_version).toBe('synthese-json-v4');
+    }
   });
 });
 

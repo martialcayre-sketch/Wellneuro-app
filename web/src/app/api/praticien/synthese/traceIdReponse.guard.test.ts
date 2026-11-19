@@ -70,8 +70,6 @@ const CONFORME = JSON.stringify({
   questions_entretien: ['Une question ?'],
   narratif_patient: 'Un texte accessible.',
   limites: 'À valider par le praticien.',
-  resume_biologie_praticien: '',
-  points_de_vigilance_biologie: [],
 });
 
 // Identifiants volontairement improbables : la recherche de sous-chaîne dans le

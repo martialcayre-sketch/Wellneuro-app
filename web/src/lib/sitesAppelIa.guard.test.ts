@@ -68,6 +68,16 @@ export const SITES_APPEL_IA: readonly Site[] = [
     rattachement: 'sous-traitant',
     declaration: "assistance d'IA pour la préparation des synthèses",
   },
+  // [[D-539]] §2 : le second appel, qui ne reçoit que le bloc de biologie —
+  // déclaré avant ouverture (rubriques 2 quater, 6 et 7).
+  {
+    chemin: 'web/src/lib/synthese/appelBiologie.ts',
+    fournisseur: 'Anthropic',
+    roles: ['appel'],
+    rattachement: 'sous-traitant',
+    declaration: 'dans un appel distinct, pour la restitution au praticien des résultats de biologie',
+    precisions: ['### 2 quater. Biologie restituée au praticien par un appel distinct'],
+  },
   {
     chemin: 'web/src/lib/objectif/propositionPriorite.ts',
     fournisseur: 'Anthropic',
