@@ -140,9 +140,14 @@ export function analyserSortieBiologie(obj: unknown): SortieBiologieAnalysee {
 export const ECART_INTERVALLE_SUIVI_UNITE =
   "un intervalle imprimé est suivi d'une unité ; cite chaque intervalle tel qu'il est imprimé, sans aucune unité juste après lui";
 
-/** Espaces normalisées, comme le contrôle de contamination : toute suite de blancs devient une espace. */
+/**
+ * Forme normalisée, la même pour la sortie, les intervalles et les unités :
+ * compatibilité Unicode (NFKC : le signe micro « µ » et la lettre grecque « μ »
+ * sont un même caractère — revue PR-Agent), puis toute suite de blancs devient
+ * une espace, comme au contrôle de contamination.
+ */
 function normaliserEspacesSortie(texte: string): string {
-  return texte.replace(/[\s  ]+/gu, ' ');
+  return texte.normalize('NFKC').replace(/[\s  ]+/gu, ' ');
 }
 
 function echapperMotif(texte: string): string {

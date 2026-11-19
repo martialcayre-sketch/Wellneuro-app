@@ -174,6 +174,16 @@ describe('intervalleSuiviDUnite — un intervalle imprimé cité en entier, suiv
     }
   });
 
+  it('signe micro et lettre grecque mu sont une même unité, dans les deux sens (revue PR-Agent)', () => {
+    const microSigne = { intervalles: ['30 - 400'], valeursUnites: [{ valeur: '41', unite: 'µg/L' }] };
+    const muGrec = { intervalles: ['30 - 400'], valeursUnites: [{ valeur: '41', unite: 'μg/L' }] };
+    expect(intervalleSuiviDUnite(sortie('30 - 400 μg/L'), microSigne)).toBe(true);
+    expect(intervalleSuiviDUnite(sortie('30 - 400 µg/L'), muGrec)).toBe(true);
+    // Et l'unité interne au texte imprimé, sous l'autre graphie, reste non visée.
+    const imprimeAvecUnite = { intervalles: ['30 - 400 µg/L'], valeursUnites: [{ valeur: '41', unite: 'µg/L' }] };
+    expect(intervalleSuiviDUnite(sortie('30 - 400 μg/L.'), imprimeAvecUnite)).toBe(false);
+  });
+
   it('une unité d’une lettre suivie d’une apostrophe et d’une lettre n’est pas l’unité (revue wn-reviewer, P2-3b)', () => {
     const formes = { intervalles: ['25 - 35'], valeursUnites: [{ valeur: '30', unite: 's' }] };
     expect(intervalleSuiviDUnite(sortie('« 25 - 35 » s’il est lu'), formes)).toBe(false);
