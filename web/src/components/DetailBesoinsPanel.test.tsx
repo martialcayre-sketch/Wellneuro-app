@@ -30,7 +30,7 @@ describe('DetailBesoinsPanel — niveau de preuve masqué ([[D-332]])', () => {
   });
 
   it('affiche la couverture, jamais la lettre A–D ni sa légende, même si la réponse la porte', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => ({ json: async () => reponse })));
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => reponse })));
     render(<DetailBesoinsPanel idPatient="PAT_SEED_01" />);
 
     const tableau = await screen.findByRole('table');
@@ -64,7 +64,7 @@ describe('DetailBesoinsPanel — textes exacts', () => {
           : { ...b, motifNonMesure: null }
       ),
     };
-    vi.stubGlobal('fetch', vi.fn(async () => ({ json: async () => avecMotif })));
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => avecMotif })));
     render(<DetailBesoinsPanel idPatient="PAT_SEED_01" />);
 
     await screen.findByRole('table');
@@ -79,7 +79,7 @@ describe('DetailBesoinsPanel — textes exacts', () => {
   });
 
   it('un ancien conteneur sans motif garde le tiret seul, sans geste vide', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => ({ json: async () => reponse })));
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => reponse })));
     render(<DetailBesoinsPanel idPatient="PAT_SEED_01" />);
 
     await screen.findByRole('table');
@@ -97,7 +97,7 @@ describe('DetailBesoinsPanel — textes exacts', () => {
           : { ...b, ecartDecision: null }
       ),
     };
-    vi.stubGlobal('fetch', vi.fn(async () => ({ json: async () => avecEcart })));
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => avecEcart })));
     render(<DetailBesoinsPanel idPatient="PAT_SEED_01" />);
 
     await screen.findByRole('table');
@@ -112,7 +112,7 @@ describe('DetailBesoinsPanel — textes exacts', () => {
   });
 
   it('un ancien conteneur sans le champ d’écart n’affiche aucun geste', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => ({ json: async () => reponse })));
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => reponse })));
     render(<DetailBesoinsPanel idPatient="PAT_SEED_01" />);
 
     await screen.findByRole('table');
@@ -122,8 +122,8 @@ describe('DetailBesoinsPanel — textes exacts', () => {
   it('un échec de lecture parle au praticien, et « Réessayer » relance la lecture', async () => {
     const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce({ json: async () => ({ unavailable: true, reason: 'exception' }) })
-      .mockResolvedValueOnce({ json: async () => reponse });
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ unavailable: true, reason: 'exception' }) })
+      .mockResolvedValueOnce({ ok: true, json: async () => reponse });
     vi.stubGlobal('fetch', fetchMock);
     render(<DetailBesoinsPanel idPatient="PAT_SEED_01" />);
 
@@ -134,6 +134,32 @@ describe('DetailBesoinsPanel — textes exacts', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Réessayer' }));
     await waitFor(() => expect(screen.getByRole('table')).toBeTruthy());
     expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  // PRA-6h2 (P2 de la revue de #2251) : un 500 `{error}` venu d'un autre
+  // émetteur n'est pas au contrat — sans garde, `data.patient` indéfini
+  // faisait tomber la page. Il tombe dans l'état d'échec du panneau.
+  it('une réponse hors contrat (500 `{error}`) tombe dans l’état d’échec, sans faire tomber la page', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: false, status: 500, json: async () => ({ error: 'Erreur interne' }) })
+      .mockResolvedValueOnce({ ok: true, json: async () => reponse });
+    vi.stubGlobal('fetch', fetchMock);
+    render(<DetailBesoinsPanel idPatient="PAT_SEED_01" />);
+
+    const alerte = await screen.findByRole('alert');
+    expect(alerte.textContent).toContain('Le détail des besoins n’a pas pu être lu.');
+    expect(document.body.textContent).not.toContain('Erreur interne');
+
+    fireEvent.click(within(alerte).getByRole('button', { name: 'Réessayer' }));
+    await waitFor(() => expect(screen.getByRole('table')).toBeTruthy());
+  });
+
+  it('une réponse 200 sans la forme promise tombe aussi dans l’état d’échec', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => ({ besoins: [] }) })));
+    render(<DetailBesoinsPanel idPatient="PAT_SEED_01" />);
+    const alerte = await screen.findByRole('alert');
+    expect(alerte.textContent).toContain('Le détail des besoins n’a pas pu être lu.');
   });
 });
 
@@ -147,7 +173,7 @@ describe('DetailBesoinsPanel — ordre fixe et provenance (r3_09)', () => {
   });
 
   it('l’ordre reçu n’est pas cru : B1 à B12, groupés sous le nom de leur strate', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => ({ json: async () => reponse })));
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => reponse })));
     render(<DetailBesoinsPanel idPatient="PAT_SEED_01" />);
 
     await screen.findByRole('table');
@@ -157,7 +183,7 @@ describe('DetailBesoinsPanel — ordre fixe et provenance (r3_09)', () => {
   });
 
   it('chaque valeur ouvre sa source d’un geste, au nom de sa clé', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => ({ json: async () => reponse })));
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => reponse })));
     render(<DetailBesoinsPanel idPatient="PAT_SEED_01" />);
 
     await screen.findByRole('table');
@@ -172,7 +198,7 @@ describe('DetailBesoinsPanel — ordre fixe et provenance (r3_09)', () => {
       ...reponse,
       besoins: reponse.besoins.map(b => (b.id === 1 ? { ...b, provenance: undefined } : b)),
     };
-    vi.stubGlobal('fetch', vi.fn(async () => ({ json: async () => sansProvenance })));
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => sansProvenance })));
     render(<DetailBesoinsPanel idPatient="PAT_SEED_01" />);
 
     const tableau = await screen.findByRole('table');
@@ -183,7 +209,7 @@ describe('DetailBesoinsPanel — ordre fixe et provenance (r3_09)', () => {
   });
 
   it('le radar ouvre la provenance de ses valeurs tracées, une fois chacune', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => ({ json: async () => reponse })));
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => reponse })));
     render(<DetailBesoinsPanel idPatient="PAT_SEED_01" />);
 
     await screen.findByRole('table');
@@ -196,7 +222,7 @@ describe('DetailBesoinsPanel — ordre fixe et provenance (r3_09)', () => {
 
   it('aucune valeur tracée : le radar n’a pas de geste « Source »', async () => {
     const sansProvenance = { ...reponse, besoins: reponse.besoins.map(b => ({ ...b, provenance: null })) };
-    vi.stubGlobal('fetch', vi.fn(async () => ({ json: async () => sansProvenance })));
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => sansProvenance })));
     render(<DetailBesoinsPanel idPatient="PAT_SEED_01" />);
 
     await screen.findByRole('table');
@@ -213,7 +239,7 @@ describe('DetailBesoinsPanel — accessibilité sans le radar (F9a)', () => {
   });
 
   it('le tableau porte sa légende, au mot près', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => ({ json: async () => reponse })));
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => reponse })));
     render(<DetailBesoinsPanel idPatient="PAT_SEED_01" />);
 
     expect(await screen.findByRole('table', { name: 'Couverture des 12 besoins, de B1 à B12, par strate' })).toBeTruthy();
@@ -247,21 +273,21 @@ describe('DetailBesoinsPanel — compte et « Compléter la mesure » (D-352)', 
   });
 
   it('le compte servi par la route s’affiche en tête, au mot près', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => ({ json: async () => avecMotif('aucune_passation', ['Q_STR_01']) })));
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => avecMotif('aucune_passation', ['Q_STR_01']) })));
     render(<DetailBesoinsPanel idPatient="PAT_SEED_01" enteteMasquee />);
     expect(await screen.findByText('Calculé sur 2 besoins mesurés sur 12')).toBeTruthy();
   });
 
   it('aucun besoin mesuré : la tête le dit, sans affirmer un calcul (D-352 §4)', async () => {
     const aucun = { ...avecMotif('aucune_passation', ['Q_STR_01']), besoinsMesures: 0 };
-    vi.stubGlobal('fetch', vi.fn(async () => ({ json: async () => aucun })));
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => aucun })));
     render(<DetailBesoinsPanel idPatient="PAT_SEED_01" enteteMasquee />);
     expect(await screen.findByText('Non calculé : aucun besoin mesuré')).toBeTruthy();
     expect(document.body.textContent).not.toContain('Calculé sur 0');
   });
 
   it('un ancien conteneur sans le compte : rien plutôt qu’un compte deviné', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => ({ json: async () => reponse })));
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => reponse })));
     render(<DetailBesoinsPanel idPatient="PAT_SEED_01" enteteMasquee />);
     await screen.findByRole('table');
     expect(document.body.textContent).not.toContain('Calculé sur');
@@ -269,7 +295,7 @@ describe('DetailBesoinsPanel — compte et « Compléter la mesure » (D-352)', 
 
   it('« aucune passation exploitable » : le geste se lit dans le motif déplié, et rien ne part au rendu', async () => {
     expect(IDS_ASSIGNABLES.has('Q_STR_01')).toBe(true);
-    const fetchMock = vi.fn(async () => ({ json: async () => avecMotif('aucune_passation', ['Q_STR_01']) }));
+    const fetchMock = vi.fn(async () => ({ ok: true, json: async () => avecMotif('aucune_passation', ['Q_STR_01']) }));
     vi.stubGlobal('fetch', fetchMock);
     render(<DetailBesoinsPanel idPatient="PAT_SEED_01" enteteMasquee emailPatient={EMAIL} />);
 
@@ -288,7 +314,7 @@ describe('DetailBesoinsPanel — compte et « Compléter la mesure » (D-352)', 
   it('le bouton pose l’instrument dans la file d’envoi, et lui seul', async () => {
     const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce({ json: async () => avecMotif('aucune_passation', ['Q_STR_01']) })
+      .mockResolvedValueOnce({ ok: true, json: async () => avecMotif('aucune_passation', ['Q_STR_01']) })
       .mockResolvedValueOnce({ ok: true, json: async () => ({ success: true }) });
     vi.stubGlobal('fetch', fetchMock);
     render(<DetailBesoinsPanel idPatient="PAT_SEED_01" enteteMasquee emailPatient={EMAIL} />);
@@ -305,7 +331,7 @@ describe('DetailBesoinsPanel — compte et « Compléter la mesure » (D-352)', 
   it('l’état d’un ajout vaut pour un patient : un autre dossier repart du bouton', async () => {
     const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce({ json: async () => avecMotif('aucune_passation', ['Q_STR_01']) })
+      .mockResolvedValueOnce({ ok: true, json: async () => avecMotif('aucune_passation', ['Q_STR_01']) })
       .mockResolvedValueOnce({ ok: true, json: async () => ({ success: true }) });
     vi.stubGlobal('fetch', fetchMock);
     const { rerender } = render(<DetailBesoinsPanel idPatient="PAT_SEED_01" enteteMasquee emailPatient={EMAIL} />);
@@ -320,7 +346,7 @@ describe('DetailBesoinsPanel — compte et « Compléter la mesure » (D-352)', 
   it('un refus de la route se lit sous le bouton', async () => {
     const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce({ json: async () => avecMotif('aucune_passation', ['Q_STR_01']) })
+      .mockResolvedValueOnce({ ok: true, json: async () => avecMotif('aucune_passation', ['Q_STR_01']) })
       .mockResolvedValueOnce({ ok: false, json: async () => ({ success: false, error: 'Dossier clos.' }) });
     vi.stubGlobal('fetch', fetchMock);
     render(<DetailBesoinsPanel idPatient="PAT_SEED_01" enteteMasquee emailPatient={EMAIL} />);
@@ -331,7 +357,7 @@ describe('DetailBesoinsPanel — compte et « Compléter la mesure » (D-352)', 
   });
 
   it('sans e-mail du patient affiché (route pleine page) : le motif seul', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => ({ json: async () => avecMotif('aucune_passation', ['Q_STR_01']) })));
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => avecMotif('aucune_passation', ['Q_STR_01']) })));
     render(<DetailBesoinsPanel idPatient="PAT_SEED_01" />);
     await screen.findByRole('table');
     expect(document.body.textContent).toContain('Non mesuré · aucune passation exploitable (Q_STR_01)');
@@ -346,7 +372,7 @@ describe('DetailBesoinsPanel — compte et « Compléter la mesure » (D-352)', 
     ['sans_instrument', []],
     ['hors_score', []],
   ])('motif « %s » : aucun geste', async (motif, ids) => {
-    vi.stubGlobal('fetch', vi.fn(async () => ({ json: async () => avecMotif(motif, ids) })));
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => avecMotif(motif, ids) })));
     render(<DetailBesoinsPanel idPatient="PAT_SEED_01" enteteMasquee emailPatient={EMAIL} />);
     await screen.findByRole('table');
     expect(screen.getByText('Motif', { selector: 'summary' })).toBeTruthy();
@@ -355,7 +381,7 @@ describe('DetailBesoinsPanel — compte et « Compléter la mesure » (D-352)', 
   });
 
   it('un questionnaire non assignable n’a ni bouton ni texte', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => ({ json: async () => avecMotif('aucune_passation', ['Q_INEXISTANT']) })));
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => avecMotif('aucune_passation', ['Q_INEXISTANT']) })));
     render(<DetailBesoinsPanel idPatient="PAT_SEED_01" enteteMasquee emailPatient={EMAIL} />);
     await screen.findByRole('table');
     expect(screen.queryByText('Compléter la mesure')).toBeNull();

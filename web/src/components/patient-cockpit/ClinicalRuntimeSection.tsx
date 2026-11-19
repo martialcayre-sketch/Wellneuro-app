@@ -38,6 +38,7 @@ import { estAncreDeCycle, type AncreCycle } from '@/lib/protocol/cycles';
 import { deriverEtatRuntimePourPhases } from '@/lib/trajectoire-partagee/etatRuntimeDerive';
 import { besoinsDeRepassation } from '@/lib/protocol/repassationCiblee';
 import { Button } from '@/components/ui/Button';
+import { useFocusApresRelecture } from '@/components/ui/useFocusApresRelecture';
 import type { JalonMomentum } from '@/lib/equilibre/types';
 import { AssiettesIndiqueesPanel, type PrioriteVisee } from './AssiettesIndiqueesPanel';
 import { useChiffresMasques, ValeurMasquee } from '@/components/patient-cockpit/ChiffresMasques';
@@ -275,7 +276,9 @@ type PilotageTrajectoireProps =
   | {
       trajectoirePartagee: Trajectoire | null;
       statutTrajectoirePartage: 'inconnue' | 'chargement' | 'chargee' | 'erreur';
-      onRechargerTrajectoire: () => void;
+      /** Rend la promesse de la relecture quand il en a une : le
+       *  « Réessayer » de la Réévaluation l'attend avant de rendre le focus. */
+      onRechargerTrajectoire: () => void | Promise<void>;
     }
   | {
       trajectoirePartagee?: never;
@@ -657,10 +660,13 @@ export function ClinicalRuntimeSection({
   // pilote, la section sinon. Sans cette indirection, un rafraîchissement en
   // mode piloté écrirait dans un état local que plus personne ne lit — l'écran
   // resterait sur la trajectoire d'avant le geste.
-  const rechargerTrajectoire = useCallback(() => {
-    if (onRechargerTrajectoire) onRechargerTrajectoire();
-    else void loadTrajectoire();
-  }, [onRechargerTrajectoire, loadTrajectoire]);
+  const rechargerTrajectoire = useCallback(
+    () => (onRechargerTrajectoire ? onRechargerTrajectoire() : loadTrajectoire()),
+    [onRechargerTrajectoire, loadTrajectoire],
+  );
+  // « Réessayer » de la Réévaluation (PRA-6h2) : en échec, le focus revient au
+  // bouton ; en réussite, il va au titre du résumé relu.
+  const relectureReevaluation = useFocusApresRelecture();
 
   // Jeton d'obsolescence du résumé (revue CodeRabbit de #1802) : la relecture
   // qui suit une diffusion ne doit pas être écrasée par une lecture partie
@@ -2689,8 +2695,9 @@ export function ClinicalRuntimeSection({
               affiché — aucune conclusion à en tirer.
             </span>
             <button
+              ref={relectureReevaluation.boutonRef}
               type="button"
-              onClick={() => rechargerTrajectoire()}
+              onClick={() => void relectureReevaluation.relire(rechargerTrajectoire)}
               className="min-h-11 self-start rounded-lg border border-accent px-3 py-1 text-sm font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
             >
               Réessayer
@@ -2730,7 +2737,7 @@ export function ClinicalRuntimeSection({
                 aria-label="Réévaluation — résumé du cycle"
                 className="rounded-xl border border-border bg-surface p-4 text-sm"
               >
-                <h4 className="font-semibold text-foreground">Réévaluation — où en est le cycle</h4>
+                <h4 ref={relectureReevaluation.titreRef} tabIndex={-1} className="font-semibold text-foreground">Réévaluation — où en est le cycle</h4>
                 {trajectoire?.discordanceOrdreCycles && (
                   <p
                     role="status"

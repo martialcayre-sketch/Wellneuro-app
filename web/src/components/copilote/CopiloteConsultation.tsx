@@ -7,6 +7,7 @@ import { PreVolPanel, DiscordancesPanel } from './PreVolPanel';
 import { ClotureMinuteApresPanel, type EtatCritiqueCloture } from './ClotureMinuteApresPanel';
 import { LectureEtatPassePanel } from './LectureEtatPassePanel';
 import { useRepliContexteCopilote } from './repliContexteCopilote';
+import { focusPerdu } from '@/components/ui/useFocusApresRelecture';
 
 // Consultation copilote, mise en page P34 (PRA-5 PR 2 ; [[D-481]] complément
 // DOC-15, Q1 à Q3 ; T-15 de [[D-488]]). LECTURE SEULE, comme les panneaux.
@@ -33,8 +34,10 @@ export function CopiloteConsultation({ idPatient }: { idPatient: string }) {
   const [focusApresRelecture, setFocusApresRelecture] = useState(false);
   useEffect(() => {
     if (!focusApresRelecture || !critique || critique.etat === 'chargement') return;
-    refReessayer.current?.focus();
     setFocusApresRelecture(false);
+    // Un focus posé ailleurs pendant la relecture n'est pas repris (PRA-6h2).
+    const cible = refReessayer.current;
+    if (cible && focusPerdu(cible)) cible.focus();
   }, [focusApresRelecture, critique]);
 
   // Le focus passe à la commande opposée, une fois le rendu fait.

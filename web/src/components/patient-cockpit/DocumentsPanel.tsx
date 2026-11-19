@@ -12,6 +12,7 @@ import {
 import { DocumentComposer } from '@/components/patient-cockpit/DocumentComposer';
 import type { ImpressionDocumentMedecinResponse } from '@/app/api/praticien/documents/medecin/impression/route';
 import { Button } from '@/components/ui/Button';
+import { focusPerdu } from '@/components/ui/useFocusApresRelecture';
 import { Select } from '@/components/ui/Select';
 
 // Montage praticien de la composition documentaire C3 (LOT-05). Page dédiée
@@ -169,9 +170,11 @@ export function DocumentsPanel({ initialPatientId = '' }: { initialPatientId?: s
   // revient ; sinon il va au titre du panneau relu.
   useEffect(() => {
     if (!focusApresRelecture) return;
-    const bouton = focusApresRelecture === 'patients' ? reessayerPatients : reessayerSyntheses;
-    (bouton.current ?? titreSelection.current)?.focus();
     setFocusApresRelecture(null);
+    // Un focus posé ailleurs pendant la relecture n'est pas repris (PRA-6h2).
+    const bouton = focusApresRelecture === 'patients' ? reessayerPatients : reessayerSyntheses;
+    const cible = bouton.current ?? titreSelection.current;
+    if (cible && focusPerdu(cible)) cible.focus();
   }, [focusApresRelecture]);
 
   async function onSelectPatient(idPatient: string) {
