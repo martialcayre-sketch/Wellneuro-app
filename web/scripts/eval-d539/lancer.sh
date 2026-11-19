@@ -19,6 +19,12 @@ if [[ -z "${ANTHROPIC_API_KEY:-}" ]]; then
   echo "ANTHROPIC_API_KEY absente" >&2
   exit 2
 fi
+# Le commit inscrit au résumé doit être celui qui a produit les générations :
+# rien de modifié ni de non suivi sous le code évalué (revue PR-Agent de #2266).
+if [[ -n "$(git status --porcelain -- src prisma)" ]]; then
+  echo "web/src ou web/prisma porte des modifications : le résumé ne pourrait pas les attribuer à un commit. Committer ou retirer d'abord." >&2
+  exit 2
+fi
 mkdir -p "$sortie"
 
 WN_EVAL_D539_CONFIRME=1 \
