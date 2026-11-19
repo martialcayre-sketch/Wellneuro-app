@@ -16,8 +16,13 @@ on:
 
 jobs:
   baselines:
-    # Même image que le job `e2e` de `ci.yml` (épinglé le 2026-11-19).
-    runs-on: ubuntu-24.04
+    # MÊME CONTENEUR que le job `e2e` de `ci.yml` (2026-11-19) : les polices et
+    # les bibliothèques de rendu sont celles de l'image, pas du runner. Une
+    # baseline produite ailleurs ne se compare pas au pixel.
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble
+      options: --ipc=host
     services:
       postgres:
         image: pgvector/pgvector:pg15
@@ -61,6 +66,19 @@ jobs:
         working-directory: web
         run: npx prisma generate
 
+      # Dans un conteneur, le service répond à l'hôte `postgres`, pas à
+      # `localhost`. Or `supabasePoolSsl` (`web/src/lib/postgres.ts`) force
+      # TLS vers tout hôte non local, et le service n'en a pas. Un relais TCP
+      # garde donc `DATABASE_URL` sur localhost, la même chaîne que `ci.yml`, sans toucher au code applicatif.
+      - name: Relais PostgreSQL sur localhost
+        run: |
+          nohup node -e 'const n = require("net"); n.createServer((c) => { const s = n.connect(5432, "postgres"); c.on("error", () => s.destroy()); s.on("error", () => c.destroy()); c.pipe(s).pipe(c); }).listen(5432, "127.0.0.1");' > /tmp/relais-postgres.log 2>&1 &
+          for i in $(seq 1 20); do
+            node -e 'require("net").connect(5432, "127.0.0.1").on("connect", () => process.exit(0)).on("error", () => process.exit(1))' && exit 0
+            sleep 0.5
+          done
+          echo "::error::Relais PostgreSQL muet sur localhost:5432"; cat /tmp/relais-postgres.log; exit 1
+
       - name: Migrations
         working-directory: web
         run: npx prisma migrate deploy
@@ -68,15 +86,6 @@ jobs:
       - name: Seed (patients fictifs uniquement)
         working-directory: web
         run: npm run prisma:seed
-
-      - name: Préparer les miroirs Ubuntu pour Playwright
-        working-directory: web
-        run: sudo env GITHUB_ACTIONS=true "$(command -v node)" ../scripts/wn-playwright-apt.mjs
-
-      - name: Navigateurs Playwright
-        timeout-minutes: 10
-        working-directory: web
-        run: npx playwright install --with-deps chromium webkit
 
       # BUILD DE PRODUCTION, COMME `verify` — et ce n'est pas un alignement de
       # confort. `playwright.config.ts` fait défaut à `PLAYWRIGHT_WEB_SERVER=dev`
