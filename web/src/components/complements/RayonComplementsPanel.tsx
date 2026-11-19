@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { useFocusApresRelecture } from '@/components/ui/useFocusApresRelecture';
 import { FicheComplementPanel } from '@/components/complements/FicheComplementPanel';
 import { PanneauSuperpose } from '@/components/ui/PanneauSuperpose';
 import type { ComplementsApiResponse } from '@/app/api/praticien/complements/route';
@@ -153,6 +154,7 @@ export function RayonComplementsPanel() {
   const [messageEchec, setMessageEchec] = useState<string | null>(null);
   const [surfaceIndisponible, setSurfaceIndisponible] = useState(false);
   const [ficheOuverte, setFicheOuverte] = useState<FicheComplement | null>(null);
+  const { titreRef, boutonRef, relire } = useFocusApresRelecture();
 
   // Un critère au moins doit être posé : sans lui, la requête ramènerait le
   // catalogue entier, que la fonction ne peut pas servir.
@@ -456,7 +458,7 @@ export function RayonComplementsPanel() {
       {/* Résultats */}
       <div className="rounded-xl border border-border bg-surface shadow-card">
         <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
-          <h2 className="font-display text-lg font-semibold text-foreground">Fiches</h2>
+          <h2 ref={titreRef} tabIndex={-1} className="font-display text-lg font-semibold text-foreground">Fiches</h2>
           <span className="font-mono text-2xs text-muted-foreground">
             {catalogue ? `${catalogue.total} fiche${catalogue.total > 1 ? 's' : ''}` : '—'}
           </span>
@@ -470,7 +472,7 @@ export function RayonComplementsPanel() {
           ) : messageEchec ? (
             <div role="alert" className="flex flex-col gap-2 text-sm text-status-danger">
               <p>{messageEchec}</p>
-              <Button type="button" variant="outline" onClick={() => void charger()} disabled={surfaceIndisponible}>
+              <Button ref={boutonRef} type="button" variant="outline" onClick={() => void relire(charger)} disabled={surfaceIndisponible}>
                 Réessayer
               </Button>
             </div>

@@ -24,6 +24,18 @@ export function CopiloteConsultation({ idPatient }: { idPatient: string }) {
   const { contexteMasque, poserContexteMasque } = useRepliContexteCopilote();
   const [critique, setCritique] = useState<EtatCritiqueCloture | null>(null);
   const surEtatCritique = useCallback((etat: EtatCritiqueCloture) => setCritique(etat), []);
+  // « Réessayer » de la zone de travail, contexte replié (PRA-6h) : en échec, le
+  // focus revient au bouton. En cas de réussite, le titre du panneau relu est
+  // dans le contexte masqué — aucun titre visible ici, le focus n'est pas rendu.
+  // L'état critique remonte du panneau un rendu plus tard : on attend qu'il ait
+  // quitté `chargement` avant de chercher le bouton.
+  const refReessayer = useRef<HTMLButtonElement | null>(null);
+  const [focusApresRelecture, setFocusApresRelecture] = useState(false);
+  useEffect(() => {
+    if (!focusApresRelecture || !critique || critique.etat === 'chargement') return;
+    refReessayer.current?.focus();
+    setFocusApresRelecture(false);
+  }, [focusApresRelecture, critique]);
 
   // Le focus passe à la commande opposée, une fois le rendu fait.
   const refMasquer = useRef<HTMLButtonElement | null>(null);
@@ -80,8 +92,9 @@ export function CopiloteConsultation({ idPatient }: { idPatient: string }) {
               >
                 <span>{critique.erreur} Rien ne peut être diffusé tant que cet état n’a pas été relu.</span>
                 <button
+                  ref={refReessayer}
                   type="button"
-                  onClick={critique.recharger}
+                  onClick={() => void critique.recharger().then(() => setFocusApresRelecture(true))}
                   className="min-h-11 self-start rounded-lg border border-accent px-3 py-1 text-sm font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                 >
                   Réessayer

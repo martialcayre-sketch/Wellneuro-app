@@ -16,6 +16,7 @@ import {
   provenanceEtablie,
 } from '@/lib/praticien/provenanceChiffre';
 import { useChiffresMasques, ValeurMasquee } from '@/components/patient-cockpit/ChiffresMasques';
+import { useFocusApresRelecture } from '@/components/ui/useFocusApresRelecture';
 
 // `enteteMasquee` : le panneau est monté dans un onglet in-fiche du poste de
 // pilotage, qui porte déjà l'identité du patient et le retour — l'en-tête
@@ -37,10 +38,11 @@ export function DetailBesoinsPanel({
   // Hors fiche : toujours `false`.
   const chiffresMasques = useChiffresMasques();
   const [loading, setLoading] = useState(true);
+  const { titreRef, boutonRef, relire } = useFocusApresRelecture();
 
   const charger = useCallback(() => {
     setLoading(true);
-    fetch(`/api/praticien/besoins?idPatient=${encodeURIComponent(idPatient)}`)
+    return fetch(`/api/praticien/besoins?idPatient=${encodeURIComponent(idPatient)}`)
       .then(r => r.json())
       .then((d: BesoinsApiResponse) => setData(d))
       .catch(() => setData({ unavailable: true, reason: 'exception' }))
@@ -71,7 +73,8 @@ export function DetailBesoinsPanel({
         <span className="min-w-0">Le détail des besoins n’a pas pu être lu.</span>
         <button
           type="button"
-          onClick={charger}
+          ref={boutonRef}
+          onClick={() => void relire(charger)}
           className="ml-auto min-h-9 shrink-0 rounded-lg border border-accent px-3 py-1 text-xs font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
         >
           Réessayer
@@ -98,7 +101,7 @@ export function DetailBesoinsPanel({
       {!enteteMasquee && (
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="font-display text-3xl font-bold text-foreground">{`${patient.prenom} ${patient.nom}`.trim()}</h2>
+            <h2 ref={titreRef} tabIndex={-1} className="font-display text-3xl font-bold text-foreground">{`${patient.prenom} ${patient.nom}`.trim()}</h2>
             <p className="text-base text-muted-foreground mt-1">Détail des 12 besoins</p>
           </div>
           <Link

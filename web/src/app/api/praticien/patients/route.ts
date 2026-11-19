@@ -945,10 +945,17 @@ export async function PATCH(req: Request): Promise<NextResponse<PatchPatientResp
             where: { idPatient },
             data: { emailPatient: email as string },
           }),
-          client.syntheseIA.updateMany({
-            where: { idPatient },
-            data: { emailPatient: email as string },
-          }),
+          // `syntheses_ia` HORS DE PRISMA, ET POUR UNE SEULE RAISON : `updatedAt`
+          // y est la version optimiste des synthèses (lot
+          // synthese-version-optimiste), et l'`updateMany` de Prisma la
+          // réécrit d'office (`@updatedAt`). Changer l'adresse du dossier
+          // périmait alors chaque synthèse ouverte : le geste suivant du
+          // praticien recevait un 409 `synthese_modifiee` alors que le contenu
+          // n'avait pas changé, et son texte non enregistré était remplacé
+          // (lot synthese-conflit-texte-conserve). Seule la copie de l'adresse
+          // est réécrite ici, et `updated_at` reste celui du dernier geste sur
+          // la synthèse. Même filtre et même transaction que les trois autres.
+          client.$executeRaw`UPDATE syntheses_ia SET email_patient = ${email as string} WHERE id_patient = ${idPatient}`,
         ]
       : [];
 

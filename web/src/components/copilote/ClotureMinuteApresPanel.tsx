@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { useFocusApresRelecture } from '@/components/ui/useFocusApresRelecture';
 import Link from 'next/link';
 import type { Cloture, StatutEtape } from '@/lib/copilote/minuteApres';
 
@@ -34,7 +35,7 @@ export type EtatCritiqueCloture = {
   etat: Etat;
   erreur: string;
   blocages: string[];
-  recharger: () => void;
+  recharger: () => Promise<void>;
 };
 
 export function ClotureMinuteApresPanel({
@@ -47,6 +48,7 @@ export function ClotureMinuteApresPanel({
   const [cloture, setCloture] = useState<Cloture | null>(null);
   const [etat, setEtat] = useState<Etat>('chargement');
   const [erreur, setErreur] = useState<string>('');
+  const { titreRef, boutonRef, relire } = useFocusApresRelecture();
 
   const charger = useCallback(async () => {
     setEtat('chargement');
@@ -72,7 +74,7 @@ export function ClotureMinuteApresPanel({
 
   const blocages = cloture?.blocages;
   useEffect(() => {
-    onEtatCritique?.({ etat, erreur, blocages: blocages ?? [], recharger: () => void charger() });
+    onEtatCritique?.({ etat, erreur, blocages: blocages ?? [], recharger: charger });
   }, [onEtatCritique, etat, erreur, blocages, charger]);
 
   if (etat === 'chargement') {
@@ -98,8 +100,9 @@ export function ClotureMinuteApresPanel({
       >
         <span>{erreur} Rien ne peut être diffusé tant que cet état n’a pas été relu.</span>
         <button
+          ref={boutonRef}
           type="button"
-          onClick={() => void charger()}
+          onClick={() => void relire(charger)}
           className="min-h-11 self-start rounded-lg border border-accent px-3 py-1 text-sm font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
         >
           Réessayer
@@ -122,7 +125,7 @@ export function ClotureMinuteApresPanel({
       aria-labelledby="cloture-titre"
       className="rounded-xl border border-border bg-surface p-4 shadow-card"
     >
-      <h2 id="cloture-titre" className="font-display text-lg font-semibold text-foreground">
+      <h2 ref={titreRef} tabIndex={-1} id="cloture-titre" className="font-display text-lg font-semibold text-foreground">
         La minute d’après
       </h2>
       <p className="mt-1 text-xs text-muted-foreground">

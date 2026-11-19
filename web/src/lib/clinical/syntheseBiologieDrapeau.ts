@@ -10,9 +10,12 @@ import { isCbResultsEnabled } from '@/lib/biology-library/publie';
 // validé ; « Vos données personnelles » v24 et conditions v7 servies et
 // constatées ; évaluation sur dossiers fictifs rendue).
 //
-// IL NE GARDE QUE LE BLOC : la lecture des résultats, la construction du bloc
-// et sa transmission. La consigne `synthese-v36`, le schéma v4, les listes de
-// champs et le contrôle de contamination se déploient sans lui (§2).
+// IL NE GARDE QUE LE FLUX : la lecture des résultats, la construction du bloc
+// et le second appel qui le transmet ([[D-539]] §2). La consigne
+// `synthese-v37`, celle du second appel, le schéma v4, les listes de champs et
+// le contrôle de contamination se déploient sans lui. Sa pose exige les trois
+// préalables de [[D-539]] §7b : paragraphe 2 quater validé, v24 et conditions
+// v7 servies et constatées, évaluation de [[D-539]] §8 conforme.
 //
 // Fail-closed : seule la chaîne exacte « true » ouvre, et l'étage des
 // résultats doit l'être aussi. Absent, vide, « 1 » ou « TRUE » laissent fermé.

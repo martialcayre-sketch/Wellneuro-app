@@ -20,6 +20,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { EnTeteRayon } from '@/app/dashboard/bibliotheque/EnTeteRayon';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { useFocusApresRelecture } from '@/components/ui/useFocusApresRelecture';
 import type { RayonFichesApiResponse } from '@/app/api/praticien/fiches-assiette/route';
 import type { LigneRayonFiche, ResumeVersion } from '@/lib/fiches-assiette/lecture';
 import { RAISON_ILLISIBLE, libelleEtat } from './libelles';
@@ -71,13 +72,14 @@ export function RayonFichesConseilsPanel() {
 
   // Au retour de la relecture, le focus revient au titre du rayon plutôt que
   // de tomber sur la page.
-  const titreRef = useRef<HTMLHeadingElement>(null);
+  // Le titre sert aussi au retour d'une relecture : une seule ref pour les deux.
+  const { titreRef, boutonRef, relire } = useFocusApresRelecture();
   const retourDeRelecture = useRef(false);
   useEffect(() => {
     if (versionOuverte !== null || !retourDeRelecture.current) return;
     retourDeRelecture.current = false;
     titreRef.current?.focus();
-  }, [versionOuverte]);
+  }, [versionOuverte, titreRef]);
 
   // L'en-tête du rayon est le h1 de la page (Q1 de D-481, complément DOC-13),
   // au niveau des autres rayons. Il reste au-dessus de la relecture : la page
@@ -118,7 +120,7 @@ export function RayonFichesConseilsPanel() {
       ) : echec ? (
         <div role="alert" className="flex flex-col items-start gap-2 text-sm text-status-danger">
           <p>{echec}</p>
-          <Button type="button" variant="outline" onClick={() => void charger()}>
+          <Button ref={boutonRef} type="button" variant="outline" onClick={() => void relire(charger)}>
             Réessayer
           </Button>
         </div>

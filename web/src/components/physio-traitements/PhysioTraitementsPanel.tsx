@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { TRAIT_ICONE } from '@/components/ui/icone';
+import { useFocusApresRelecture } from '@/components/ui/useFocusApresRelecture';
 import { formaterDatePeriode, formaterJour, valeurDatePeriode } from '@/lib/physio-traitements/dates';
 import {
   BLOCS_PATIENT,
@@ -196,6 +197,9 @@ export function PhysioTraitementsPanel({ idPatient }: { idPatient: string }) {
   const [edition, setEdition] = useState<string | null>(null);
   const [finArret, setFinArret] = useState('');
   const lecture = useRef(0);
+  // Les deux « Réessayer » ne sont jamais rendus ensemble (le premier précède
+  // un retour anticipé) : un seul bouton à rendre, un seul titre à retrouver.
+  const { titreRef, boutonRef, relire } = useFocusApresRelecture();
 
   const charger = useCallback(async () => {
     const numero = ++lecture.current;
@@ -249,7 +253,7 @@ export function PhysioTraitementsPanel({ idPatient }: { idPatient: string }) {
     return (
       <p role="alert" className="text-sm text-foreground">
         Les données physiologiques et les traitements n’ont pas pu être lus.{' '}
-        <button type="button" onClick={() => void charger()} className={classeReessayer}>Réessayer</button>
+        <button ref={boutonRef} type="button" onClick={() => void relire(charger)} className={classeReessayer}>Réessayer</button>
       </p>
     );
   }
@@ -350,13 +354,13 @@ export function PhysioTraitementsPanel({ idPatient }: { idPatient: string }) {
       {erreurLecture && (
         <p role="alert" className="text-sm text-foreground">
           La relecture a échoué : ce qui suit peut ne plus être à jour.{' '}
-          <button type="button" onClick={() => void charger()} className={classeReessayer}>Réessayer</button>
+          <button ref={boutonRef} type="button" onClick={() => void relire(charger)} className={classeReessayer}>Réessayer</button>
         </p>
       )}
       {message && <p role="alert" className="text-sm text-foreground">{message}</p>}
 
       <section aria-labelledby="physio-titre" className="space-y-2">
-        <h3 id="physio-titre" className="text-sm font-semibold text-foreground">Données physiologiques</h3>
+        <h3 ref={titreRef} tabIndex={-1} id="physio-titre" className="text-sm font-semibold text-foreground">Données physiologiques</h3>
         <p className="text-xs text-muted-foreground">
           Déclarées, jamais déduites. « inconnu » est une réponse ; « non renseigné » dit qu’aucune ligne n’est posée.
         </p>

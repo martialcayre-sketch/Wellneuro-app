@@ -1087,3 +1087,23 @@ describe('AtelierCorpusPanel — exclusion de la recherche ([[D-490]])', () => {
     expect((screen.getByLabelText('Exclus de la recherche seulement') as HTMLInputElement).checked).toBe(false);
   });
 });
+
+// P47 (PRA-6h, pra6-constat §3.2) : chaque groupe de la `<dl>` des compteurs
+// ne porte que des `<dt>` et des `<dd>` (axe `definition-list`).
+describe('AtelierCorpusPanel — structure de la liste des compteurs (PRA-6h)', () => {
+  it('la `<dl>` ne contient que des groupes `<div>` de `<dt>`/`<dd>`', async () => {
+    fetchMock.mockImplementation(router());
+    await attendreLaFile();
+
+    const dl = document.querySelector('dl');
+    expect(dl).not.toBeNull();
+    for (const groupe of Array.from(dl!.children)) {
+      expect(groupe.tagName).toBe('DIV');
+      for (const enfant of Array.from(groupe.children)) {
+        expect(['DT', 'DD']).toContain(enfant.tagName);
+      }
+    }
+    // Le texte de la supersession reste affiché, dans un `<dd>`.
+    expect(screen.getByText(/0 version supersédée/).tagName).toBe('DD');
+  });
+});

@@ -29,7 +29,9 @@ const TITRE_CORPUS = 'Référentiel clinique SIIN — Snapshot V1';
 // DEUX états. Retouché avant tout service : mot pour mot réservé au texte validé.
 // v36 (2026-11-17, D-513, H95 part B) : section « Résultats de biologie » et trois
 // retouches, dans les DEUX états ; textes validés mot pour mot par le responsable.
-const EMPREINTE_PROMPT_ALLUME_V36 = '431cd68e9848fb65';
+// v37 (2026-11-18, D-539, H95 part B) : la biologie sort de la consigne principale
+// (second appel), deux retouches, dans les DEUX états ; validés mot pour mot.
+const EMPREINTE_PROMPT_ALLUME_V37 = '5d5fe12553e00868';
 
 async function chargerAnthropicAvecDrapeau(valeur: string | undefined) {
   vi.resetModules();
@@ -74,7 +76,7 @@ describe('prompt de synthèse — les deux états du corpus clinique (D-082, H1)
     expect(
       { version: mod.VERSION_PROMPT_SYNTHESE, empreinte },
       "prompt allumé modifié : incrémenter VERSION_PROMPT_SYNTHESE et reporter la nouvelle empreinte ici. CE GESTE N'EST PAS MÉCANIQUE — voir le même avertissement dans `promptAlimentaire.guard.test.ts` : un interdit clinique qui bouge appelle une décision `D-xxx` avant le report.",
-    ).toEqual({ version: 'synthese-v36', empreinte: EMPREINTE_PROMPT_ALLUME_V36 });
+    ).toEqual({ version: 'synthese-v37', empreinte: EMPREINTE_PROMPT_ALLUME_V37 });
   });
 
   it('drapeau absent : pas de corpus, et la consigne le dit indisponible', async () => {

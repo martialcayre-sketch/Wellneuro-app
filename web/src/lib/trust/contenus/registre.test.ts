@@ -12,6 +12,7 @@ import {
   PARTIES_REPRISES_CONDITIONS_V4,
   PARTIES_REPRISES_CONDITIONS_V5,
   PARTIES_REPRISES_CONDITIONS_V6,
+  PARTIES_REPRISES_CONDITIONS_V7,
   REGISTRE_DOCUMENTS_TRUST,
   sectionsDeLaPartie,
   VERSION_CONSENTEMENT_COURANTE,
@@ -81,6 +82,8 @@ describe('registre des documents TRUST', () => {
       'donnees_confidentialite@v22',
       // `D-497` §7 (BP-05) — le contexte du prélèvement des analyses.
       'donnees_confidentialite@v23',
+      // `D-539` §7d (H95 part B) — le contexte et les résultats partent à un appel distinct.
+      'donnees_confidentialite@v24',
       'usage_ia@v1',
       // `D-167` — la v1 disait « le seul usage actuel » ; il y en a deux.
       'usage_ia@v2',
@@ -96,6 +99,8 @@ describe('registre des documents TRUST', () => {
       'usage_ia@v7',
       // `D-284` §5 — seules les pages masquées partent.
       'usage_ia@v8',
+      // `D-539` §7e — les résultats d'analyses mis en forme à part, pour le praticien seul.
+      'usage_ia@v9',
       'droits_patient@v1',
       // `D-445` — l'historique des choix n'est plus dit « jamais effacé ».
       'droits_patient@v2',
@@ -115,6 +120,8 @@ describe('registre des documents TRUST', () => {
       'conditions_utilisation@v5',
       // `D-292` §5 — la partie 3 passe à la v23 (`D-497` §7).
       'conditions_utilisation@v6',
+      // `D-292` §5 — les parties 3 et 4 passent à la v24 et à la v9 (`D-539` §7f).
+      'conditions_utilisation@v7',
     ]);
   });
 
@@ -160,7 +167,7 @@ describe('registre des documents TRUST', () => {
     // La version courante avance à chaque publication ; ce banc ne porte pas
     // sur son numéro mais sur ce que le document servi dit — l'assertion de
     // version n'est là que pour qu'un oubli de publication se voie.
-    expect(courant.version).toBe('v23');
+    expect(courant.version).toBe('v24');
     const points = courant.sections.flatMap(sec => sec.points ?? []);
     expect(points.some(p => p.includes('jamais des patients'))).toBe(false);
     expect(points.some(p => p.includes('si vous le choisissez, votre propre connexion'))).toBe(true);
@@ -553,7 +560,7 @@ describe('registre des documents TRUST', () => {
     // déploiement constaté de l'écran de masquage (#1428). Une phrase change
     // dans chacun des deux documents ; une reformulation rougit ici.
     const v7 = getVersion('usage_ia', 'v7');
-    const v8 = getDocumentCourant('usage_ia');
+    const v8 = getVersion('usage_ia', 'v8')!;
     expect(v8.version).toBe('v8');
     const releve = (doc: typeof v7) =>
       (doc?.sections.find(s => s.titre === 'Où l’IA intervient')?.paragraphes ?? []).find(p =>
@@ -910,20 +917,28 @@ describe('registre des documents TRUST', () => {
 
   // D-497 §7 : la v23, les conditions v6 et l'e-mail @6, relus dans la
   // proposition de BP-05 (A1, A2 validés avec D-497 ; B1, B2 le 2026-11-12).
+  // [[D-539]] §7 : la v24, la v9, les conditions v7 et l'e-mail @7, relus
+  // dans la décision elle-même (textes validés mot pour mot le 2026-11-18).
+  // Une décision se lit par ses rubriques « *7x. … » et ses paragraphes « **§ ».
+  const DECISION_D539 = 'D-539';
+
   function citationsV23(apres: string): string[] {
     return citationsDe('2026-11-12-bp05-texte-patient', apres);
   }
 
-  function citationsDe(proposition: string, apres: string): string[] {
+  function citationsDe(source: string, apres: string): string[] {
+    const decision = /^D-\d+$/.test(source);
     const readme = fs
       .readFileSync(
-        path.resolve(__dirname, `../../../../../docs/claude/propositions/${proposition}/README.md`),
+        decision
+          ? path.resolve(__dirname, `../../../../../docs/decisions/${source}.md`)
+          : path.resolve(__dirname, `../../../../../docs/claude/propositions/${source}/README.md`),
         'utf8',
       )
       .replaceAll("'", '’');
     expect(readme.indexOf(apres), `${apres} introuvable`).toBeGreaterThanOrEqual(0);
     const suite = readme.slice(readme.indexOf(apres) + apres.length);
-    const fin = suite.search(/\n#{2,3} /);
+    const fin = suite.search(decision ? /\n(?:\*7|\*\*§)/ : /\n#{2,3} /);
     return suite
       .slice(0, fin === -1 ? undefined : fin)
       .split(/\n\s*\n/)
@@ -979,7 +994,7 @@ describe('registre des documents TRUST', () => {
     expect(paragrapheNeuf).toBeTruthy();
 
     const v22 = getVersion('donnees_confidentialite', 'v22')!;
-    const v23 = getDocumentCourant('donnees_confidentialite');
+    const v23 = getVersion('donnees_confidentialite', 'v23')!;
     expect(v23.version).toBe('v23');
 
     const recueil = v23.sections.find(s => s.titre === 'Quelles données sont recueillies ?')!;
@@ -1001,6 +1016,72 @@ describe('registre des documents TRUST', () => {
     expect(v23.changeSummary).toBe(resume);
     expect(v23.requiresAcknowledgement).toBe(true);
     expect(v23.publieLe > v22.publieLe).toBe(true);
+  });
+
+  // [[D-539]] §7 (H95 part B) — la biologie part, seule, à un appel distinct
+  // qui la met en forme pour le praticien ; déclaré AVANT son ouverture. Textes
+  // validés mot pour mot le 2026-11-18 ; chacun est relu dans la décision, et
+  // rien d'autre ne change.
+  it('la v24 retire la promesse de la v23 et nomme la mise en forme chez Anthropic, et rien d’autre', () => {
+    const [phraseContexte, roleAnthropic, resume] = citationsDe(DECISION_D539, '*7d. « Vos données personnelles » v24.*');
+    expect(phraseContexte.startsWith('Ces informations sont destinées à votre praticien.')).toBe(true);
+    expect(phraseContexte).not.toContain('Seul votre praticien les voit');
+    expect(roleAnthropic).toBe('pour la préparation des synthèses et la mise en forme de vos résultats d’analyses biologiques pour votre praticien');
+
+    const v23 = getVersion('donnees_confidentialite', 'v23')!;
+    const v24 = getDocumentCourant('donnees_confidentialite');
+    expect(v24.version).toBe('v24');
+
+    const tous = (doc: typeof v24) => doc.sections.flatMap(s => [...s.paragraphes, ...(s.points ?? [])]);
+    const avant = tous(v23);
+    const apres = tous(v24);
+    expect(apres).toHaveLength(avant.length);
+    const changes = apres.map((t, i) => [avant[i], t] as const).filter(([a, b]) => a !== b);
+    expect(changes).toHaveLength(2);
+
+    // Le paragraphe du contexte : la promesse retirée, la suite intacte.
+    const [ancienContexte, nouveauContexte] = changes.find(([a]) => a.startsWith('Avec ces résultats'))!;
+    expect(ancienContexte).toContain('l’application ne les envoie à aucun outil d’intelligence artificielle');
+    expect(nouveauContexte).not.toContain('ne les envoie à aucun outil');
+    expect(nouveauContexte).toBe(ancienContexte.replace(
+      'Seul votre praticien les voit ; l’application ne les envoie à aucun outil d’intelligence artificielle.',
+      phraseContexte,
+    ));
+    expect(nouveauContexte.endsWith(`${phraseContexte} Elles sont conservées et effacées avec votre dossier.`)).toBe(true);
+
+    // La ligne Anthropic : un complément, et rien d'autre.
+    const [ancienAnthropic, nouveauAnthropic] = changes.find(([a]) => a.startsWith('Anthropic — '))!;
+    expect(nouveauAnthropic).toBe(ancienAnthropic.replace('pour la préparation des synthèses', roleAnthropic));
+
+    expect(v24.changeSummary).toBe(resume);
+    expect(v24.titre).toBe(v23.titre);
+    expect(v24.resume).toBe(v23.resume);
+    expect(v24.sections.map(s => s.titre)).toEqual(v23.sections.map(s => s.titre));
+    expect(v24.requiresAcknowledgement).toBe(true);
+    expect(v24.publieLe > v23.publieLe).toBe(true);
+  });
+
+  it('la v9 de « L’intelligence artificielle » dit l’échange à part pour les résultats d’analyses, et rien d’autre', () => {
+    const [paragraphe, resume] = citationsDe(DECISION_D539, '*7e. « L’intelligence artificielle dans Wellneuro » v9.*');
+    expect(paragraphe).toContain('dans un échange qui ne contient rien d’autre');
+    expect(paragraphe).toContain('avec la consigne de ne pas les déclarer normaux ou anormaux');
+
+    const v8 = getVersion('usage_ia', 'v8')!;
+    const v9 = getDocumentCourant('usage_ia');
+    expect(v9.version).toBe('v9');
+    const ancien = 'La préparation du brouillon de la synthèse de votre bilan, à partir de vos réponses aux questionnaires et des éléments transmis à votre praticien.';
+    const ou = (doc: typeof v9) => doc.sections.find(s => s.titre === 'Où l’IA intervient')!.paragraphes;
+    expect(ou(v8)).toContain(ancien);
+    expect(ou(v9)).toEqual(ou(v8).map(p => (p === ancien ? paragraphe : p)));
+    expect(v9.sections.filter(s => s.titre !== 'Où l’IA intervient')).toEqual(
+      v8.sections.filter(s => s.titre !== 'Où l’IA intervient'),
+    );
+    expect(v9.changeSummary).toBe(resume);
+    expect(v9.titre).toBe(v8.titre);
+    expect(v9.resume).toBe(v8.resume);
+    // L'accusé se recueille sur l'écran de dépôt, comme pour la v8.
+    expect(v9.requiresAcknowledgement).toBe(false);
+    expect(v9.publieLe > v8.publieLe).toBe(true);
   });
 
   it('la v6 nomme les résultats d’analyses ET dit ce qui n’en est pas fait', () => {
@@ -1034,10 +1115,13 @@ describe('registre des documents TRUST', () => {
   });
 
   describe('les conditions d’utilisation (D-292)', () => {
-    const conditions = getDocumentCourant('conditions_utilisation');
+    // La v6 reste l'objet des bancs écrits pour elle ; la v7, courante, a les siens.
+    const conditions = getVersion('conditions_utilisation', 'v6')!;
+    const conditionsV7 = getDocumentCourant('conditions_utilisation');
 
     it('reprennent, dans l’ordre, les quatre textes d’information validés', () => {
       expect(conditions.version).toBe('v6');
+      expect(conditionsV7.version).toBe('v7');
       expect(PARTIES_REPRISES_CONDITIONS_V1.map(p => `${p.source.key}@${p.source.version}`)).toEqual([
         'cadre_accompagnement@v1',
         'limites_securite@v1',
@@ -1079,6 +1163,20 @@ describe('registre des documents TRUST', () => {
         'donnees_confidentialite@v23',
         'usage_ia@v8',
       ]);
+      // La v7 change les parties 3 et 4, vers la v24 et la v9 (`D-539` §7f).
+      expect(PARTIES_REPRISES_CONDITIONS_V7.map(p => `${p.source.key}@${p.source.version}`)).toEqual([
+        'cadre_accompagnement@v1',
+        'limites_securite@v1',
+        'donnees_confidentialite@v24',
+        'usage_ia@v9',
+      ]);
+      expect([...new Set(conditionsV7.sections.map(s => s.partie))]).toEqual([
+        'Le cadre de votre accompagnement',
+        'Limites et sécurité médicale',
+        'Vos données personnelles et leur confidentialité',
+        'L’intelligence artificielle',
+        'Quand ces conditions changent',
+      ]);
       expect([...new Set(conditions.sections.map(s => s.partie))]).toEqual([
         'Le cadre de votre accompagnement',
         'Limites et sécurité médicale',
@@ -1093,23 +1191,29 @@ describe('registre des documents TRUST', () => {
     // portent pas. Avant ACT-1, refaire l'assemblage (nouvelle source, nouveau
     // hash) ; après, publier une nouvelle version des conditions.
     it('chaque partie reprise est la version COURANTE de son texte, mot pour mot', () => {
-      for (const { partie, source } of PARTIES_REPRISES_CONDITIONS_V6) {
+      for (const { partie, source } of PARTIES_REPRISES_CONDITIONS_V7) {
         const courant = getDocumentCourant(source.key);
         expect(
           courant.version,
           `« ${courant.titre} » est passé en ${courant.version} ; les conditions reprennent la ${source.version}`,
         ).toBe(source.version);
-        expect(conditions.sections.filter(s => s.partie === partie)).toEqual(sectionsDeLaPartie(partie, courant));
+        expect(conditionsV7.sections.filter(s => s.partie === partie)).toEqual(sectionsDeLaPartie(partie, courant));
       }
     });
 
     it('une seule retouche : le renvoi de la partie 3 nomme la partie sur l’IA', () => {
       const texte = (sections: typeof conditions.sections) =>
         sections.flatMap(s => [...s.paragraphes, ...(s.points ?? [])]).join('\n');
-      const donnees = getDocumentCourant('donnees_confidentialite');
+      const donnees = getVersion('donnees_confidentialite', 'v23')!;
       expect(texte(donnees.sections)).toContain('(voir « L’intelligence artificielle dans Wellneuro »)');
       expect(texte(conditions.sections)).not.toContain('(voir « L’intelligence artificielle dans Wellneuro »)');
       expect(texte(conditions.sections).split('(voir la partie « L’intelligence artificielle »)')).toHaveLength(2);
+      // La v24 porte un second renvoi (le contexte du prélèvement, `D-539`
+      // §7d) : la même retouche les nomme tous deux en partie, et rien d’autre.
+      const donneesV24 = getVersion('donnees_confidentialite', 'v24')!;
+      expect(texte(donneesV24.sections).split('(voir « L’intelligence artificielle dans Wellneuro »)')).toHaveLength(3);
+      expect(texte(conditionsV7.sections)).not.toContain('(voir « L’intelligence artificielle dans Wellneuro »)');
+      expect(texte(conditionsV7.sections).split('(voir la partie « L’intelligence artificielle »)')).toHaveLength(3);
     });
 
     // LE TEXTE NEUF FACE AU TEXTE VALIDÉ. Le test des parties reprises ne voit
@@ -1181,6 +1285,14 @@ describe('registre des documents TRUST', () => {
       expect(conditions.titre).toBe(conditionsV5.titre);
       expect(conditions.resume).toBe(conditionsV5.resume);
       expect(conditions.changeSummary).toBe(citationsV23('### B1. Le résumé des conditions v6')[0]);
+      // La v7 garde la partie 5 de la v6 ; son résumé est relu dans la
+      // décision `D-539` §7f (validé le 2026-11-18).
+      expect(partie5(conditionsV7)).toEqual(partie5(conditions));
+      expect(conditionsV7.titre).toBe(conditions.titre);
+      expect(conditionsV7.resume).toBe(conditions.resume);
+      expect(conditionsV7.changeSummary).toBe(citationsDe(DECISION_D539, '*7f. Conditions d’utilisation v7*')[0]);
+      expect(conditionsV7.requiresAcknowledgement).toBe(true);
+      expect(conditionsV7.publieLe > conditions.publieLe).toBe(true);
     });
 
     it('réclament un accusé, et la partie 5 dit le bouton par son libellé', () => {

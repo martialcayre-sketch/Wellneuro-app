@@ -28,8 +28,6 @@ function sortieConforme() {
     questions_entretien: ['Comment décririez-vous vos journées ?'],
     narratif_patient: 'Un texte accessible, sans jargon.',
     limites: 'À valider par le praticien.',
-    resume_biologie_praticien: '',
-    points_de_vigilance_biologie: [],
   };
 }
 
