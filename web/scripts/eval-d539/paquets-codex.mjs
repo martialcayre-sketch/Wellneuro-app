@@ -16,8 +16,15 @@ if (!sortie) {
   console.error('usage : node scripts/eval-d539/paquets-codex.mjs <dossier-de-sortie>');
   process.exit(1);
 }
-const racine = path.resolve(path.dirname(new URL(import.meta.url).pathname), '../../..');
-const decision = fs.readFileSync(path.join(racine, 'docs/decisions/D-539.md'), 'utf8');
+// Lancé depuis `web/`, comme `extraire.mjs` (sans `import.meta` : les bancs
+// d'importeurs le liraient comme un import non constant).
+const racine = path.resolve(process.cwd(), '..');
+const fichierDecision = path.join(racine, 'docs/decisions/D-539.md');
+if (!fs.existsSync(fichierDecision)) {
+  console.error('à lancer depuis web/ : docs/decisions/D-539.md introuvable');
+  process.exit(1);
+}
+const decision = fs.readFileSync(fichierDecision, 'utf8');
 const debut = decision.indexOf('- **Grille.**');
 const fin = decision.indexOf('- **Entrées vérifiées.**');
 if (debut < 0 || fin < debut) throw new Error('grille introuvable dans D-539.md');
