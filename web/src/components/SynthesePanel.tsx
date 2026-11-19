@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { PenLine, Sparkles, Trash2 } from 'lucide-react';
+import { focusPerdu } from '@/components/ui/useFocusApresRelecture';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { TRAIT_ICONE } from '@/components/ui/icone';
@@ -393,11 +394,13 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
   // revient ; sinon il va au titre du panneau relu.
   useEffect(() => {
     if (!focusApresRelecture) return;
+    setFocusApresRelecture(null);
+    // Un focus posé ailleurs pendant la relecture n'est pas repris (PRA-6h2).
     const [bouton, titre] = focusApresRelecture === 'patients'
       ? [reessayerPatients, titrePatients]
       : [reessayerSyntheses, titreSyntheses];
-    (bouton.current ?? titre.current)?.focus();
-    setFocusApresRelecture(null);
+    const cible = bouton.current ?? titre.current;
+    if (cible && focusPerdu(cible)) cible.focus();
   }, [focusApresRelecture]);
 
   // LE DOSSIER DE L'URL S'APPLIQUE UNE FOIS, PAS À CHAQUE CHANGEMENT DE

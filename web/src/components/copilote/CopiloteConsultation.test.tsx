@@ -199,6 +199,10 @@ describe('CopiloteConsultation', () => {
     await waitFor(() => expect(screen.getAllByRole('button', { name: 'Réessayer' })).toHaveLength(2));
     fireEvent.click(screen.getByRole('button', { name: 'Masquer le contexte' }));
     const auCentre = screen.getAllByRole('button', { name: 'Réessayer' }).find((b) => !contexte().contains(b));
+    // Un vrai clic pose le focus sur le bouton, `fireEvent.click` non : sans
+    // cela, le focus resterait sur « Afficher le contexte », et la garde de
+    // PRA-6h2 (un focus posé ailleurs n'est pas repris) le laisserait là.
+    auCentre!.focus();
     fireEvent.click(auCentre!);
 
     await waitFor(() => expect(appels('/api/praticien/copilote/cloture')).toBe(2));

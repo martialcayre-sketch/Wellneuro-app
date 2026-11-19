@@ -629,7 +629,10 @@ export function BibliothequePanel({ entrees }: { entrees: BibliothequeEntree[] }
                     {/* Aperçu, pas une saisie : `aria-hidden` le retire de
                         l'arbre d'accessibilité, `inert` de l'ordre de
                         tabulation (axe `aria-hidden-focus`, PRA-6h). Posé par
-                        le DOM : React 18 ne connaît pas l'attribut. */}
+                        le DOM : `package.json` déclare React 18.3, mais l'App
+                        Router sert le React 19 canary embarqué par Next
+                        (`next/dist/compiled/react`), qui traite l'attribut
+                        autrement — la ref vaut pour les deux. */}
                     <div
                       ref={rendreInerte}
                       className="pointer-events-none flex flex-col gap-4"

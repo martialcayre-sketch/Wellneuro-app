@@ -43,7 +43,17 @@ export function DetailBesoinsPanel({
   const charger = useCallback(() => {
     setLoading(true);
     return fetch(`/api/praticien/besoins?idPatient=${encodeURIComponent(idPatient)}`)
-      .then(r => r.json())
+      .then(async r => {
+        const d = (await r.json()) as BesoinsApiResponse;
+        // Une réponse au contrat (`unavailable`) garde son motif ; une réponse
+        // hors contrat (500 `{error}` d'un autre émetteur) tombe dans l'état
+        // d'échec du panneau au lieu de faire tomber la page (PRA-6h2).
+        if (d && typeof d === 'object' && 'unavailable' in d) return d;
+        if (!r.ok || !d || typeof d !== 'object' || !d.patient || !Array.isArray(d.besoins)) {
+          throw new Error('Réponse hors contrat');
+        }
+        return d;
+      })
       .then((d: BesoinsApiResponse) => setData(d))
       .catch(() => setData({ unavailable: true, reason: 'exception' }))
       .finally(() => setLoading(false));
