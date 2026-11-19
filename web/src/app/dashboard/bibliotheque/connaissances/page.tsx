@@ -28,7 +28,7 @@ export default function ConnaissancesPage() {
       ) : (
         <div
           role="status"
-          className="rounded-xl border border-border bg-surface p-5 text-base text-muted-foreground shadow-card"
+          className="break-words rounded-xl border border-border bg-surface p-5 text-base text-muted-foreground shadow-card"
         >
           {getRechercheCorpusDisabledMessage()}
         </div>
