@@ -862,7 +862,9 @@ export async function genererSynthesePersistee(
         logger.warn({
           event: EVENT_CODES.SYNTHESE_BIOLOGIE_SCHEMA_REJETE_RELANCE,
           domain: 'SYNTHESE_IA',
-          message: 'Second appel de biologie : sortie hors schéma rejetée, relance conforme',
+          // Les écarts du premier tour : structurels, ou le texte fixe du
+          // contrôle de D-545 §4 — jamais le bloc ni la sortie.
+          message: `Second appel de biologie : sortie rejetée (${resultat.ecartsRelance.join(' ; ')}), relance conforme`,
           context: finalizeLogContext(args.requestContext, { retryable: true }),
         });
       }

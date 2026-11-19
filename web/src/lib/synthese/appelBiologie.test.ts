@@ -19,6 +19,9 @@ import {
   appelerRestitutionBiologie,
   dateBilanDuBloc,
   dateEnLettres,
+  ECART_INTERVALLE_SUIVI_UNITE,
+  intervalleSuiviDUnite,
+  lireSortieBiologie,
   messageRelanceBiologie,
   narratifAvecReceptionBilan,
   phraseReceptionBilan,
@@ -87,6 +90,114 @@ describe('analyserSortieBiologie — schéma fermé à deux clés (D-539 §2)', 
   });
 });
 
+// [[D-545]] §4 et §9 — le contrôle de l'intervalle suivi d'une unité. Formes
+// fictives, écrites comme le constructeur les relève.
+function sortie(resume: string, points: string[] = []) {
+  return { resume_biologie_praticien: resume, points_de_vigilance_biologie: points };
+}
+const FORMES = { intervalles: ['30 - 400'], valeursUnites: [{ valeur: '41', unite: 'µg/L' }] };
+
+describe('intervalleSuiviDUnite — un intervalle imprimé cité en entier, suivi d’une unité (D-545 §4)', () => {
+  it('rejette l’unité d’une valeur du bloc écrite après l’intervalle, dans le résumé comme dans un point', () => {
+    expect(intervalleSuiviDUnite(sortie('Intervalle imprimé par le laboratoire : 30 - 400 µg/L.'), FORMES)).toBe(true);
+    expect(intervalleSuiviDUnite(sortie('x', ['41 µg/L (intervalle imprimé : 30 - 400 µg/L)']), FORMES)).toBe(true);
+  });
+
+  it('séparés au plus par des espaces ou des guillemets : rejet ; par autre chose : non', () => {
+    for (const t of ['« 30 - 400 » µg/L', '"30 - 400"µg/L', '30 - 400\u00a0µg/L', '“30 - 400”  µg/L', '30 - 400µg/L']) {
+      expect(intervalleSuiviDUnite(sortie(t), FORMES), t).toBe(true);
+    }
+    for (const t of ['30 - 400 ; 41 µg/L', '30 - 400 (41 µg/L)', '30 - 400, valeur 41 µg/L', '30 - 400.']) {
+      expect(intervalleSuiviDUnite(sortie(t), FORMES), t).toBe(false);
+    }
+  });
+
+  it('l’unité de n’importe quelle valeur du bloc, et elle seule ; une unité plus longue qui la prolonge n’est pas elle', () => {
+    const formes = { intervalles: ['10-31'], valeursUnites: [{ valeur: '41', unite: 'µg/L' }, { valeur: '2,1', unite: 'mmol/L' }] };
+    expect(intervalleSuiviDUnite(sortie('10-31 mmol/L'), formes)).toBe(true);
+    expect(intervalleSuiviDUnite(sortie('10-31 g/L'), formes)).toBe(false);
+    expect(intervalleSuiviDUnite(sortie('10-31 µg/Lx'), formes)).toBe(false);
+  });
+
+  it('rejette une unité ajoutée identique à celle qui termine le texte imprimé', () => {
+    const formes = { intervalles: ['30 - 400 µg/L'], valeursUnites: [{ valeur: '41', unite: 'µg/L' }] };
+    expect(intervalleSuiviDUnite(sortie('Intervalle imprimé : 30 - 400 µg/L µg/L.'), formes)).toBe(true);
+  });
+
+  it('ne rejette pas l’unité interne au texte imprimé, cité exactement', () => {
+    const formes = { intervalles: ['30 - 400 µg/L'], valeursUnites: [{ valeur: '41', unite: 'µg/L' }] };
+    expect(intervalleSuiviDUnite(sortie('Intervalle imprimé par le laboratoire : 30 - 400 µg/L.'), formes)).toBe(false);
+    expect(intervalleSuiviDUnite(sortie('« 30 - 400 µg/L »'), formes)).toBe(false);
+  });
+
+  it('ne rejette pas un texte cité exactement dont un texte plus court est le début : le plus long fait foi', () => {
+    const formes = { intervalles: ['30 - 400', '30 - 400 µg/L chez l’adulte'], valeursUnites: [{ valeur: '41', unite: 'µg/L' }] };
+    expect(intervalleSuiviDUnite(sortie('Intervalle imprimé : 30 - 400 µg/L chez l’adulte.'), formes)).toBe(false);
+    // L'ordre des formes ne change rien.
+    expect(intervalleSuiviDUnite(sortie('Intervalle imprimé : 30 - 400 µg/L chez l’adulte.'), { ...formes, intervalles: [...formes.intervalles].reverse() })).toBe(false);
+    // Le plus long, lui, suivi d'une unité ajoutée, est rejeté.
+    expect(intervalleSuiviDUnite(sortie('30 - 400 µg/L chez l’adulte µg/L'), formes)).toBe(true);
+    // Et le plus court, cité seul et suivi d'une unité, aussi.
+    expect(intervalleSuiviDUnite(sortie('30 - 400 µg/L, chez l’enfant'), formes)).toBe(true);
+  });
+
+  it('ne rejette pas l’unité d’un texte imprimé plus large qui contient un texte plus court en son milieu', () => {
+    const formes = { intervalles: ['2,5', 'H : 2,5 µg/L à 9'], valeursUnites: [{ valeur: '41', unite: 'µg/L' }] };
+    expect(intervalleSuiviDUnite(sortie('Imprimé : H : 2,5 µg/L à 9.'), formes)).toBe(false);
+  });
+
+  it('cité en entier : la fin d’une autre expression chiffrée n’est pas une citation (revue wn-reviewer, P2-2)', () => {
+    const unite = [{ valeur: '41', unite: 'g/L' }];
+    expect(intervalleSuiviDUnite(sortie('13 - 5 g/L'), { intervalles: ['3 - 5'], valeursUnites: unite })).toBe(false);
+    expect(intervalleSuiviDUnite(sortie('15,0 g/L'), { intervalles: ['5,0'], valeursUnites: unite })).toBe(false);
+    expect(intervalleSuiviDUnite(sortie('1,5,0 g/L'), { intervalles: ['5,0'], valeursUnites: unite })).toBe(false);
+    expect(intervalleSuiviDUnite(sortie('X3 - 5 g/L'), { intervalles: ['3 - 5'], valeursUnites: unite })).toBe(false);
+    // Précédée d'une espace, d'un guillemet ou d'une ponctuation, elle l'est.
+    for (const t of ['imprimé : 3 - 5 g/L', '«3 - 5» g/L', '(3 - 5 g/L)']) {
+      expect(intervalleSuiviDUnite(sortie(t), { intervalles: ['3 - 5'], valeursUnites: unite }), t).toBe(true);
+    }
+  });
+
+  it('une unité qui ouvre un autre texte imprimé, cité juste après, fait partie de l’imprimé (revue wn-reviewer, P2-3a)', () => {
+    const formes = { intervalles: ['10 - 20', 'µg/L : 30 - 400'], valeursUnites: [{ valeur: '41', unite: 'µg/L' }] };
+    expect(intervalleSuiviDUnite(sortie('« 10 - 20 » « µg/L : 30 - 400 »'), formes)).toBe(false);
+    expect(intervalleSuiviDUnite(sortie('« 10 - 20 » µg/L'), formes)).toBe(true);
+  });
+
+  it('une unité d’une lettre suivie d’une apostrophe et d’une lettre n’est pas l’unité (revue wn-reviewer, P2-3b)', () => {
+    const formes = { intervalles: ['25 - 35'], valeursUnites: [{ valeur: '30', unite: 's' }] };
+    expect(intervalleSuiviDUnite(sortie('« 25 - 35 » s’il est lu'), formes)).toBe(false);
+    expect(intervalleSuiviDUnite(sortie("« 25 - 35 » s'il est lu"), formes)).toBe(false);
+    expect(intervalleSuiviDUnite(sortie('« 25 - 35 » s.'), formes)).toBe(true);
+  });
+
+  it('sans intervalle imprimé ou sans unité au bloc, rien à rejeter ; un intervalle reformulé lui échappe', () => {
+    expect(intervalleSuiviDUnite(sortie('30 - 400 µg/L'), { intervalles: [], valeursUnites: FORMES.valeursUnites })).toBe(false);
+    expect(intervalleSuiviDUnite(sortie('30 - 400 µg/L'), { intervalles: FORMES.intervalles, valeursUnites: [] })).toBe(false);
+    expect(intervalleSuiviDUnite(sortie('de 30 à 400 µg/L'), FORMES)).toBe(false);
+  });
+
+  it('lit les formes du vrai constructeur : intervalle imprimé sans unité, valeur avec la sienne', () => {
+    const trace = bloc([ligne({
+      valeur: '41', unite: 'µg/L', source: 'import_labo',
+      lue: { versionProcede: 'bio-extraction-v5', intervalleLu: '30 - 400', intervalleNonTranscrit: false, uniteLue: 'µg/L', valeurLue: '41' },
+    })]);
+    expect(trace.formes.intervalles).toEqual(['30 - 400']);
+    expect(intervalleSuiviDUnite(sortie('41 µg/L ; intervalle imprimé : 30 - 400 µg/L'), trace.formes)).toBe(true);
+    expect(intervalleSuiviDUnite(sortie('41 µg/L ; intervalle imprimé : 30 - 400'), trace.formes)).toBe(false);
+  });
+});
+
+describe('lireSortieBiologie — le schéma, puis le contrôle, au même tour (D-545 §4)', () => {
+  it('le schéma d’abord ; s’il passe, le contrôle ; l’écart est le texte fixe, sans rien du bloc', () => {
+    expect(lireSortieBiologie({ autre: 1 }, FORMES).ok).toBe(false);
+    const r = lireSortieBiologie(sortie('30 - 400 µg/L'), FORMES);
+    expect(r).toEqual({ ok: false, violations: [ECART_INTERVALLE_SUIVI_UNITE] });
+    expect(ECART_INTERVALLE_SUIVI_UNITE).toBe("un intervalle imprimé est suivi d'une unité ; cite chaque intervalle tel qu'il est imprimé, sans aucune unité juste après lui");
+    expect(lireSortieBiologie(sortie('30 - 400'), FORMES)).toEqual({ ok: true, sortie: sortie('30 - 400') });
+  });
+});
+
 describe('la relance du second appel (D-539 §2)', () => {
   it('dit la forme attendue, liste vide admise, sans « aucun champ vide »', () => {
     const m = messageRelanceBiologie(['resume_biologie_praticien : chaîne non vide attendue']);
@@ -99,7 +210,7 @@ describe('la relance du second appel (D-539 §2)', () => {
 describe('appelerRestitutionBiologie — le bloc seul, une relance, trois issues', () => {
   const trace = bloc([ligne()]);
 
-  it('le message réellement envoyé est le bloc, sans autre texte, sous la consigne synthese-biologie-v1', async () => {
+  it('le message réellement envoyé est le bloc, sans autre texte, sous la consigne synthese-biologie-v2', async () => {
     anthropicCreate.mockReset().mockResolvedValueOnce(reponse(JSON.stringify(SORTIE_CONFORME), { input_tokens: 7 }));
     const r = await appelerRestitutionBiologie(trace);
     expect(r.issue).toBe('reussi');
@@ -127,6 +238,35 @@ describe('appelerRestitutionBiologie — le bloc seul, une relance, trois issues
     expect(relance.at(-1).content).toBe(messageRelanceBiologie(['resume_biologie_praticien : chaîne non vide attendue']));
     expect(r).toMatchObject({ issue: 'reussi', relance: true, sortie: { points_de_vigilance_biologie: [] } });
     expect(r.metriques.input_tokens).toBe(11);
+  });
+
+  it('un intervalle suivi d’une unité : relance unique avec l’écart du §4 ; corrigée, elle réussit (D-545 §4)', async () => {
+    const t = bloc([ligne({
+      valeur: '41', unite: 'µg/L', source: 'import_labo',
+      lue: { versionProcede: 'bio-extraction-v5', intervalleLu: '30 - 400', intervalleNonTranscrit: false, uniteLue: 'µg/L', valeurLue: '41' },
+    })]);
+    anthropicCreate.mockReset()
+      .mockResolvedValueOnce(reponse(JSON.stringify(sortie('Intervalle imprimé : 30 - 400 µg/L.'))))
+      .mockResolvedValueOnce(reponse(JSON.stringify(sortie('Intervalle imprimé : 30 - 400.'))));
+    const r = await appelerRestitutionBiologie(t);
+    expect(anthropicCreate).toHaveBeenCalledTimes(2);
+    const relance = anthropicCreate.mock.calls[1][0].messages.at(-1).content as string;
+    expect(relance).toBe(messageRelanceBiologie([ECART_INTERVALLE_SUIVI_UNITE]));
+    // La relance ne cite aucun texte du bloc.
+    for (const interdit of ['30 - 400', 'µg/L', '41']) expect(relance, interdit).not.toContain(interdit);
+    expect(r).toMatchObject({ issue: 'reussi', relance: true, ecartsRelance: [ECART_INTERVALLE_SUIVI_UNITE] });
+  });
+
+  it('un intervalle suivi d’une unité après la relance : sortie_rejetee, sans troisième appel, écart sans texte du bloc (D-545 §4)', async () => {
+    const t = bloc([ligne({
+      valeur: '41', unite: 'µg/L', source: 'import_labo',
+      lue: { versionProcede: 'bio-extraction-v5', intervalleLu: '30 - 400', intervalleNonTranscrit: false, uniteLue: 'µg/L', valeurLue: '41' },
+    })]);
+    anthropicCreate.mockReset().mockResolvedValue(reponse(JSON.stringify(sortie('x', ['30 - 400 µg/L']))));
+    const r = await appelerRestitutionBiologie(t);
+    expect(anthropicCreate).toHaveBeenCalledTimes(2);
+    expect(r).toMatchObject({ issue: 'sortie_rejetee', violations: [ECART_INTERVALLE_SUIVI_UNITE] });
+    for (const interdit of ['30 - 400', 'µg/L', '41']) expect(JSON.stringify(r), interdit).not.toContain(interdit);
   });
 
   it('deux rejets : sortie_rejetee, sans troisième appel', async () => {
