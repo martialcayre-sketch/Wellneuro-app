@@ -57,4 +57,33 @@ test.describe('Lectures hors contrat (PRA-6h)', () => {
     }
     await expect(page.getByText('Une erreur est survenue')).toHaveCount(0);
   });
+
+  // PRA-6h2 : la fiche patient. Sa lecture lisait `data.patient` sans tester
+  // `r.ok` ni la forme ; un 500 `{error}` doit tomber dans son état d'échec
+  // existant, et « Réessayer » relire la fiche puis rendre le focus au nom du
+  // patient (arbitrage 20261118-2228-d). Dossier de fixture seulement.
+  test('fiche : l’échec se dit dans la fiche, « Réessayer » la relit et rend le focus au nom', async ({ page, context }) => {
+    await context.addCookies([await praticienSessionCookie()]);
+    let restants = 1;
+    await page.route(
+      (url) => url.pathname === '/api/praticien/equilibre',
+      (route) => {
+        if (route.request().method() === 'GET' && restants > 0) {
+          restants -= 1;
+          return route.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ error: 'Erreur interne' }) });
+        }
+        return route.continue();
+      },
+    );
+    await page.goto('/dashboard/patients/PAT_SEED_01');
+
+    const alerte = page.getByRole('alert').filter({ hasText: 'La fiche patient n’a pas pu être lue.' });
+    await expect(alerte).toBeVisible();
+    await expect(page.getByText('Une erreur est survenue')).toHaveCount(0);
+
+    await alerte.getByRole('button', { name: 'Réessayer' }).click();
+    const titre = page.getByRole('heading', { level: 2, name: 'Sophie Nicola' });
+    await expect(titre).toBeVisible();
+    await expect(titre).toBeFocused();
+  });
 });

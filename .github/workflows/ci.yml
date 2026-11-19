@@ -124,7 +124,6 @@ jobs:
           #   (`scripts/`), `.claude/` (bancs des crochets, dans `controles`) ou
           #   `changelog.d/`. Sur `push` de `main`, l'outillage garde l'E2E :
           #   ce run déploie la tête, il doit avoir joué l'arbre déployé.
-          #   Exception : `scripts/wn-playwright-apt.mjs`, que `e2e` exécute.
           # - `unitaires` (type-check, Vitest, lint) : vrai dès que `e2e` l'est,
           #   quand le diff touche `scripts/` (des gardes Vitest y cherchent
           #   écrivains et importeurs interdits), ET quand il touche une
@@ -141,10 +140,9 @@ jobs:
             motif_neutre='(^docs/|\.md$)'
           fi
           neutres="$(printf '%s\n' "$fichiers" | grep -vE "$motif_neutre" || true)"
-          outillage_e2e="$(printf '%s\n' "$fichiers" | grep -E '^scripts/wn-playwright-apt\.mjs$' || true)"
           outillage="$(printf '%s\n' "$fichiers" | grep -E '^scripts/' || true)"
           lus="$(printf '%s\n' "$fichiers" | grep -E '^docs/(decisions/|claude/(propositions|corpus)/|claude/campagnes/([^/]+/supports/|[^/]+\.md$)|FEATURE_FLAGS\.md$|DOSSIER_RGPD\.md$)' || true)"
-          if [ -z "$fichiers" ] || [ -n "$neutres" ] || [ -n "$outillage_e2e" ] || [ -n "$mapping" ] || [ -n "$registre" ] || [ -n "$preuves" ] || [ -n "$consignes" ]; then
+          if [ -z "$fichiers" ] || [ -n "$neutres" ] || [ -n "$mapping" ] || [ -n "$registre" ] || [ -n "$preuves" ] || [ -n "$consignes" ]; then
             echo "e2e=true" >> "$GITHUB_OUTPUT"
             echo "unitaires=true" >> "$GITHUB_OUTPUT"
           elif [ -n "$lus" ] || [ -n "$outillage" ]; then
@@ -2258,8 +2256,22 @@ jobs:
   # du périmètre — une PR de documentation, d'outillage racine, de `.claude/`
   # ou de `changelog.d/` y saute tout (2026-11-13).
   e2e:
+    # CONTENEUR OFFICIEL PLAYWRIGHT (2026-11-19). Navigateurs ET bibliothèques
+    # système y sont déjà, à la version du lock : le job n'appelle plus ni apt
+    # ni le téléchargement des navigateurs. Trois pannes ne l'atteignent plus :
+    # le miroir Azure muet (2026-11-11), le miroir EC2 trop lent (2026-11-19,
+    # installation expirée à 10 min) et le passage d'`ubuntu-latest` à 26.04
+    # (WebKit sans libicu74, 175 tests rouges). L'OS des navigateurs est celui
+    # de l'image, pas celui du runner. Le tag suit `@playwright/test` du lock :
+    # `scripts/ci-invariants.test.mjs` refuse tout écart, et
+    # `visual-baselines.yml` tourne dans la même image.
     runs-on: ubuntu-latest
     timeout-minutes: 40
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble
+      # Chromium partage sa mémoire par /dev/shm, trop petit par défaut dans
+      # un conteneur (recommandation de Playwright).
+      options: --ipc=host
     services: *services
     env: *env
     steps:
@@ -2285,6 +2297,21 @@ jobs:
         if: steps.scope.outputs.e2e == 'true'
         working-directory: web
         run: npx prisma generate
+
+      # Dans un conteneur, le service répond à l'hôte `postgres`, pas à
+      # `localhost`. Or `supabasePoolSsl` (`web/src/lib/postgres.ts`) force
+      # TLS vers tout hôte non local, et le service n'en a pas. Un relais TCP
+      # garde donc `DATABASE_URL` sur localhost, la même chaîne que les autres
+      # jobs, sans toucher au code applicatif.
+      - name: Relais PostgreSQL sur localhost
+        if: steps.scope.outputs.e2e == 'true'
+        run: |
+          nohup node -e 'const n = require("net"); n.createServer((c) => { const s = n.connect(5432, "postgres"); c.on("error", () => s.destroy()); s.on("error", () => c.destroy()); c.pipe(s).pipe(c); }).listen(5432, "127.0.0.1");' > /tmp/relais-postgres.log 2>&1 &
+          for i in $(seq 1 20); do
+            node -e 'require("net").connect(5432, "127.0.0.1").on("connect", () => process.exit(0)).on("error", () => process.exit(1))' && exit 0
+            sleep 0.5
+          done
+          echo "::error::Relais PostgreSQL muet sur localhost:5432"; cat /tmp/relais-postgres.log; exit 1
 
       - name: Setup database schema
         if: steps.scope.outputs.e2e == 'true'
@@ -2353,29 +2380,6 @@ jobs:
           # Seulement ici : en production, il ferait dépasser 2048 Mo à l'image.
           WN_GARDER_CACHE_WEBPACK: '1'
         run: npm run build
-
-      # Installation des navigateurs placée juste avant les E2E, et non en tête
-      # de job : tout échec statique (type-check, Vitest, lint, build) rendait
-      # sinon la main après avoir payé ~1 min de téléchargement inutile.
-      - name: Cache navigateurs Playwright
-        if: steps.scope.outputs.e2e == 'true'
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('web/package-lock.json') }}
-
-      # Le cache des navigateurs ne contient pas les bibliothèques système.
-      # Azure ne répondait plus le 2026-11-11 : ~20 s d'attente PAR paquet.
-      - name: Préparer les miroirs Ubuntu pour Playwright
-        if: steps.scope.outputs.e2e == 'true'
-        working-directory: web
-        run: sudo env GITHUB_ACTIONS=true "$(command -v node)" ../scripts/wn-playwright-apt.mjs
-
-      - name: Install Playwright browsers
-        if: steps.scope.outputs.e2e == 'true'
-        timeout-minutes: 10
-        working-directory: web
-        run: npx playwright install --with-deps chromium webkit
 
       # E2E contre le build de production produit plus haut : plus rapide (pas
       # de compilation à la demande de next dev) et plus fidèle au déploiement

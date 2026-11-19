@@ -757,7 +757,10 @@ export function ImportCompteRenduPanel({
       </p>
 
       <div className="mt-3 flex flex-wrap items-end gap-2">
-        <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+        {/* `min-w-0` et `max-w-full` (PRA-6g) : à 320 px, le champ fichier
+            imposait sa largeur propre au libellé, et la page défilait en
+            largeur. Au bureau, le libellé tient déjà : rien ne change. */}
+        <label className="flex min-w-0 max-w-full flex-col gap-1 text-xs text-muted-foreground">
           Compte rendu (PDF de 10 Mo, ou photo JPEG, PNG, WebP de 3,75 Mo au plus)
           <input
             key={cleFichier}
@@ -765,7 +768,7 @@ export function ImportCompteRenduPanel({
             accept="application/pdf,image/jpeg,image/png,image/webp"
             disabled={occupe}
             onChange={e => setFichier(e.target.files?.[0] ?? null)}
-            className="text-sm text-foreground"
+            className="min-w-0 max-w-full text-sm text-foreground"
           />
         </label>
         <button type="button" onClick={() => void deposer()} disabled={occupe || !fichier} className={BOUTON}>

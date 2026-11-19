@@ -57,7 +57,6 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import os from 'node:os';
-import { preparerMiroirsApt } from './wn-playwright-apt.mjs';
 
 const RACINE = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CHEMIN = path.join(RACINE, '.github/workflows/ci.yml');
@@ -327,42 +326,33 @@ function etape(bloc, nom) {
   return { debut, texte: fin < 0 ? suite : suite.slice(0, fin + 1) };
 }
 
-test('Playwright évite le miroir Azure dans les sources APT sans altérer leur signature', (t) => {
-  const apt = fs.mkdtempSync(path.join(os.tmpdir(), 'wn-playwright-apt-'));
-  t.after(() => fs.rmSync(apt, { recursive: true, force: true }));
-  fs.mkdirSync(path.join(apt, 'sources.list.d'));
-  fs.mkdirSync(path.join(apt, 'apt.conf.d'));
-  const azure = 'http://azure.archive.ubuntu.com/ubuntu/';
-  const officiel = 'https://archive.ubuntu.com/ubuntu/';
-  const contenus = {
-    'sources.list': `deb ${azure} noble main\n`,
-    'apt-mirrors.txt': `${azure}\n`,
-    'apt-mirrors-security.txt': 'https://azure.archive.ubuntu.com/ubuntu/\n',
-    'sources.list.d/ubuntu.sources': `Types: deb\nURIs: ${azure}\nSuites: noble noble-security\nComponents: main universe\nSigned-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg\n`,
-    'sources.list.d/microsoft.list': 'deb https://packages.microsoft.com/ubuntu/24.04/prod noble main\n',
-  };
-  for (const [nom, contenu] of Object.entries(contenus)) fs.writeFileSync(path.join(apt, nom), contenu);
-  assert.equal(preparerMiroirsApt(apt), 4);
-  for (const [nom, contenu] of Object.entries(contenus)) {
-    assert.equal(fs.readFileSync(path.join(apt, nom), 'utf8'),
-      contenu.replaceAll(azure, officiel).replaceAll('https://azure.archive.ubuntu.com/ubuntu/', officiel));
-  }
-  assert.equal(preparerMiroirsApt(apt), 0, 'un second passage ne réécrit pas les sources');
-  const config = fs.readFileSync(path.join(apt, 'apt.conf.d/99-playwright-network'), 'utf8');
-  assert.match(config, /Acquire::https::Timeout "15"/);
-  assert.match(config, /APT::Update::Error-Mode "any"/, 'un index inaccessible doit échouer');
-  assert.doesNotMatch(config, /AllowInsecure|AllowUnauthenticated|Verify-Peer/);
-});
+/** Version exacte de `@playwright/test` dans le lock de `web/`. */
+function versionPlaywrightDuLock() {
+  const lock = JSON.parse(fs.readFileSync(path.join(RACINE, 'web/package-lock.json'), 'utf8'));
+  const version = lock.packages?.['node_modules/@playwright/test']?.version;
+  assert.ok(version, 'web/package-lock.json : @playwright/test introuvable.');
+  return version;
+}
 
-test('les deux workflows préparent APT avant une installation Playwright bornée', () => {
-  for (const [workflow, nom] of [[blocE2e(), 'Install Playwright browsers'],
-    [fs.readFileSync(CHEMIN_BASELINES, 'utf8'), 'Navigateurs Playwright']]) {
-    const miroirs = etape(workflow, 'Préparer les miroirs Ubuntu pour Playwright');
-    const installation = etape(workflow, nom);
-    assert.ok(miroirs.debut < installation.debut);
-    assert.match(miroirs.texte, /sudo env GITHUB_ACTIONS=true .*wn-playwright-apt\.mjs/);
-    assert.match(installation.texte, /timeout-minutes: 10/);
-    assert.match(installation.texte, /playwright install --with-deps chromium webkit/);
+test('les deux workflows jouent Playwright dans le conteneur officiel de la version du lock, sans apt', () => {
+  // Le conteneur porte navigateurs et bibliothèques système (2026-11-19) : un
+  // tag en retard sur le lock lancerait des navigateurs d'une autre révision
+  // (« Executable doesn't exist »), et une installation réintroduite
+  // ramènerait les miroirs Ubuntu et l'OS du runner dans l'E2E.
+  const image = `mcr.microsoft.com/playwright:v${versionPlaywrightDuLock()}-noble`;
+  const conteneur = /^    container:\n      image: (\S+)\n/m;
+  for (const [quoi, bloc, migrations] of [
+    ['ci.yml (e2e)', blocE2e(), 'Setup database schema'],
+    ['visual-baselines.yml', fs.readFileSync(CHEMIN_BASELINES, 'utf8'), 'Migrations'],
+  ]) {
+    assert.match(bloc, conteneur, `${quoi} : pas de conteneur Playwright.`);
+    assert.equal(conteneur.exec(bloc)[1], image, `${quoi} : tag du conteneur différent du lock.`);
+    assert.match(bloc, /^      options: --ipc=host$/m, `${quoi} : /dev/shm par défaut, trop petit pour Chromium.`);
+    assert.doesNotMatch(bloc, /playwright install|apt-get|wn-playwright-apt/, `${quoi} : installation réintroduite.`);
+    const relais = etape(bloc, 'Relais PostgreSQL sur localhost');
+    assert.match(relais.texte, /connect\(5432, "postgres"\)/);
+    assert.match(relais.texte, /listen\(5432, "127\.0\.0\.1"\)/);
+    assert.ok(etape(bloc, migrations).debut > relais.debut, `${quoi} : le relais doit précéder les migrations.`);
   }
 });
 
@@ -527,7 +517,6 @@ test('le périmètre classe chaque diff du bon côté, et la documentation lue p
     [['scripts/wn-outil.mjs', '.claude/hooks/garde.mjs', 'changelog.d/x.md'], { docs_only: 'false', unitaires: 'true', e2e: 'false' }],
     [['.claude/hooks/garde.mjs', 'changelog.d/x.md'], { docs_only: 'false', unitaires: 'false', e2e: 'false' }],
     [['scripts/wn-outil.mjs', 'docs/decisions/D-999.md'], { docs_only: 'false', unitaires: 'true', e2e: 'false' }],
-    [['scripts/wn-playwright-apt.mjs'], CODE],
     [['scripts/wn-outil.mjs', 'web/src/a.ts'], CODE],
     [[], CODE],
   ];
@@ -621,7 +610,9 @@ test('`typage-tests` suit la sortie `unitaires`, `e2e` la sortie `e2e`, et `cont
   const typage = conditions(bloc('typage-tests'));
   const e2e = conditions(bloc('e2e'));
   assert.ok(typage.length >= 8 && typage.every((c) => c === 'unitaires'), `typage-tests : ${typage.join(', ')}`);
-  assert.ok(e2e.length >= 11 && e2e.every((c) => c === 'e2e'), `e2e : ${e2e.join(', ')}`);
+  // 9 depuis le conteneur Playwright (2026-11-19) : trois étapes d'installation
+  // retirées, le relais PostgreSQL ajouté.
+  assert.ok(e2e.length >= 9 && e2e.every((c) => c === 'e2e'), `e2e : ${e2e.join(', ')}`);
   assert.ok(conditions(bloc('controles')).every((c) => c === 'docs_only'));
   // Un plafond par job : un run bloqué ne brûle plus six heures de runner.
   for (const nom of ['controles', 'typage-tests', 'e2e', 'verify']) {

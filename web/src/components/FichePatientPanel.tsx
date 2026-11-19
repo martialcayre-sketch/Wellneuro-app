@@ -81,6 +81,7 @@ import { DetailProvenance } from '@/components/patient-cockpit/DetailProvenance'
 import { Chip } from '@/components/ui/Chip';
 import { SpiraleTrajectoire } from '@/components/ui/SpiraleTrajectoire';
 import { ModeConsultation } from '@/components/ui/ModeConsultation';
+import { useFocusApresRelecture } from '@/components/ui/useFocusApresRelecture';
 import { ChiffresMasquesProvider, useChiffresMasques, ValeurMasquee } from '@/components/patient-cockpit/ChiffresMasques';
 import { PatientPreview } from '@/components/PatientPreview';
 import { DetailBesoinsPanel } from '@/components/DetailBesoinsPanel';
@@ -918,12 +919,44 @@ export function FichePatientPanel({
 
   const chargerFiche = useCallback(() => {
     setLoading(true);
-    fetch(`/api/praticien/equilibre?idPatient=${encodeURIComponent(idPatient)}`)
-      .then(r => r.json())
+    return fetch(`/api/praticien/equilibre?idPatient=${encodeURIComponent(idPatient)}`)
+      .then(async r => {
+        const d = (await r.json()) as EquilibreApiResponse;
+        // Une réponse au contrat (`unavailable`) garde son motif ; une réponse
+        // hors contrat (500 `{error}` d'un autre émetteur, forme inattendue)
+        // tombe dans l'état d'échec de la fiche au lieu de faire tomber la
+        // page sur `data.patient` (PRA-6h2).
+        if (d && typeof d === 'object' && 'unavailable' in d) return d;
+        if (
+          !r.ok
+          || !d
+          || typeof d !== 'object'
+          || !('patient' in d)
+          || !d.patient
+          || typeof d.objetsCliniques !== 'object'
+          || d.objetsCliniques === null
+          || !Array.isArray(d.priorites)
+        ) {
+          throw new Error('Réponse hors contrat');
+        }
+        return d;
+      })
       .then((d: EquilibreApiResponse) => setData(d))
       .catch(() => setData({ unavailable: true, reason: 'exception' }))
       .finally(() => setLoading(false));
   }, [idPatient]);
+  // « Réessayer » de la fiche et du bandeau des corrections : le titre relu
+  // est le nom du patient, en tête de fiche (arbitrage 20261118-2228-d).
+  const relectureFiche = useFocusApresRelecture();
+  const relectureCorrections = useFocusApresRelecture(relectureFiche.titreRef);
+  // Échus (phase Patient) et envois (phase Données) : le titre relu est celui
+  // de la zone focale, qui porte la phase affichée.
+  const titreZoneFocaleRef = useRef<HTMLHeadingElement>(null);
+  const relectureEchues = useFocusApresRelecture(titreZoneFocaleRef);
+  const relecturePassations = useFocusApresRelecture(titreZoneFocaleRef);
+  // Onglet Trajectoire : pas de titre propre, le panneau est nommé par son
+  // onglet et reçoit déjà le focus quand on l'ouvre depuis la Réévaluation.
+  const relectureTrajectoire = useFocusApresRelecture<HTMLDivElement>();
 
   useEffect(() => {
     chargerFiche();
@@ -1315,9 +1348,10 @@ export function FichePatientPanel({
 
   // Un geste qui relit la trajectoire (confirmation d'une ancre) relit aussi
   // les comparaisons, dont le cycle en cours en dépend (D-406 §3).
-  const rechargerTrajectoireEtReponses = useCallback(() => {
-    void chargerTrajectoire();
-    void chargerReponses();
+  // Il rend sa promesse : le « Réessayer » de la Réévaluation, dans le runtime
+  // piloté, attend la relecture avant de rendre le focus (PRA-6h2).
+  const rechargerTrajectoireEtReponses = useCallback(async () => {
+    await Promise.all([chargerTrajectoire(), chargerReponses()]);
   }, [chargerTrajectoire, chargerReponses]);
 
   // Lecture désormais engagée dès l'ouverture de la fiche (SP-CONV LOT-02) :
@@ -1478,8 +1512,9 @@ export function FichePatientPanel({
       <div role="alert" className="flex flex-wrap items-center gap-3 bg-muted border border-border rounded-xl p-4 text-base text-muted-foreground">
         <span className="min-w-0">La fiche patient n’a pas pu être lue.</span>
         <button
+          ref={relectureFiche.boutonRef}
           type="button"
-          onClick={chargerFiche}
+          onClick={() => void relectureFiche.relire(chargerFiche)}
           className="ml-auto min-h-9 shrink-0 rounded-lg border border-accent px-3 py-1 text-xs font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
         >
           Réessayer
@@ -2137,8 +2172,9 @@ export function FichePatientPanel({
                 Les questionnaires échus n’ont pas pu être lus. Ce dossier peut en compter un, jamais rempli et bloqué.
               </span>
               <button
+                ref={relectureEchues.boutonRef}
                 type="button"
-                onClick={() => void chargerEchues()}
+                onClick={() => void relectureEchues.relire(chargerEchues)}
                 className="ml-auto min-h-11 shrink-0 rounded-lg border border-accent px-3 py-1 text-sm font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
               >
                 Réessayer la lecture des questionnaires échus
@@ -2195,8 +2231,9 @@ export function FichePatientPanel({
                   : 'Le compte des envois est inconnu : la liste n’a pas pu être obtenue. Inconnu, pas nul.'}
               </span>
               <button
+                ref={relecturePassations.boutonRef}
                 type="button"
-                onClick={() => void chargerPassations()}
+                onClick={() => void relecturePassations.relire(chargerPassations)}
                 className="ml-auto min-h-9 shrink-0 rounded-lg border border-accent px-3 py-1 text-xs font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
               >
                 Réessayer la lecture des envois
@@ -2445,7 +2482,7 @@ export function FichePatientPanel({
           courant ; les bannières critiques, exceptionnelles, peuvent décaler. */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
-          <h2 className="font-display text-xl font-bold tracking-[-0.02em] text-foreground">{nomComplet}</h2>
+          <h2 ref={relectureFiche.titreRef} tabIndex={-1} className="font-display text-xl font-bold tracking-[-0.02em] text-foreground">{nomComplet}</h2>
           <p className="break-all text-xs text-muted-foreground">{patient.email}</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -2533,8 +2570,9 @@ export function FichePatientPanel({
             Les demandes de correction de questionnaire n’ont pas pu être lues. Ce dossier peut en compter une en attente de déblocage.
           </span>
           <button
+            ref={relectureCorrections.boutonRef}
             type="button"
-            onClick={() => void chargerCorrections()}
+            onClick={() => void relectureCorrections.relire(chargerCorrections)}
             className="ml-auto min-h-9 shrink-0 rounded-lg border border-accent px-3 py-1 text-xs font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
           >
             Réessayer la lecture des corrections de questionnaire
@@ -2917,6 +2955,13 @@ export function FichePatientPanel({
                   : statut === 'en_attente'
                     ? 'bg-accent/10 font-semibold text-foreground shadow-[inset_3px_0_0_var(--color-accent)] hover:bg-accent/[.14]'
                     : 'text-muted-foreground hover:text-foreground';
+                // Statut en encre sur le fond argile de la phase due : le gris
+                // atténué y tombait à 4,5:1 sur la sauge du rail, 4,35:1 au
+                // survol (PRA-6f, axe `color-contrast`) ; l'encre y tient
+                // 8,9:1 et 8,6:1. Ailleurs, le gris atténué reste au-dessus
+                // de 4,5:1 (4,9:1 sur sauge, 5,8:1 sur la carte active).
+                const classesStatut =
+                  !actif && statut === 'en_attente' ? 'text-foreground' : 'text-muted-foreground';
                 return (
                   <button
                     key={phase.id}
@@ -2938,7 +2983,7 @@ export function FichePatientPanel({
                         libellés se lisaient comme des catégories
                         indépendantes, pas comme un cycle à parcourir. */}
                     <span className="min-w-0 flex-1 truncate">{index + 1}. {phase.libelle}</span>
-                    <span className="shrink-0 text-2xs text-muted-foreground">{libelleStatut(phase.id, statut)}</span>
+                    <span className={`shrink-0 text-2xs ${classesStatut}`}>{libelleStatut(phase.id, statut)}</span>
                   </button>
                 );
               })}
@@ -2973,7 +3018,7 @@ export function FichePatientPanel({
                 <p className="text-xs font-semibold uppercase tracking-[.06em] text-solar-ink">
                   {statutPhase(phaseCourante.id) === 'en_attente' ? 'Phase due' : 'Zone focale'}
                 </p>
-                <h3 className="font-display text-xl font-bold text-foreground">{phaseCourante.libelle}</h3>
+                <h3 ref={titreZoneFocaleRef} tabIndex={-1} className="font-display text-xl font-bold text-foreground">{phaseCourante.libelle}</h3>
               </div>
               {/* Contexte fermé : l'information critique reste dans la zone de
                   travail (prototype PRA-3a validé, Q3) — les mêmes instruments
@@ -3155,6 +3200,7 @@ export function FichePatientPanel({
           défile pas la page) ; sous lg, le flux normal demeure, comme le
           cockpit. */}
       <div
+        ref={relectureTrajectoire.titreRef}
         role="tabpanel"
         id="panneau-trajectoire"
         aria-labelledby="onglet-trajectoire"
@@ -3184,8 +3230,9 @@ export function FichePatientPanel({
             <div role="alert" className="flex flex-col gap-3 rounded-xl border border-accent bg-status-warning/10 p-4 text-base text-status-warning">
               <span>{erreurTrajectoire}</span>
               <button
+                ref={relectureTrajectoire.boutonRef}
                 type="button"
-                onClick={() => void chargerTrajectoire()}
+                onClick={() => void relectureTrajectoire.relire(chargerTrajectoire)}
                 className="min-h-9 self-start rounded-lg border border-accent px-3 py-1 text-xs font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
               >
                 Réessayer

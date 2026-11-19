@@ -2,6 +2,7 @@
 
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { useCallback, useState } from 'react';
 import type { CockpitRuntimeApiResponse } from '@/app/api/praticien/cockpit/route';
 import type { AbstentionAssessment, ProposedAssessmentEpisode } from '@/lib/clinical-engine/types';
 import type { PlainteDominante } from '@/lib/clinical-engine/chaineC1';
@@ -501,6 +502,50 @@ describe('ClinicalRuntimeSection', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Confirmer l’épisode T0' }));
     await screen.findByText(/Épisode T0 confirmé/);
     expect(recharger).toHaveBeenCalledTimes(1);
+  });
+
+  // PRA-6h2 : en mode piloté, le « Réessayer » de la Réévaluation attend la
+  // promesse du rappel de la fiche, puis rend le focus — au bouton si la
+  // relecture échoue encore, au titre du résumé si elle réussit.
+  it.each([
+    { issue: 'chargee', cible: 'au titre du résumé relu' },
+    { issue: 'erreur', cible: 'au bouton, rendu de nouveau' },
+  ] as const)('Réévaluation pilotée : une relecture $issue rend le focus $cible', async ({ issue }) => {
+    vi.stubGlobal('fetch', fetchParRoute({ cockpitGet: [rep(readyAvecCandidats())] }));
+    function Fiche() {
+      const [statut, setStatut] = useState<'chargement' | 'chargee' | 'erreur'>('erreur');
+      const recharger = useCallback(async () => {
+        setStatut('chargement');
+        await new Promise(r => setTimeout(r, 0));
+        setStatut(issue);
+      }, []);
+      return (
+        <ClinicalRuntimeSection
+          idPatient="PAT_TEST"
+          fixture={null}
+          protocolDraft={null}
+          onFixtureReviewed={vi.fn()}
+          phase="reevaluation"
+          trajectoirePartagee={null}
+          statutTrajectoirePartage={statut}
+          onRechargerTrajectoire={recharger}
+        />
+      );
+    }
+    render(<Fiche />);
+
+    const bouton = await screen.findByRole('button', { name: 'Réessayer' });
+    // Un vrai clic pose le focus sur le bouton ; `fireEvent.click` non.
+    bouton.focus();
+    fireEvent.click(bouton);
+
+    await waitFor(() =>
+      expect(document.activeElement).toBe(
+        issue === 'chargee'
+          ? screen.getByRole('heading', { name: 'Réévaluation — où en est le cycle' })
+          : screen.getByRole('button', { name: 'Réessayer' }),
+      ),
+    );
   });
 
   it('n’assemble PAS tant que la réponse n’est pas `ready`', async () => {
