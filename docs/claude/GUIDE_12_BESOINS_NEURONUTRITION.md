@@ -146,7 +146,9 @@ cerveau) et les phases de repos (qui restaurent).
   publiée en référence, la grille servie comme lecture sans source publiée.
   À l'application de J3-12f, deux bornes servies suivront la grille publiée,
   et le questionnaire de Horne gardera la grille d'origine avec une note qui
-  renvoie à sa validation française (`D-538`). Les indicateurs du GPAQ restent de population. Les options (activité,
+  renvoie à sa validation française (`D-538`). La clé servie du MFI-20 reste, et sa note
+  reçoit une mention de l'écart avec la validation publiée de la traduction
+  servie (`D-542`). Les indicateurs du GPAQ restent de population. Les options (activité,
   hygiène du sommeil, sieste) sont à la main du praticien, aucun score ne les
   déclenche ; un doute d'apnée appelle un adressage médical. La règle
   précédente (remise en mouvement et hygiène du sommeil au socle, sur une
