@@ -40,7 +40,7 @@ Le responsable a ouvert PAT-7g le 2026-11-18 (« Ouvre PAT-7g »). Il s'agit d'a
 - PAT-7h (titres : `h1` de U09, police des `h1` de U26, U29 à U34 et U36) est proposé, pas ouvert.
 - Forme transverse : à décider en bloc (constat §3.2).
 - PAT-7d attend `20261117-1243-d`.
-- #2249 est déclarée prête ; elle attend le merge de l'intégrateur.
+- #2249 est mergée (`57082a59`).
 
 ## Prochaine action exacte
 
