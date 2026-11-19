@@ -1,8 +1,8 @@
 # Registre sanitaire du corpus clinique
 
-`source_registry.json` contient 674 notices normalisées : 391 issues du pack WN
+`source_registry.json` contient 683 notices normalisées : 391 issues du pack WN
 Ultimate v2 (`NNFC1_Annee1`, `NNPP2_Annee2`), 116 instruments du cabinet
-(`INSTRUMENTS_CABINET`), et 167 sources externes (`SOURCES_EXTERNES` — BP-07 :
+(`INSTRUMENTS_CABINET`), et 176 sources externes (`SOURCES_EXTERNES` — BP-07 :
 avis d'agence, recommandation, essai, règlement, `WN-SRC-0508` à `0511`, puis
 pour la position P5 v0.3 une recommandation de l'OMS, `WN-SRC-0555` ; besoin 2 :
 trois avis d'agence, un rapport d'évaluation, une recommandation de pratique,
@@ -85,7 +85,12 @@ méta-analyse, une définition de classification, une recommandation de la HAS e
 des instruments de régulation émotionnelle, `WN-SRC-0672` à `0696`, dont quatre
 notices sans extrait faute de texte obtenu (`0679`, `0681`, `0692`, `0696`) ;
 les textes de `0680`, `0687` et `0693`, et le texte intégral de `0605`, ont été
-fournis par le responsable le 2026-11-16 et versés sur leur notice),
+fournis par le responsable le 2026-11-16 et versés sur leur notice ;
+besoins 3 et 8, neuf textes intégraux en accès libre, ingérés le 2026-11-19 sur
+accord du responsable : méta-analyses et essais sur le rythme alimentaire et
+les instruments de mesure de l'heure des repas, `WN-SRC-0703` à `0709`, puis une
+méta-analyse sur le savourer et un essai sur l'activation comportementale,
+`WN-SRC-0710` et `0711`),
 dont seuls des extraits ciblés sont ingérés. Le manuscrit soumis `WN-SRC-0546`
 est `deprecated` : remplacé par sa version publiée `WN-SRC-0564`, ses claims ne
 sont pas retenus. Les plages `0525` à `0539` et `0556` à `0559` sont
