@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Prépare la COTATION de l'évaluation de D-539 §8, à partir des générations
+// Prépare la COTATION de l'évaluation de D-539 §8 rejouée selon D-545 §7, à partir des générations
 // relevées par `evaluation.eval.ts`. Ne cote pas : il met en forme ce qui se
 // lit contre la grille, et relève des INDICES mécaniques qui orientent la
 // lecture sans la remplacer (un indice n'est pas une violation, son absence
@@ -78,14 +78,14 @@ function champsPrincipaux(s) {
 }
 
 const indices = [];
-let mdBio = '# Lecture — second appel (synthese-biologie-v1)\n';
-let mdPrin = '# Lecture — appel principal (synthese-v37) et narratif assemblé\n';
+let mdBio = '# Lecture — second appel (synthese-biologie-v2)\n';
+let mdPrin = '# Lecture — appel principal (synthese-v38) et narratif assemblé\n';
 const blocsBio = [];
 const blocsPrin = [];
 
 for (const g of generations) {
-  const principal = [...g.appels].reverse().find(a => a.consigne === 'synthese-v37');
-  const second = [...g.appels].reverse().find(a => a.consigne === 'synthese-biologie-v1');
+  const principal = [...g.appels].reverse().find(a => a.consigne === 'synthese-v38');
+  const second = [...g.appels].reverse().find(a => a.consigne === 'synthese-biologie-v2');
   const sortiePrincipale = principal ? lireJson(principal.sortie) : null;
   const sortieBio = second ? lireJson(second.sortie) : null;
   const s = g.syntheseJson ?? {};
@@ -120,8 +120,8 @@ for (const g of generations) {
     statutHttp: g.statutHttp,
     issueBiologie: g.appelBiologie?.issue ?? null,
     entrees: g.entrees,
-    relancePrincipale: g.appels.filter(a => a.consigne === 'synthese-v37').length > 1,
-    relanceBiologie: g.appels.filter(a => a.consigne === 'synthese-biologie-v1').length > 1,
+    relancePrincipale: g.appels.filter(a => a.consigne === 'synthese-v38').length > 1,
+    relanceBiologie: g.appels.filter(a => a.consigne === 'synthese-biologie-v2').length > 1,
     phrase: { posee: phrasePosee, conforme: attendue !== null && dernier === attendue, attendue, lue: dernier },
     principalTermesDuBloc: [...new Set(passagesPrincipaux.flatMap(p => p.termesDuBloc))],
     principalPassagesBiologie: passagesPrincipaux.length,

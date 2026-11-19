@@ -12,7 +12,7 @@ import { isCbResultsEnabled } from '@/lib/biology-library/publie';
 //
 // IL NE GARDE QUE LE FLUX : la lecture des résultats, la construction du bloc
 // et le second appel qui le transmet ([[D-539]] §2). La consigne
-// `synthese-v37`, celle du second appel, le schéma v4, les listes de champs et
+// `synthese-v38`, celle du second appel, le schéma v4, les listes de champs et
 // le contrôle de contamination se déploient sans lui. Sa pose exige les trois
 // préalables de [[D-539]] §7b : paragraphe 2 quater validé, v24 et conditions
 // v7 servies et constatées, évaluation de [[D-539]] §8 conforme.

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
-// L'ÉVALUATION REJOUÉE DE [[D-539]] §8 — 24 dossiers fictifs × 3 passages.
+// L'ÉVALUATION REJOUÉE DE [[D-539]] §8, selon [[D-545]] §7 — 24 dossiers
+// fictifs × 3 passages, sous `synthese-v38` et `synthese-biologie-v2`.
 //
 // CE BANC APPELLE VRAIMENT LE FOURNISSEUR. Il n'est dans l'`include` d'aucune
 // configuration de CI : il se lance à la main, par
@@ -8,8 +9,8 @@ import { describe, expect, it, vi } from 'vitest';
 //
 // Conditions du §8 : hors production (rien ne lit ni n'écrit une base : Prisma
 // est simulé, en mémoire), dossiers entièrement fictifs ([[D-125]],
-// `dossiers.ts`), les vraies consignes (`synthese-v37`,
-// `synthese-biologie-v1`), le modèle de production, le vrai lecteur et le vrai
+// `dossiers.ts`), les vraies consignes (`synthese-v38`,
+// `synthese-biologie-v2`), le modèle de production, le vrai lecteur et le vrai
 // constructeur du bloc, et le vrai assemblage : la VRAIE route
 // `POST /api/praticien/synthese`, comme le banc de chaîne
 // (`biologie.generation.test.ts`), dont ce fichier reprend les simulations —
@@ -19,10 +20,11 @@ import { describe, expect, it, vi } from 'vitest';
 //
 // Ce banc NE COTE PAS : il relève, pour chaque génération, les entrées et les
 // sorties, et vérifie mécaniquement les « entrées vérifiées » du §8. La
-// cotation contre la grille est une lecture (§8, « Cotation »).
+// cotation contre la grille est une lecture (D-545 §6 : deux lectures, et un
+// verdict motivé sur chaque désaccord).
 
 type Appel = {
-  consigne: 'synthese-v37' | 'synthese-biologie-v1' | 'inconnue';
+  consigne: 'synthese-v38' | 'synthese-biologie-v2' | 'inconnue';
   modele: string;
   messages: unknown;
   sortie: string;
@@ -100,9 +102,9 @@ vi.mock('@/lib/anthropic', async (importOriginal) => {
     const ctx = etat.courant?.();
     const releve = {
       consigne: (systeme === reel.SYSTEM_PROMPT_SYNTHESE
-        ? 'synthese-v37'
+        ? 'synthese-v38'
         : systeme === SYSTEM_PROMPT_SYNTHESE_BIOLOGIE
-          ? 'synthese-biologie-v1'
+          ? 'synthese-biologie-v2'
           : 'inconnue') as Appel['consigne'],
       modele: corps.model,
       messages: structuredClone(corps.messages),
@@ -147,8 +149,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { CLAUDE_MODEL, VERSION_PROMPT_SYNTHESE } from '@/lib/anthropic';
 import { VERSION_PROMPT_SYNTHESE_BIOLOGIE } from '@/lib/synthese/appelBiologie';
+import { LIBELLES_MOTIFS_BLOC } from '@/lib/clinical/blocBiologieSynthese';
+import { lireBlocBiologiePourSynthese } from '@/lib/clinical/blocBiologieSyntheseService';
 import { POST } from '@/app/api/praticien/synthese/route';
-import { couvertureManquante, DOSSIERS, type Dossier } from './dossiers';
+import { COUVERTURE_LUE_SUR_LE_BLOC, couvertureManquante, DOSSIERS, type Dossier } from './dossiers';
 
 const als = new AsyncLocalStorage<Contexte>();
 etat.courant = () => als.getStore();
@@ -200,8 +204,8 @@ async function generer(d: Dossier, passage: number): Promise<Generation> {
   const donnees = (ctx.enregistre?.donneesEntree ?? null) as { blocBiologie?: { texte: string } | null; appelBiologie?: unknown } | null;
   const texteBloc = donnees?.blocBiologie?.texte ?? null;
   const ecarts: string[] = [];
-  const principaux = ctx.appels.filter(a => a.consigne === 'synthese-v37');
-  const seconds = ctx.appels.filter(a => a.consigne === 'synthese-biologie-v1');
+  const principaux = ctx.appels.filter(a => a.consigne === 'synthese-v38');
+  const seconds = ctx.appels.filter(a => a.consigne === 'synthese-biologie-v2');
   if (ctx.appels.some(a => a.consigne === 'inconnue')) ecarts.push('appel sous une consigne inconnue');
   if (ctx.appels.some(a => a.modele !== MODELE_PRODUCTION)) ecarts.push('modèle autre que celui de production');
   let principalSansBloc = principaux.length > 0;
@@ -230,8 +234,8 @@ async function generer(d: Dossier, passage: number): Promise<Generation> {
     }
   }
   const ordre = ctx.appels.map(a => a.consigne);
-  const premierSecond = ordre.indexOf('synthese-biologie-v1');
-  if (premierSecond !== -1 && ordre.slice(premierSecond).includes('synthese-v37')) ecarts.push('appel principal après le second');
+  const premierSecond = ordre.indexOf('synthese-biologie-v2');
+  if (premierSecond !== -1 && ordre.slice(premierSecond).includes('synthese-v38')) ecarts.push('appel principal après le second');
 
   return {
     dossier: d.numero,
@@ -247,6 +251,34 @@ async function generer(d: Dossier, passage: number): Promise<Generation> {
   };
 }
 
+/**
+ * Ce que D-545 §7 demande de couvrir et qui se lit sur le bloc : construit par
+ * le vrai lecteur et le vrai constructeur, sans appel au fournisseur. Rend ce
+ * qui manque ; vide = couverture tenue.
+ */
+async function couvertureManquanteSurLeBloc(): Promise<string[]> {
+  const manque: string[] = [];
+  for (const c of COUVERTURE_LUE_SUR_LE_BLOC) {
+    const declares = DOSSIERS.filter(d => d.couvre.includes(c));
+    if (declares.length === 0) manque.push(c);
+    for (const d of declares) {
+      const trace = await lireBlocBiologiePourSynthese(d.idPatient);
+      if (trace === null) {
+        manque.push(`${c} : dossier ${d.numero} sans bloc`);
+        continue;
+      }
+      const tenu = c === 'laboratoire_non_identifie'
+        // Le motif, tel que le bloc l'écrit dans la ligne des motifs d'une série.
+        ? trace.texte.split('\n').some(l => l.includes('Motifs de non-comparabilité :') && l.includes(LIBELLES_MOTIFS_BLOC.laboratoire_non_identifie))
+        // Un texte d'intervalle imprimé où ne figure aucune unité d'une valeur du bloc.
+        : trace.formes.valeursUnites.length > 0
+          && trace.formes.intervalles.some(i => !trace.formes.valeursUnites.some(v => i.includes(v.unite)));
+      if (!tenu) manque.push(`${c} : non lu sur le bloc du dossier ${d.numero}`);
+    }
+  }
+  return manque;
+}
+
 async function enParallele<T, R>(items: T[], largeur: number, f: (t: T) => Promise<R>): Promise<R[]> {
   const sorties: R[] = new Array(items.length);
   let suivant = 0;
@@ -259,7 +291,7 @@ async function enParallele<T, R>(items: T[], largeur: number, f: (t: T) => Promi
   return sorties;
 }
 
-describe('D-539 §8 — évaluation rejouée (appels réels au fournisseur)', () => {
+describe('D-539 §8, selon D-545 §7 — évaluation rejouée (appels réels au fournisseur)', () => {
   it('relève les 72 générations et vérifie les entrées', async () => {
     const sortie = process.env.WN_EVAL_SORTIE;
     expect(process.env.WN_EVAL_D539_CONFIRME, 'lancer par scripts/eval-d539/lancer.sh').toBe('1');
@@ -267,14 +299,16 @@ describe('D-539 §8 — évaluation rejouée (appels réels au fournisseur)', ()
     expect(path.resolve(sortie!).startsWith(path.resolve(__dirname, '../../..')), 'sortie hors du dépôt').toBe(false);
     expect(process.env.ANTHROPIC_API_KEY, 'clé absente').toBeTruthy();
     expect(CLAUDE_MODEL).toBe(MODELE_PRODUCTION);
-    expect(VERSION_PROMPT_SYNTHESE).toBe('synthese-v37');
-    expect(VERSION_PROMPT_SYNTHESE_BIOLOGIE).toBe('synthese-biologie-v1');
+    expect(VERSION_PROMPT_SYNTHESE).toBe('synthese-v38');
+    expect(VERSION_PROMPT_SYNTHESE_BIOLOGIE).toBe('synthese-biologie-v2');
     expect(couvertureManquante()).toEqual([]);
 
     vi.stubEnv('WN_SYNTHESE_BIOLOGIE_ENABLED', 'true');
     vi.stubEnv('WN_CB_RESULTS_ENABLED', 'true');
     vi.stubEnv('WN_CB_ENABLED', 'true');
     vi.stubEnv('WN_SYNTHESE_STREAM', '');
+    // Avant tout appel au fournisseur : la couverture qui se lit sur le bloc.
+    expect(await couvertureManquanteSurLeBloc()).toEqual([]);
 
     // Sous-ensemble pour un essai de fumée : `WN_EVAL_DOSSIERS=1,2`, `WN_EVAL_PASSAGES=1`.
     const filtre = process.env.WN_EVAL_DOSSIERS?.split(',').map(Number);
@@ -296,14 +330,14 @@ describe('D-539 §8 — évaluation rejouée (appels réels au fournisseur)', ()
     const usage = { input_tokens: 0, output_tokens: 0, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 };
     for (const g of generations) for (const a of g.appels) for (const k of Object.keys(usage) as (keyof typeof usage)[]) usage[k] += a.usage[k] ?? 0;
     const resume = {
-      decision: 'D-539 §8',
+      decision: 'D-539 §8, selon D-545 §7',
       commit: process.env.WN_EVAL_COMMIT ?? null,
       modele: CLAUDE_MODEL,
       consignes: { principale: VERSION_PROMPT_SYNTHESE, biologie: VERSION_PROMPT_SYNTHESE_BIOLOGIE },
       generations: generations.length,
       http200: generations.filter(g => g.statutHttp === 200).length,
-      appelsPrincipaux: generations.reduce((n, g) => n + g.appels.filter(a => a.consigne === 'synthese-v37').length, 0),
-      appelsBiologie: generations.reduce((n, g) => n + g.appels.filter(a => a.consigne === 'synthese-biologie-v1').length, 0),
+      appelsPrincipaux: generations.reduce((n, g) => n + g.appels.filter(a => a.consigne === 'synthese-v38').length, 0),
+      appelsBiologie: generations.reduce((n, g) => n + g.appels.filter(a => a.consigne === 'synthese-biologie-v2').length, 0),
       issuesBiologie: generations.map(g => (g.appelBiologie as { issue?: string } | null)?.issue ?? null),
       entreesConformes: generations.filter(g => g.entrees.principalSansBloc && g.entrees.secondBlocSeul && g.entrees.ecarts.length === 0).length,
       usage,

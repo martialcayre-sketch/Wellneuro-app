@@ -384,7 +384,18 @@ export const CLAUDE_MODEL = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6';
 // drapeau garde le flux, pas la consigne. Bump assumé et déclaré : une synthèse
 // rédigée sous v36 pouvait recevoir le bloc ; sous v37, l'appel principal ne
 // reçoit plus aucune biologie.
-export const VERSION_PROMPT_SYNTHESE = 'synthese-v37';
+// v38 (H95 part B, [[D-545]] §5, arbitrages `20261119-1430-b` et
+// `20261119-2000-b`) : deux changements, au mot près, après l'évaluation non
+// conforme de D-539 §8. La section « Résultats de biologie » admet qu'une
+// question d'entretien revienne sur un examen déclaré, interdit de présenter
+// comme fait un examen non déclaré, et dit que nommer un nutriment ou une
+// analyse n'est pas en parler comme d'un résultat ; la puce du narratif cesse
+// d'interdire le nom d'une analyse. Textes validés mot pour mot par le
+// responsable le 2026-11-19. Comme v37, v38 vaut drapeau posé ou non. Bump
+// assumé et déclaré : drapeau éteint, le narratif peut désormais nommer une
+// analyse ; rien de ce qui touche une valeur, un résultat ou la réception d'un
+// bilan ne change.
+export const VERSION_PROMPT_SYNTHESE = 'synthese-v38';
 // v3 (LOT-01 étape 4) : la sortie du modèle est lue par `analyserSortieSynthese`
 // — schéma fermé, énumérations contrôlées, rejet + une relance. La forme du JSON
 // est inchangée ; ce qui change est qu'une sortie non conforme n'est plus servie
@@ -668,7 +679,7 @@ Si le bloc est absent, n'en parle pas.
 
 ## Résultats de biologie
 
-Les résultats de biologie enregistrés au dossier ne te sont pas transmis : ils sont restitués au praticien à part, hors de toi. N'en suppose aucun, n'en parle dans aucun champ, et n'en conclus pas qu'aucun bilan n'a été fait. La réception d'un bilan est dite au patient par le code, pas par toi. Tu peux rappeler qu'un examen a été déclaré dans l'anamnèse, en le présentant comme une déclaration, sans en déduire de résultat ni de conclusion biologique. Tu peux aussi mentionner qu'un dosage biologique serait nécessaire pour conclure, dans les limites posées plus haut.
+Les résultats de biologie enregistrés au dossier ne te sont pas transmis : ils sont restitués au praticien à part, hors de toi. N'en suppose aucun, n'en parle dans aucun champ, et n'en conclus pas qu'aucun bilan n'a été fait. La réception d'un bilan est dite au patient par le code, pas par toi. Tu peux rappeler qu'un examen a été déclaré dans l'anamnèse, en le présentant comme une déclaration, sans en déduire de résultat ni de conclusion biologique ; une question d'entretien peut y revenir, en rappelant qu'il a été déclaré et sans supposer aucun résultat. Ne présente jamais comme fait un examen que l'anamnèse ne déclare pas, et ne laisse jamais entendre qu'un résultat est connu. Tu peux aussi mentionner qu'un dosage biologique serait nécessaire pour conclure, dans les limites posées plus haut. Nommer un nutriment ou une analyse n'est pas en parler comme d'un résultat.
 
 ## Consignes de réponse
 
@@ -700,7 +711,7 @@ en sortir orienté, jamais inquiété.
 - Si un signal d'alerte a été déclaré, n'en fais PAS mention dans
   narratif_patient : il est traité avec le praticien.
 - N'écris dans narratif_patient ni score, ni total calculé, ni pourcentage, ni nombre de besoins, en chiffres comme en toutes lettres. Cela ne vise ni le nom d'un nutriment (oméga-3, vitamine B12), ni un repère de parcours (« votre agenda couvre 21 nuits »), ni une quantité brute que le patient a lui-même déclarée, reprise dans ses termes, nommée comme une déclaration et sans qualification ajoutée (« vous déclarez dormir 6 heures »). N'écris jamais une dose de complément ou de médicament, même déclarée.
-- N'écris dans narratif_patient aucun nom d'analyte, aucune valeur ni aucun intervalle de biologie, et ne dis pas qu'un bilan a été reçu : le code l'ajoute lui-même.
+- N'écris dans narratif_patient aucune valeur ni aucun intervalle de biologie, aucun résultat ni aucune conclusion biologiques, et ne dis pas qu'un bilan a été reçu : le code l'ajoute lui-même. Tu peux nommer un nutriment ou une analyse, comme le font un questionnaire ou une déclaration.
 `;
 
 export const SYSTEM_PROMPT_CONTRAT_JSON = `## Format de sortie
