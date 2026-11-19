@@ -12,19 +12,19 @@
 ## Décisions prises
 
 - Ouverture sur l'accord du responsable du 2026-11-19, les besoins 3 et 8 restant en attente de sa recherche externe (non touchés).
-- Constat clé : aucune décision du 2026-10-18 ne cible le besoin 10 ; son état servi est porté par `D-402`, `D-424`, `D-329`, `D-443` et `D-453`, dont l'écart de convergence et le comptage de trois sources, assumés ou nommés sans être tranchés, sont consignés au dossier sans être rouverts.
+- Constat clé : aucune des décisions de mesure du 2026-10-18 ne cible le besoin 10 ; son état servi est porté par `D-402`, `D-424`, `D-329`, `D-443` et `D-453`, dont l'écart de convergence et le comptage de trois sources, assumés ou nommés sans être tranchés, sont consignés au dossier sans être rouverts.
 - Lot `besoin10-dossier-ouvert` (file B, ordre 103) ; questions `20261119-0130-b` à `0132-b`, avis de Codex à l'aveugle A, A, C (confiance forte), identique à la recommandation de la session.
-- Rang du journal H15 : `2026-11-19-04` (`02` pris par deux fragments, `03` par l'étape 2 du besoin 8).
+- Rang du journal H15 : `2026-11-19-05` (`04` est pris par le renommage du fragment du besoin 5 dans #2261, qui répare le doublon `02` de `main` ; `03` par l'étape 2 du besoin 8). Le premier rang `04` choisi collisionnait avec #2261 : relevé en revue, corrigé avant « prête ».
 - La trace des réponses M1 à M4 du besoin 8 part dans un lot de doc distinct (une seule finalité par PR).
 
 ## Fichiers modifiés
 
-- `docs/claude/plan-journal/H15/2026-11-19-04-dossier-besoin-10-ouvert.md` (nouveau) ; `changelog.d/2026-11-19-dossier-besoin-10-ouvert.md` ; ce handoff.
+- `docs/claude/plan-journal/H15/2026-11-19-05-dossier-besoin-10-ouvert.md` (nouveau) ; `changelog.d/2026-11-19-dossier-besoin-10-ouvert.md` ; ce handoff.
 - Hors dépôt : dossier privé du besoin 10, lot et questions du registre, bloc-notes de la session (`b10/`).
 
 ## Validations exécutées
 
-- Lecture du code seulement ; aucune lecture de production. Avis de Codex : trois appels, paquets sans option recommandée ni pièce privée, état conforme.
+- Lecture du code seulement ; aucune lecture de production. Avis de Codex : trois appels, paquets sans option recommandée ni pièce privée, état conforme. Le paquet du périmètre (T3) comptait deux indications d'assiette ; elles sont trois : l'avis ne s'appuie pas sur ce compte (précision ajoutée à la question).
 - Contrôles du dépôt de la PR (plan-journal, décisions, anti-secrets) : résultats donnés dans la PR. Vitest non joué (worktree sans `npm ci`, diff de documentation seule). Pas de T2.
 
 ## Problèmes ouverts
