@@ -14152,9 +14152,9 @@
     "practitionerReviewRequired": true,
     "lifecycleStatus": "deprecated",
     "vigilance": "Modérée",
-    "requiredAction": "Remplacée par la version publiée WN-SRC-0564 (lot LOT_044_2026-10-20) ; claims du lot LOT_031_2026-10-20 non retenus (arbitrage du 2026-10-20)",
+    "requiredAction": "Remplacée par la version publiée WN-SRC-0564 (lot LOT_044_2026-10-20) ; claims du lot LOT_031_2026-10-20 non retenus (arbitrage du 2026-10-20) ; claims signés exclus de la recherche et passages inactifs par migration (arbitrage du responsable du 2026-11-19, question 20261119-1311-b, D-490) : rien supprimé, signatures intactes",
     "comment": "Source externe de mesure (décision 6 du 2026-10-18), accès libre. Droits : à vérifier (manuscrit auteur, version soumise, déposé sur ORBi UMONS ; aucune mention de licence ni de droits dans le document ; conditions de l'éditeur annoncé (Hogrefe) non vérifiées). Extraits mot pour mot, sans adaptation ; aucun item d'échelle reproduit.",
-    "auditDate": "2026-10-20"
+    "auditDate": "2026-11-19"
   },
   {
     "sourceId": "WN-SRC-0547",
@@ -14516,9 +14516,9 @@
     "practitionerReviewRequired": true,
     "lifecycleStatus": "raw",
     "vigilance": "Modérée",
-    "requiredAction": "Extraits ciblés ingérés (J3-12e, second complément, besoin 8, lot LOT_044_2026-10-20) ; claims en attente de signature",
+    "requiredAction": "Extraits ciblés ingérés (J3-12e, second complément, besoin 8, lot LOT_044_2026-10-20) ; claims validés",
     "comment": "Source externe de mesure (décision 6 du 2026-10-18), accès libre. Droits : CC BY 4.0 (Hogrefe OpenMind). Extraits mot pour mot, sans adaptation ; aucun item d'échelle reproduit.",
-    "auditDate": "2026-10-20"
+    "auditDate": "2026-11-19"
   },
   {
     "sourceId": "WN-SRC-0565",

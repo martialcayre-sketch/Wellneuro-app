@@ -100,7 +100,8 @@ notice seule faute de licence (exclusion de la fouille de textes et de l'IA), un
 essai de 2026 sur l'affect positif, `WN-SRC-0720`),
 dont seuls des extraits ciblés sont ingérés. Le manuscrit soumis `WN-SRC-0546`
 est `deprecated` : remplacé par sa version publiée `WN-SRC-0564`, ses claims ne
-sont pas retenus. Les plages `0525` à `0539` et `0556` à `0559` sont
+sont pas retenus ; ses claims signés sont exclus de la recherche et ses passages
+inactifs depuis la migration du 2026-11-19 (D-490), rien n'étant supprimé. Les plages `0525` à `0539` et `0556` à `0559` sont
 laissées à une autre session d'ingestion ; `0628` à `0630` sont restés libres,
 marge prise avant l'ingestion de l'iode et du sélénium. Il s'agit d'un inventaire documentaire, pas d'un
 corpus runtime.
