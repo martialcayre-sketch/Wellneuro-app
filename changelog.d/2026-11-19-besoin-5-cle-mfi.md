@@ -11,5 +11,5 @@ Documentation et décision seulement : ni code, ni migration, ni écriture en ba
 - Positions v0.4 du dossier du besoin 5 signées le 2026-11-18, après deux contre-revues de Codex (GO avec corrections,
   puis GO).
 - Contre-revue de Codex sur `D-542` : un constat de forme opaque, corrigé.
-- Journal de H15 : fragment `2026-11-19-02`.
+- Journal de H15 : fragment `2026-11-19-04` (renuméroté : le rang `02` était pris par le besoin 8).
 - Plan : la ligne J3-12f renvoie à `D-542` ; le guide du besoin 5 la mentionne.

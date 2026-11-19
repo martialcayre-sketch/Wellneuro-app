@@ -16,7 +16,8 @@ on:
 
 jobs:
   baselines:
-    runs-on: ubuntu-latest
+    # Même image que le job `e2e` de `ci.yml` (épinglé le 2026-11-19).
+    runs-on: ubuntu-24.04
     services:
       postgres:
         image: pgvector/pgvector:pg15
