@@ -30,6 +30,11 @@ toute la table.
   de PR-Agent sur la date rétroactive. C'est le seul statut qui n'est pas
   recopié d'une clôture déjà écrite. Le suivi BioFlow, hors dépôt, revient
   au responsable.
+- BP-27 : « en_cours, cadrage seulement », après un second constat de
+  PR-Agent et sur arbitrage du responsable. Sans fiche `lots/`, l'état se
+  lit au journal de F27 ; le lot de code n'est pas ouvert (`D-544` §7,
+  BP-12a non terminé). La règle de la table devient : la fiche du lot, à
+  défaut le journal de sa fiche du plan.
 - La campagne reste `en_pause`, sans lot courant (une campagne `en_cours`
   sans lot courant fait échouer l'audit des campagnes). Le plan conduit
   l'ordre (`D-285` §1).

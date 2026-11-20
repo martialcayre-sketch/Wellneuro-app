@@ -109,7 +109,8 @@ après la mi-octobre. Elle est remise à l'état réel d'après les fiches
 `lots/`, les journaux du plan (`docs/claude/plan-journal/`) et l'historique
 des PR : BP-05, BP-12b et BP-15 passent « terminé » ; BP-12a, BP-17 et BP-27
 passent « en_cours ». Aucun autre statut ne change. Le statut d'un lot se
-lit d'abord sur sa fiche ; la table le reflète. Seule la clôture de BP-15
+lit d'abord sur sa fiche, et à défaut de fiche (BP-27) au journal de sa
+fiche du plan ; la table le reflète. Seule la clôture de BP-15
 n'était écrite nulle part : elle est déduite du critère de fin de F08 et
 inscrite à son journal le 2026-11-20.
 
@@ -158,7 +159,7 @@ nouveaux, décisions acceptées.
 | BP-21b | LOT-30 | Ouverture de la prescription | à_faire | non | BP-21a, BP-18b, BP-24 |
 | BP-22 | LOT-22 | Observation après ouverture | à_faire | **oui** | BP-21a |
 | **Phase 4** | | **Étage assistant** (derrière drapeau) | | | |
-| BP-27 | LOT-27 | Évaluateur par marqueur (propose, ne pose jamais) | en_cours (2026-11-20 : cadrage seul, sans fiche `lots/` ; F3 de `D-539` (#2244) ; `D-544` acceptée (#2269) : aucun marqueur choisi avant le rattachement des claims de contexte et d'interprétation ; ni règle ni code) | **oui** | BP-03, BP-05, BP-12a, BP-13, BIO-INGEST LOT-07 |
+| BP-27 | LOT-27 | Évaluateur par marqueur (propose, ne pose jamais) | en_cours, cadrage seulement (2026-11-20 : sans fiche `lots/`, l'état se lit au journal de F27 ; F3 de `D-539` (#2244) ; `D-544` acceptée (#2269) : aucun marqueur choisi avant le rattachement des claims de contexte et d'interprétation ; le lot de code n'est pas ouvert, ses exigences d'ouverture (`D-544` §7) et ses dépendances, BP-12a compris, ne sont pas réunies ; ni règle ni code) | **oui** | BP-03, BP-05, BP-12a, BP-13, BIO-INGEST LOT-07 |
 | BP-19 | LOT-19 | Stratégie proposée d'après le dossier | à_faire | **oui** (journal) | BP-13, BP-15, BP-17, BP-20 |
 | — | — | Étage 2 du résultat préoccupant ; marches 2 à 4 du suivi ; proposition de bilan d'après le dossier — une fonction par lot, chacune sous sa `D-xxx`, derrière drapeau (`D-276` §3) | à_faire | selon | BP-27 selon le cas |
 | **Phase 5** | | **Extension** : B12 et folates, contre-épreuve sommeil, puis par situation | à_faire | selon | BP-21b |
