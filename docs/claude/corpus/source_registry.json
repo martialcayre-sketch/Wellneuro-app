@@ -20297,7 +20297,7 @@
     "lifecycleStatus": "raw",
     "vigilance": "Modérée",
     "requiredAction": "Notice bibliographique seule (accord du responsable du 2026-11-20) : texte non libre (American Thoracic Society) ; aucun passage, aucun claim",
-    "comment": "Source externe, augmentation de l'oxyde nitrique nasal par le fredonnement (rapports de recherche approfondie du 2026-11-20 ; rattachements : vidéos : 6 ; affirmations : A2). Référence vérifiée (PubMed, PMID 12119224, DOI résolu). Licence et accès : OUP, fermé. Texte non ingéré.",
+    "comment": "Source externe, augmentation de l'oxyde nitrique nasal par le fredonnement (rapports de recherche approfondie du 2026-11-20 ; rattachements : vidéos : 6 ; affirmations : A2). Référence vérifiée (PubMed, PMID 12119224, DOI résolu). Licence et accès : American Thoracic Society, fermé. Texte non ingéré.",
     "auditDate": "2026-11-20"
   },
   {
@@ -20973,7 +20973,7 @@
     "lifecycleStatus": "raw",
     "vigilance": "Modérée",
     "requiredAction": "Notice bibliographique seule (accord du responsable du 2026-11-20) : texte non libre (American Occupational Therapy Association), licence de fouille de textes lue dans les métadonnées ; aucun passage, aucun claim",
-    "comment": "Source externe, mesure des profils de traitement sensoriel de l'adulte (Adult Sensory Profile) (rapports de recherche approfondie du 2026-11-20 ; rattachements : besoin 7 : 7 ; affirmations : B7 (mesure, sensibilité)). Référence vérifiée (PubMed, PMID 11216370, DOI résolu). Licence et accès : Sage, fermé ; licence TDM Sage. Écart rapport/source : auteurs : Brown, Tollefson, Dunn et al. ; n = 93 conforme. Texte non ingéré.",
+    "comment": "Source externe, mesure des profils de traitement sensoriel de l'adulte (Adult Sensory Profile) (rapports de recherche approfondie du 2026-11-20 ; rattachements : besoin 7 : 7 ; affirmations : B7 (mesure, sensibilité)). Référence vérifiée (PubMed, PMID 11216370, DOI résolu). Licence et accès : fermé ; licence de fouille de textes lue dans les métadonnées Crossref, au nom de Sage selon le rapport (éditeur AOTA à confirmer). Écart rapport/source : auteurs : Brown, Tollefson, Dunn et al. ; n = 93 conforme. Texte non ingéré.",
     "auditDate": "2026-11-20"
   },
   {
