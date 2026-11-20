@@ -1,0 +1,7 @@
+- **Mise à jour (2026-11-19, part B, D-545 acceptée — suite de l'évaluation non conforme)**. [[D-545]] amende [[D-539]] §2, §4, §5 et §8.
+  - Lignes 5, 7, 10 et 11 de la grille précisées, sur les arbitrages `20261119-1430-b` à `1434-b`, `2000-b` (qui révise `1431-b`), `2001-b` et `2016-b-h95`. Le nom d'un nutriment ou d'une analyse n'est plus, seul, une violation.
+  - Consignes `synthese-v38` et `synthese-biologie-v2`, textes validés mot pour mot.
+  - Contrôle déterministe de la sortie du second appel (intervalle imprimé suivi d'une unité), avec relance. Il ne fait jamais échouer une synthèse.
+  - Chaque désaccord de cotation reçoit un verdict motivé.
+  - Avis Codex à l'aveugle sur les trois questions ; contre-revue Codex, cinq constats retenus.
+  - **Suite** : lot de code (sous `release-db`, sans migration), puis évaluation rejouée en entier (§7). Le drapeau reste éteint.

@@ -59,7 +59,7 @@ vi.mock('@/lib/observability/requestContext', () => ({
 }));
 
 import { SYSTEM_PROMPT_SYNTHESE } from '@/lib/anthropic';
-import { SYSTEM_PROMPT_SYNTHESE_BIOLOGIE } from '@/lib/synthese/appelBiologie';
+import { ECART_INTERVALLE_SUIVI_UNITE, SYSTEM_PROMPT_SYNTHESE_BIOLOGIE } from '@/lib/synthese/appelBiologie';
 import { verdictContamination } from '@/lib/synthese/contaminationBiologie';
 import { POST } from './route';
 
@@ -176,9 +176,9 @@ describe('drapeau posé, un résultat : deux appels, dans l’ordre, chacun son 
     expect(data.syntheseJson.points_de_vigilance_biologie).toEqual(RESTITUTION.points_de_vigilance_biologie);
     expect(data.syntheseJson.narratif_patient).toBe(`${PRINCIPALE.narratif_patient}\n\n${PHRASE}`);
     expect(data.syntheseJson._schema_version).toBe('synthese-json-v4');
-    expect(data.versionPrompt).toBe('synthese-v37');
+    expect(data.versionPrompt).toBe('synthese-v38');
     expect(data.donneesEntree.appelBiologie).toEqual({
-      versionPrompt: 'synthese-biologie-v1', modele: data.modele, issue: 'reussi',
+      versionPrompt: 'synthese-biologie-v2', modele: data.modele, issue: 'reussi',
     });
     expect(data.donneesEntree.metriquesAnthropic.input_tokens).toBe(120);
     expect(data.donneesEntree.metriquesAnthropic.output_tokens).toBe(15);
@@ -246,6 +246,46 @@ describe('les deux échecs, qui ne se confondent pas (D-539 §2)', () => {
     expect(data.syntheseJson.resume_biologie_praticien).toBe('');
     expect(data.syntheseJson.points_de_vigilance_biologie).toEqual([]);
     expect(JSON.stringify(loggerWarn.mock.calls)).not.toContain('SORTIE-DU-MODELE');
+  });
+
+  it('un intervalle imprimé suivi d’une unité, corrigé à la relance : servi, et le journal nomme l’écart du contrôle, sans texte du bloc (revue wn-reviewer, P2-1)', async () => {
+    allumer();
+    anthropicCreate
+      .mockResolvedValueOnce(reponse(PRINCIPALE))
+      .mockResolvedValueOnce(reponse({ resume_biologie_praticien: 'Intervalle imprimé : 30 - 400 µg/L.', points_de_vigilance_biologie: [] }))
+      .mockResolvedValueOnce(reponse(RESTITUTION));
+    await POST(req());
+    const data = enregistree();
+    expect(data.donneesEntree.appelBiologie.issue).toBe('reussi');
+    expect(data.syntheseJson.resume_biologie_praticien).toBe(RESTITUTION.resume_biologie_praticien);
+    const ligne = loggerWarn.mock.calls.map(c => c[0]).find(l => l.event === 'SYNTHESE_IA.BIOLOGIE.REJETE_RELANCE');
+    expect(ligne?.message).toContain(ECART_INTERVALLE_SUIVI_UNITE);
+    expect(ligne?.message).not.toContain('hors schéma');
+    const journal = JSON.stringify(loggerWarn.mock.calls);
+    for (const interdit of ['Ferritine', '41', '30 - 400', 'µg/L']) expect(journal, interdit).not.toContain(interdit);
+  });
+
+  it('un intervalle imprimé suivi d’une unité, deux fois : sortie_rejetee, synthèse servie, écart nommé sans texte du bloc (D-545 §4)', async () => {
+    allumer();
+    const fautive = {
+      resume_biologie_praticien: 'Ferritine 41 µg/L le 2026-10-08 ; intervalle imprimé par le laboratoire : 30 - 400 µg/L.',
+      points_de_vigilance_biologie: [],
+    };
+    anthropicCreate
+      .mockResolvedValueOnce(reponse(PRINCIPALE))
+      .mockResolvedValue(reponse(fautive));
+    const res = await POST(req());
+    expect(res.status).toBe(200);
+    expect(anthropicCreate).toHaveBeenCalledTimes(3);
+    expect(anthropicCreate.mock.calls[2][0].messages.at(-1).content).toContain(ECART_INTERVALLE_SUIVI_UNITE);
+    const data = enregistree();
+    expect(data.donneesEntree.appelBiologie.issue).toBe('sortie_rejetee');
+    expect(data.syntheseJson.resume_biologie_praticien).toBe('');
+    expect(data.syntheseJson.points_de_vigilance_biologie).toEqual([]);
+    expect(data.syntheseJson.narratif_patient.endsWith(`\n\n${PHRASE}`)).toBe(true);
+    const journal = JSON.stringify(loggerWarn.mock.calls);
+    expect(journal).toContain(ECART_INTERVALLE_SUIVI_UNITE);
+    for (const interdit of ['Ferritine', '41', '30 - 400', 'µg/L', 'Résultats de biologie']) expect(journal, interdit).not.toContain(interdit);
   });
 
   it('avant l’envoi, lecture en échec : rien n’est parti, blocBiologie et appelBiologie à null, aucune phrase', async () => {

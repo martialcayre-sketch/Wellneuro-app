@@ -631,6 +631,11 @@ grep -q 'banc-exclusion-recherche-prisma.test.ts' "$ROOT/.github/workflows/ci.ym
   || die "ci.yml ne lance plus le banc de l'exclusion de la recherche."
 WN_EXCLUSION_RECHERCHE_BANC_BASE=wellneuro_ci node prisma/runWithAlias.js scripts/banc-exclusion-recherche-prisma.test.ts > /dev/null < /dev/null \
   || die "banc de l'exclusion de la recherche en échec — le relancer seul (\`node prisma/runWithAlias.js scripts/banc-exclusion-recherche-prisma.test.ts\`, depuis web/)."
+# La migration du doublon WN-SRC-0546 / 0564 rejouée sur fixtures (D-490).
+grep -q 'banc-retire-doublon-0546-prisma.test.ts' "$ROOT/.github/workflows/ci.yml" \
+  || die "ci.yml ne lance plus le banc de la migration du doublon 0546."
+WN_RETIRE_DOUBLON_0546_BANC_BASE=wellneuro_ci node prisma/runWithAlias.js scripts/banc-retire-doublon-0546-prisma.test.ts > /dev/null < /dev/null \
+  || die "banc de la migration du doublon 0546 en échec — le relancer seul (\`node prisma/runWithAlias.js scripts/banc-retire-doublon-0546-prisma.test.ts\`, depuis web/)."
 grep -q 'banc-unicite-mesure-prisma.test.ts' "$ROOT/.github/workflows/ci.yml" \
   || die "ci.yml ne lance plus le banc du client Prisma contre la garde anti-doublon."
 WN_BIO_ANNULATION_BANC_BASE=wellneuro_ci node prisma/runWithAlias.js scripts/banc-unicite-mesure-prisma.test.ts > /dev/null < /dev/null \
