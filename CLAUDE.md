@@ -198,7 +198,10 @@ node scripts/wn-etat-reel.mjs      # état réel du dépôt — rapporte, ne ré
   des branches par délégation du responsable. Sous `D-373` (adoptée par
   `D-454`), l'intégrateur merge les PR qu'une file déclare « prête @<sha> » (chemin du
   handoff, exceptions) ; migration, authentification, `.coderabbit.yaml` et
-  `pr_agent.yml` restent à leur file. Pas de merge avant la revue de
+  `pr_agent.yml` restent à leur file. Il merge par
+  `scripts/wn-integrer.mjs` (`D-546`) : dix minutes après « prête » au plus
+  tôt, et toute parole sur la PR depuis la déclaration suspend — la file
+  n'y écrit plus, ou redéclare. Pas de merge avant la revue de
   **PR-Agent** sur le sha de tête, prouvée par
   `node scripts/wn-revue-pr-agent.mjs <N>` → `0` (`D-499`, `D-393` §2) ;
   à défaut, celle de `wn-reviewer` (`D-448`). CodeRabbit et Copilot ne sont

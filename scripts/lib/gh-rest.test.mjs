@@ -67,6 +67,15 @@ test('versPrGraphql : état, fusionnabilité et commit de merge', () => {
   assert.equal(estMergee(prRest({ state: 'closed', merged_at: '2026-11-19T00:19:00Z' })), true);
   assert.equal(versPrGraphql(prRest({ state: 'closed' })).state, 'CLOSED');
   assert.equal(versPrGraphql({ message: 'Not Found' }), null);
+
+  // Origine de la tête (`D-546` §2) : jamais « même dépôt » par défaut.
+  const depot = (nom, login) => ({ full_name: nom, owner: { login } });
+  const meme = versPrGraphql(prRest({ head: { sha: SHA, ref: 'x', repo: depot('p/d', 'p') }, base: { ref: 'main', repo: depot('p/d', 'p') } }));
+  assert.deepEqual([meme.isCrossRepository, meme.headRepositoryOwner], [false, { login: 'p' }]);
+  const fourche = versPrGraphql(prRest({ head: { sha: SHA, ref: 'x', repo: depot('t/d', 't') }, base: { ref: 'main', repo: depot('p/d', 'p') } }));
+  assert.deepEqual([fourche.isCrossRepository, fourche.headRepositoryOwner], [true, { login: 't' }]);
+  const supprimee = versPrGraphql(prRest({ head: { sha: SHA, ref: 'x', repo: null }, base: { ref: 'main', repo: depot('p/d', 'p') } }));
+  assert.deepEqual([supprimee.isCrossRepository, supprimee.headRepositoryOwner], [null, null]);
 });
 
 test('guetteur : la sonde merge lit l’état REST converti', () => {
