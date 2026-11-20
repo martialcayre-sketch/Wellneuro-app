@@ -88,6 +88,11 @@ export function versPrGraphql(pr) {
     headRefOid: pr.head?.sha ?? null,
     headRefName: pr.head?.ref ?? null,
     baseRefName: pr.base?.ref ?? null,
+    // Origine de la tête (`D-546` §2) : `null` si le dépôt de tête est
+    // illisible (fourche supprimée) — jamais « même dépôt » par défaut.
+    isCrossRepository:
+      pr.head?.repo?.full_name && pr.base?.repo?.full_name ? pr.head.repo.full_name !== pr.base.repo.full_name : null,
+    headRepositoryOwner: pr.head?.repo?.owner?.login ? { login: pr.head.repo.owner.login } : null,
     mergeable,
     mergeStateStatus: pr.mergeable_state ? String(pr.mergeable_state).toUpperCase() : 'UNKNOWN',
   };

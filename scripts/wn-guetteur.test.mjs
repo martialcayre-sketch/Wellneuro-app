@@ -65,8 +65,37 @@ test('prete : neuves seulement, robots ignorés, triées par date', () => {
   ];
   const neuves = declarationsNeuves(prs, new Set(['c:1']));
   assert.deepEqual(neuves.map((d) => d.id), [2, 3]);
-  assert.equal(ligneDeclaration(neuves[0]), `11:${SHA_A} c:2 at=2026-11-13T10:01:00Z TÊTE-DIFFÉRENTE head=${SHA_B}`);
-  assert.equal(ligneDeclaration(neuves[1]), `12:${SHA_A.slice(0, 8)} c:3 at=2026-11-13T10:02:00Z tête=ok`);
+  // Sans auteur ni dépôt de tête lisibles, l'origine n'est jamais « ok ».
+  assert.match(ligneDeclaration(neuves[0]), new RegExp(`^11:${SHA_A} c:2 at=2026-11-13T10:01:00Z TÊTE-DIFFÉRENTE head=${SHA_B} CONTROLE-INDETERMINE\\(`));
+  assert.match(ligneDeclaration(neuves[1]), new RegExp(`^12:${SHA_A.slice(0, 8)} c:3 at=2026-11-13T10:02:00Z tête=ok CONTROLE-INDETERMINE\\(`));
+});
+
+// ── Origine des déclarations (`D-546` §2), cas du guetteur hors dépôt ───────
+
+const DEPOT_OK = { isCrossRepository: false, headRepositoryOwner: { login: 'proprio' } };
+const decl = (user, association, pr = DEPOT_OK) => ({
+  number: 30,
+  headRefOid: SHA_A,
+  ...pr,
+  commentaires: [{ id: 99, user: { type: 'User', login: user }, author_association: association, body: `prête @${SHA_A}`, created_at: '2026-11-20T10:00:00Z' }],
+});
+
+for (const [libelle, pr, attendu] of [
+  ['propriétaire, même dépôt', decl('proprio', 'OWNER'), 'tête=ok provenance=ok'],
+  ['autre auteur', decl('autre', 'CONTRIBUTOR'), 'CONTROLE-INDETERMINE(auteur=autre,association=CONTRIBUTOR)'],
+  ['propriétaire, association MEMBER', decl('proprio', 'MEMBER'), 'CONTROLE-INDETERMINE(association=MEMBER)'],
+  ['tête venue d\'une fourche', decl('proprio', 'OWNER', { isCrossRepository: true, headRepositoryOwner: { login: 'autre' } }), 'CONTROLE-INDETERMINE(fourche,tete-depot=autre)'],
+  ['dépôt de tête illisible', decl('proprio', 'OWNER', { isCrossRepository: null, headRepositoryOwner: null }), 'CONTROLE-INDETERMINE(fourche,tete-depot=?)'],
+]) {
+  test(`prete : origine — ${libelle}`, () => {
+    const [d] = declarationsNeuves([pr], new Set(), 'proprio');
+    assert.ok(ligneDeclaration(d).endsWith(attendu), ligneDeclaration(d));
+  });
+}
+
+test('prete : propriétaire inconnu, aucune origine « ok »', () => {
+  const [d] = declarationsNeuves([decl('proprio', 'OWNER')], new Set(), '');
+  assert.ok(ligneDeclaration(d).endsWith('CONTROLE-INDETERMINE(proprietaire-inconnu)'));
 });
 
 test('prete : une redéclaration du même sha (commentaire neuf) est neuve', () => {

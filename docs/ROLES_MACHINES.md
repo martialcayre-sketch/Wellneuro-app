@@ -47,6 +47,26 @@ files déclarent prêtes ; les files travaillent chacune dans leur worktree.
   skill `wn-merge`** : sonde du déploiement, contrôle sur l'arbre fusionné,
   relecture du registre, chevauchement, `main` inchangé (7 bis), puis la
   sonde release-db, dernier geste avant le merge (7 ter). Le détail vit dans le skill et dans `docs/claude/REGLES_PR_MERGE.md`.
+- **L'intégrateur merge par `scripts/wn-integrer.mjs`** (`D-546`), qui
+  enchaîne ces étapes et quatre gardes :
+  - **l'origine** : la déclaration vient du propriétaire du dépôt, et la
+    tête du dépôt lui-même ;
+  - **le délai de repentir** : dix minutes après la déclaration. Toute
+    parole sur la PR depuis la déclaration suspend le merge : commentaire,
+    revue ou commentaire en ligne, d'un humain comme d'un robot ; un
+    commentaire modifié compte à l'heure de sa modification. Seuls les
+    commentaires de l'intégrateur (propriétaire du dépôt) qui portent
+    `<!-- wn-integrateur -->` en première ligne ne suspendent pas. **Une
+    file n'écrit donc plus sur sa PR après « prête »**, et ne modifie
+    jamais sa déclaration : une déclaration modifiée n'est pas servie. Si
+    elle doit écrire, elle redéclare par un commentaire neuf, et le délai
+    repart ;
+  - **le bail unique** : `bail prendre`, et `bail rendre` avant un `/clear`.
+    `bail prendre --reprendre` sert à succéder à un intégrateur disparu ;
+  - **le journal des merges** : `journal`, refus compris.
+- **Il prend en charge une PR** par un commentaire marqué
+  `<!-- wn-integrateur -->` (`D-454` §2), qui ne suspend pas son propre
+  merge.
 - **L'intégrateur avance la copie principale par `git merge --ff-only`**,
   après T1 si le lot touche les crochets. Un refus de `--ff-only` s'arbitre, il ne se
   contourne pas.
@@ -56,7 +76,10 @@ files déclarent prêtes ; les files travaillent chacune dans leur worktree.
 - **Filet par PR** (même amendement) : une PR « prête » ni mergée ni
   commentée par l'intégrateur vingt minutes après sa déclaration revient à
   sa file, qui la merge elle-même avec les mêmes gestes (7 bis, 7 ter) et
-  l'écrit en commentaire de la PR.
+  l'écrit en commentaire de la PR. Depuis `D-546` §6, ces gestes sont
+  `node scripts/wn-integrer.mjs <N> <sha> --filet`, joué depuis un worktree
+  détaché sur `origin/main`, jamais depuis la branche de la PR : le script
+  refuse si `scripts/` diffère de `main`.
 
 ### La liste commune de questions et le guichet (H89)
 
@@ -239,7 +262,9 @@ attend d'être lu.
   lecture seule (seul `prete --amorcer` écrit, dans le fichier que l'appelant
   lui donne), à lancer en tâche de fond pour être prévenu plutôt que
   sonder :
-  - `prete` : les déclarations « prête @<sha> » neuves, pour l'intégrateur ;
+  - `prete` : les déclarations « prête @<sha> » neuves, pour l'intégrateur.
+    Chaque ligne finit par l'origine (`D-546` §2), `provenance=ok` ou
+    `CONTROLE-INDETERMINE(…)` : dans le second cas, aucun merge ;
   - `merge <N>` : la PR mergée ou fermée, pour la file qui l'a déclarée ;
   - `release-db` : un run en attente à la porte (`waiting`). Jusqu'au retrait des relecteurs (`D-520` §6), c'est une approbation que seul l'intégrateur fait, sous délégation ; ensuite, ce n'est plus que le minuteur.
 
