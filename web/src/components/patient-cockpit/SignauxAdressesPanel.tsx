@@ -49,10 +49,10 @@ export function SignauxAdressesPanel({
       aria-label="Signaux adressés"
       className="rounded-xl border border-border bg-surface p-4"
     >
-      {/* h4 sous la phase « Décision » (h3), sous-partie en h5 (PRA-3b Q2 a). */}
-      <h4 className="text-sm font-semibold uppercase tracking-wide text-foreground">
+      {/* h3 sous la phase « Décision » (h2), sous-partie en h4 (PRA-3b Q2 a ; PRA-6e). */}
+      <h3 className="text-sm font-semibold uppercase tracking-wide text-foreground">
         Signaux adressés au médecin
-      </h4>
+      </h3>
       <p className="mt-1 text-sm text-muted-foreground">
         Ces signaux ont fait l’objet d’une lettre d’adressage consignée : ils ne suspendent plus
         la décision, et restent affichés. Révoquer une lettre consignée par erreur fait de nouveau
@@ -76,7 +76,7 @@ export function SignauxAdressesPanel({
           Un bouton sous chaque signal laissait croire qu'on révoquait celui-là
           seul, et deux boutons identiques ne se distinguaient pas au lecteur
           d'écran. */}
-      <h5 className="mt-4 text-sm font-medium text-foreground">Lettres consignées</h5>
+      <h4 className="mt-4 text-sm font-medium text-foreground">Lettres consignées</h4>
       <ul className="mt-2 flex flex-col gap-2">
         {couvertures
           .filter(couverture => couverture.findingIds.some(id => constats.some(c => c.findingId === id)))

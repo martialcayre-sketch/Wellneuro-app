@@ -127,9 +127,9 @@ export function J21DecisionPanel({
   if (suiviOuvert === false) {
     return (
       <section aria-labelledby="j21-decision-title" className="rounded-xl border border-border bg-surface p-4">
-        <h4 id="j21-decision-title" className="text-sm font-semibold text-foreground">
+        <h3 id="j21-decision-title" className="text-sm font-semibold text-foreground">
           Point d’étape J21 — résumé et décision
-        </h4>
+        </h3>
         <p role="status" className="mt-3 text-base text-muted-foreground">
           Aucun protocole n’a été diffusé sur ce cycle : les points d’étape J7, J14 et J21 ne courent pas encore.
           Ils partiront de la diffusion du protocole (phase Actions).
@@ -140,9 +140,9 @@ export function J21DecisionPanel({
 
   return (
     <section aria-labelledby="j21-decision-title" className="rounded-xl border border-border bg-surface p-4">
-      <h4 id="j21-decision-title" className="text-sm font-semibold text-foreground">
+      <h3 id="j21-decision-title" className="text-sm font-semibold text-foreground">
         Point d’étape J21 — résumé et décision
-      </h4>
+      </h3>
       {/* J2-jourN (H52) : le jour du cycle, compté depuis le jour 0 du momentum
           et des jalons. Sans jour 0, rien : aucun jour n'est inventé. */}
       {!echecLecture && resume?.suivi && (
@@ -198,7 +198,7 @@ export function J21DecisionPanel({
       {/* Décision : ajuster (via versionnement) vs orientations documentées. */}
       <div className="mt-4 space-y-3">
         <div>
-          <h5 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Ajuster le protocole</h5>
+          <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Ajuster le protocole</h4>
           <div className="mt-2 flex flex-wrap gap-2">
             {AJUSTEMENTS.map((item) => (
               <button
@@ -219,7 +219,7 @@ export function J21DecisionPanel({
         </div>
 
         <div>
-          <h5 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Autres décisions</h5>
+          <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Autres décisions</h4>
           <ul className="mt-2 space-y-1 text-base text-muted-foreground">
             {AUTRES.map((item) => (
               <li key={item.titre}>

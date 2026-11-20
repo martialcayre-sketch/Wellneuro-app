@@ -91,9 +91,9 @@ describe('MeteoAdhesionPanel (SP-MET)', () => {
       );
     });
 
-    it('titre du panneau en h4 sous la phase (Q2 a)', () => {
+    it('titre du panneau en h3 sous la phase (Q2 a)', () => {
       render(<MeteoAdhesionPanel meteo={meteo()} />);
-      expect(screen.getByRole('heading', { level: 4, name: 'Météo d’adhésion' })).toBeTruthy();
+      expect(screen.getByRole('heading', { level: 3, name: 'Météo d’adhésion' })).toBeTruthy();
     });
   });
 });

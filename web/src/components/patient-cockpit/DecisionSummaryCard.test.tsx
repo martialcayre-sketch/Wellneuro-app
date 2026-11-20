@@ -362,16 +362,16 @@ describe('DecisionSummaryCard — priorités non proposées (D-495)', () => {
 });
 
 describe('DecisionSummaryCard — PRA-3b, PR 3 (Q2 a)', () => {
-  it('le titre de la carte est un h4 lisible, avec ou sans carte', () => {
+  it('le titre de la carte est un h3 lisible, avec ou sans carte', () => {
     const { unmount } = render(<DecisionSummaryCard decisionCard={carteAvecLimitationCandidat(MOTIF_NON_CURE)} />);
-    const avec = screen.getAllByRole('heading', { level: 4 });
+    const avec = screen.getAllByRole('heading', { level: 3 });
     expect(avec.length).toBeGreaterThan(0);
     expect(avec[0].className).not.toContain('uppercase');
-    expect(screen.queryAllByRole('heading', { level: 3 })).toHaveLength(0);
+    expect(screen.queryAllByRole('heading', { level: 2 })).toHaveLength(0);
     unmount();
 
     render(<DecisionSummaryCard decisionCard={null} />);
-    expect(screen.getAllByRole('heading', { level: 4 }).length).toBeGreaterThan(0);
-    expect(screen.queryAllByRole('heading', { level: 3 })).toHaveLength(0);
+    expect(screen.getAllByRole('heading', { level: 3 }).length).toBeGreaterThan(0);
+    expect(screen.queryAllByRole('heading', { level: 2 })).toHaveLength(0);
   });
 });

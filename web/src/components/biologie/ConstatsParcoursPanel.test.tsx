@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { CbFeatureProvider } from '@/components/patient-cockpit/CbFeatureProvider';
 import { AVERTISSEMENT_FILET, AVERTISSEMENT_NOTE } from '@/lib/bio-parcours/constats/liste';
@@ -277,6 +277,16 @@ describe('ConstatsParcoursPanel — bibliothèque des options sous un constat co
     expect(bloc.textContent).toContain('L’admissibilité n’est pas calculée');
     expect(bloc.textContent).toContain('ne rien changer, ou surveiller');
     expect(bloc.textContent).not.toMatch(/aucune interaction détectée/i);
+  });
+
+  it('le bloc des options est un h4 sous le h3 de l’hypothèse, ses options en h5 : aucun saut (PRA-6e)', async () => {
+    stubFetch({ ...LECTURE, hypotheses: [{ ...LECTURE.hypotheses[0], tete: CONFIRMEE, aRelire: [] }], optionsBibliotheque: OPTIONS });
+    rendre();
+    const bloc = await screen.findByRole('region', { name: 'Bibliothèque des options' });
+    expect(within(bloc).getByRole('heading', { level: 4, name: 'Bibliothèque des options' })).toBeTruthy();
+    expect(within(bloc).getByRole('heading', { level: 5, name: 'OPT_BANC_A' })).toBeTruthy();
+    const item = bloc.closest('li');
+    expect(item?.querySelector('h3')).not.toBeNull();
   });
 
   it('tête confirmée « à relire » : le bloc le dit en tête (P2-1 de `wn-reviewer`)', async () => {

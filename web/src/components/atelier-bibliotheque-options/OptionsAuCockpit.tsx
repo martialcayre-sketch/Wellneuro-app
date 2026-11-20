@@ -62,9 +62,9 @@ export function OptionsAuCockpitBloc({
   const titre = `options-${hypotheseCode}`;
   return (
     <section aria-labelledby={titre} className="mt-3 rounded-md border border-border p-3">
-      <h5 id={titre} className="text-sm font-medium text-foreground">
+      <h4 id={titre} className="text-sm font-medium text-foreground">
         Bibliothèque des options
-      </h5>
+      </h4>
       {constatARelire && <p className="mt-1 text-sm font-medium text-foreground">{CONSTAT_A_RELIRE}</p>}
       {options.lecture === 'echec' ? (
         <p className="mt-1 text-sm text-status-danger">La bibliothèque des options n’a pas pu être lue.</p>
@@ -93,7 +93,7 @@ function ListeOptions({ hypotheseCode, options }: { hypotheseCode: string; optio
     <ul className="mt-2 space-y-3">
       {liste.map(option => (
         <li key={option.id} className="rounded-md border border-border p-3">
-          <h6 className="text-sm font-medium text-foreground">{option.id}</h6>
+          <h5 className="text-sm font-medium text-foreground">{option.id}</h5>
           <p className="text-xs text-muted-foreground">
             Population{option.populations.length > 1 ? 's' : ''} : {option.populations.join(', ')}
           </p>

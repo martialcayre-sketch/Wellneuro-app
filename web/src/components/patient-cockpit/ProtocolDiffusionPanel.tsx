@@ -59,9 +59,9 @@ function ApercuFichesAssiette({
       data-testid="apercu-fiches-assiette"
       className="mt-4 rounded-lg border border-border p-3"
     >
-      <h4 id="protocol-diffusion-fiches-title" className="text-sm font-semibold text-foreground">
+      <h3 id="protocol-diffusion-fiches-title" className="text-sm font-semibold text-foreground">
         Fiches d’assiette que ce clic remettra au patient
-      </h4>
+      </h3>
       {fiches.blocage && (
         <p className="mt-2 text-base text-status-warning">{fiches.blocage.detail}</p>
       )}
@@ -153,9 +153,9 @@ function ApercuLettreAdressageBloc({
       data-testid="apercu-lettre-adressage"
       className="mt-4 rounded-lg border border-border p-3"
     >
-      <h4 id="protocol-diffusion-lettre-title" className="text-sm font-semibold text-foreground">
+      <h3 id="protocol-diffusion-lettre-title" className="text-sm font-semibold text-foreground">
         Courrier pour le médecin traitant
-      </h4>
+      </h3>
       <p className="mt-2 text-base text-foreground">
         {lettre.dejaRemise
           ? `La lettre d’adressage du ${quand} est déjà remise au patient : ce clic ne la remet pas de nouveau.`
@@ -210,9 +210,9 @@ function ApercuCourrierComplementBloc({
       data-testid="apercu-courrier-complement"
       className="mt-4 rounded-lg border border-border p-3"
     >
-      <h4 id="protocol-diffusion-complement-title" className="text-sm font-semibold text-foreground">
+      <h3 id="protocol-diffusion-complement-title" className="text-sm font-semibold text-foreground">
         Courrier au médecin avant un complément ciblé
-      </h4>
+      </h3>
       <p className={`mt-2 text-base ${bloquant ? 'text-status-warning' : 'text-foreground'}`} role={bloquant ? 'alert' : undefined}>
         {apercu.etat === 'part' && apercu.courrier
           ? `Le courrier du ${dateLisible(apercu.courrier.consigneLe)} sera remis au patient avec ce protocole, tel qu’il a été consigné.`
@@ -369,9 +369,9 @@ export function ProtocolDiffusionPanel({
   return (
     <section aria-labelledby="protocol-diffusion-title" className="rounded-xl border border-border bg-surface p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <h3 id="protocol-diffusion-title" className="text-sm font-semibold text-foreground">
+        <h2 id="protocol-diffusion-title" className="text-sm font-semibold text-foreground">
           Validation pour diffusion
-        </h3>
+        </h2>
         <div className="flex flex-wrap gap-2">
           <span className="rounded-full border border-border px-2 py-1 text-xs text-muted-foreground">
             {approved && !stale ? 'Validé pour diffusion' : 'Non validé pour diffusion'}

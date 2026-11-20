@@ -3697,7 +3697,7 @@ describe('FichePatientPanel — replis des phases et du contexte (PRA-3a)', () =
 
   it('le bandeau du poste de pilotage ne répète plus le nom du dossier, porté par l’en-tête de fiche', async () => {
     await rendreFiche({ runtime: 'ready' });
-    expect(screen.getByRole('heading', { level: 2, name: 'Sophie Nicola' })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 1, name: 'Sophie Nicola' })).toBeTruthy();
     const poste = screen.getByRole('region', { name: 'Poste de pilotage clinique' });
     expect(within(poste).queryByText('Sophie Nicola')).toBeNull();
   });
@@ -3745,9 +3745,9 @@ describe('FichePatientPanel — PRA-3b, PR 1 : phase Patient (P05-P07, P31)', ()
     await waitFor(() => expect(document.activeElement?.contains(ligne)).toBe(true));
   });
 
-  it('P05 : la fiche administrative est un h4 sous la phase h3 (Q2 a), ses boutons à 44 px avec focus (Q8 a)', async () => {
+  it('P05 : la fiche administrative est un h3 sous la phase h2 (Q2 a), ses boutons à 44 px avec focus (Q8 a)', async () => {
     await rendreFiche({ phaseDemandee: 'patient' });
-    const titre = await screen.findByRole('heading', { level: 4, name: /Fiche administrative/ });
+    const titre = await screen.findByRole('heading', { level: 3, name: /Fiche administrative/ });
     const fiche = titre.closest('section') as HTMLElement;
     for (const bouton of within(fiche).getAllByRole('button')) {
       expect(bouton.className).toContain('min-h-11');
@@ -3843,7 +3843,7 @@ describe('FichePatientPanel — PRA-6h2 : lecture hors contrat et focus après �
     const alerte = await screen.findByRole('alert');
     cliquer(within(alerte).getByRole('button', { name: 'Réessayer' }));
 
-    const titre = await screen.findByRole('heading', { level: 2, name: 'Sophie Nicola' });
+    const titre = await screen.findByRole('heading', { level: 1, name: 'Sophie Nicola' });
     await waitFor(() => expect(document.activeElement).toBe(titre));
   });
 
@@ -3871,7 +3871,7 @@ describe('FichePatientPanel — PRA-6h2 : lecture hors contrat et focus après �
 
     await waitFor(() => expect(screen.getByText(/1 demande de correction de questionnaire en attente/i)).toBeTruthy());
     await waitFor(() =>
-      expect(document.activeElement).toBe(screen.getByRole('heading', { level: 2, name: 'Sophie Nicola' })),
+      expect(document.activeElement).toBe(screen.getByRole('heading', { level: 1, name: 'Sophie Nicola' })),
     );
   });
 
@@ -3888,7 +3888,7 @@ describe('FichePatientPanel — PRA-6h2 : lecture hors contrat et focus après �
     await waitFor(() => expect(screen.queryByRole('button', { name: 'Réessayer la lecture des envois' })).toBeNull());
     expect(screen.getByText(/^Envois :/)).toBeTruthy();
     const zone = document.getElementById('zone-focale') as HTMLElement;
-    await waitFor(() => expect(document.activeElement).toBe(within(zone).getByRole('heading', { level: 3 })));
+    await waitFor(() => expect(document.activeElement).toBe(within(zone).getByRole('heading', { level: 2 })));
   });
 
   it('onglet Trajectoire : « Réessayer » réussi rend le focus au panneau, nommé par son onglet', async () => {

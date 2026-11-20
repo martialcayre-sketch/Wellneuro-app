@@ -1989,7 +1989,7 @@ export function FichePatientPanel({
                 key={dossier.idPatient}
                 patient={dossier}
                 onEnregistre={chargerPassations}
-                niveauTitre="h4"
+                niveauTitre="h3"
               />
               <div className="rounded-xl border border-border bg-surface p-4 flex flex-wrap items-center justify-between gap-3">
                 <div className="flex flex-wrap items-center gap-2">
@@ -2482,7 +2482,10 @@ export function FichePatientPanel({
           courant ; les bannières critiques, exceptionnelles, peuvent décaler. */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
-          <h2 ref={relectureFiche.titreRef} tabIndex={-1} className="font-display text-xl font-bold tracking-[-0.02em] text-foreground">{nomComplet}</h2>
+          {/* Le nom du dossier est le h1 de la page, comme sur les autres
+              écrans praticien ; toute la cascade de la fiche part de lui
+              (PRA-6e, question 20261117-1423-d). Le style ne change pas. */}
+          <h1 ref={relectureFiche.titreRef} tabIndex={-1} className="font-display text-xl font-bold tracking-[-0.02em] text-foreground">{nomComplet}</h1>
           <p className="break-all text-xs text-muted-foreground">{patient.email}</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -3018,7 +3021,7 @@ export function FichePatientPanel({
                 <p className="text-xs font-semibold uppercase tracking-[.06em] text-solar-ink">
                   {statutPhase(phaseCourante.id) === 'en_attente' ? 'Phase due' : 'Zone focale'}
                 </p>
-                <h3 ref={titreZoneFocaleRef} tabIndex={-1} className="font-display text-xl font-bold text-foreground">{phaseCourante.libelle}</h3>
+                <h2 ref={titreZoneFocaleRef} tabIndex={-1} className="font-display text-xl font-bold text-foreground">{phaseCourante.libelle}</h2>
               </div>
               {/* Contexte fermé : l'information critique reste dans la zone de
                   travail (prototype PRA-3a validé, Q3) — les mêmes instruments

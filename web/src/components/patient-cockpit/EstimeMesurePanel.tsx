@@ -680,7 +680,7 @@ export function EstimeMesurePanel({
     return (
       <section aria-label="Estimé et mesuré" className="rounded-lg border border-border/60 p-3">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h3 className="font-display text-base font-semibold text-foreground">Estimé ↔ mesuré</h3>
+          <h2 className="font-display text-base font-semibold text-foreground">Estimé ↔ mesuré</h2>
           <Badge variant="info">Second temps — à activer</Badge>
         </div>
         <p className="mt-2 text-base text-muted-foreground">
@@ -708,7 +708,7 @@ export function EstimeMesurePanel({
   return (
     <section aria-label="Estimé et mesuré" className="rounded-lg border border-border/60 p-3">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h3 className="font-display text-base font-semibold text-foreground">Estimé ↔ mesuré</h3>
+        <h2 className="font-display text-base font-semibold text-foreground">Estimé ↔ mesuré</h2>
         <Badge variant="info">Mesures consignées</Badge>
       </div>
       <p className="mt-2 text-sm text-muted-foreground">
@@ -748,7 +748,7 @@ export function EstimeMesurePanel({
         <ul className="mt-3 space-y-2">
           {[...parAnalyte.entries()].map(([code, serie]) => (
             <li key={code} className="rounded-lg border border-border p-3">
-              <h4 className="text-sm font-medium text-foreground">{serie[0].analyteLibelle}</h4>
+              <h3 className="text-sm font-medium text-foreground">{serie[0].analyteLibelle}</h3>
               {/* LA PLAGE SOURCÉE, JUXTAPOSÉE — JAMAIS UN VERDICT ([[D-157]]).
                   Aucun écart n'est calculé, aucune couleur d'état n'est posée,
                   aucun tri par « anormalité » n'existe : ce bloc rend ce que le

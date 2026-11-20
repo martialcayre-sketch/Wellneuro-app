@@ -531,9 +531,9 @@ function FinObjectifBloc({
     );
     return (
       <div className="mt-2 rounded-lg border border-border p-3">
-        <h5 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           Fin de l’objectif
-        </h5>
+        </h4>
         <p className="mt-1 text-sm text-foreground">
           {lecture.motif === 'atteint' && (
             <>
@@ -592,9 +592,9 @@ function FinObjectifBloc({
 
   return (
     <div className="mt-2 rounded-lg border border-border p-3">
-      <h5 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+      <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         Fin de l’objectif
-      </h5>
+      </h4>
       {proposee && lecture?.voixManquante === 'patient' && (
         <p className="mt-1 text-sm text-foreground">
           Vous avez proposé de conclure cet objectif comme atteint. Il reste la voix de votre
@@ -1280,9 +1280,9 @@ export function ObjectifNegociePanel({
 
   return (
     <section aria-labelledby="objectif-negocie" className="rounded-xl border border-border bg-surface p-4">
-      <h4 ref={relectureDossier.titreRef} tabIndex={-1} id="objectif-negocie" className="text-sm font-semibold text-foreground">
+      <h3 ref={relectureDossier.titreRef} tabIndex={-1} id="objectif-negocie" className="text-sm font-semibold text-foreground">
         Objectif négocié
-      </h4>
+      </h3>
       <p className="mt-1 text-xs text-muted-foreground">
         Ce que le patient demande, dans ses mots, et ce que vous en avez compris. Les versions
         précédentes restent consultables ci-dessous.
@@ -1326,9 +1326,9 @@ export function ObjectifNegociePanel({
             aria-label="Matériau d’anamnèse"
             className="rounded-lg border border-border bg-surface p-3"
           >
-            <h5 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Ce que le patient a écrit à l’anamnèse
-            </h5>
+            </h4>
             {!ancrage.consultationValidee ? (
               // ABSENCE N° 1 — il n'y a pas de consultation validée : il n'y a
               // donc pas de matériau, ce qui ne se dit pas comme « champ vide ».
@@ -1382,9 +1382,9 @@ export function ObjectifNegociePanel({
               aria-label="Propositions d’objectif"
               className="rounded-lg border border-border bg-surface p-3"
             >
-              <h5 ref={relecturePropositions.titreRef} tabIndex={-1} className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              <h4 ref={relecturePropositions.titreRef} tabIndex={-1} className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Ce que Wellneuro peut citer
-              </h5>
+              </h4>
               <p className="mt-1 text-sm text-muted-foreground">
                 Des assemblages de phrases déjà écrites — par le patient, par un instrument certifié, par une
                 règle signée. Rien n’est rédigé ici : chaque phrase porte sa provenance.
@@ -1784,9 +1784,9 @@ export function ObjectifNegociePanel({
                     l'objectif a été repris, elle ne se coche pas. */}
                 {demandesCorrection.filter((d) => d.idObjectif === courante.id).length > 0 && (
                   <div className="mt-3 rounded-lg border border-accent bg-status-warning/10 p-3">
-                    <h5 className="text-xs font-semibold uppercase tracking-wide text-status-warning">
+                    <h4 className="text-xs font-semibold uppercase tracking-wide text-status-warning">
                       Votre patient demande une correction de l’objectif
-                    </h5>
+                    </h4>
                     <ul className="mt-2 flex flex-col gap-2">
                       {demandesCorrection
                         .filter((demande) => demande.idObjectif === courante.id)
@@ -1913,9 +1913,9 @@ export function ObjectifNegociePanel({
                   if (siens.length === 0) return null;
                   return (
                     <div className="mt-3 rounded-lg border border-accent bg-surface-2 p-3">
-                      <h6 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      <h5 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                         Le patient l’a dit autrement
-                      </h6>
+                      </h5>
                       <ul className="mt-2 flex flex-col gap-3">
                         {siens.map((amendement) => (
                           <li key={amendement.id} className="border-l-2 border-border pl-3">
@@ -1996,9 +1996,9 @@ export function ObjectifNegociePanel({
                   if (etapes.length === 0) return null;
                   return (
                     <div className="mt-3 rounded-lg border border-border bg-surface-2 p-3">
-                      <h6 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      <h5 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                         Où le patient en était
-                      </h6>
+                      </h5>
                       <ul className="mt-2 flex flex-col gap-3">
                         {etapes.map((etape) => (
                           <li key={etape.id} className="border-l-2 border-border pl-3">
@@ -2110,7 +2110,7 @@ export function ObjectifNegociePanel({
 
           {editionOuverte && (
           <div className="border-t border-border pt-3">
-            <h5 className="text-sm font-semibold text-foreground">
+            <h4 className="text-sm font-semibold text-foreground">
               {citeAmendement
                 ? 'Intégrer les mots du patient'
                 : reformuleId
@@ -2118,7 +2118,7 @@ export function ObjectifNegociePanel({
                   : repriseDe
                     ? 'Reprendre une proposition'
                     : 'Poser un objectif négocié'}
-            </h5>
+            </h4>
 
             {citeAmendement ? (
               // LES MOTS DU PATIENT S'AFFICHENT, ILS NE S'ÉDITENT PAS — même

@@ -59,7 +59,7 @@ describe('ComprehensionPanel', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Réessayer' }));
     await waitFor(() => expect(screen.queryByText('Ce panneau n’a pas pu être chargé.')).toBeNull());
     expect(screen.getByText(/Rien d’écrit pour ce dossier/)).toBeTruthy();
-    const titre = screen.getByRole('heading', { name: 'Ce que j’ai compris de vous', level: 4 });
+    const titre = screen.getByRole('heading', { name: 'Ce que j’ai compris de vous', level: 3 });
     await waitFor(() => expect(document.activeElement).toBe(titre.closest('section')));
   });
 

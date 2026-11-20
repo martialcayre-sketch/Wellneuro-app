@@ -102,7 +102,7 @@ export function LectureImportBiologique({
 
   return (
     <section className="mt-3 rounded-lg border border-border p-3" aria-label="Lecture clinique du compte rendu">
-      <h5 className="text-sm font-medium text-foreground">Lecture clinique du compte rendu</h5>
+      <h4 className="text-sm font-medium text-foreground">Lecture clinique du compte rendu</h4>
       <p className="mt-1 text-xs text-muted-foreground">
         Valider des lignes n’est pas lire le compte rendu. Consigner votre lecture dit que vous avez lu la restitution
         ci-dessus : lignes lues, intervalles
