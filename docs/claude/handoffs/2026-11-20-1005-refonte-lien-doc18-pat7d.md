@@ -15,7 +15,7 @@ Le responsable a ouvert PAT-7d le 2026-11-20 (« Ouvre PAT-7d »), après avoir 
 
 - DOC-18 (numéro suivant DOC-17 ; aucun DOC-n ouvert dans les PR) :
   - §7 étendu au hub : plus de « Réessayer » sous le refus 404 « Suivi non reconnu. », avec la forme « constat » du point de suivi ;
-  - « Réessayer » inscrit sur U24 et U25, après un échec de lecture (HTTP 500 ou coupure réseau).
+  - « Réessayer » inscrit sur U24 et U25, après un échec de lecture (HTTP 5xx sauf 503, ou coupure réseau).
 - Pas de « Réessayer » sur un refus que réessayer ne lèvera pas :
   - 401 : U25 renvoie déjà à l'entrée ; U24 garde son message ;
   - 403 : compte refusé, comme sur Mon bilan ;
