@@ -12,6 +12,10 @@ import { fileURLToPath } from 'node:url';
 import {
   ACCORD_CODEX,
   BOITES_FILES,
+  BOITES_FIXES,
+  LIEUX_LOT,
+  NATURES_LOT,
+  RISQUES_LOT,
   ETATS_LOT,
   ETATS_MESSAGE,
   NATURES_QUESTION,
@@ -94,7 +98,10 @@ const regles = (constats, gravite = 'anomalie') => constats.filter((c) => c.grav
 test('énumérations : celles de docs/ROLES_MACHINES.md, mot pour mot', () => {
   const regle = readFileSync(join(RACINE, 'docs', 'ROLES_MACHINES.md'), 'utf8').replace(/\s+/g, ' ');
   const cite = (valeurs) => valeurs.map((v) => `\`${v}\``);
-  for (const v of cite([...BOITES_FILES, 'guichet', 'integrateur'])) assert.ok(regle.includes(v), `boîte ${v}`);
+  for (const v of cite(BOITES_FIXES)) assert.ok(regle.includes(v), `boîte ${v}`);
+  assert.ok(regle.includes(`\`lieu\` (${cite(LIEUX_LOT).join(', ')})`), 'lieux du carnet');
+  assert.ok(regle.includes(`\`nature\` (${cite(NATURES_LOT).join(', ')})`), 'natures du carnet');
+  assert.ok(regle.includes(`\`risque\` (${cite(RISQUES_LOT).join(', ')})`), 'risques du carnet');
   assert.ok(regle.includes(`Objets : ${cite(OBJETS_MESSAGE).join(', ')}.`), 'objets du registre');
   assert.ok(regle.includes(`\`etat\` (${cite(ETATS_MESSAGE).join(', ')})`), 'états du registre');
   assert.ok(regle.includes(`\`etat\` (${cite(ETATS_LOT).join(', ')})`), 'états du carnet');
@@ -183,6 +190,16 @@ test('contenu interdit : signalé par champ, la valeur n\'est jamais recopiée',
   assert.deepEqual(regles(uuid, 'avis'), ['contenu']);
   assert.deepEqual(controlerLots([lot({ motif: 'commit 24d8641d8959aa00bb11cc22dd33ee44ff556677' })]), [], 'un sha n\'est pas un identifiant de dossier');
   assert.deepEqual(controlerLots([lot({ motif: 'renvoi `WN-CL-NNNN-NNN@vN.M` ou `x@v1.2`' })]), [], 'une référence versionnée n\'est pas une adresse');
+});
+
+test('carnet : lieu, nature et risque de la voie cloud (D-540 §3)', () => {
+  assert.deepEqual(controlerLots([lot({ lieu: 'cloud', nature: 'ordinaire', risque: 'P2' })]), []);
+  assert.deepEqual(controlerLots([lot({ lieu: 'mac', nature: 'reservee', risque: 'P0' })]), []);
+  assert.deepEqual(controlerLots([lot()]), [], 'champs facultatifs : absents, voie Mac');
+  assert.deepEqual(regles(controlerLots([lot({ lieu: 'nuage' })])), ['lieu']);
+  assert.deepEqual(regles(controlerLots([lot({ risque: 'P3' })])), ['risque']);
+  assert.deepEqual(regles(controlerLots([lot({ lieu: 'cloud', nature: 'reservee', risque: 'P2' })])), ['lieu']);
+  assert.deepEqual(regles(controlerLots([lot({ lieu: 'cloud', nature: 'ordinaire', risque: 'P0' })])), ['lieu']);
 });
 
 test('lots : une ligne conforme ne lève rien, à chaque état', () => {

@@ -31,6 +31,8 @@ import { execFileSync } from 'node:child_process';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
+import { rollupDepuisRest, versPrGraphql } from './lib/gh-rest.mjs';
+
 const RACINE = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 export const SORTIE_VERT = 0;
@@ -479,17 +481,20 @@ function faitsDeDiagnostic(sha) {
   return faits;
 }
 
+// REST, pas `gh pr view` : GraphQL est refusé (403) dans une session cloud
+// (`D-540`, constat du 2026-11-20). Trois lectures au lieu d'une : la PR,
+// puis les check-runs et les statuts de sa tête. Une seule illisible, et la
+// PR entière l'est (`pr: null`, code 4) : un rollup illisible n'est jamais un
+// rollup vide.
 function collecter(numero) {
-  const vue = jsonOuNull(
-    gh([
-      'pr',
-      'view',
-      String(numero),
-      '--json',
-      'number,state,mergeable,mergeStateStatus,baseRefName,headRefOid,statusCheckRollup',
-    ]),
+  const vue = versPrGraphql(jsonOuNull(gh(['api', `repos/{owner}/{repo}/pulls/${numero}`])));
+  if (!vue || !vue.headRefOid) return { pr: null };
+  const sha = vue.headRefOid;
+  const rollup = rollupDepuisRest(
+    jsonOuNull(gh(['api', '--paginate', '--slurp', `repos/{owner}/{repo}/commits/${sha}/check-runs?per_page=100`])),
+    jsonOuNull(gh(['api', '--paginate', '--slurp', `repos/{owner}/{repo}/commits/${sha}/status?per_page=100`])),
   );
-  if (!vue) return { pr: null };
+  if (rollup === null) return { pr: null };
   return {
     contextesRequis: contextesRequisDe(vue.baseRefName),
     // Chargés paresseusement par la boucle (faitsDeDiagnostic) quand le
@@ -504,7 +509,7 @@ function collecter(numero) {
       base: vue.baseRefName,
       headRefOid: vue.headRefOid,
     },
-    rollup: Array.isArray(vue.statusCheckRollup) ? vue.statusCheckRollup : [],
+    rollup,
     delaiDepasse: false,
   };
 }
@@ -517,8 +522,8 @@ async function principal(argv) {
     console.error('Usage : node scripts/wn-attendre-ci.mjs <n° de PR> [--delai <secondes>]');
     return SORTIE_INDETERMINE;
   }
-  // Plus de sonde `gh --version` : si `gh` est absent ou muet, le premier
-  // `pr view` rend `pr: null` et le verdict sort en SORTIE_INDETERMINE avec un
+  // Plus de sonde `gh --version` : si `gh` est absent ou muet, la première
+  // lecture de la PR rend `pr: null` et le verdict sort en SORTIE_INDETERMINE avec un
   // message qui couvre ce cas.
 
   const debut = Date.now();
@@ -540,7 +545,7 @@ async function principal(argv) {
     if (!verdict.attendre) {
       console.log(verdict.message);
       // Snapshot final : les outils enchaînés (ex. /wn-merge) le lisent au
-      // lieu de refaire un `gh pr view`.
+      // lieu de relire la PR.
       if (faits.pr) {
         console.log(
           `SNAPSHOT PR#${faits.pr.numero} etat=${faits.pr.etat} mergeable=${faits.pr.mergeable} ` +

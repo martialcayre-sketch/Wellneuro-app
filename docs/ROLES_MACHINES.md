@@ -186,7 +186,9 @@ attend d'être lu.
 - **Où.** La collection `messages` de la même page privée que la liste
   commune de questions. Son adresse est dans la mémoire des sessions.
 - **La boîte.** Une file (`A`, `A bis`, `B`, `C`, `D`), le `guichet` ou
-  l'`integrateur` ; une session hors file prend le nom de son lot. Le
+  l'`integrateur` ; une session hors file prend le nom de son lot. La passe
+  de l'orchestrateur cloud écrit sous la boîte émettrice `orchestrateur`
+  (`D-540`), et seulement des lignes `autre` ou `prete`. Le
   message vise la boîte, pas la session : la session suivante de la même
   file le trouve.
 - **Une ligne par message.** Identifiant `AAAAMMJJ-HHMM-<boîte émettrice>`
@@ -268,6 +270,17 @@ suivi.
   `handoff`, `pr`, `fait_le`, `inscrit_par`, `inscrit_le`, `reprises`. Une
   ligne ne se supprime jamais ; elle ne porte ni donnée patient, ni contenu
   clinique, ni secret.
+- **Voie cloud** (`D-540`, amendée le 2026-11-20). Trois champs
+  facultatifs, posés à l'inscription : `lieu` (`cloud`, `mac`), `nature`
+  (`ordinaire`, `reservee`) et `risque` (`P0`, `P1`, `P2`), au sens de
+  `docs/claude/POLITIQUE_REVUE.md`. Seul un lot `cloud`, `ordinaire`, `P1`
+  ou `P2` peut être pris par une passe de l'orchestrateur ; absent ou
+  autre, il est de la voie Mac. Ne sont jamais `cloud` : migration,
+  `schema.prisma`, logique clinique, authentification, configuration de
+  revue, lot qui exige T2 ou T3, qui numérote une décision, qui touche un
+  crochet, un réglage ou l'outillage de release, dont un écran se relit en
+  navigateur, qui lit la production ou demande un dépôt privé, et tout lot
+  P0 (Codex est absent en cloud, `D-505`).
 - **L'ordre.** `ordre` reproduit le plan : rang, puis hiérarchie h1 à h5,
   puis ordre de la fiche. Le lot suivant d'une file est sa ligne `pret` au
   plus petit `ordre`, dont le lot `apres` est `fait`. Une désignation du
@@ -491,6 +504,39 @@ carte par page, sous « Pages de suivi » :
   date de la page, et signale « résumé à rafraîchir » au-delà de
   quarante-huit heures. Ce seuil est un choix d'affichage du lot, pas une
   règle de cycle. Un résumé ne remplace pas la page : la carte y renvoie.
+
+### Les sessions de passe de l'orchestrateur cloud (`D-540`)
+
+Une routine claude.ai se déclenche chaque heure de 7 h à 23 h, heure de
+Paris. Chaque déclenchement ouvre une session cloud neuve : la **passe**.
+Elle est elle-même la session du lot ; elle ne lance aucune autre session
+(amendement du 2026-11-20).
+
+- **Sa consigne** est `docs/claude/templates/ORCHESTRATEUR_PASSE.md`, lue
+  sur `origin/main`. La routine ne porte, hors dépôt, que l'adresse de la
+  page de suivi.
+- **Sa décision** se lit dans `node scripts/wn-orchestrateur-passe.mjs`,
+  sur un export des registres et son manifeste. Ce script applique la
+  garde « aucun lot `cloud` pris sans PR, aucune intention en vol », la
+  plage horaire (prise refusée avant 7 h et après 23 h 59), le plafond
+  de 4 lots par jour, l'interrupteur `orchestrateur/arret` (seul `false`
+  ouvre) et les champs de la voie cloud du carnet.
+- **Un lot, puis l'arrêt.** La passe prend au plus un lot (`pris_par:
+  orchestrateur (passe cloud)`) et le mène jusqu'à « prête » ou `bloque`.
+  Elle s'arrête ensuite, sans prendre de lot suivant : sa consigne prime
+  sur l'enchaînement du carnet (« « Prête » », « Buter »). Un lot qu'elle
+  classe hors voie cloud repasse à `pret`, avec `lieu: mac`.
+- **Ce qu'elle ne fait jamais** : merger, release-db, signer, répondre à une
+  question, inscrire ou débloquer un lot, lancer `test:e2e` ou
+  `test:worktree`, lire la production, toucher un worktree du Mac.
+- **GitHub en REST.** `gh pr …` passe par GraphQL, refusé en cloud. Les
+  scripts de coordination lisent en REST (`scripts/lib/gh-rest.mjs`).
+- **Pour les sessions du Mac**, rien ne change. Un lot `pris` par la passe
+  se lit comme celui d'une autre session. Orphelin au-delà de quatre heures
+  sans PR, il se reprend au Mac selon « Sans nouvelles ». Le journal des
+  passes (`orchestrateur_journal`) et leurs lignes d'intention
+  (`orchestrateur_lancements`) vivent dans la même base, et ne se suppriment
+  jamais.
 
 ## Le risque concret, en une phrase
 
