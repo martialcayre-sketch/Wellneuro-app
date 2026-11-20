@@ -1,9 +1,9 @@
 ---
 id: "2026-10-04-bio-parcours"
 titre: "BIO-PARCOURS — la biologie dans un assistant clinique de bout en bout"
-statut: "en_pause (ouverte le 2026-10-04 ; LOT-00, LOT-01, LOT-02, LOT-03, LOT-04, LOT-07, LOT-09, LOT-10, LOT-11, LOT-23, LOT-25 et LOT-26 terminés ; lots de sécurité issus de BP-26 livrés : 10A, 11A, 5A, 8B, D-281 lots 1 et 2 ; LOT-03 (BP-03) terminé le 2026-10-17 ; suite au plan docs/claude/PLAN_WELLNEURO.md)"
+statut: "en_pause (ouverte le 2026-10-04 ; LOT-00 à LOT-05, LOT-07, LOT-09, LOT-10, LOT-11, LOT-13, LOT-14, LOT-15, LOT-23, LOT-25, LOT-26 et LOT-28 terminés ; lots de sécurité issus de BP-26 livrés : 10A, 11A, 5A, 8B, D-281 lots 1 et 2 ; en cours au plan : BP-12a (textes des fiches), BP-17 (signature), BP-27 (cadrage) ; table rapprochée de l'état réel le 2026-11-20 ; suite au plan docs/claude/PLAN_WELLNEURO.md)"
 créée_le: "2026-10-04"
-mise_à_jour: "2026-10-20"
+mise_à_jour: "2026-11-20"
 lot_courant: "aucun"
 branche_campagne: "aucune"
 branche_lot_courant: "aucune"
@@ -104,6 +104,16 @@ celui du plan, la campagne dit le travail (`D-285` §1). Les fiches ne sont
 écrites que pour la phase 0 ; celles des autres lots s'écrivent quand ils
 arrivent.
 
+**Rapprochement du 2026-11-20.** La table avait cessé de suivre les lots
+après la mi-octobre. Elle est remise à l'état réel d'après les fiches
+`lots/`, les journaux du plan (`docs/claude/plan-journal/`) et l'historique
+des PR : BP-05, BP-12b et BP-15 passent « terminé » ; BP-12a, BP-17 et BP-27
+passent « en_cours ». Aucun autre statut ne change. Le statut d'un lot se
+lit d'abord sur sa fiche, et à défaut de fiche (BP-27) au journal de sa
+fiche du plan ; la table le reflète. Seule la clôture de BP-15
+n'était écrite nulle part : elle est déduite du critère de fin de F08 et
+inscrite à son journal le 2026-11-20.
+
 **Clôture d'un lot** : avec le handoff, mettre à jour le suivi BioFlow du
 responsable (page hors dépôt, créée le 2026-10-05) : état du lot, lots
 nouveaux, décisions acceptées.
@@ -127,20 +137,20 @@ nouveaux, décisions acceptées.
 | **Phase 1** | | **Fondations** | | | |
 | BP-09 | LOT-09 | Annulation d'un résultat, ajout seul | terminé (2026-10-14 ; #1448, release-db constatée, #1455 ; `D-294`) | **oui** | BP-00 |
 | BP-07 | LOT-07 | Dossier de preuve remis à Curation signée | terminé (2026-10-14) | non | BP-00 |
-| BP-12a | LOT-12 | Fiches d'usage (structure signée, texte en base) | à_faire | **oui** | BP-07 |
-| BP-12b | LOT-28 | Positions d'expert signées ; arbitrage de conflit persisté | en_cours (2026-11-04 : fiche, cinq arbitrages, `D-439` proposée) | **oui** | BP-12a |
+| BP-12a | LOT-12 | Fiches d'usage (structure signée, texte en base) | en_cours (2026-11-17 : migration (#1488) et code (#1498) constatés le 2026-10-16 ; structure écrite et signée le 2026-11-01 (`D-401`, #1806), re-signée par `D-434`, `D-446`, `D-457` et `D-477`, chaque release-db constatée ; textes des fiches en cours de validation par acte daté, journal de F05 ; critère de done non atteint) | **oui** | BP-07 |
+| BP-12b | LOT-28 | Positions d'expert signées ; arbitrage de conflit persisté | terminé (2026-11-10 : `D-439` acceptée (#1853) ; dix-huit positions signées et trente-deux couples conflit × fiche arbitrés par le responsable, constat par conteneur ; fiche F09 close, #1965) | **oui** | BP-12a |
 | BP-13 | LOT-13 | Données physiologiques, traitements et compléments en cours | terminé (2026-10-21 : fiche, arbitrages du 2026-10-20 et du 2026-10-21, `D-335`, déclaration RGPD et texte patient validés le 2026-10-21 ; migration mergée (#1622) et constatée par conteneur le 2026-10-21 ; code sous `WN_PHYSIO_TRAITEMENTS` éteint en PR le 2026-10-21) | **oui** | BP-00, BP-11 (clé de pièce de constat) |
 | BP-14 | LOT-14 | Identité d'auteur séparée du rôle | terminé (2026-11-10 : D-459 ; migration constatée, #1930 ; code mergé, #1953, et déployé le 2026-11-09) | **oui** | BP-00 |
 | BP-03 | LOT-03 | Série par analyte, jour n, trois dates | terminé (2026-10-17 ; #1463 fiche, #1466 code, sans migration ; constat après déploiement par le responsable) | non | BP-01, BP-09 |
 | BP-04 | LOT-04 | Attente typée sur les deux véhicules | terminé (2026-10-15 ; `D-305` #1471, code en une PR sans migration) | non | BP-01, BP-09 |
-| BP-05 | LOT-05 | Contexte de prélèvement typé (absorbe BP-06) | en_cours (2026-11-12 : fiche, quatre arbitrages du 2026-11-12, `D-497` et déclaration RGPD ; migration seule sur confirmation distincte, puis le code après constat) | **oui** | BP-00, BP-03 |
+| BP-05 | LOT-05 | Contexte de prélèvement typé (absorbe BP-06) | terminé (2026-11-13 : `D-497` et déclaration RGPD (#2013) ; migration (#2018) appliquée et constatée par conteneur ; code (#2038) constaté en production ; l'écran de correction du contexte est routé au plan, §8) | **oui** | BP-00, BP-03 |
 | **Phase 2** | | **Premier parcours, étage outil** | | | |
 | BP-11 | LOT-11 | Constats du praticien | terminé (2026-10-20 ; #1600, release-db constatée, puis le code sous `WN_BIO_CONSTAT` éteint ; `D-331`) | **oui** | BP-09, BP-12a |
 | BP-16 | LOT-16 | Boucle d'exploration | à_faire | non | BP-03, BP-04, BP-11 |
-| BP-15 | LOT-15 | Décisions de parcours | en_cours (2026-10-22 : fiche, arbitrages du 2026-10-20, `D-343` et déclaration RGPD validées le 2026-10-22, #1642 ; migration mergée (#1644), appliquée et constatée le 2026-10-22 ; code sous `WN_DECISIONS_PARCOURS` éteint en PR le 2026-10-22) | **oui** | BP-00 |
+| BP-15 | LOT-15 | Décisions de parcours | terminé (clôture inscrite le 2026-11-20 au journal de F08, sans constat nouveau ; critère de fin atteint le 2026-10-23 : `D-343` et déclaration RGPD (#1642) ; migration (#1644) appliquée et constatée le 2026-10-22 ; code sous `WN_DECISIONS_PARCOURS` (#1650) ; libellés du retrait et de la révision (#1653)) | **oui** | BP-00 |
 | BP-20 | LOT-20 | Suivi factuel ; jalon J1 | à_faire | non | BP-15, BP-16 |
 | BP-08 | LOT-08 | Indicateurs de processus | à_faire | non | BP-20 ; un cycle réel à J21 |
-| BP-17 | LOT-17 | Bibliothèque signée des options par hypothèse | en_cours (2026-11-11 : `D-477` mergée, `D-480` et découpage en sept PR acceptés par arbitrage délégué, `20261111-1131-c` ; PR 2, migration du texte, mergée (#1994) et appliquée, constat par conteneur le 2026-11-11) | **oui** (texte en base, `20261110-1941-c` ; confirmations de migration distinctes, `AGENTS.md`) | BP-11, BP-12b |
+| BP-17 | LOT-17 | Bibliothèque signée des options par hypothèse | en_cours (2026-11-14 : `D-477` mergée, `D-480` et découpage en sept PR acceptés par arbitrage délégué, `20261111-1131-c` ; PR 2, migration du texte, mergée (#1994) et constatée le 2026-11-11 ; PR 3 à 7 mergées (#2006, #2060, #2082, #2106, #2127) ; liste des options du besoin 2 transcrite (`D-521`), structure non signée : la signature du responsable reste due, porte 23) | **oui** (texte en base, `20261110-1941-c` ; confirmations de migration distinctes, `AGENTS.md`) | BP-11, BP-12b |
 | BP-18a | LOT-18 | Prescription niveau 3, figée | à_faire | **oui** | BP-01, BP-14, BP-17, BP-23 ; DC-42 signée |
 | BP-18b | LOT-29 | « Protocole personnalisé » remis | à_faire | selon | BP-18a |
 | **Phase 3** | | **Ouvertures de l'étage outil** | | | |
@@ -149,7 +159,7 @@ nouveaux, décisions acceptées.
 | BP-21b | LOT-30 | Ouverture de la prescription | à_faire | non | BP-21a, BP-18b, BP-24 |
 | BP-22 | LOT-22 | Observation après ouverture | à_faire | **oui** | BP-21a |
 | **Phase 4** | | **Étage assistant** (derrière drapeau) | | | |
-| BP-27 | LOT-27 | Évaluateur par marqueur (propose, ne pose jamais) | à_faire | **oui** | BP-03, BP-05, BP-12a, BP-13, BIO-INGEST LOT-07 |
+| BP-27 | LOT-27 | Évaluateur par marqueur (propose, ne pose jamais) | en_cours, cadrage seulement (2026-11-20 : sans fiche `lots/`, l'état se lit au journal de F27 ; F3 de `D-539` (#2244) ; `D-544` acceptée (#2269) : aucun marqueur choisi avant le rattachement des claims de contexte et d'interprétation ; le lot de code n'est pas ouvert, ses exigences d'ouverture (`D-544` §7) et ses dépendances, BP-12a compris, ne sont pas réunies ; ni règle ni code) | **oui** | BP-03, BP-05, BP-12a, BP-13, BIO-INGEST LOT-07 |
 | BP-19 | LOT-19 | Stratégie proposée d'après le dossier | à_faire | **oui** (journal) | BP-13, BP-15, BP-17, BP-20 |
 | — | — | Étage 2 du résultat préoccupant ; marches 2 à 4 du suivi ; proposition de bilan d'après le dossier — une fonction par lot, chacune sous sa `D-xxx`, derrière drapeau (`D-276` §3) | à_faire | selon | BP-27 selon le cas |
 | **Phase 5** | | **Extension** : B12 et folates, contre-épreuve sommeil, puis par situation | à_faire | selon | BP-21b |
