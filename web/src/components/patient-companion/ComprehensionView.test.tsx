@@ -295,3 +295,36 @@ describe('ComprehensionView — PAT-5', () => {
     expect(screen.getByText('Envoyer').closest('button')?.parentElement?.className).toContain('print:hidden');
   });
 });
+
+// PAT-7d ([[D-488]], amendement DOC-18) : « Réessayer » sous un échec de
+// lecture (erreur technique, coupure réseau) ; rien sous un refus.
+describe('ComprehensionView — reprise sur erreur de lecture (PAT-7d)', () => {
+  const reponse = (status: number, error: string) => ({ ok: false, status, json: async () => ({ ok: false, error }) });
+
+  it('erreur technique : « Réessayer » relit la page', async () => {
+    fetchMock.mockResolvedValueOnce(reponse(500, 'Erreur technique.'));
+    render(<ComprehensionView />);
+    await screen.findByText('Erreur technique.');
+    chargementRendu(SYNTHESE);
+    fireEvent.click(screen.getByRole('button', { name: 'Réessayer' }));
+    expect(await screen.findByText(SYNTHESE.texte)).toBeTruthy();
+  });
+
+  it('coupure réseau : « Réessayer » proposé', async () => {
+    fetchMock.mockRejectedValueOnce(new Error('offline'));
+    render(<ComprehensionView />);
+    await screen.findByText('Erreur réseau. Réessayez plus tard.');
+    expect(screen.getByRole('button', { name: 'Réessayer' })).toBeTruthy();
+  });
+
+  it.each([
+    [401, 'Session expirée. Reconnectez-vous.'],
+    [403, 'Accès non reconnu ou révoqué.'],
+    [503, 'Cet espace n’est pas encore ouvert.'],
+  ])('refus %i : le message seul, sans « Réessayer »', async (status, message) => {
+    fetchMock.mockResolvedValueOnce(reponse(status, message));
+    render(<ComprehensionView />);
+    await screen.findByText(message);
+    expect(screen.queryByRole('button', { name: 'Réessayer' })).toBeNull();
+  });
+});
