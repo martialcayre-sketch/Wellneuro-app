@@ -109,8 +109,9 @@ function empreinte(texte: string): string {
 }
 
 describe('synthese-v38 — la section « Résultats de biologie » (D-539 §5.1, D-545 §5.1)', () => {
-  it('la version est synthese-v38', () => {
-    expect(VERSION_PROMPT_SYNTHESE).toBe('synthese-v38');
+  // v39 (D-543) ne touche pas cette section : elle ajoute une puce aux règles non appliquées.
+  it('la version est synthese-v39', () => {
+    expect(VERSION_PROMPT_SYNTHESE).toBe('synthese-v39');
   });
 
   it('la section est, au caractère près, le texte de D-539 amendé par D-545', () => {

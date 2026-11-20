@@ -395,7 +395,14 @@ export const CLAUDE_MODEL = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6';
 // assumé et déclaré : drapeau éteint, le narratif peut désormais nommer une
 // analyse ; rien de ce qui touche une valeur, un résultat ou la réception d'un
 // bilan ne change.
-export const VERSION_PROMPT_SYNTHESE = 'synthese-v38';
+// v39 ([[D-543]], arbitrages `20261119-1303-a` et `20261119-1635-a`) : la
+// section « Règles non appliquées par le service » distingue cinq situations au
+// lieu de quatre — une puce neuve, « Lignes suspendues pour relecture », pour
+// les lignes des tables d'orientation, d'arrêt, de contradictions et
+// d'indications biologiques que le responsable a suspendues pour relecture.
+// Textes validés mot pour mot par le responsable. Bump assumé et déclaré : une
+// synthèse rédigée sous v38 ne connaissait pas cette ligne du bloc.
+export const VERSION_PROMPT_SYNTHESE = 'synthese-v39';
 // v3 (LOT-01 étape 4) : la sortie du modèle est lue par `analyserSortieSynthese`
 // — schéma fermé, énumérations contrôlées, rejet + une relance. La forme du JSON
 // est inchangée ; ce qui change est qu'une sortie non conforme n'est plus servie
@@ -648,10 +655,11 @@ Si le bloc est absent, n'en parle pas.
 
 ## Règles non appliquées par le service
 
-Les données patient peuvent inclure un bloc « Règles non appliquées par le service », produit par le même calcul déterministe que le bloc de recommandation, hors de toi. Il distingue quatre situations, chacune avec son motif :
+Les données patient peuvent inclure un bloc « Règles non appliquées par le service », produit par le même calcul déterministe que le bloc de recommandation, hors de toi. Il distingue cinq situations, chacune avec son motif :
 
 - « Sources de l'orientation non vérifiées » : la validité des sources de l'orientation n'a pas pu être vérifiée. Aucune règle d'orientation n'a été appliquée, et c'est pourquoi le bloc « Recommandation d'exploration déterministe » est absent.
 - « Règles d'orientation non appliquées » : certaines règles citent une source qui ne satisfait pas les critères de validité du corpus. Elles ne proposent aucune exploration.
+- « Lignes suspendues pour relecture » : certaines règles sont suspendues, le temps d'être relues. Elles ne proposent aucune exploration, aucun bilan ni aucune discordance, et ne retirent aucune exploration.
 - « Règles d'arrêt suspendues » : certaines règles d'arrêt ne sont pas appliquées, faute de source valide ou vérifiable. Elles ne retirent aucune exploration.
 - « Règles d'arrêt non évaluées » : certaines règles d'arrêt lisent une passation au-delà de sa fenêtre d'arrêt, une passation datée après la date du jour, ou un questionnaire sans fenêtre d'arrêt valide définie. Ces règles ne retirent aucune exploration.
 

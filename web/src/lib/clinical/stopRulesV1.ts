@@ -107,7 +107,16 @@ export { LIBELLE_EXTINCTION } from './stopRulesLibelles';
 export const STOP_RULES_V1: StopRule[] = [
   {
     id: 'STOP-STR',
-    statut: 'publiee',
+    // SUSPENDUE POUR RELECTURE ([[D-543]], réponse C à `20261119-1635-a`).
+    // Suspendre `R-STR-01` lui retirait le motif qui gardait allumée la ligne
+    // BMS-10 devant une PSS-10 défavorable ([[D-053]] arbitrage 2) : elle aurait
+    // éteint ce qu'elle n'éteignait pas. Elle lit, comme `C-STR`, des bandes
+    // « Normal » du DASS-21. Suspendue, elle n'éteint plus rien : les
+    // suggestions de `R2-STR-01` à `R2-STR-03` restent servies même quand les
+    // trois instruments sont rassurants. Elle reste écrite telle quelle pour
+    // être relue avec les quatre lignes. Rétablir = repasser `publiee` et
+    // re-signer la table.
+    statut: 'suspendue',
     // CE QUI PORTE LE CLAIM, ET CE QUI NE FAIT QUE RESSERRER.
     //
     // La spécification du lot écrivait cette règle sur « DASS + Cungi
@@ -284,16 +293,25 @@ export const STOP_RULES_METADATA: StopRulesMetadata = {
   // d'extinction à 7 jours inclus, arbitrage WellNeuro sans source clinique
   // établissant cette durée ; STOP-STR redevient opérante. Règles, grilles et
   // fenêtres du Cungi et du DASS-21 inchangées.
+  //
+  // RE-SIGNÉE LE 2026-11-20 ([[D-543]]), par le responsable dans la session du
+  // lot (« option c acceptée », réponse à `20261119-1635-a`) : le statut de
+  // `STOP-STR` passe de `publiee` à `suspendue`, pour relecture avec les
+  // quatre lignes du stress. La table n'éteint plus rien ; elle reste signée.
+  // Règles, grilles, fenêtres et claims inchangés. Ancienne empreinte, signée
+  // le 2026-11-12 ([[D-508]]) :
+  // `8c853f9203da2fe48b3b7cb4e65ee7d01bea88fe14141ee2e34dc7e41c701dbf`.
   validationExterne: true,
-  dateValidation: '2026-11-12T00:00:00.000Z',
+  dateValidation: '2026-11-20T07:43:09.000Z',
   // Posé le 2026-08-16 ([[D-067]]) : la chaîne hex que `STOP_RULES_SHA256`
   // valait à la relecture, recopiée telle quelle — jamais la constante
   // (déclarée après cet objet ; comparaison tautologique sinon). Reposé à la
   // re-signature du 2026-10-10 ([[D-278]] §2), puis à celle du 2026-11-11
   // ([[D-494]]), sur le périmètre `{ regles, grilles }`, puis à celle du
   // 2026-11-12 ([[D-500]]), sur le périmètre `{ regles, grilles, fenetres }`,
-  // puis à celle du même jour ([[D-508]]), fenêtre de Q_STR_01 comprise.
-  shaPerimetre: '8c853f9203da2fe48b3b7cb4e65ee7d01bea88fe14141ee2e34dc7e41c701dbf',
+  // puis à celle du même jour ([[D-508]]), fenêtre de Q_STR_01 comprise, puis à
+  // celle du 2026-11-20 ([[D-543]]), STOP-STR suspendue.
+  shaPerimetre: '90f03487901b62442a8334effb538267c067db65c7626ef0f6af8aedcdd26ada',
   // Les claims épinglés par les règles de cette table. Le contrat de fraîcheur
   // les contrôle sur la production, et `claimsEpinglesFraicheur.guard.test.ts`
   // refuse que cette liste diverge de celle du contrat — dans les deux sens.

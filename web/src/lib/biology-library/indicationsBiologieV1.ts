@@ -181,7 +181,12 @@ export const INDICATIONS_BIOLOGIE_V1: RegleIndicationPanel[] = [
   // « moyenne ≥ 3,5, présence du burnout » (`WN-CL-0106-027`).
   {
     id: 'BIO-STR-01',
-    statut: 'publiee',
+    // SUSPENDUE POUR RELECTURE ([[D-543]], [[D-541]] §6.1). Ses deux jambes
+    // lisent une bande de la PSS-10 ou du BMS-10, que les positions signées du
+    // besoin 9 ne fondent pas. La ligne reste écrite telle quelle pour être
+    // relue ; elle sera rétablie, corrigée ou retirée par une décision propre.
+    // Rétablir = repasser `publiee` et re-signer la table.
+    statut: 'suspendue',
     panelCode: 'PANEL_STRESS_1',
     mode: 'conditionnel',
     declencheurs: [{
@@ -557,8 +562,15 @@ export const INDICATIONS_BIOLOGIE_METADATA: IndicationsBiologieMetadata = {
   // le sont tous, ne se lise pas plus tard comme une anomalie : ils fournissent
   // la LECTURE d'un seuil, pas une conduite, et la règle s'appuie sur cinq
   // claims prescriptifs par ailleurs.
+  //
+  // RE-SIGNÉE LE 2026-11-19 ([[D-543]]), par le responsable dans la session du
+  // lot (« je signe ») : le statut de `BIO-STR-01` passe de `publiee` à
+  // `suspendue`, pour relecture ([[D-541]] §6.1). Aucune autre règle, aucune
+  // grille, aucun claim ne change ; `claimsSource` garde les claims de la ligne
+  // suspendue, qui reste dans le périmètre relu. Ancienne empreinte, signée le
+  // 2026-11-16 : `33894e9c6afbd6b3f59a8bb33396aefa56890f57a120f255908ebaf942adef19`.
   validationExterne: true,
-  dateValidation: '2026-11-16T23:25:39.000Z',
+  dateValidation: '2026-11-19T12:38:04.000Z',
   // Les 29 claims distincts cités par les quinze règles — dont les deux qui
   // fondent la répétition annuelle (`0312-018`, `0389-004`) : le seul chiffre
   // paramétrique de la table est DANS le périmètre signé (revue D-069). Le
@@ -706,7 +718,7 @@ export const INDICATIONS_BIOLOGIE_METADATA: IndicationsBiologieMetadata = {
   // ANNEXES RELUES, NON TRANCHÉES : la réserve de BIO-FAT-01 ci-dessus, le
   // conflit déclaré `CS-BIO-01` (`conflitsSourcesV1.ts`) et les lacunes de
   // composition (apoprotéine, IgA sécrétoires), qui ne sont pas des règles.
-  shaPerimetre: '33894e9c6afbd6b3f59a8bb33396aefa56890f57a120f255908ebaf942adef19',
+  shaPerimetre: '3449036275ad96a8ffef89dd692a94908a9edc976b40ef5871d5a0630b241519',
 };
 
 /**
@@ -739,6 +751,16 @@ export const GRILLES_INDICATIONS = grillesCitees(INDICATIONS_BIOLOGIE_V1);
 export const INDICATIONS_BIOLOGIE_SHA256 = sha256(
   JSON.stringify({ regles: INDICATIONS_BIOLOGIE_V1, grilles: GRILLES_INDICATIONS }),
 );
+
+/**
+ * Les identifiants des règles suspendues pour relecture ([[D-543]]) — seule
+ * lecture de cette table que le service d'orientation fait, par l'entrée
+ * publiée, pour dire au praticien que des lignes sont suspendues. Une fonction
+ * et non une donnée : elle n'entre pas dans l'empreinte signée.
+ */
+export function reglesIndicationsSuspendues(): string[] {
+  return INDICATIONS_BIOLOGIE_V1.filter(regle => regle.statut === 'suspendue').map(regle => regle.id);
+}
 
 /**
  * La table des indications est-elle RÉELLEMENT signée ? ([[D-063]])

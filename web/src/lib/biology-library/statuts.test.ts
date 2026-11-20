@@ -548,7 +548,8 @@ describe('la table réelle livrée (indicationsBiologieV1)', () => {
   it('la table est peuplée et signée aux cinq termes — le moteur dérive', () => {
     expect(INDICATIONS_BIOLOGIE_V1).toHaveLength(15);
     expect(INDICATIONS_BIOLOGIE_METADATA.validationExterne).toBe(true);
-    expect(INDICATIONS_BIOLOGIE_METADATA.dateValidation).toBe('2026-11-16T23:25:39.000Z');
+    // Re-signée le 2026-11-19 ([[D-543]]) : BIO-STR-01 suspendue pour relecture.
+    expect(INDICATIONS_BIOLOGIE_METADATA.dateValidation).toBe('2026-11-19T12:38:04.000Z');
     expect(INDICATIONS_BIOLOGIE_METADATA.claimsSource).toHaveLength(29);
     expect(INDICATIONS_BIOLOGIE_METADATA.shaPerimetre).toBe(INDICATIONS_BIOLOGIE_SHA256);
     expect(signatureIndicationsValide(INDICATIONS_BIOLOGIE_METADATA)).toBe(true);

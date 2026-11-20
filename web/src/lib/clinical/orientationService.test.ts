@@ -113,6 +113,7 @@ vi.mock('@/lib/clinical/contradictionsV1', () => ({
 }));
 
 import { evaluerOrientationPourPatient, orientationActive, tableArretSignee } from './orientationService';
+import { lignesSuspenduesPourRelecture } from './lignesSuspendues';
 
 function signerLaTable() {
   // Cinq termes depuis [[D-067]] : date ISO canonique et SHA de périmètre
@@ -282,6 +283,13 @@ describe('evaluerOrientationPourPatient', () => {
     expect(resultat.actif).toBe(true);
     expect(resultat.actif === true && resultat.recommandations).toEqual([]);
     expect(resultat.actif === true && resultat.sha256).toBe('sha-test');
+    // [[D-543]] : le service sert les lignes suspendues pour relecture, lues sur
+    // les tables, même sur un dossier vide. Trois tables sont simulées ici : on
+    // prouve le câblage (le collecteur, tel quel, non vide) ; le contenu réel
+    // est figé par `suspensionLignesStress.guard.test.ts`.
+    const servies = resultat.actif === true ? resultat.lignesSuspendues : null;
+    expect(servies).toEqual(lignesSuspenduesPourRelecture());
+    expect(servies?.length).toBeGreaterThan(0);
     expect(prisma.questionnaireReponse.findMany).toHaveBeenCalledOnce();
   });
 

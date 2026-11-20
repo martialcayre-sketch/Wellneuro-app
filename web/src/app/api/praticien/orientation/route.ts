@@ -13,6 +13,7 @@ import {
 } from '@/lib/clinical/orientationService';
 import type { RegleNonEvaluee } from '@/lib/clinical/orientationEngine';
 import type { RegleOrientationNonAppliquee } from '@/lib/clinical/orientationAdmissible';
+import type { LigneSuspendue } from '@/lib/clinical/lignesSuspendues';
 
 // Orientation des explorations NNPP2 (campagne certification corpus, lot 7) —
 // LECTURE SEULE. Évalue la table de règles signée sur les scores déjà stockés
@@ -55,6 +56,8 @@ export type OrientationApiResponse =
       arretsSuspendus: ArretSuspendu[];
       /** Règles d'orientation non appliquées faute de claim admissible ([[D-495]]) — vide, jamais absent. */
       reglesNonAppliquees: RegleOrientationNonAppliquee[];
+      /** Lignes suspendues pour relecture ([[D-543]]), lues sur les tables — vide, jamais absent. */
+      lignesSuspendues: LigneSuspendue[];
     }
   | { ok: false; reason: 'unauthenticated' | 'invalid' | 'patient_not_found' | 'forbidden' | 'exception'; error: string };
 
@@ -108,6 +111,7 @@ export async function GET(req: Request): Promise<NextResponse<OrientationApiResp
       arretsNonEvalues: resultat.arretsNonEvalues,
       arretsSuspendus: resultat.arretsSuspendus,
       reglesNonAppliquees: resultat.reglesNonAppliquees,
+      lignesSuspendues: resultat.lignesSuspendues,
     });
   } catch (err) {
     // Trace serveur seulement (patron de la route trajectoire) : le corps de
