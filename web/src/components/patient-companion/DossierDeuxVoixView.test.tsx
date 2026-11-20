@@ -1341,3 +1341,36 @@ describe('DossierDeuxVoixView — PAT-5', () => {
     expect(screen.getByText('Répondre à ce texte').className).toContain('print:hidden');
   });
 });
+
+// PAT-7d ([[D-488]], amendement DOC-18) : « Réessayer » sous un échec de
+// lecture (erreur technique, coupure réseau) ; rien sous un refus.
+describe('DossierDeuxVoixView — reprise sur erreur de lecture (PAT-7d)', () => {
+  const reponse = (status: number, error: string) => ({ ok: false, status, json: async () => ({ ok: false, error }) });
+
+  it('erreur technique : « Réessayer » relit la page', async () => {
+    fetchMock.mockResolvedValueOnce(reponse(500, 'Erreur technique.'));
+    render(<DossierDeuxVoixView token="TOK" />);
+    await screen.findByText('Erreur technique.');
+    fetchMock.mockResolvedValueOnce(json(assemblage()));
+    fireEvent.click(screen.getByRole('button', { name: 'Réessayer' }));
+    await waitFor(() => expect(screen.queryByText('Erreur technique.')).toBeNull());
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('coupure réseau : « Réessayer » proposé', async () => {
+    fetchMock.mockRejectedValueOnce(new Error('offline'));
+    render(<DossierDeuxVoixView token="TOK" />);
+    await screen.findByText('Erreur réseau. Réessayez plus tard.');
+    expect(screen.getByRole('button', { name: 'Réessayer' })).toBeTruthy();
+  });
+
+  it.each([
+    [403, 'Accès non reconnu ou révoqué.'],
+    [503, 'Cet espace n’est pas encore ouvert.'],
+  ])('refus %i : le message seul, sans « Réessayer »', async (status, message) => {
+    fetchMock.mockResolvedValueOnce(reponse(status, message));
+    render(<DossierDeuxVoixView token="TOK" />);
+    await screen.findByText(message);
+    expect(screen.queryByRole('button', { name: 'Réessayer' })).toBeNull();
+  });
+});

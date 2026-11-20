@@ -32,7 +32,8 @@ const CONNEXION_INTERROMPUE = 'Connexion interrompue. Vérifiez votre connexion 
 
 type LectureProtocole =
   | { protocole: Extract<ProtocoleResponse, { ok: true }>; erreur: null }
-  | { protocole: null; erreur: string }
+  // `nonReconnu` : refus 404 « Suivi non reconnu. », que réessayer ne lèvera pas.
+  | { protocole: null; erreur: string; nonReconnu?: boolean }
   | { protocole: null; erreur: null; sessionExpiree: true };
 
 async function lireProtocole(): Promise<LectureProtocole> {
@@ -45,7 +46,11 @@ async function lireProtocole(): Promise<LectureProtocole> {
     const data = (await res.json()) as ProtocoleResponse | { ok: false; error?: string };
     if (data.ok) return { protocole: data, erreur: null };
     // Le refus du serveur, tel quel, comme `MonBilan`.
-    return { protocole: null, erreur: ('error' in data && data.error) || CONNEXION_INTERROMPUE };
+    return {
+      protocole: null,
+      erreur: ('error' in data && data.error) || CONNEXION_INTERROMPUE,
+      nonReconnu: res.status === 404,
+    };
   } catch {
     return { protocole: null, erreur: CONNEXION_INTERROMPUE };
   }
@@ -68,6 +73,7 @@ export function PatientCompanionHome({ token }: { token: string }) {
   const [protocole, setProtocole] = useState<Extract<ProtocoleResponse, { ok: true }> | null>(null);
   const [checkin, setCheckin] = useState<Extract<CheckinResponse, { ok: true }> | null>(null);
   const [erreurProtocole, setErreurProtocole] = useState<string | null>(null);
+  const [protocoleNonReconnu, setProtocoleNonReconnu] = useState(false);
   const [chargement, setChargement] = useState(true);
   const [jourDifficile, setJourDifficile] = useState(false);
   // Surface « ce qui compte » ouverte ? Décidé par la route (drapeau serveur),
@@ -107,6 +113,7 @@ export function PatientCompanionHome({ token }: { token: string }) {
       return;
     }
     setErreurProtocole(p.erreur);
+    setProtocoleNonReconnu('nonReconnu' in p && p.nonReconnu === true);
     const dp = p.protocole;
     setProtocole(dp);
     // UNE PAUSE SUR EFFET INDÉSIRABLE SE LIT SANS CLIC ([[D-281]]) : son texte
@@ -170,7 +177,15 @@ export function PatientCompanionHome({ token }: { token: string }) {
       <PatientCard>
         <PatientPageHeader title="Votre accompagnement" as="h2" />
         <div className="mt-3" role="alert">
-          <PatientErrorState forme="erreur" message={erreurProtocole} onReessayer={() => void charger()} />
+          {/* Un refus 404 (« Suivi non reconnu. ») ne peut pas réussir en
+              réessayant : forme « constat », sans « Réessayer », comme au point
+              de suivi ([[D-488]] §7, étendu au hub par DOC-18). Les autres
+              erreurs le gardent. */}
+          {protocoleNonReconnu ? (
+            <PatientErrorState forme="constat" message={erreurProtocole} />
+          ) : (
+            <PatientErrorState forme="erreur" message={erreurProtocole} onReessayer={() => void charger()} />
+          )}
         </div>
       </PatientCard>
     );
