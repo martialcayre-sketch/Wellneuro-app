@@ -10,8 +10,9 @@ route, ni garde, ni drapeau, ni schéma, ni règle clinique.
 - **Toute la cascade rendue dans la fiche remonte d'un niveau**, sans saut :
   le titre de la zone focale passe en `h2`, les panneaux des phases et des
   onglets (cockpit, Trajectoire, Biologie, Alimentation, Correspondance,
-  besoins) et leurs sous-parties d'un niveau chacun. Ces composants ne sont
-  montés que dans la fiche.
+  besoins, bibliothèque des options sous un constat confirmé) et leurs
+  sous-parties d'un niveau chacun. Ces composants ne sont montés que dans la
+  fiche.
 - **Deux composants partagés** gardent leur rendu ailleurs : la fiche
   administrative reçoit `h3` de la fiche (le rayon Patients garde son défaut),
   la lecture d'un état passé reçoit `niveauTitre={2}` de la Trajectoire (le

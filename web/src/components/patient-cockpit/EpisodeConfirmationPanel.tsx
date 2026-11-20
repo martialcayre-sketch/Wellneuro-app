@@ -61,7 +61,7 @@ export function EpisodeConfirmationPanel({
 
   return (
     <section aria-labelledby="episode-confirmation-title" className="rounded-xl border border-border bg-surface p-4">
-      {/* h4 sous la phase « Décision » (h3), ses sous-parties en h5 (PRA-3b Q2 a). */}
+      {/* h3 sous la phase « Décision » (h2), ses sous-parties en h4 (PRA-3b Q2 a ; PRA-6e). */}
       <h3 id="episode-confirmation-title" className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
         Confirmation de l’épisode {jalon}
       </h3>

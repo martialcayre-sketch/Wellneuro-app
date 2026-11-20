@@ -131,7 +131,7 @@ export function SelectionPrioritePanel({
 
   return (
     <section aria-labelledby="selection-priorite-title" className="mt-4">
-      {/* h4 lisible sous la phase « Décision » (h3), même texte (PRA-3b Q2 a) ;
+      {/* h3 lisible sous la phase « Décision » (h2), même texte (PRA-3b Q2 a ; PRA-6e) ;
           il était en petites capitales `text-xs`. */}
       <h3
         id="selection-priorite-title"

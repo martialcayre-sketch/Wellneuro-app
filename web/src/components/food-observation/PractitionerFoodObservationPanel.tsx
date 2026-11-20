@@ -633,8 +633,8 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          {/* Sous le nom du dossier (h2) : l'onglet titre en h3, ses panneaux en
-              h4 (Q2 a). Mention de version du prototype retirée (Q9 a, [[D-488]]). */}
+          {/* Sous le nom du dossier (h1) : l'onglet titre en h2, ses panneaux en
+              h3 (Q2 a ; PRA-6e). Mention de version du prototype retirée (Q9 a, [[D-488]]). */}
           <h2 className="font-display text-3xl font-bold text-foreground">Trajectoire alimentaire</h2>
         </div>
         <Link href={`/dashboard/patients/${encodeURIComponent(idPatient)}`} className="inline-flex min-h-11 items-center text-sm text-muted-foreground hover:underline">

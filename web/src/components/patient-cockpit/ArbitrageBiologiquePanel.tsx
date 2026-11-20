@@ -204,7 +204,7 @@ export function ArbitrageBiologiquePanel({
       className="rounded-xl border border-border bg-surface p-4"
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
-        {/* Panneau d'une sous-vue de phase : h4 sous le titre de phase (Q2 a). */}
+        {/* Panneau d'une sous-vue de phase : h3 sous le titre de phase (Q2 a ; PRA-6e). */}
         <h3
           id="arbitrage-biologie-title"
           ref={titreRef}

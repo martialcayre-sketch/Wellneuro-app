@@ -2107,7 +2107,7 @@ export function ClinicalRuntimeSection({
           aria-label="Plainte et objectif du patient"
           className="rounded-xl border border-border bg-surface p-4 text-base"
         >
-          {/* h4 sous la phase « Décision » (h3), PRA-3b Q2 a. */}
+          {/* h3 sous la phase « Décision » (h2), PRA-3b Q2 a ; PRA-6e. */}
           <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
             Ce que le patient met en avant
           </h3>
@@ -2198,7 +2198,7 @@ export function ClinicalRuntimeSection({
           aria-label="Constats de sécurité"
           className="rounded-xl border border-status-warning/40 bg-status-warning/5 p-4"
         >
-          {/* h4 sous la phase « Décision » (h3) ; la lettre d'adressage en h5. */}
+          {/* h3 sous la phase « Décision » (h2) ; la lettre d'adressage en h4 (PRA-6e). */}
           <h3 className="text-sm font-semibold uppercase tracking-wide text-status-warning">
             Ce qui suspend la décision
           </h3>

@@ -50,7 +50,7 @@ export function DocumentsRemisPanel({ idPatient }: { idPatient: string }) {
 
   return (
     <section className="rounded-xl border border-border bg-surface p-4">
-      {/* h4 sous la phase « Patient » (h3), PRA-3b Q2 a. */}
+      {/* h3 sous la phase « Patient » (h2), PRA-3b Q2 a ; PRA-6e. */}
       <h3 ref={titreRef} tabIndex={-1} className="text-base font-semibold text-foreground">Documents remis</h3>
 
       {etat.statut === 'chargement' && <p className="mt-2 text-sm text-muted-foreground">Chargement…</p>}

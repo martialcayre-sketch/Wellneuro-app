@@ -138,7 +138,7 @@ export function ConstatCriteresPanel({
       aria-labelledby="constat-criteres-title"
       className="rounded-xl border border-border bg-surface p-4"
     >
-      {/* h4 sous la phase « Décision » (h3), PRA-3b Q2 a. */}
+      {/* h3 sous la phase « Décision » (h2), PRA-3b Q2 a ; PRA-6e. */}
       <h3 id="constat-criteres-title" className="text-sm font-semibold text-foreground">
         Critères cliniques du dossier
       </h3>

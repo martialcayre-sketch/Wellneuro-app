@@ -49,7 +49,7 @@ export function SignauxAdressesPanel({
       aria-label="Signaux adressés"
       className="rounded-xl border border-border bg-surface p-4"
     >
-      {/* h4 sous la phase « Décision » (h3), sous-partie en h5 (PRA-3b Q2 a). */}
+      {/* h3 sous la phase « Décision » (h2), sous-partie en h4 (PRA-3b Q2 a ; PRA-6e). */}
       <h3 className="text-sm font-semibold uppercase tracking-wide text-foreground">
         Signaux adressés au médecin
       </h3>
