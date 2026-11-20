@@ -25,12 +25,15 @@ Laisser la trace de l'ouverture du besoin 11 : questions tranchées, prompt de r
 - Lectures de production par conteneur en lecture seule : état des quatre sources de mesure, étiquettes par besoin, résultats du biomarqueur, constats du praticien.
 - Aucune écriture en production, aucune ingestion.
 
-## Problèmes ouverts et prochaine action
+## Problèmes ouverts
 
-- Le responsable envoie le prompt (sept familles) à ChatGPT ; la session rapproche ensuite le rapport, sans référence de mémoire.
 - Règle de lecture des critères K1 à K6 (un score n'est envisagé que si les six sont remplis pour un instrument) : proposition de la session, à confirmer par le responsable avant les résultats.
 - Les 27 claims validés des quatre sources de mesure ne sont pas étiquetés besoin 11 : geste distinct, avec accord.
 - Restent ouverts d'avant : PDF de Kuyken 2015 et Millard 2023, PDF Grossman 2023 (théorie polyvagale, besoin 6), relecture manuelle de la notice ANSES, validation puis étiquetage des claims du besoin 7.
+
+## Prochaine action exacte
+
+- Le responsable envoie le prompt (sept familles) à ChatGPT ; la session rapproche ensuite le rapport, sans référence de mémoire, puis soumet chaque envoi pour accord d'ingestion.
 
 ## Interdits encore actifs
 
