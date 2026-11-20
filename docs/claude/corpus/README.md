@@ -1,8 +1,8 @@
 # Registre sanitaire du corpus clinique
 
-`source_registry.json` contient 731 notices normalisées : 391 issues du pack WN
+`source_registry.json` contient 795 notices normalisées : 391 issues du pack WN
 Ultimate v2 (`NNFC1_Annee1`, `NNPP2_Annee2`), 116 instruments du cabinet
-(`INSTRUMENTS_CABINET`), et 224 sources externes (`SOURCES_EXTERNES` — BP-07 :
+(`INSTRUMENTS_CABINET`), et 288 sources externes (`SOURCES_EXTERNES` — BP-07 :
 avis d'agence, recommandation, essai, règlement, `WN-SRC-0508` à `0511`, puis
 pour la position P5 v0.3 une recommandation de l'OMS, `WN-SRC-0555` ; besoin 2 :
 trois avis d'agence, un rapport d'évaluation, une recommandation de pratique,
@@ -120,8 +120,15 @@ l'hyperventilation avant apnée, une méta-analyse sur l'oxymétrie de pouls, tr
 validations ou revues d'instruments, des recommandations sur la variabilité de la
 fréquence cardiaque, `WN-SRC-0746` à `0755` ; quatre notices seules,
 `WN-SRC-0756` à `0759`, faute de licence qui admette le texte ou de lecture de la
-licence chez l'éditeur),
-dont seuls des extraits ciblés sont ingérés. Les quatorze vidéos de cours du
+licence chez l'éditeur ; vidéos de cours et besoin 7, vingt-trois textes libres
+ingérés le 2026-11-20 sur accord du responsable (CC BY, CC BY-NC, CC BY-NC-SA et
+trois manuscrits d'auteur portant la mention de fouille de textes) : revues,
+essais et recommandations sur la respiration, la variabilité cardiaque, le yoga
+nidra, la pleine conscience, l'EMDR, la lumière, les odeurs, les espaces verts,
+l'audition et des outils de mesure, `WN-SRC-0760` à `0782` ; quarante et une
+notices seules, `WN-SRC-0783` à `0823`, dont trois textes à ingérer après
+fourniture du PDF par le responsable (`WN-SRC-0784`, `0802`, `0804`) et quatre
+documents officiels), dont seuls des extraits ciblés sont ingérés. Les quatorze vidéos de cours du
 praticien, `WN-SRC-0268` à `0281`, sont ingérées depuis le 2026-11-20 comme
 pièces internes (transcription automatique non relue, erreurs d'écoute évidentes
 seules corrigées et listées à la notice, claims en attente de validation ; aucun
