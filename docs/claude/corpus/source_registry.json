@@ -18892,8 +18892,8 @@
     "practitionerReviewRequired": true,
     "lifecycleStatus": "raw",
     "vigilance": "Modérée",
-    "requiredAction": "Notice bibliographique seule (accord du responsable du 2026-11-20 : ingestion seulement si la licence de l'éditeur et sa politique de fouille sont lues, ce qui n'a pas été possible) ; aucun passage, aucun claim",
-    "comment": "Source externe, étude de trois cohortes sur l'isolement social, la solitude et l'inflammation (besoin 12, liens et reliance). Référence vérifiée (PubMed, PMID 37992788, DOI résolu par Crossref). Copie de manuscrit d'auteur sur PMC (PMC11194667) marquée disponible pour la fouille de textes ; licence CC BY 4.0 déposée par l'éditeur (Crossref), mais la page de l'éditeur et sa politique de fouille n'ont pu être lues (403) : le texte n'est pas ingéré.",
+    "requiredAction": "Texte dont la licence CC BY déposée par l'éditeur et la mention de fouille de textes du dépôt de manuscrits suffisent (arbitrage du responsable du 2026-11-20, comme pour WN-SRC-0738) ; extraits ciblés ingérés (besoin 12, lot LOT_104_2026-11-20) ; claims en attente de signature",
+    "comment": "Source externe, étude de trois cohortes sur l'isolement social, la solitude et l'inflammation (besoin 12, liens et reliance ; famille exploratoire, sans usage clinique) : associations avec la CRP, l'IL-6 et le suPAR, causalité, limites déclarées. Texte du manuscrit d'auteur lu (Europe PMC). Licence : CC BY 4.0 déposée par l'éditeur (Crossref) ; le manuscrit déposé porte la mention « disponible pour la fouille de textes » ; la page de l'éditeur (Elsevier) n'a pu être lue (403) et la licence de fouille d'Elsevier lue ne vise que le contenu sous abonnement, sans mention de l'IA : réserve nommée ; arbitrage du responsable du 2026-11-20, contre la prudence de la session (notice seule). Extraits mot pour mot, usage interne.",
     "auditDate": "2026-11-20"
   },
   {
