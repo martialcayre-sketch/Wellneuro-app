@@ -94,6 +94,12 @@ Aucune routine n'est créée, allumée ni lancée.
   - Question ouverte : `filter=latest` des check-runs face à un « Re-run failed jobs », à constater sur une PR
     relancée.
 - `npm run check` (T1 complet) : code 0, après les corrections.
+- **PR-Agent sur 0761ea34 : partiel** (diff élagué, 7 fichiers exclus, code 1). Le repli est la revue `wn-reviewer`
+  (D-448). Deux constats, tous deux **corrigés** :
+  - « Dégradation silencieuse » et « Libellé trompeur » : un nom de branche hors `[A-Za-z0-9._/-]` s'affichait
+    « aucune preuve » ou « aucune PR » sans que GitHub ait été lu.
+  - Il se dit maintenant « nom de branche non interrogeable » (code 2 de `preuve`).
+  - Un banc vérifie le cas `fix+z`, et que ce nom n'est jamais envoyé à GitHub.
 
 ## 6. Problèmes ouverts
 

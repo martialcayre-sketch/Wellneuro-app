@@ -64,13 +64,15 @@ branche_sure() { case "$1" in *..*|'') return 1;; *[!A-Za-z0-9._/-]*) return 1;;
 
 # Preuve d'obsolescence d'un commit porté par une branche nommée.
 # Sortie : "PR #N mergée" / "ancêtre de main" si prouvé (code 0) ; code 1
-# sans preuve ; code 2 si GitHub n'a pas pu être lu (jamais pris pour une
+# sans preuve ; code 2 si GitHub n'a pas été lu — illisible, ou nom de branche
+# hors de l'alphabet admis, dit alors sur la sortie (jamais pris pour une
 # absence de preuve).
 preuve() { # $1 = sha du tip, $2 = nom de head côté PR
   if git merge-base --is-ancestor "$1" origin/main 2>/dev/null; then
     echo "ancêtre de main"; return 0
   fi
-  branche_sure "$2" || return 1
+  [ -n "$2" ] || return 1
+  branche_sure "$2" || { echo "nom de branche non interrogeable"; return 2; }
   local pr
   pr=$(gh api "repos/{owner}/{repo}/pulls?state=closed&head={owner}:$2&per_page=100" \
     --jq '[.[] | select(.merged_at != null)][0] // empty | "\(.number) \(.head.sha)"' 2>/dev/null) || return 2
@@ -112,7 +114,7 @@ git worktree list --porcelain | awk '
       echo "SUPPRIMABLE ($motif) : $chemin [$branche @ ${tip:0:7}]"
     fi
   elif [ $? -eq 2 ]; then
-    echo "À EXAMINER (lecture GitHub en échec) : $chemin [$branche @ ${tip:0:7}]"
+    echo "À EXAMINER (${motif:-lecture GitHub en échec}) : $chemin [$branche @ ${tip:0:7}]"
   else
     echo "À EXAMINER (aucune preuve) : $chemin [$branche @ ${tip:0:7}]"
   fi
@@ -139,13 +141,15 @@ for br in $(git for-each-ref refs/heads --format='%(refname:short)'); do
       echo "SUPPRIMABLE ($motif) : $br (${tip:0:7})"
     fi
   elif [ $? -eq 2 ]; then
-    echo "À EXAMINER (lecture GitHub en échec) : $br (${tip:0:7})"
+    echo "À EXAMINER (${motif:-lecture GitHub en échec}) : $br (${tip:0:7})"
   else
     etat=""
     if branche_sure "$br"; then
       etat=$(gh api "repos/{owner}/{repo}/pulls?state=closed&head={owner}:$br&per_page=100" \
         --jq 'map(select(.merged_at == null)) | if length > 0 then "PR #\(.[0].number) fermée sans merge" else "aucune PR" end' 2>/dev/null) \
         || etat="lecture GitHub en échec"
+    else
+      etat="nom de branche non interrogeable"
     fi
     echo "À EXAMINER (${etat:-aucune PR}) : $br (${tip:0:7})"
   fi
@@ -167,7 +171,7 @@ for rb in $(git for-each-ref 'refs/remotes/origin/**' --format='%(refname:short)
       echo "SUPPRIMABLE ($motif) : origin/$br (${tip:0:7})"
     fi
   elif [ $? -eq 2 ]; then
-    echo "À EXAMINER (lecture GitHub en échec) : origin/$br (${tip:0:7})"
+    echo "À EXAMINER (${motif:-lecture GitHub en échec}) : origin/$br (${tip:0:7})"
   else
     echo "À EXAMINER (aucune preuve) : origin/$br (${tip:0:7})"
   fi

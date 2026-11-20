@@ -62,12 +62,12 @@ function preparer() {
   git(depot, 'config', 'core.hooksPath', path.join(racine, 'sans-crochets'));
   git(depot, 'commit', '-q', '--allow-empty', '-m', 'racine');
   git(depot, 'remote', 'add', 'origin', origine);
-  for (const b of ['ouverte', 'mergee', 'inconnue']) {
+  for (const b of ['ouverte', 'mergee', 'inconnue', 'fix+z']) {
     git(depot, 'switch', '-q', '-c', b, 'main');
     git(depot, 'commit', '-q', '--allow-empty', '-m', b);
   }
   git(depot, 'switch', '-q', 'main');
-  git(depot, 'push', '-q', 'origin', 'main', 'ouverte', 'mergee', 'inconnue');
+  git(depot, 'push', '-q', 'origin', 'main', 'ouverte', 'mergee', 'inconnue', 'fix+z');
   const bin = path.join(racine, 'bin');
   fs.mkdirSync(bin);
   fs.writeFileSync(path.join(bin, 'gh'), FAUX_GH);
@@ -99,6 +99,10 @@ test('constat nominal en REST : PR ouverte protégée, PR mergée prouvée, aucu
   assert.match(r.stdout, /À EXAMINER \(aucune PR\) : inconnue/);
   assert.match(r.stdout, /GARDÉE \(protégée\) : origin\/ouverte/);
   assert.match(r.stdout, /SUPPRIMABLE \(PR #7 mergée\) : origin\/mergee/);
+  // Un nom hors alphabet n'est pas interrogé, et ne se dit pas « aucune PR » (revue PR-Agent #2287).
+  assert.match(r.stdout, /À EXAMINER \(nom de branche non interrogeable\) : fix\+z/);
+  assert.match(r.stdout, /À EXAMINER \(nom de branche non interrogeable\) : origin\/fix\+z/);
+  assert.ok(r.appels.every((a) => !a.some((x) => x.includes('fix+z'))), 'le nom hors alphabet a été envoyé à GitHub');
   assert.match(r.stdout, /Constat seul — rien n'a été supprimé/);
   assert.ok(r.appels.length > 0, 'le faux gh n’a pas été appelé');
   assert.ok(r.appels.every((a) => a[0] === 'api'), 'un appel `gh pr` (GraphQL) subsiste');
