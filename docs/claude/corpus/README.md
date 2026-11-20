@@ -1,8 +1,8 @@
 # Registre sanitaire du corpus clinique
 
-`source_registry.json` contient 717 notices normalisées : 391 issues du pack WN
+`source_registry.json` contient 731 notices normalisées : 391 issues du pack WN
 Ultimate v2 (`NNFC1_Annee1`, `NNPP2_Annee2`), 116 instruments du cabinet
-(`INSTRUMENTS_CABINET`), et 210 sources externes (`SOURCES_EXTERNES` — BP-07 :
+(`INSTRUMENTS_CABINET`), et 224 sources externes (`SOURCES_EXTERNES` — BP-07 :
 avis d'agence, recommandation, essai, règlement, `WN-SRC-0508` à `0511`, puis
 pour la position P5 v0.3 une recommandation de l'OMS, `WN-SRC-0555` ; besoin 2 :
 trois avis d'agence, un rapport d'évaluation, une recommandation de pratique,
@@ -111,7 +111,16 @@ sur l'isolement social et l'inflammation, `WN-SRC-0739`, ingérée le 2026-11-20
 sur un second accord du responsable (licence CC BY déposée par l'éditeur et
 mention de fouille de textes du dépôt de manuscrits, page de l'éditeur
 illisible) ; six notices seules, `WN-SRC-0740` à `0745`, faute de licence qui
-admette le texte ou de lecture de la politique de fouille de l'éditeur),
+admette le texte ou de lecture de la politique de fouille de l'éditeur ; besoin
+6, dix textes libres ingérés le 2026-11-20 sur accord du responsable (CC BY, CC
+BY-NC, et un manuscrit d'auteur portant la mention de fouille de textes) :
+revues et essais de respiration consciente, une revue sur le prāṇāyāma, une
+revue de cas d'événements indésirables du yoga, une étude de laboratoire sur
+l'hyperventilation avant apnée, une méta-analyse sur l'oxymétrie de pouls, trois
+validations ou revues d'instruments, des recommandations sur la variabilité de la
+fréquence cardiaque, `WN-SRC-0746` à `0755` ; quatre notices seules,
+`WN-SRC-0756` à `0759`, faute de licence qui admette le texte ou de lecture de la
+licence chez l'éditeur),
 dont seuls des extraits ciblés sont ingérés. Le manuscrit soumis `WN-SRC-0546`
 est `deprecated` : remplacé par sa version publiée `WN-SRC-0564`, ses claims ne
 sont pas retenus ; ses claims signés sont exclus de la recherche et ses passages
