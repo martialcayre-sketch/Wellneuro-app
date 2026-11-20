@@ -37,6 +37,7 @@ describe('MonBilan — la lecture datée (D-297)', () => {
     render(<MonBilan token="TOK" />);
     const avis = await screen.findByRole('region', { name: TITRE_LECTURE_DATEE });
     const titre = screen.getByRole('heading', { level: 1, name: 'Bilan neuronutritionnel' });
+    expect(titre.className).toContain('font-display'); // PAT-7h : Lora
     expect(avis.compareDocumentPosition(titre) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(consigner.mock.calls.map(appel => (appel as unknown[])[0])).toContainEqual({ espece: 'bilan' });
   });

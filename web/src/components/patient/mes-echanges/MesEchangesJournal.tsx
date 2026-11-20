@@ -76,7 +76,7 @@ export function MesEchangesJournal({ token, depotOuvert = false }: { token: stri
 
   return (
     <article className="space-y-6">
-      <h1 className="text-2xl font-semibold text-foreground">{TITRE_MES_ECHANGES}</h1>
+      <h1 className="font-display text-2xl font-bold leading-tight text-foreground">{TITRE_MES_ECHANGES}</h1>
       <EncartUrgenceSuicide ecran="mes_echanges" />
 
       {etat.statut === 'chargement' && (
