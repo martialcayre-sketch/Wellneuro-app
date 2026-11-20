@@ -30,7 +30,10 @@ import type { PortailComprehensionResponse } from '@/app/api/portail/comprehensi
 
 type Etat =
   | { phase: 'chargement' }
-  | { phase: 'erreur'; message: string }
+  // `reessayable` : échec de lecture (erreur technique, coupure réseau), que
+  // « Réessayer » peut lever ; un refus (401, 403, 503) ne l'est pas
+  // ([[D-488]], amendement DOC-18).
+  | { phase: 'erreur'; message: string; reessayable: boolean }
   | { phase: 'pret'; donnees: Extract<PortailComprehensionResponse, { synthese: unknown }> };
 
 /** Date lisible en français, ou `null` — jamais comblée par autre chose. */
@@ -62,10 +65,11 @@ export function ComprehensionView() {
           phase: 'erreur',
           message:
             (!data.ok && data.error) || 'Cette page n’a pas pu être chargée. Réessayez plus tard.',
+          reessayable: res.status >= 500 && res.status !== 503,
         });
       }
     } catch {
-      setEtat({ phase: 'erreur', message: 'Erreur réseau. Réessayez plus tard.' });
+      setEtat({ phase: 'erreur', message: 'Erreur réseau. Réessayez plus tard.', reessayable: true });
     }
   }, []);
 
@@ -130,6 +134,17 @@ export function ComprehensionView() {
       <PatientCard className="space-y-4">
         <PatientPageHeader title="Ce que mon praticien a compris de moi" />
         <PatientInlineMessage tone="error">{etat.message}</PatientInlineMessage>
+        {etat.reessayable && (
+          <PatientButton
+            variant="ghost"
+            onClick={() => {
+              setEtat({ phase: 'chargement' });
+              void charger();
+            }}
+          >
+            Réessayer
+          </PatientButton>
+        )}
       </PatientCard>
     );
   }
