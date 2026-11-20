@@ -2,7 +2,7 @@
 
 ## Branche et état Git
 
-- Worktree `.claude/worktrees/h59-nf7-retrait-drapeau-cadrage` (session concurrente, cycle git/gh direct), branche `besoin9-suspension-code`, avancée par `--ff-only` jusqu'à `origin/main` `ecd94548`.
+- Worktree `.claude/worktrees/h59-nf7-retrait-drapeau-cadrage` (session concurrente, cycle git/gh direct), branche `besoin9-suspension-code`, avancée par `--ff-only` jusqu'à `origin/main` `ecd94548`, puis `origin/main` `cd39f69a` fusionnée sur arbitrage (D-518).
 - Lot du carnet `besoin9-suspension-code` (file A, ordre 100, pris), après le cadrage `besoin9-suspension-lignes-stress`. Lot gardé : il passe par `release-db` (chemin clinique et table des indications biologiques), sans migration.
 - Commit tardif ([[D-518]]), juste avant le push.
 
@@ -39,7 +39,7 @@ Appliquer [[D-541]] §6.1 : suspendre pour relecture ligne à ligne les lignes d
   - `docs/FEATURE_FLAGS.md` ;
   - `docs/claude/MATRICE_CONSOMMATION.md`, régénérée.
 - E2E (fixtures fictives) : `helpers/db.ts`, `orientation-file-envoi.spec.ts`, `biologie-proposition-courrier.spec.ts` et `fiche-detail-reponses.spec.ts`, re-ciblés sur un PSQI défavorable (`R-SOM-01` vers le Cungi, `BIO-SOM-01`).
-- Documents : `docs/decisions/D-543.md`, `changelog.d/2026-11-20-besoin9-suspension-lignes-stress.md`, `docs/claude/plan-journal/H15/2026-11-20-05-besoin-9-lignes-suspendues.md`.
+- Documents : `docs/decisions/D-543.md`, `changelog.d/2026-11-20-besoin9-suspension-lignes-stress.md`, `docs/claude/plan-journal/H15/2026-11-20-06-besoin-9-lignes-suspendues.md`.
 
 ## Validations exécutées
 
@@ -53,6 +53,8 @@ Appliquer [[D-541]] §6.1 : suspendre pour relecture ligne à ligne les lignes d
   - `version-prompt-documents` : D-543 datée du jour, sans citer la version précédente.
   - Matrice de consommation : régénérée.
   - La troisième passe est **verte**, E2E compris (Chromium et WebKit, build de production), en 10 min 41 s.
+- CI de la PR : `e2e` rouge sur la seule capture `fiche-trajectoire-onglet` (Desktop Chromium et iPhone 13), écart voulu : la ligne « Lignes suspendues pour relecture » apparaît, `R-STR-01` sort des règles non évaluées. Les deux images de référence ont été régénérées par le workflow `visual-baselines` (run `44731215972`), relues une à une, puis promues ; aucune autre image n'a été touchée.
+- `controles` rouge ensuite : `main` avait pris le rang 05 du journal H15 du jour. Sur arbitrage du responsable (D-518, « Fusionner main »), `origin/main` a été fusionnée dans la branche, et le fragment est passé au rang 06.
 - Contre-revue Codex P0 (`wn-codex-avis.mjs --mode revue`, après `--mode controle`, barrière tenue) : conforme, aucun constat. Ses deux limites de couverture ont reçu leur verdict :
   - **Écartée, avec motif** : l'import client de `blocReglesNonServies`. `OrientationPanel` importait déjà `@/lib/bibliotheque`, seul import de valeur de ce module ; il n'y a ni Prisma ni crypto.
   - **Corrigée** : le banc « le service sert ». `orientationService.test.ts` prouve désormais le câblage du service.
