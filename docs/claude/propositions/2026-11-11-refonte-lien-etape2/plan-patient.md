@@ -275,6 +275,11 @@ build de `da125214`, PAT-7g (commandes à l'impression) et PAT-7h (titres)
 proposés, forme transverse à décider, dans
 [`pat7-constat-prototypes.md`](pat7-constat-prototypes.md).
 
+**PAT-7d cadré le 2026-11-20** (DOC-18, réponse `20261117-1243-d`) : [[D-488]]
+§7 étendu au hub (plus de « Réessayer » sous « Suivi non reconnu. ») et
+« Réessayer » inscrit sur U24 et U25 après un échec de lecture ; le code
+suit dans le lot PAT-7d.
+
 ## 4. Coordination avec le plan praticien
 
 - Aucune dépendance entre PAT-n et PRA-n.
