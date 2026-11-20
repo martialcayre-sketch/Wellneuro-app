@@ -734,7 +734,7 @@ export async function provisionnerReponseOrientation(idPatient: string): Promise
  * `idAssignation: { not: null }` : elle ne supprimerait donc JAMAIS la
  * réponse posée ci-dessus, qui porte `idAssignation: null` comme le seed.
  * Elle est inadaptée à cette fixture, pas dangereuse pour elle — la garder
- * aurait laissé la passation `Q_STR_02` en place d'un run à l'autre.
+ * aurait laissé la passation `Q_SOM_01` en place d'un run à l'autre.
  * On ne touche qu'à ce que ce spec a pu produire, dans un ordre sûr
  * vis-à-vis des clés étrangères :
  *   1. l'assignation `Q_STR_03` que l'étape « envoyer » a pu créer — sans ce

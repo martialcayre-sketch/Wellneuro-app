@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { OrientationPanel } from './OrientationPanel';
 import { MESSAGE_DEJA_ASSIGNE } from '@/lib/assignations/messages';
 import { CATALOGUE_DEFINITIONS } from '@/lib/bibliotheque';
+import { LIGNE_LIGNES_SUSPENDUES_RELECTURE } from '@/lib/synthese/blocReglesNonServies';
 
 // RE-CÂBLÉ LE 2026-08-06 (LOT-02, D-030). Le geste du panneau n'est plus
 // `POST /api/praticien/packs/assign` mais `POST /api/praticien/file-envoi`, et
@@ -134,6 +135,9 @@ const ACTIF = {
   // VIDE, jamais absent — c'est le contrat de la route ([[D-178]]).
   ecartees: [],
 };
+
+/** Une ligne suspendue pour relecture ([[D-543]]), telle que la route la sert. */
+const LIGNE_SUSPENDUE = { table: 'orientation' as const, regleId: 'R-STR-01' };
 
 /** Une proposition écartée, telle que la route la sert. */
 const CUNGI_ECARTE = {
@@ -365,6 +369,32 @@ describe('OrientationPanel', () => {
     render(<OrientationPanel idPatient="PAT_SEED_03" />);
 
     expect(await screen.findByText('Règle d’orientation non appliquée : R-SOM-01.')).toBeTruthy();
+  });
+
+  it('D-543, liste non vide : la ligne des lignes suspendues est dite, sans identifiant', async () => {
+    stubFetch({ ...ACTIF, reglesNonEvaluees: [], arretsSuspendus: [], lignesSuspendues: [LIGNE_SUSPENDUE] });
+
+    const { container } = render(<OrientationPanel idPatient="PAT_SEED_03" />);
+
+    expect(await screen.findByText(LIGNE_LIGNES_SUSPENDUES_RELECTURE)).toBeTruthy();
+    expect(container.textContent).not.toMatch(/R-STR-01/);
+  });
+
+  it('D-543, liste vide : la ligne des lignes suspendues est dite aussi', async () => {
+    stubFetch({ ...ACTIF, recommandations: [], reglesNonEvaluees: [], arretsSuspendus: [], lignesSuspendues: [LIGNE_SUSPENDUE] });
+
+    render(<OrientationPanel idPatient="PAT_SEED_03" />);
+
+    expect(await screen.findByText(LIGNE_LIGNES_SUSPENDUES_RELECTURE)).toBeTruthy();
+  });
+
+  it('D-543 : aucune ligne quand aucune ligne n’est suspendue', async () => {
+    stubFetch({ ...ACTIF, reglesNonEvaluees: [], arretsSuspendus: [], lignesSuspendues: [] });
+
+    render(<OrientationPanel idPatient="PAT_SEED_03" />);
+
+    expect(await screen.findByText(/Index de qualité du sommeil de Pittsburgh/i)).toBeTruthy();
+    expect(screen.queryByText(LIGNE_LIGNES_SUSPENDUES_RELECTURE)).toBeNull();
   });
 
   it('D-495 : corpus illisible — le message du serveur est affiché tel quel', async () => {

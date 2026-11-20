@@ -236,9 +236,9 @@ export type ResultatOrientation =
        */
       reglesNonAppliquees: RegleOrientationNonAppliquee[];
       /**
-       * Lignes des tables d'orientation, de contradictions et d'indications
-       * biologiques suspendues pour relecture ([[D-543]]) — lues sur les
-       * tables, pas sur le dossier. Vide, jamais absent.
+       * Lignes des tables d'orientation, d'arrêt, de contradictions et
+       * d'indications biologiques suspendues pour relecture ([[D-543]]) —
+       * lues sur les tables, pas sur le dossier. Vide, jamais absent.
        */
       lignesSuspendues: LigneSuspendue[];
     };
