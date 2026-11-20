@@ -109,7 +109,9 @@ après la mi-octobre. Elle est remise à l'état réel d'après les fiches
 `lots/`, les journaux du plan (`docs/claude/plan-journal/`) et l'historique
 des PR : BP-05, BP-12b et BP-15 passent « terminé » ; BP-12a, BP-17 et BP-27
 passent « en_cours ». Aucun autre statut ne change. Le statut d'un lot se
-lit d'abord sur sa fiche ; la table le reflète.
+lit d'abord sur sa fiche ; la table le reflète. Seule la clôture de BP-15
+n'était écrite nulle part : elle est déduite du critère de fin de F08 et
+inscrite à son journal le 2026-11-20.
 
 **Clôture d'un lot** : avec le handoff, mettre à jour le suivi BioFlow du
 responsable (page hors dépôt, créée le 2026-10-05) : état du lot, lots
@@ -144,7 +146,7 @@ nouveaux, décisions acceptées.
 | **Phase 2** | | **Premier parcours, étage outil** | | | |
 | BP-11 | LOT-11 | Constats du praticien | terminé (2026-10-20 ; #1600, release-db constatée, puis le code sous `WN_BIO_CONSTAT` éteint ; `D-331`) | **oui** | BP-09, BP-12a |
 | BP-16 | LOT-16 | Boucle d'exploration | à_faire | non | BP-03, BP-04, BP-11 |
-| BP-15 | LOT-15 | Décisions de parcours | terminé (2026-10-23 : `D-343` et déclaration RGPD (#1642) ; migration (#1644) appliquée et constatée le 2026-10-22 ; code sous `WN_DECISIONS_PARCOURS` (#1650) ; libellés du retrait et de la révision (#1653) ; critère de fin de F08 atteint, clôture inscrite au rapprochement du 2026-11-20) | **oui** | BP-00 |
+| BP-15 | LOT-15 | Décisions de parcours | terminé (clôture inscrite le 2026-11-20 au journal de F08, sans constat nouveau ; critère de fin atteint le 2026-10-23 : `D-343` et déclaration RGPD (#1642) ; migration (#1644) appliquée et constatée le 2026-10-22 ; code sous `WN_DECISIONS_PARCOURS` (#1650) ; libellés du retrait et de la révision (#1653)) | **oui** | BP-00 |
 | BP-20 | LOT-20 | Suivi factuel ; jalon J1 | à_faire | non | BP-15, BP-16 |
 | BP-08 | LOT-08 | Indicateurs de processus | à_faire | non | BP-20 ; un cycle réel à J21 |
 | BP-17 | LOT-17 | Bibliothèque signée des options par hypothèse | en_cours (2026-11-14 : `D-477` mergée, `D-480` et découpage en sept PR acceptés par arbitrage délégué, `20261111-1131-c` ; PR 2, migration du texte, mergée (#1994) et constatée le 2026-11-11 ; PR 3 à 7 mergées (#2006, #2060, #2082, #2106, #2127) ; liste des options du besoin 2 transcrite (`D-521`), structure non signée : la signature du responsable reste due, porte 23) | **oui** (texte en base, `20261110-1941-c` ; confirmations de migration distinctes, `AGENTS.md`) | BP-11, BP-12b |

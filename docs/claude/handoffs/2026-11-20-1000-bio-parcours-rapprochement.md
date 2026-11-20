@@ -25,9 +25,11 @@ toute la table.
     #1642, #1644, #1650, #1653 ; F11 : PR 2 à 7, signature due) ;
   - PR #2244 et #2269 pour BP-27.
 - BP-15 passe « terminé » par son critère de fin de F08, atteint le
-  2026-10-23. Sa clôture n'avait jamais été écrite ; elle est inscrite ici,
-  par rapprochement. C'est le seul statut qui n'est pas recopié d'une
-  clôture déjà écrite.
+  2026-10-23. Sa clôture n'avait jamais été écrite : elle est inscrite au
+  journal de F08 (`2026-11-20-01`), sans constat nouveau, après le constat
+  de PR-Agent sur la date rétroactive. C'est le seul statut qui n'est pas
+  recopié d'une clôture déjà écrite. Le suivi BioFlow, hors dépôt, revient
+  au responsable.
 - La campagne reste `en_pause`, sans lot courant (une campagne `en_cours`
   sans lot courant fait échouer l'audit des campagnes). Le plan conduit
   l'ordre (`D-285` §1).
@@ -39,6 +41,7 @@ toute la table.
 - `docs/claude/campagnes/2026-10-04-bio-parcours/lots/LOT-12-fiches-usage.md`,
   `LOT-15-decisions-parcours.md`, `LOT-17-bibliotheque-options.md`,
   `LOT-28-positions-expert.md` (statut seul)
+- `docs/claude/plan-journal/F08/2026-11-20-01-cloture-par-rapprochement.md`
 - `changelog.d/2026-11-20-bio-parcours-rapprochement.md`
 - ce handoff
 

@@ -1,7 +1,7 @@
 ---
 id: "LOT-15"
 titre: "BP-15 — Décisions de parcours"
-statut: "terminé (2026-10-23) — D-343 acceptée (#1642) ; migration mergée (#1644), appliquée et constatée ; code mergé sous drapeau éteint (#1650) ; libellés du retrait et de la révision arbitrés le 2026-10-23 et mergés (#1653) ; critère de fin de F08 atteint — statut rapproché le 2026-11-20"
+statut: "terminé (clôture inscrite le 2026-11-20 au journal de F08, sans constat nouveau) — D-343 acceptée (#1642) ; migration mergée (#1644), appliquée et constatée ; code mergé sous drapeau éteint (#1650) ; libellés du retrait et de la révision arbitrés le 2026-10-23 et mergés (#1653) ; critère de fin de F08 atteint ce jour-là"
 dépend_de: "LOT-00"
 ---
 
