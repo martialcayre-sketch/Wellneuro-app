@@ -265,7 +265,8 @@ le code* sauf mention.
   (question clinique `20261117-1422-d`, réponse du responsable). Montrer au
   patient ce qu'il recevra reste possible pendant la consultation. L'écart à
   la planche de PRA-3a est **voulu** : il ne se corrige pas, aucun code ne
-  change, et une passe ultérieure ne le relève plus comme défaut.
+  change, et une passe ultérieure ne le relève plus comme défaut. Consigné
+  dans [[D-354]], « Confirmé le 2026-11-19 ».
 - **Écart 2** : icônes et `bg-card` (§3.8).
 - **Écart 3** : cibles hors du seuil de 44 px exigé par les prototypes de
   PRA-3b à PRA-5 (§3.4).
