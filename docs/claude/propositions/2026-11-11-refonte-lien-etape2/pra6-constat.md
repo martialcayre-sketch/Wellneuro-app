@@ -261,6 +261,11 @@ le code* sauf mention.
   quitte pas la fiche, et Q10 de PRA-5 ne le vise donc pas. Mais il montre au
   patient, en partage d'écran, ce qui lui sera envoyé. À arbitrer au regard
   de D-354.
+  **Tranché le 2026-11-19 (PRA-6j)** : « Garder en mode consultation »
+  (question clinique `20261117-1422-d`, réponse du responsable). Montrer au
+  patient ce qu'il recevra reste possible pendant la consultation. L'écart à
+  la planche de PRA-3a est **voulu** : il ne se corrige pas, aucun code ne
+  change, et une passe ultérieure ne le relève plus comme défaut.
 - **Écart 2** : icônes et `bg-card` (§3.8).
 - **Écart 3** : cibles hors du seuil de 44 px exigé par les prototypes de
   PRA-3b à PRA-5 (§3.4).
@@ -285,7 +290,7 @@ Seul PRA-6a est ouvert (#2227). Les autres attendent le choix du responsable, po
 | PRA-6g — Reflow au téléphone | §3.7 : d'abord P25 à 320 px, puis P46 ; ensuite, au choix, la convention de 195 px | non | — |
 | PRA-6h — Lectures et focus | §3.2 : un échec hors contrat reste dans son panneau ; focus après « Réessayer » ; aperçu P37 hors du clavier ; `<dl>` de P47 | non | arbitrage : où rendre le focus |
 | PRA-6i — Icônes et jetons | §3.8 : `TRAIT_ICONE` partout, `bg-card` | non | captures de référence de la fiche |
-| PRA-6j — Aperçu patient en mode consultation | §4, écart 1 | non | arbitrage au regard de D-354 (clinique : partage d'écran) |
+| PRA-6j — Aperçu patient en mode consultation | §4, écart 1 | non | arbitrage au regard de D-354 (clinique : partage d'écran) — tranché le 2026-11-19 : gardé en mode consultation, écart voulu, aucun code |
 
 ## 6. Non couvert par cette passe
 
