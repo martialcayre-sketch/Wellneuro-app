@@ -1,8 +1,8 @@
 # Registre sanitaire du corpus clinique
 
-`source_registry.json` contient 701 notices normalisées : 391 issues du pack WN
+`source_registry.json` contient 717 notices normalisées : 391 issues du pack WN
 Ultimate v2 (`NNFC1_Annee1`, `NNPP2_Annee2`), 116 instruments du cabinet
-(`INSTRUMENTS_CABINET`), et 194 sources externes (`SOURCES_EXTERNES` — BP-07 :
+(`INSTRUMENTS_CABINET`), et 210 sources externes (`SOURCES_EXTERNES` — BP-07 :
 avis d'agence, recommandation, essai, règlement, `WN-SRC-0508` à `0511`, puis
 pour la position P5 v0.3 une recommandation de l'OMS, `WN-SRC-0555` ; besoin 2 :
 trois avis d'agence, un rapport d'évaluation, une recommandation de pratique,
@@ -99,7 +99,19 @@ revue parapluie, `0718`, et une analyse de la mélatonine, `0719` ; puis, en
 notice seule faute de licence (exclusion de la fouille de textes et de l'IA), un
 essai de 2026 sur l'affect positif, `WN-SRC-0720` ; enfin neuf notices seules
 du besoin 10, `WN-SRC-0721` à `0729`, faute de licence qui admette le texte
-(CC BY-NC-ND, licence non déclarée, conditions d'usage excluant l'IA)),
+(CC BY-NC-ND, licence non déclarée, conditions d'usage excluant l'IA) ; besoin
+12, neuf textes libres ingérés le 2026-11-20 sur accord du responsable (CC BY,
+CC BY-NC, et une méta-analyse dont la licence CC BY de l'article a été retenue
+contre la réserve générale de fouille de textes du pied de page de l'éditeur) :
+revues et validations d'échelles de solitude et de soutien social, une revue
+parapluie et une méta-analyse d'interventions, une validation d'échelle de
+connexion à la nature, une revue exploratoire sur l'inflammation, un essai de
+prescription sociale, `WN-SRC-0730` à `0738`, puis une étude de trois cohortes
+sur l'isolement social et l'inflammation, `WN-SRC-0739`, ingérée le 2026-11-20
+sur un second accord du responsable (licence CC BY déposée par l'éditeur et
+mention de fouille de textes du dépôt de manuscrits, page de l'éditeur
+illisible) ; six notices seules, `WN-SRC-0740` à `0745`, faute de licence qui
+admette le texte ou de lecture de la politique de fouille de l'éditeur),
 dont seuls des extraits ciblés sont ingérés. Le manuscrit soumis `WN-SRC-0546`
 est `deprecated` : remplacé par sa version publiée `WN-SRC-0564`, ses claims ne
 sont pas retenus ; ses claims signés sont exclus de la recherche et ses passages
