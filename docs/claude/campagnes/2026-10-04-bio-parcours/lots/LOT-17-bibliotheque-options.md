@@ -1,7 +1,7 @@
 ---
 id: "LOT-17"
 titre: "BP-17 — Bibliothèque signée des options par hypothèse"
-statut: "cadrage accepté (2026-11-11) — D-480 et découpage en sept PR acceptés par arbitrage délégué (20261111-1131-c) ; confirmations de migration distinctes"
+statut: "en_cours (2026-11-14) — D-480 et découpage en sept PR acceptés par arbitrage délégué (20261111-1131-c) ; confirmations de migration distinctes ; PR 2 à 7 mergées (#1994, #2006, #2060, #2082, #2106, #2127) ; structure non signée : la signature du responsable reste due (critère de fin de F11) — statut rapproché le 2026-11-20"
 dépend_de: "LOT-11, LOT-28"
 ---
 

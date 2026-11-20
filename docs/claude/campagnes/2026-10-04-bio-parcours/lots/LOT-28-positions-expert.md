@@ -1,7 +1,7 @@
 ---
 id: "LOT-28"
 titre: "BP-12b — Positions d'expert signées ; arbitrage de conflit persisté"
-statut: "en_cours (2026-11-04) — D-439 acceptée (texte retenu le 2026-11-04, amendement compris) ; mergée (#1853), amendée après la contre-revue Codex (arbitrage 6)"
+statut: "terminé (2026-11-10) — D-439 acceptée (texte retenu le 2026-11-04, amendement compris) ; mergée (#1853), amendée après la contre-revue Codex (arbitrage 6) ; dix-huit positions signées et trente-deux couples arbitrés par le responsable, constat par conteneur ; fiche F09 close (#1965) — statut rapproché le 2026-11-20"
 dépend_de: "LOT-12"
 ---
 
