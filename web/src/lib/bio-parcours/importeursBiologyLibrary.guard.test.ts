@@ -137,6 +137,10 @@ const IMPORTEURS_ADMIS = [
   'web/src/lib/clinical/blocBiologieSynthese.ts',
   'web/src/lib/clinical/blocBiologieSyntheseService.ts',
   'web/src/lib/clinical/syntheseBiologieDrapeau.ts',
+  // Les lignes suspendues pour relecture ([[D-543]]) : les seuls identifiants
+  // des règles d'indication au statut `suspendue`, par l'entrée publiée,
+  // septième lecteur hors biologie (2026-11-19). Aucune valeur, aucun dossier.
+  'web/src/lib/clinical/lignesSuspendues.ts',
   'web/src/app/api/praticien/patients/route.ts',
   'web/src/app/api/praticien/protocoles/versions/route.ts',
   // Pages et composants praticien. La page unique de la biologie est le

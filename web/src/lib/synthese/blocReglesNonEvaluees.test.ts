@@ -21,6 +21,7 @@ function orientation(reglesNonEvaluees: unknown): ResultatOrientation {
     arret: null,
     arretsSuspendus: [],
     reglesNonAppliquees: [],
+    lignesSuspendues: [],
   } as ResultatOrientation;
 }
 

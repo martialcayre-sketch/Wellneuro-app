@@ -62,12 +62,14 @@ const CODE_SANS_COMMENTAIRES = SOURCE.split('\n')
 // [[D-382]] §6) SUR LA MÊME CHAÎNE :
 // aucune règle, grille ni cotation n'a bougé ; seule la date de signature a
 // changé, et ce littéral reste celui du 2026-09-16.
-const SHA_CONTENU_2026_09_16 = '33894e9c6afbd6b3f59a8bb33396aefa56890f57a120f255908ebaf942adef19';
+// RE-SIGNÉE LE 2026-11-19 ([[D-543]]) : `BIO-STR-01` passe `suspendue`, pour
+// relecture ; le contenu change, donc le littéral (ancien : `33894e9c…42adef19`).
+const SHA_CONTENU_2026_11_19 = '3449036275ad96a8ffef89dd692a94908a9edc976b40ef5871d5a0630b241519';
 
 describe('indications biologie — le verrou de signature ne peut pas être neutralisé', () => {
   it('le sha publié est celui du contenu réellement porté par la table', () => {
     expect(INDICATIONS_BIOLOGIE_V1).toHaveLength(15);
-    expect(INDICATIONS_BIOLOGIE_SHA256).toBe(SHA_CONTENU_2026_09_16);
+    expect(INDICATIONS_BIOLOGIE_SHA256).toBe(SHA_CONTENU_2026_11_19);
   });
 
   // Le piège exact de la revue : `shaPerimetre` câblé sur la constante au lieu
@@ -96,7 +98,7 @@ describe('indications biologie — le verrou de signature ne peut pas être neut
   // changement d'état s'accompagne du tableau de `docs/FEATURE_FLAGS.md`
   // (gardé par `verrousSignatureDocumentes.guard`).
   it('l\'état livré est signé aux cinq termes, et le verdict le dit', () => {
-    expect(INDICATIONS_BIOLOGIE_METADATA.dateValidation).toBe('2026-11-16T23:25:39.000Z');
+    expect(INDICATIONS_BIOLOGIE_METADATA.dateValidation).toBe('2026-11-19T12:38:04.000Z');
     expect(INDICATIONS_BIOLOGIE_METADATA.claimsSource.length).toBe(29);
     expect(INDICATIONS_BIOLOGIE_METADATA.shaPerimetre).toBe(INDICATIONS_BIOLOGIE_SHA256);
     expect(signatureIndicationsValide(INDICATIONS_BIOLOGIE_METADATA)).toBe(true);
@@ -126,7 +128,7 @@ describe('indications biologie — le verrou de signature ne peut pas être neut
         validationExterne: true,
         dateValidation: '2026-08-16T00:00:00.000Z',
         claimsSource: [{ claimId: 'WN-CL-0000-001', versionClaim: 'v1.0' }],
-        shaPerimetre: SHA_CONTENU_2026_09_16,
+        shaPerimetre: SHA_CONTENU_2026_11_19,
       }),
     ).toBe(true);
   });
@@ -141,7 +143,7 @@ describe('indications biologie — le verrou de signature ne peut pas être neut
           validationExterne: true,
           dateValidation: '2026-08-16T00:00:00.000Z',
           claimsSource: [{ claimId: 'WN-CL-0000-001', versionClaim: 'v1.0' }],
-          shaPerimetre: SHA_CONTENU_2026_09_16,
+          shaPerimetre: SHA_CONTENU_2026_11_19,
         },
         shaApresAjout,
       ),

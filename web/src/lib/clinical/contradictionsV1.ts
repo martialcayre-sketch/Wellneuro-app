@@ -90,7 +90,13 @@ export type ContradictionRegleEcartee = {
 export const CONTRADICTIONS_RULES_V1: ContradictionRule[] = [
   {
     id: 'C-STR',
-    statut: 'publiee',
+    // SUSPENDUE POUR RELECTURE ([[D-543]], [[D-541]] §6.1). Elle lit les
+    // bandes « Normal » du DASS-21, dont les auteurs déconseillent un score
+    // interprété en passation informatisée ; les positions signées du besoin 9
+    // ne fondent aucun déclencheur sur une bande. La ligne reste écrite telle
+    // quelle pour être relue ; elle sera rétablie, corrigée ou retirée par une
+    // décision propre. Rétablir = repasser `publiee` et re-signer la table.
+    statut: 'suspendue',
     forme: 'DISCORDANCE',
     // LES TROIS CHIFFRES SONT DES BANDES PUBLIÉES, aucun n'est un arbitrage.
     //
@@ -209,15 +215,21 @@ export const CONTRADICTIONS_METADATA: ContradictionsMetadata = {
   // conjointement à `stopRulesV1` — sans quoi l'extinction tournerait sans le
   // frein de [[D-053]] §5. Le drapeau `WN_ENABLE_CONTRADICTIONS_NNPP2` reste un
   // geste d'exploitation distinct : signer n'allume pas.
+  //
+  // RE-SIGNÉE LE 2026-11-19 ([[D-543]]), par le responsable dans la session du
+  // lot (« je signe ») : le statut de `C-STR` passe de `publiee` à `suspendue`,
+  // pour relecture ([[D-541]] §6.1). La table ne sert plus aucune règle ; elle
+  // reste signée et allumée, et le registre des conflits de sources, qui a son
+  // propre verrou, continue d'être servi. Ancienne empreinte, signée le
+  // 2026-08-15 : `baf74c9e40c9393407b98e03f07d0c769885f16b27669978b31bd639893f38ea`.
   validationExterne: true,
-  dateValidation: '2026-08-15T00:00:00.000Z',
+  dateValidation: '2026-11-19T12:38:04.000Z',
   // Posé le 2026-08-16 ([[D-067]]) : la chaîne hex que
   // `CONTRADICTIONS_RULES_SHA256` valait à la relecture, recopiée telle quelle
   // — JAMAIS la constante : déclarée après cet objet (ReferenceError), et la
   // comparaison serait tautologique — recalculée depuis la table vivante, la
-  // concordance serait toujours vraie et la péremption jamais détectée. Le
-  // contenu n'a pas bougé depuis la signature : la date reste.
-  shaPerimetre: 'baf74c9e40c9393407b98e03f07d0c769885f16b27669978b31bd639893f38ea',
+  // concordance serait toujours vraie et la péremption jamais détectée.
+  shaPerimetre: 'edf74e8436232de5e26ca6109303e1db85b05eafdc252056c5a652f4e2c1e259',
   // Les claims épinglés par les règles de cette table. Le contrat de fraîcheur
   // les contrôle sur la production, et `claimsEpinglesFraicheur.guard.test.ts`
   // refuse que cette liste diverge de celle du contrat.

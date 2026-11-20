@@ -75,6 +75,12 @@ export {
   type ContextePrelevementSaisi,
 } from './contextePrelevement';
 
+// Septième lecteur hors biologie : les lignes suspendues pour relecture
+// ([[D-543]]), que le service d'orientation dit au praticien — les seuls
+// identifiants des règles d'indication au statut `suspendue`. Aucune valeur,
+// aucun dossier.
+export { reglesIndicationsSuspendues } from './indicationsBiologieV1';
+
 /** Les fichiers de `biology-library` que cette entrée ré-exporte — liste fermée. */
 export const FICHIERS_PUBLIES = [
   'import/lectureDemandee',
@@ -87,6 +93,7 @@ export const FICHIERS_PUBLIES = [
   'import/lectureImport',
   'import/valeurLue',
   'contextePrelevement',
+  'indicationsBiologieV1',
 ] as const;
 
 /**

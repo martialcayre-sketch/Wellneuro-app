@@ -19,7 +19,9 @@ import {
 // Ce littéral se met à jour EN MÊME TEMPS qu'une modification volontaire de la
 // table, dans le même diff, sous les yeux du relecteur. C'est tout ce qu'on lui
 // demande : rendre le changement visible.
-const SHA_EPINGLE = 'baf74c9e40c9393407b98e03f07d0c769885f16b27669978b31bd639893f38ea';
+// RE-SIGNÉE LE 2026-11-19 ([[D-543]]) : `C-STR` passe `suspendue`, pour relecture
+// (ancien littéral, signé le 2026-08-15 : `baf74c9e…893f38ea`).
+const SHA_EPINGLE = 'edf74e8436232de5e26ca6109303e1db85b05eafdc252056c5a652f4e2c1e259';
 
 describe('table de contradictions V1 — signature et périmètre', () => {
   it('le SHA de la table est celui épinglé', () => {
@@ -47,7 +49,7 @@ describe('table de contradictions V1 — signature et périmètre', () => {
   // Sentinelle inversée plutôt que supprimée.
   it('la table est signée, et sa signature est bien formée', () => {
     expect(CONTRADICTIONS_METADATA.validationExterne).toBe(true);
-    expect(CONTRADICTIONS_METADATA.dateValidation).toBe('2026-08-15T00:00:00.000Z');
+    expect(CONTRADICTIONS_METADATA.dateValidation).toBe('2026-11-19T12:38:04.000Z');
     const d = CONTRADICTIONS_METADATA.dateValidation as string;
     expect(new Date(d).toISOString()).toBe(d);
     // Cinquième terme ([[D-067]]) : concordance du littéral avec le contenu

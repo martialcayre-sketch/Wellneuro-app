@@ -54,7 +54,7 @@ describe('orientationRulesV1 — verrou v1', () => {
     // convergence de `DC-29` ; aucun claim ajouté ni retiré.
     // RE-SIGNÉE le 2026-11-09 ([[D-470]], t67) : quatrième limite commune de
     // convergence ; aucun claim ajouté ni retiré.
-    expect(ORIENTATION_METADATA.dateValidation).toBe('2026-11-09T00:00:00.000Z');
+    expect(ORIENTATION_METADATA.dateValidation).toBe('2026-11-19T12:38:04.000Z');
     const date = ORIENTATION_METADATA.dateValidation as string;
     expect(new Date(date).toISOString()).toBe(date);
     expect(ORIENTATION_METADATA.claimsSource.length).toBeGreaterThan(0);
@@ -223,8 +223,10 @@ describe('orientationRulesV1 — verrou v1', () => {
   //   · 2026-11-04 — `a8630112…a41ebd20` (D-433, dix-neuf fenêtres)
   //   · 2026-11-07 — `16517749…5af10cea` (D-455, table de convergence, trois limites)
   // RE-SIGNÉE LE 2026-11-09 ([[D-470]], t67), sur attestation du responsable :
-  // quatrième limite commune de convergence.
-  const SHA_SIGNE_2026_11_09 = 'a9aaaf32c7e8ab5903f8faa2b7b6982c0d79c1f64ac097f140f2a3d83351d914';
+  // quatrième limite commune de convergence — `a9aaaf32…3351d914`.
+  // RE-SIGNÉE LE 2026-11-19 ([[D-543]]) par le responsable : `R-STR-01` et
+  // `R-STR-02` passent `suspendue`, pour relecture ; rien d'autre ne bouge.
+  const SHA_SIGNE_2026_11_19 = '6088b3c6d450057e7ebbc2d7d9c2b3041a18dca51ffc1caaacfbf6cb9e696891';
 
   // LE PÉRIMÈTRE A GRANDI le 2026-09-13 (second lot du jour) : les grilles
   // d'interprétation y sont entrées. Les zones de cette table citent des
@@ -354,7 +356,7 @@ describe('orientationRulesV1 — verrou v1', () => {
 
   it('le contenu de la table est EXACTEMENT celui qui a été signé', () => {
     expect(ORIENTATION_RULES_V1.length).toBe(20);
-    expect(ORIENTATION_RULES_SHA256).toBe(SHA_SIGNE_2026_11_09);
+    expect(ORIENTATION_RULES_SHA256).toBe(SHA_SIGNE_2026_11_19);
   });
 
   // ── DEUX BANCS DE RÉSOLUBILITÉ, ET LE SECOND EST LE SEUL QUI ATTRAPE LE NO-OP
@@ -1003,27 +1005,40 @@ describe('orientationRulesV1 — les règles livrées, dans le moteur', () => {
     expect(defavorable).toContainEqual({ type: 'questionnaire', questionnaireId: 'Q_STR_03' });
   });
 
-  it('R-STR-01 : un PSS-10 défavorable propose le BMS-10', () => {
-    const recos = evaluer([
-      reponse('Q_STR_02', { total: 30, interpretation: { label: 'Niveau élevé de stress', color: 'danger' } }),
-    ]);
-    expect(recos.map(r => r.cible)).toContainEqual({ type: 'questionnaire', questionnaireId: 'Q_STR_05' });
+  // `R-STR-01` ET `R-STR-02` SONT SUSPENDUES POUR RELECTURE ([[D-543]]) : la table
+  // livrée ne les évalue plus. Chaque banc ci-dessous fait la contre-épreuve —
+  // rien avec la table livrée, la cible attendue avec la règle remise `publiee`
+  // dans le seul test, telle qu'elle reviendrait si la relecture la rétablissait.
+  const tableAvecPubliee = (id: string) =>
+    ORIENTATION_RULES_V1.map(r => (r.id === id ? { ...r, statut: 'publiee' as const } : r));
+
+  it('R-STR-01 (suspendue) : un PSS-10 défavorable ne propose plus le BMS-10 ; rétablie, elle le proposerait', () => {
+    const mesure = reponse('Q_STR_02', { total: 30, interpretation: { label: 'Niveau élevé de stress', color: 'danger' } });
+    const bms = { type: 'questionnaire', questionnaireId: 'Q_STR_05' };
+    expect(evaluer([mesure]).map(r => r.cible)).not.toContainEqual(bms);
+    const recos = evaluerOrientation({
+      reponses: [mesure], idsQuestionnairesAssignes: [], regles: tableAvecPubliee('R-STR-01'), drapeaux: anamneseVide,
+    });
+    expect(recos.map(r => r.cible)).toContainEqual(bms);
   });
 
   // RE-CIBLÉE le 2026-08-06 : plus de pack stress, trois questionnaires. Le
-  // DASS-21 (`Q_STR_04`) est la cible de tête, et elle est PROPRE à cette règle
-  // sur ce scénario — `R-STR-01`, qui s'allume aussi, vise `Q_STR_05`.
-  it('R-STR-02 : les instruments du stress exigent le drapeau ET la mesure', () => {
+  // DASS-21 (`Q_STR_04`) est la cible de tête, et elle est PROPRE à cette règle.
+  it('R-STR-02 (suspendue) : rien avec la table livrée ; rétablie, elle exigerait le drapeau ET la mesure', () => {
     const mesure = reponse('Q_STR_02', { total: 30, interpretation: { label: 'Élevé', color: 'danger' } });
     const cible = { type: 'questionnaire', questionnaireId: 'Q_STR_04' };
+    const burnout = { ...anamneseVide, facteursDeclenchants: ['Stress aigu / burn-out'] };
+    // Table livrée : les deux conditions réunies ne sortent plus rien de cette règle.
+    expect(evaluer([mesure], burnout).map(r => r.cible)).not.toContainEqual(cible);
+    const retablie = (reponses: ReponseOrientation[], drapeaux: DrapeauxAnamnese) => evaluerOrientation({
+      reponses, idsQuestionnairesAssignes: [], regles: tableAvecPubliee('R-STR-02'), drapeaux,
+    });
     // Mesure seule : rien.
-    expect(evaluer([mesure]).map(r => r.cible)).not.toContainEqual(cible);
+    expect(retablie([mesure], anamneseVide).map(r => r.cible)).not.toContainEqual(cible);
     // Drapeau seul : rien non plus.
-    expect(evaluer([], { ...anamneseVide, facteursDeclenchants: ['Stress aigu / burn-out'] })
-      .map(r => r.cible)).not.toContainEqual(cible);
+    expect(retablie([], burnout).map(r => r.cible)).not.toContainEqual(cible);
     // Les deux : les trois instruments sortent.
-    const cibles = evaluer([mesure], { ...anamneseVide, facteursDeclenchants: ['Stress aigu / burn-out'] })
-      .map(r => r.cible);
+    const cibles = retablie([mesure], burnout).map(r => r.cible);
     expect(cibles).toContainEqual(cible);
     expect(cibles).toContainEqual({ type: 'questionnaire', questionnaireId: 'Q_STR_06' });
     expect(cibles).toContainEqual({ type: 'questionnaire', questionnaireId: 'Q_STR_08' });

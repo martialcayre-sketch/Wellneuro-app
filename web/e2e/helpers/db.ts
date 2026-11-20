@@ -677,29 +677,33 @@ export async function versionsFicheE2EEncoreValidees(): Promise<{ id: string; co
 // `orientation-file-envoi.spec.ts`). Réservée à Sophie Nicola (PAT_SEED_01) —
 // c'est le patient de tous les specs praticien de fiche-trajectoire.
 //
-// `Q_STR_02` (PSS-10) est un moteur `sum` : `computeScoreFromDefBrut` calcule
-// le total par simple SOMME des dix items (les items « inversés » du PSS-10
-// portent déjà leurs valeurs retournées dans leur propre jeu d'options,
-// `O_PSS_INVERSE` — `sumItems` ne réinverse rien ici, son second argument est
-// un tableau vide en dur). Mettre chaque item à sa valeur maximale (5) suffit
-// donc à atteindre le total maximal (50), fermement dans la bande `danger`
-// (27-50) — prouvé par un test Vitest jetable avant d'écrire ce fichier :
-// `calculateScore('Q_STR_02', RAW_ANSWERS_Q_STR_02_DANGER)` rend
-// `{total: 50, interpretation: {color: 'danger', ...}}`. La règle exploitée,
-// `R-STR-01`, se déclenche sur toute zone `warning`/`danger`/`dark` : le choix
-// du maximum n'est pas arbitraire, il évite toute ambiguïté sur la borne.
-const RAW_ANSWERS_Q_STR_02_DANGER: Record<string, number> = {
-  P1: 5, P2: 5, P3: 5, P4: 5, P5: 5, P6: 5, P7: 5, P8: 5, P9: 5, P10: 5,
+// Un PSQI (`Q_SOM_01`) défavorable allume `R-SOM-01` (cible questionnaire : le
+// Cungi, `Q_STR_03`) et `BIO-SOM-01` (`PANEL_SOMMEIL_1`, conditionnel), toutes
+// deux dès la bande `info` (total 6). Fréquences au maximum (3), latence de
+// 60 minutes, cinq heures de sommeil : `calculateScore('Q_SOM_01',
+// RAW_ANSWERS_Q_SOM_01_DEFAVORABLE)` rend `{total: 20, interpretation: {color:
+// 'danger', ...}}` — relu du vrai moteur par un test jetable, loin de la borne.
+//
+// RE-CIBLÉE LE 2026-11-20 ([[D-543]]). La fixture posait une PSS-10
+// (`Q_STR_02`) au maximum, qui allumait `R-STR-01` (BMS-10) et `BIO-STR-01`
+// (`PANEL_STRESS_1`) ; les deux sont suspendues pour relecture, et plus aucune
+// règle publiée ne lit la PSS-10.
+const RAW_ANSWERS_Q_SOM_01_DEFAVORABLE: Record<string, number> = {
+  Q1: 23, Q2: 60, Q3: 7, Q4: 5,
+  Q5a: 3, Q5b: 3, Q5c: 3, Q5d: 3, Q5e: 3,
+  Q5f: 3, Q5g: 3, Q5h: 3, Q5i: 3, Q5j: 3,
+  Q6: 3, Q7: 3, Q8: 3, Q9: 3,
 };
+const TITRE_Q_SOM_01 = 'PSQI — Index de qualité du sommeil de Pittsburgh';
 
 const ID_REPONSE_ORIENTATION_E2E_PREFIX = 'E2E_ORIENT_';
 
 /**
- * Écrit une réponse `Q_STR_02` dont le `rawAnswers` recalcule en zone
+ * Écrit une réponse `Q_SOM_01` dont le `rawAnswers` recalcule en zone
  * `danger` — ce que `scoresRecalculesPourRaisonnement` exige pour ne pas rendre `null`
  * (voir `orientationService.ts`, qui IGNORE tout `scoresJson.total` déjà
  * stocké et recalcule depuis `rawAnswers`). Sans cette réponse, la règle
- * `R-STR-01` ne peut mordre : aucune passation du seed ne porte de
+ * `R-SOM-01` ne peut mordre : aucune passation du seed ne porte de
  * `rawAnswers`.
  *
  * `idAssignation: null` — comme les réponses historiques du seed — pour ne
@@ -716,10 +720,10 @@ export async function provisionnerReponseOrientation(idPatient: string): Promise
       idPatient,
       emailPatient: patient.email,
       idAssignation: null,
-      idQuestionnaire: 'Q_STR_02',
-      titre: 'Échelle de stress perçu (PSS-10)',
+      idQuestionnaire: 'Q_SOM_01',
+      titre: TITRE_Q_SOM_01,
       dateReponse: new Date(),
-      scoresJson: { rawAnswers: RAW_ANSWERS_Q_STR_02_DANGER },
+      scoresJson: { rawAnswers: RAW_ANSWERS_Q_SOM_01_DEFAVORABLE },
     },
   });
 }
@@ -733,7 +737,7 @@ export async function provisionnerReponseOrientation(idPatient: string): Promise
  * aurait laissé la passation `Q_STR_02` en place d'un run à l'autre.
  * On ne touche qu'à ce que ce spec a pu produire, dans un ordre sûr
  * vis-à-vis des clés étrangères :
- *   1. l'assignation `Q_STR_05` que l'étape « envoyer » a pu créer — sans ce
+ *   1. l'assignation `Q_STR_03` que l'étape « envoyer » a pu créer — sans ce
  *      nettoyage, une assignation ouverte laissée par un run précédent (ou
  *      par le projet Desktop Chromium avant que le projet iPhone 13 ne
  *      démarre) fait rendre `dejaAssigne: true` d'entrée, et le bouton
@@ -744,11 +748,11 @@ export async function provisionnerReponseOrientation(idPatient: string): Promise
  *      des envois passés : inerte sur base éphémère, une perte d'historique
  *      silencieuse sur une base partagée. Toutes les lectures et écritures de
  *      la file filtrent déjà sur `brouillon`, le filtre n'affaiblit rien ;
- *   3. la réponse `Q_STR_02` fabriquée par `provisionnerReponseOrientation`,
+ *   3. la réponse `Q_SOM_01` fabriquée par `provisionnerReponseOrientation`,
  *      reconnue par son préfixe d'identifiant.
  */
 export async function nettoyerOrientationFileEnvoi(idPatient: string): Promise<void> {
-  await prisma.assignation.deleteMany({ where: { idPatient, idQuestionnaire: 'Q_STR_05' } });
+  await prisma.assignation.deleteMany({ where: { idPatient, idQuestionnaire: 'Q_STR_03' } });
   await prisma.envoiBrouillon.deleteMany({ where: { idPatient, statut: 'brouillon' } });
   await prisma.questionnaireReponse.deleteMany({
     where: { idPatient, idReponse: { startsWith: ID_REPONSE_ORIENTATION_E2E_PREFIX } },
@@ -1061,8 +1065,8 @@ export async function cleanupTirageCaducFixture(): Promise<void> {
 // synthèse validée postérieure au rideau — puis le spec pose le geste
 // praticien de confirmation.
 //
-// Une passation `Q_STR_02` en zone `danger` suffit : c'est le déclencheur de
-// `PANEL_STRESS_1` (indicationsBiologieV1.ts, BIO-STR-01, mode `conditionnel`,
+// Une passation `Q_SOM_01` défavorable suffit : c'est le déclencheur de
+// `PANEL_SOMMEIL_1` (indicationsBiologieV1.ts, BIO-SOM-01, mode `conditionnel`,
 // lui-même dans `STATUTS_PROPOSES`), donc la proposition porte au moins une
 // ligne ET le formulaire de courrier s'affiche.
 //
@@ -1221,10 +1225,10 @@ export async function provisionnerDossierBiologie(idPatient: string): Promise<vo
       idPatient,
       emailPatient: patient.email,
       idAssignation: null,
-      idQuestionnaire: 'Q_STR_02',
-      titre: 'Échelle de stress perçu (PSS-10)',
+      idQuestionnaire: 'Q_SOM_01',
+      titre: TITRE_Q_SOM_01,
       dateReponse: new Date(),
-      scoresJson: { rawAnswers: RAW_ANSWERS_Q_STR_02_DANGER },
+      scoresJson: { rawAnswers: RAW_ANSWERS_Q_SOM_01_DEFAVORABLE },
     },
   });
 

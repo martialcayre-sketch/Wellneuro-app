@@ -29,10 +29,11 @@ import { MESSAGE_DEJA_ASSIGNE } from '../src/lib/assignations/messages';
 
 const PATIENT_ID = 'PAT_SEED_01';
 const NOM_PATIENT = 'Sophie Nicola';
-// Cible de R-STR-01 (déclencheur : zone couleur warning/danger/dark sur
-// Q_STR_02) — la seule règle publiée aujourd'hui dont la suggestion cible un
-// QUESTIONNAIRE (donc `ajoutable`, cf. OrientationPanel.tsx) plutôt qu'un pack.
-const TITRE_CIBLE = 'BMS-10 — Burnout Mesure Short';
+// Cible de R-SOM-01 (déclencheur : zone couleur info/warning/danger/dark sur
+// Q_SOM_01) — une suggestion qui cible un QUESTIONNAIRE (donc `ajoutable`, cf.
+// OrientationPanel.tsx) plutôt qu'un pack. Re-ciblée le 2026-11-20 : la cible
+// d'avant, le BMS-10 de R-STR-01, est suspendue pour relecture ([[D-543]]).
+const TITRE_CIBLE = 'Questionnaire de stress de Cungi';
 // Apostrophes typographiques ’ — copiées du composant, jamais retapées : une
 // apostrophe droite ' romprait le match de texte exact sans qu'aucune erreur
 // de compilation ne le signale.
@@ -50,7 +51,7 @@ test.describe('Orientation NNPP2 → file d’envoi', () => {
   });
 
   test.afterAll(async () => {
-    // Filet de fin de run : sans lui, l'assignation Q_STR_05 posée à l'étape 4
+    // Filet de fin de run : sans lui, l'assignation Q_STR_03 posée à l'étape 4
     // du DERNIER projet exécuté (Playwright enchaîne les projets l'un après
     // l'autre, un seul worker) resterait ouverte et ferait basculer tout autre
     // spec relisant l'orientation de Sophie directement en « déjà assigné ».
@@ -60,7 +61,7 @@ test.describe('Orientation NNPP2 → file d’envoi', () => {
   test('recommandation → ajout à la file → envoi → déduplication', async ({ page }) => {
     await page.context().addCookies([await praticienSessionCookie()]);
 
-    // ── 1. Le panneau d'orientation propose Q_STR_05, avec un bouton d'ajout ──
+    // ── 1. Le panneau d'orientation propose Q_STR_03, avec un bouton d'ajout ──
     // Deep-link direct sur l'onglet Trajectoire (couvert par
     // fiche-trajectoire.spec.ts) : le panneau d'orientation n'est monté que
     // là (TrajectoirePanel.tsx), au présent, jamais en lecture datée.
@@ -113,7 +114,7 @@ test.describe('Orientation NNPP2 → file d’envoi', () => {
       assignations?: { idQuestionnaire: string; statut: string }[];
     };
     const assignationCreee = (payloadAssignations.assignations ?? []).find(
-      (a) => a.idQuestionnaire === 'Q_STR_05',
+      (a) => a.idQuestionnaire === 'Q_STR_03',
     );
     expect(assignationCreee?.statut).toBe('En attente');
 

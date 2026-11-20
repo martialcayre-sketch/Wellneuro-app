@@ -16,7 +16,12 @@ import { INDICATIONS_BIOLOGIE_V1 } from './indicationsBiologieV1';
 // erreur ni log. « L'inertie est silencieuse et un audit décale » : ce banc
 // est la version qui ne décale pas, jouée sur les moteurs RÉELS.
 
-const publiees = INDICATIONS_BIOLOGIE_V1.filter(r => r.statut === 'publiee');
+// LES RÈGLES DU PÉRIMÈTRE SIGNÉ HORS BROUILLON — publiées ET suspendues ([[D-543]]).
+// Une ligne suspendue pour relecture n'est évaluée par aucun moteur, mais elle
+// reste dans la table signée et peut être rétablie : sa forme (panel unique,
+// instruments au catalogue, branches non inertes) se garde comme celle d'une
+// ligne servie. Le nombre de lignes SERVIES est figé à part.
+const publiees = INDICATIONS_BIOLOGIE_V1.filter(r => r.statut === 'publiee' || r.statut === 'suspendue');
 const feuillesDe = (regle: (typeof INDICATIONS_BIOLOGIE_V1)[number]) =>
   regle.declencheurs.flatMap(feuillesDuDeclencheur);
 
@@ -50,8 +55,11 @@ function porteComptesComplets(porteur: unknown): boolean {
 }
 
 describe('indications biologie — garde de forme de la table réelle (RV-2)', () => {
-  it('quinze règles publiées, un panel chacune — jamais deux (discordance moteur)', () => {
+  it('quinze règles publiées ou suspendues, un panel chacune — jamais deux (discordance moteur)', () => {
     expect(publiees).toHaveLength(15);
+    // Quatorze servies, une suspendue pour relecture (`BIO-STR-01`, [[D-543]]).
+    expect(INDICATIONS_BIOLOGIE_V1.filter(r => r.statut === 'publiee')).toHaveLength(14);
+    expect(INDICATIONS_BIOLOGIE_V1.filter(r => r.statut === 'suspendue').map(r => r.id)).toEqual(['BIO-STR-01']);
     const codes = publiees.map(r => r.panelCode);
     expect(new Set(codes).size, 'deux règles sur un même panel basculeraient en non_indique_actuellement').toBe(codes.length);
     // Les codes sont EXACTEMENT ceux de la migration D-068 : une règle visant

@@ -111,6 +111,10 @@ const LECTEURS_PUBLIES = [
   'web/src/lib/clinical/blocBiologieSynthese.ts',
   'web/src/lib/clinical/blocBiologieSyntheseService.ts',
   'web/src/lib/clinical/syntheseBiologieDrapeau.ts',
+  // Les lignes suspendues pour relecture ([[D-543]]) : les seuls identifiants
+  // des indications au statut `suspendue`, aucune règle ni valeur lue —
+  // septième lecteur hors biologie (2026-11-19).
+  'web/src/lib/clinical/lignesSuspendues.ts',
 ];
 
 const DOSSIER = 'web/src/lib/biology-library/';
