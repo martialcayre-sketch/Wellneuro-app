@@ -249,6 +249,20 @@ describe('orientationRulesV1 — verrou v1', () => {
     );
   });
 
+  // Contre-épreuve de [[D-543]] §3 : les lignes suspendues repassées
+  // `publiee`, le contenu hache exactement l'ancienne signature ([[D-470]]).
+  // Seul le statut a bougé.
+  it('hors le statut suspendu, la table est celle signée le 2026-11-09 (D-543)', () => {
+    const retablie = ORIENTATION_RULES_V1.map(regle =>
+      regle.statut === 'suspendue' ? { ...regle, statut: 'publiee' as const } : regle);
+    expect(sha256(JSON.stringify({
+      regles: retablie,
+      grilles: GRILLES_ORIENTATION,
+      fenetres: FENETRES_FRAICHEUR_ORIENTATION,
+      convergence: TABLE_CONVERGENCE_V1,
+    }))).toBe('a9aaaf32c7e8ab5903f8faa2b7b6982c0d79c1f64ac097f140f2a3d83351d914');
+  });
+
   it('le sha reste identique avec `WN_ALI_01_SIIN57` éteint ou allumé', async () => {
     vi.resetModules();
     vi.stubEnv('WN_ALI_01_SIIN57', 'false');

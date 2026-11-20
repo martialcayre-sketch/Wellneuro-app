@@ -380,7 +380,7 @@ describe('OrientationPanel', () => {
     expect(container.textContent).not.toMatch(/R-STR-01/);
   });
 
-  it('D-543, liste vide : la ligne des lignes suspendues est dite aussi', async () => {
+  it('D-543, recommandations vides : la ligne des lignes suspendues est dite aussi', async () => {
     stubFetch({ ...ACTIF, recommandations: [], reglesNonEvaluees: [], arretsSuspendus: [], lignesSuspendues: [LIGNE_SUSPENDUE] });
 
     render(<OrientationPanel idPatient="PAT_SEED_03" />);

@@ -1,7 +1,9 @@
 import { readFileSync } from 'fs';
 import path from 'path';
 import { describe, expect, it } from 'vitest';
+import { sha256 } from '@/lib/clinical/corpusSyntheseV1';
 import {
+  GRILLES_INDICATIONS,
   INDICATIONS_BIOLOGIE_METADATA,
   INDICATIONS_BIOLOGIE_SHA256,
   INDICATIONS_BIOLOGIE_V1,
@@ -70,6 +72,15 @@ describe('indications biologie — le verrou de signature ne peut pas être neut
   it('le sha publié est celui du contenu réellement porté par la table', () => {
     expect(INDICATIONS_BIOLOGIE_V1).toHaveLength(15);
     expect(INDICATIONS_BIOLOGIE_SHA256).toBe(SHA_CONTENU_2026_11_19);
+  });
+
+  // Contre-épreuve de [[D-543]] §3 : `BIO-STR-01` repassée `publiee`, le
+  // contenu hache exactement l'ancienne signature. Seul le statut a bougé.
+  it('hors le statut suspendu, la table est celle signée le 2026-09-16 (D-543)', () => {
+    const retablie = INDICATIONS_BIOLOGIE_V1.map(regle =>
+      regle.statut === 'suspendue' ? { ...regle, statut: 'publiee' as const } : regle);
+    expect(sha256(JSON.stringify({ regles: retablie, grilles: GRILLES_INDICATIONS })))
+      .toBe('33894e9c6afbd6b3f59a8bb33396aefa56890f57a120f255908ebaf942adef19');
   });
 
   // Le piège exact de la revue : `shaPerimetre` câblé sur la constante au lieu
