@@ -19659,7 +19659,7 @@
     "mimeType": "text/html",
     "language": "en",
     "jurisdiction": "EU_INTERNATIONAL",
-    "authorityClass": "EXTERNAL_REVIEW",
+    "authorityClass": "EXTERNAL_SYSTEMATIC_REVIEW",
     "audienceOriginal": "Praticien",
     "importance": "secondary",
     "prescriptive": false,
@@ -19923,7 +19923,7 @@
     "audienceOriginal": "Praticien",
     "importance": "secondary",
     "prescriptive": false,
-    "primaryNotebook": "03 — Stress et burnout",
+    "primaryNotebook": "06 — Douleurs chroniques",
     "secondaryNotebooks": [],
     "sourceVersion": null,
     "contentHash": null,
@@ -20296,7 +20296,7 @@
     "practitionerReviewRequired": true,
     "lifecycleStatus": "raw",
     "vigilance": "Modérée",
-    "requiredAction": "Notice bibliographique seule (accord du responsable du 2026-11-20) : texte non libre (Oxford University Press) ; aucun passage, aucun claim",
+    "requiredAction": "Notice bibliographique seule (accord du responsable du 2026-11-20) : texte non libre (American Thoracic Society) ; aucun passage, aucun claim",
     "comment": "Source externe, augmentation de l'oxyde nitrique nasal par le fredonnement (rapports de recherche approfondie du 2026-11-20 ; rattachements : vidéos : 6 ; affirmations : A2). Référence vérifiée (PubMed, PMID 12119224, DOI résolu). Licence et accès : OUP, fermé. Texte non ingéré.",
     "auditDate": "2026-11-20"
   },
@@ -20531,7 +20531,7 @@
     "lifecycleStatus": "raw",
     "vigilance": "Modérée",
     "requiredAction": "Notice seule en attendant le PDF : texte à ingérer après fourniture du PDF par le responsable (accord du 2026-11-20, réponse Q2 = B) ; licence CC BY lue dans les métadonnées Crossref et Europe PMC, non dans le fichier ; aucun passage, aucun claim",
-    "comment": "Source externe, essai PREVENT d'efficacité et de coût-efficacité de la thérapie cognitive fondée sur la pleine conscience contre le traitement antidépresseur d'entretien (rapports de recherche approfondie du 2026-11-20 ; rattachements : vidéos : 9 ; affirmations : 7.1 (MBCT, PREVENT)). Référence vérifiée (PubMed, PMID 25907157, DOI résolu). Licence et accès : CC BY 4.0 (Crossref, Europe PMC) ; absent de PMC ; PDF à fournir. Écart rapport/source : licence non vérifiée dans le rapport → CC BY. Correction ou rétractation : Department of Error (Lancet 2016;388:1376, PMID 27707494) : non signalée par le rapport ; à lire avec le texte. Le texte porte une « Department of Error » (Lancet 2016;388:1376, PMID 27707494) à lire avec lui. Texte non ingéré.",
+    "comment": "Source externe, essai PREVENT d'efficacité et de coût-efficacité de la thérapie cognitive fondée sur la pleine conscience contre le traitement antidépresseur d'entretien (rapports de recherche approfondie du 2026-11-20 ; rattachements : vidéos : 9 ; affirmations : 7.1 (MBCT, PREVENT)). Référence vérifiée (PubMed, PMID 25907157, DOI résolu). Licence et accès : CC BY 4.0 (Crossref, Europe PMC) ; absent de PMC ; PDF à fournir. Écart rapport/source : licence non vérifiée dans le rapport → CC BY. Correction ou rétractation : Department of Error (Lancet 2016;388:1376, PMID 27707494) : non signalée par le rapport ; à lire avec le texte. Texte non ingéré.",
     "auditDate": "2026-11-20"
   },
   {
@@ -20791,7 +20791,7 @@
     "lifecycleStatus": "raw",
     "vigilance": "Modérée",
     "requiredAction": "Notice bibliographique seule (accord du responsable du 2026-11-20) : licence CC BY-NC-ND 4.0, qui n'admet pas le texte ; aucun passage, aucun claim",
-    "comment": "Source externe, revue systématique et méta-analyse de la musicothérapie pour réduire le stress (rapports de recherche approfondie du 2026-11-20 ; rattachements : besoin 7 : 7 ; affirmations : B5). Référence vérifiée (PubMed, PMID 33176590, DOI résolu). Licence et accès : CC BY-NC-ND 4.0. Écart rapport/source : année 2022 au numéro (en ligne 2020) ; 47 études, 2,747 participants conforme. Texte non ingéré.",
+    "comment": "Source externe, revue systématique et méta-analyse de la musicothérapie pour réduire le stress (rapports de recherche approfondie du 2026-11-20 ; rattachements : besoin 7 : 7 ; affirmations : B5). Référence vérifiée (PubMed, PMID 33176590, DOI résolu). Licence et accès : CC BY-NC-ND 4.0. Écart rapport/source : année 2022 au numéro (en ligne 2020) ; 47 études, 2 747 participants conforme. Texte non ingéré.",
     "auditDate": "2026-11-20"
   },
   {
@@ -20972,7 +20972,7 @@
     "practitionerReviewRequired": true,
     "lifecycleStatus": "raw",
     "vigilance": "Modérée",
-    "requiredAction": "Notice bibliographique seule (accord du responsable du 2026-11-20) : texte non libre (Sage), licence de fouille de textes Sage dans les métadonnées ; aucun passage, aucun claim",
+    "requiredAction": "Notice bibliographique seule (accord du responsable du 2026-11-20) : texte non libre (American Occupational Therapy Association), licence de fouille de textes lue dans les métadonnées ; aucun passage, aucun claim",
     "comment": "Source externe, mesure des profils de traitement sensoriel de l'adulte (Adult Sensory Profile) (rapports de recherche approfondie du 2026-11-20 ; rattachements : besoin 7 : 7 ; affirmations : B7 (mesure, sensibilité)). Référence vérifiée (PubMed, PMID 11216370, DOI résolu). Licence et accès : Sage, fermé ; licence TDM Sage. Écart rapport/source : auteurs : Brown, Tollefson, Dunn et al. ; n = 93 conforme. Texte non ingéré.",
     "auditDate": "2026-11-20"
   },
@@ -20989,7 +20989,7 @@
     "audienceOriginal": "Praticien",
     "importance": "secondary",
     "prescriptive": false,
-    "primaryNotebook": "04 — Humeur",
+    "primaryNotebook": "06 — Douleurs chroniques",
     "secondaryNotebooks": [],
     "sourceVersion": null,
     "contentHash": null,
@@ -21015,7 +21015,7 @@
     "audienceOriginal": "Praticien",
     "importance": "secondary",
     "prescriptive": false,
-    "primaryNotebook": "04 — Humeur",
+    "primaryNotebook": "06 — Douleurs chroniques",
     "secondaryNotebooks": [],
     "sourceVersion": null,
     "contentHash": null,
