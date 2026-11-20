@@ -55,7 +55,10 @@ type Assemblage = Extract<PortailDossierResponse, { objectifs: unknown }>;
 
 type Etat =
   | { phase: 'chargement' }
-  | { phase: 'erreur'; message: string }
+  // `reessayable` : échec de lecture (erreur technique, coupure réseau), que
+  // « Réessayer » peut lever ; un refus (401, 403, 503) ne l'est pas
+  // ([[D-488]], amendement DOC-18).
+  | { phase: 'erreur'; message: string; reessayable: boolean }
   | { phase: 'pret'; donnees: Assemblage };
 
 /** Date lisible en français, ou `null` — jamais comblée par autre chose. */
@@ -131,10 +134,11 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
           phase: 'erreur',
           message:
             (!data.ok && data.error) || 'Cette page n’a pas pu être chargée. Réessayez plus tard.',
+          reessayable: res.status >= 500 && res.status !== 503,
         });
       }
     } catch {
-      setEtat({ phase: 'erreur', message: 'Erreur réseau. Réessayez plus tard.' });
+      setEtat({ phase: 'erreur', message: 'Erreur réseau. Réessayez plus tard.', reessayable: true });
     }
   }, [token]);
 
@@ -338,6 +342,17 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
       <PatientCard className="space-y-4">
         <PatientPageHeader title="Mon dossier, à deux voix" />
         <PatientInlineMessage tone="error">{etat.message}</PatientInlineMessage>
+        {etat.reessayable && (
+          <PatientButton
+            variant="ghost"
+            onClick={() => {
+              setEtat({ phase: 'chargement' });
+              void charger();
+            }}
+          >
+            Réessayer
+          </PatientButton>
+        )}
       </PatientCard>
     );
   }
