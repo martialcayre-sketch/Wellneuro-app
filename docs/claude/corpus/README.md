@@ -106,9 +106,12 @@ contre la réserve générale de fouille de textes du pied de page de l'éditeur
 revues et validations d'échelles de solitude et de soutien social, une revue
 parapluie et une méta-analyse d'interventions, une validation d'échelle de
 connexion à la nature, une revue exploratoire sur l'inflammation, un essai de
-prescription sociale, `WN-SRC-0730` à `0738`, puis sept notices seules,
-`WN-SRC-0739` à `0745`, faute de licence qui admette le texte ou de lecture
-de la politique de fouille de l'éditeur),
+prescription sociale, `WN-SRC-0730` à `0738`, puis une étude de trois cohortes
+sur l'isolement social et l'inflammation, `WN-SRC-0739`, ingérée le 2026-11-20
+sur un second accord du responsable (licence CC BY déposée par l'éditeur et
+mention de fouille de textes du dépôt de manuscrits, page de l'éditeur
+illisible) ; six notices seules, `WN-SRC-0740` à `0745`, faute de licence qui
+admette le texte ou de lecture de la politique de fouille de l'éditeur),
 dont seuls des extraits ciblés sont ingérés. Le manuscrit soumis `WN-SRC-0546`
 est `deprecated` : remplacé par sa version publiée `WN-SRC-0564`, ses claims ne
 sont pas retenus ; ses claims signés sont exclus de la recherche et ses passages
