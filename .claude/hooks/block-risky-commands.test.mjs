@@ -1,6 +1,6 @@
 // Banc de test du garde-fou des commandes Bash.
 //
-//   node --test .claude/hooks/
+//   node --test .claude/hooks/*.test.mjs
 //
 // Pourquoi committé plutôt que rejoué à la main : la première version du
 // masquage des heredocs avait été validée sur dix cas choisis, tous verts — et
@@ -391,3 +391,71 @@ for (const cmd of [
 ]) {
   test(`lecture ponctuelle permise : ${cmd}`, () => assert.equal(verdict(cmd), "passe"));
 }
+
+// ── Tâche de fond qui finit par `echo … $?` (autonomie-pieges-restes, partie 6)
+// Le code d'une tâche de fond est celui de sa dernière commande : un `echo`
+// final rend 0 et la notification ment (mémoire taches-de-fond-demarrent-a-la-racine).
+
+/** Verdict pour une commande lancée en tâche de fond. */
+function verdictFond(command) {
+  const res = spawnSync("node", [hook], {
+    input: JSON.stringify({ tool_input: { command, run_in_background: true } }),
+    encoding: "utf8",
+  });
+  // Le refus doit venir de CE bloc, pas d'un autre (relecture adverse).
+  if (res.status === 2) return (res.stderr || "").includes("tâche de fond") ? "refus" : "autre refus";
+  return (res.stdout || "").includes('"ask"') ? "demande" : "passe";
+}
+
+for (const cmd of [
+  'node scripts/wn-attendre-ci.mjs 2289 > ci.txt 2>&1; echo "ci=$?" >> ci.txt',
+  'npm run test:worktree; echo "code=$?"',
+  "node x.mjs && echo code=$?",
+  'node x.mjs || printf "%s\\n" "$?"',
+  'node x.mjs\necho "code=$?"\n',
+  // Formes couvertes après la relecture adverse.
+  "node x; echo $?;",
+  "node x; echo $? ; ",
+  'node x; echo "code=$?" >&2',
+  "node x; echo $? 2>&1",
+  "{ node x; echo $?; }",
+  "( node x; echo $? )",
+  'node x; echo "$?" | tee -a f',
+  "node x; echo $?|cat",
+  'node x; echo "code=${?}"',
+  "node x; print $?",
+  "node x; command echo $?",
+  "node x; echo $? &",
+]) {
+  test(`en fond, un echo … $? final est refusé : ${JSON.stringify(cmd)}`, () => assert.equal(verdictFond(cmd), "refus"));
+}
+
+for (const cmd of [
+  'node x.mjs > f 2>&1; c=$?; echo "code=$c" >> f; exit $c',
+  'echo "début"; node scripts/wn-attendre-ci.mjs 2289',
+  "node scripts/wn-attendre-ci.mjs 2289 > ci.txt 2>&1",
+  // Un `echo $?` dans le corps d'un heredoc est du texte.
+  "cat > note.md <<'FIN'\necho $?\nFIN\nnode y.mjs",
+  'node x || { echo "échec $?"; exit 1; }',
+  "node x; exit $?",
+]) {
+  test(`en fond, permis : ${JSON.stringify(cmd)}`, () => assert.equal(verdictFond(cmd), "passe"));
+}
+
+// Trous assumés, épinglés : ils ramènent au comportement d'avant, sans plus.
+for (const cmd of [
+  'node x; echo "a;b $?"',
+  "node x; echo $?; exit",
+  "node x; if true; then echo $?; fi",
+]) {
+  test(`en fond, trou assumé (passe) : ${JSON.stringify(cmd)}`, () => assert.equal(verdictFond(cmd), "passe"));
+}
+
+// Faux positif assumé : un commentaire final est lu comme de la structure.
+test("en fond, un `# ; echo $?` en commentaire final est refusé (faux positif assumé)", () => {
+  assert.equal(verdictFond("node x # ; echo $?"), "refus");
+});
+
+test("au premier plan, un echo … $? final reste permis : la session lit la sortie", () => {
+  assert.equal(verdict('npm run check; echo "code=$?"'), "passe");
+});

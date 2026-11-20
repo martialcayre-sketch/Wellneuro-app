@@ -462,6 +462,34 @@ if (MODIFICATEUR_ZSH.test(heredocs.structure) || MODIFICATEUR_ZSH.test(heredocs.
   process.exit(2);
 }
 
+// TÂCHE DE FOND QUI FINIT PAR `echo … $?` (lot `autonomie-pieges-restes`,
+// partie 6). Le code d'une tâche de fond est celui de sa DERNIÈRE commande :
+// avec `…; echo "code=$?"`, c'est celui d'`echo`, donc 0. La notification
+// annonce « exit code 0 » sur un échec : une attente de CI a été rapportée
+// verte alors qu'elle n'avait jamais tourné (mémoire
+// taches-de-fond-demarrent-a-la-racine, 2026-08-24 et 2026-08-27). Redirigé
+// vers un journal (`>> f`), l'`echo` ment pareil à la notification. La forme
+// sûre garde le code et le rend : `…; c=$?; echo "code=$c" >> f; exit $c`.
+// Lu sur la structure (corps de heredoc retirés), en fond seulement : au
+// premier plan, la session lit la sortie elle-même.
+// Avant le test (relecture adverse) : les redirections (`>&2`, `2>&1`, `&>`)
+// sont retirées, leur `&` ne coupe rien ; un `;`, `}` ou `&` final ne change
+// pas la dernière commande ; un tube final vers `tee` ou `cat` rend 0 aussi.
+// `${?}`, `print` (zsh), `builtin echo` et `command echo` sont la même forme.
+const ECHO_CODE_FINAL =
+  /(?:^|[;&|\n{(])\s*(?:(?:builtin|command)\s+)?(?:echo|printf|print)\b[^;&|\n]*\$(?:\?|\{\?\})[^;&|\n]*(?:\|\s*(?:tee|cat)\b[^;&|\n]*)?$/;
+const finDeStructure = heredocs.structure
+  .replace(/\d*[<>]&\d*-?|&>>?/g, " ")
+  .replace(/[\s;}&]+$/, "");
+if (data.tool_input?.run_in_background === true && ECHO_CODE_FINAL.test(finDeStructure)) {
+  console.error(
+    "Commande bloquée par WellNeuro : en tâche de fond, le code rendu est celui de la dernière commande. " +
+    "Un `echo … $?` final rend 0, et la notification dira « exit code 0 » même sur un échec. " +
+    "Écrire `… > journal 2>&1; c=$?; echo \"code=$c\" >> journal; exit $c`, puis lire la dernière ligne du journal."
+  );
+  process.exit(2);
+}
+
 // SONDAGE — n'est plus refusé depuis le 2026-10-24 : le responsable autorise,
 // pour toutes les sessions, le contrôle en boucle (CI, revue CodeRabbit,
 // déploiement). `wn-attendre-ci.mjs` en tâche de fond reste la forme préférée
