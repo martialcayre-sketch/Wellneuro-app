@@ -13,7 +13,7 @@ Après le merge de #2272 et la release-db constatée : rejouer en entier l'éval
 
 - **Release-db de #2272 constatée** : run 44632828580 vert, `migrate status` vert sur conteneur, déploiement Scalingo de 6f1b2735 au statut `success`.
 - **Rejeu sur 8c1d3bde** : #2273, entrée entre-temps, ne touche ni `web/src`, ni `web/prisma`, ni le banc.
-- **Lecture de la session** : cinq lectures, une par paquet, contre la grille recopiée par `paquets-codex.mjs`. Relevés fermes et doutes séparés ; les doutes sont tranchés ensuite par la session, motif écrit.
+- **Lecture de la session** : cinq lectures, une par paquet, contre la grille recopiée par `paquets-codex.mjs`. Relevés fermes et doutes séparés ; les doutes sont tranchés ensuite par la session, motif écrit, sauf ceux sur un diagnostic déclaré, portés à `20261120-1857-b-h95`. Les cinq lectures n'ont lu que leur paquet : aucune n'a ouvert les avis Codex (journaux des lectures vérifiés ; celle du paquet 1 a duré environ 10 h 43).
 - **Verdicts** :
   - Désaccords que le texte de la grille tranche : verdict motivé, avec la ligne citée.
   - Désaccords qu'il ne tranche pas : trois questions au responsable (`20261120-1855`, `-1856` et `-1857-b-h95`), chacune avec un avis Codex à l'aveugle (D-505).

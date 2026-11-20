@@ -26,8 +26,9 @@
     - une génération de plus en **violation** (ligne 10 : une question qui présuppose un examen non déclaré) ;
     - un axe argumenté par un résultat déclaré, en **violation** (ligne 10), sur des générations déjà comptées en ligne 11 ;
     - une génération **au responsable** (même cas que `1856`) ;
+    - les doutes sur un diagnostic déclaré, portés à `1857` (ci-dessous) ;
     - le reste **non**, motif écrit ;
-  - un cas qu'aucune des deux lectures n'a compté **va au responsable** : un diagnostic déclaré, défini par la biologie, repris comme antécédent (`20261120-1857-b-h95`, huit dossiers).
+  - un cas qu'aucune des deux lectures n'a compté en violation, et que la session avait noté en doute, **va au responsable** : un diagnostic déclaré, défini par la biologie, repris comme antécédent (`20261120-1857-b-h95`, huit dossiers).
 
   Avis Codex à l'aveugle joint aux trois questions (D-505).
 
