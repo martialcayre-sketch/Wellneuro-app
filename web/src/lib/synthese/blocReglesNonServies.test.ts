@@ -5,6 +5,7 @@ import {
   LIGNE_ARRETS_NON_EVALUES,
   LIGNE_ARRETS_SUSPENDUS_CLAIMS,
   LIGNE_ARRETS_SUSPENDUS_VALIDITE,
+  LIGNE_LIGNES_SUSPENDUES_RELECTURE,
   LIGNE_ORIENTATION_NON_APPLIQUEES,
   LIGNE_SOURCES_NON_VERIFIEES,
   passationsArretsNonEvalues,
@@ -19,6 +20,7 @@ function actif(partiel: {
   reglesNonAppliquees?: unknown;
   arretsSuspendus?: unknown;
   arretsNonEvalues?: unknown;
+  lignesSuspendues?: unknown;
 }): ResultatOrientation {
   return {
     actif: true,
@@ -31,6 +33,7 @@ function actif(partiel: {
     arret: null,
     arretsSuspendus: partiel.arretsSuspendus ?? [],
     reglesNonAppliquees: partiel.reglesNonAppliquees ?? [],
+    lignesSuspendues: partiel.lignesSuspendues ?? [],
   } as unknown as ResultatOrientation;
 }
 
@@ -147,6 +150,25 @@ describe('construireBlocReglesNonServies — corpus illisible et absences', () =
     expect(construireBlocReglesNonServies(actif({}), false)).toBe('');
   });
 
+  // [[D-543]] : une ligne, au texte validé, après les règles d'orientation non
+  // appliquées ; ni identifiant ni décompte.
+  it('lignes suspendues pour relecture : une ligne, sans identifiant', () => {
+    expect(LIGNE_LIGNES_SUSPENDUES_RELECTURE).toBe(
+      "Lignes suspendues pour relecture : certaines règles d'orientation ou d'arrêt, indications de bilan biologique ou signaux de discordance sont suspendus, le temps d'être relus. Ils ne proposent aucune exploration, aucun bilan ni aucune discordance, et ne retirent aucune exploration. Leur absence ne dit rien du patient.",
+    );
+    const bloc = construireBlocReglesNonServies(actif({
+      reglesNonAppliquees: [NON_APPLIQUEE],
+      lignesSuspendues: [
+        { table: 'orientation', regleId: 'R-STR-01' },
+        { table: 'arret', regleId: 'STOP-STR' },
+      ],
+    }), false);
+    const lignes = bloc.split('\n');
+    expect(lignes.indexOf(LIGNE_LIGNES_SUSPENDUES_RELECTURE)).toBe(lignes.indexOf(LIGNE_ORIENTATION_NON_APPLIQUEES) + 1);
+    expect(bloc).not.toMatch(/R-STR-01|STOP-STR/);
+    expect(LIGNE_LIGNES_SUSPENDUES_RELECTURE).not.toMatch(/\d/);
+  });
+
   it('défensif : un élément malformé est ignoré, sans lever', () => {
     const bloc = construireBlocReglesNonServies(actif({
       reglesNonAppliquees: [null, { claims: [] }, 'x'],
@@ -183,11 +205,12 @@ describe('traceReglesNonServies — ce qui ne part pas au modèle (D-511 §5)', 
         { stopRuleId: 'STOP-SOM', motif: 'validite_non_verifiee', claims: [] },
       ],
       arretsNonEvalues: ['STOP-STR'],
+      lignesSuspendues: [],
     });
   });
 
   it('vide sur une orientation inactive ou indisponible', () => {
-    const vide = { reglesNonAppliquees: [], arretsSuspendus: [], arretsNonEvalues: [] };
+    const vide = { reglesNonAppliquees: [], arretsSuspendus: [], arretsNonEvalues: [], lignesSuspendues: [] };
     expect(traceReglesNonServies(INACTIF)).toEqual(vide);
     expect(traceReglesNonServies(null)).toEqual(vide);
   });

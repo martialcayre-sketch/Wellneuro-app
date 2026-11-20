@@ -37,7 +37,7 @@ describe('stopRulesV1 — statut de signature', () => {
   // supprimée : une dé-signature accidentelle reste attrapée.
   it('la table est signée, et sa signature est bien formée', () => {
     expect(STOP_RULES_METADATA.validationExterne).toBe(true);
-    expect(STOP_RULES_METADATA.dateValidation).toBe('2026-11-12T00:00:00.000Z');
+    expect(STOP_RULES_METADATA.dateValidation).toBe('2026-11-20T07:43:09.000Z');
     const d = STOP_RULES_METADATA.dateValidation as string;
     expect(new Date(d).toISOString()).toBe(d);
     // Cinquième terme ([[D-067]]) : le littéral concorde avec le contenu
@@ -69,8 +69,10 @@ describe('stopRulesV1 — traçabilité des claims', () => {
     expect(declares).toEqual(desRegles);
   });
 
-  it('aucune règle publiée n’est dépourvue de claim', () => {
-    const publiees = STOP_RULES_V1.filter(regle => regle.statut === 'publiee');
+  // Les règles SUSPENDUES y entrent ([[D-543]]) : suspendues pour relecture,
+  // elles sont écrites pour être rétablies telles quelles.
+  it('aucune règle publiée ou suspendue n’est dépourvue de claim', () => {
+    const publiees = STOP_RULES_V1.filter(regle => regle.statut === 'publiee' || regle.statut === 'suspendue');
     expect(publiees.length).toBeGreaterThan(0);
     for (const regle of publiees) {
       expect(regle.justificationClaims.length).toBeGreaterThan(0);
@@ -367,8 +369,11 @@ describe('stopRulesV1 — verrou de contenu', () => {
   // Re-signé le 2026-11-11 ([[D-494]]) : le périmètre devient `{ regles, grilles }`.
   // Re-signé le 2026-11-12 ([[D-500]]) : le périmètre devient `{ regles, grilles, fenetres }`.
   // Re-signé le 2026-11-12 ([[D-508]]) : Q_STR_01 entre dans les fenêtres d'extinction (7 jours).
+  // Re-signé le 2026-11-20 ([[D-543]]) : STOP-STR suspendue pour relecture.
   const SHA_REGLES_GRILLES_2026_11_11 = 'b73cc1b6879b24026a9c489fe5ae10eb6223bf7d70b7e0de4235ed44b9b5dde2';
-  const SHA_CONTENU_2026_11_12 = '8c853f9203da2fe48b3b7cb4e65ee7d01bea88fe14141ee2e34dc7e41c701dbf';
+  const SHA_REGLES_GRILLES_2026_11_20 = 'b6121c351138f60e0024f9a89162692c30b7f86d3076b54dd84d0241e159cf6c';
+  const SHA_CONTENU_2026_11_20 = '90f03487901b62442a8334effb538267c067db65c7626ef0f6af8aedcdd26ada';
+  const retablie = () => STOP_RULES_V1.map(regle => ({ ...regle, statut: 'publiee' as const }));
 
   it('le sha publié porte sur les règles, les grilles citées ET les fenêtres d’extinction', () => {
     expect(STOP_RULES_SHA256).toBe(
@@ -378,13 +383,17 @@ describe('stopRulesV1 — verrou de contenu', () => {
 
   it('le contenu de la table est exactement celui qui a été relu', () => {
     expect(STOP_RULES_V1.length).toBe(1);
-    expect(STOP_RULES_SHA256).toBe(SHA_CONTENU_2026_11_12);
+    expect(STOP_RULES_SHA256).toBe(SHA_CONTENU_2026_11_20);
   });
 
-  // CONTRE-ÉPREUVE DE [[D-500]] : seule l'entrée des fenêtres déplace
-  // l'empreinte — règles et grilles hachent encore celle de [[D-494]].
-  it('règles et grilles sont inchangées depuis D-494', () => {
+  // CONTRE-ÉPREUVE DE [[D-500]] ET DE [[D-543]] : l'entrée des fenêtres et le
+  // statut `suspendue` déplacent seuls l'empreinte — la règle repassée
+  // `publiee`, règles et grilles hachent encore celle de [[D-494]].
+  it('règles et grilles sont inchangées depuis D-494, hors le statut suspendu', () => {
+    expect(STOP_RULES_V1.map(regle => regle.statut)).toEqual(['suspendue']);
     expect(sha256(JSON.stringify({ regles: STOP_RULES_V1, grilles: GRILLES_ARRET })))
+      .toBe(SHA_REGLES_GRILLES_2026_11_20);
+    expect(sha256(JSON.stringify({ regles: retablie(), grilles: GRILLES_ARRET })))
       .toBe(SHA_REGLES_GRILLES_2026_11_11);
   });
 
@@ -406,7 +415,7 @@ describe('stopRulesV1 — verrou de contenu', () => {
       grilles: GRILLES_ARRET,
       fenetres: { ...FENETRES_ARRET, Q_STR_04: { delaiJours: 8 } },
     }));
-    expect(deplacee).not.toBe(SHA_CONTENU_2026_11_12);
+    expect(deplacee).not.toBe(SHA_CONTENU_2026_11_20);
   });
 
   // L'INVENTAIRE EST ÉPINGLÉ ([[D-400]] §1) : une règle qui citerait un nouvel
@@ -434,13 +443,13 @@ describe('stopRulesV1 — verrou de contenu', () => {
       const deplacee = sha256(
         JSON.stringify({ regles: STOP_RULES_V1, grilles: grillesCitees(STOP_RULES_V1) }),
       );
-      expect(deplacee).not.toBe(SHA_REGLES_GRILLES_2026_11_11);
+      expect(deplacee).not.toBe(SHA_REGLES_GRILLES_2026_11_20);
     } finally {
       normalA.max = maxAvant;
     }
     expect(
       sha256(JSON.stringify({ regles: STOP_RULES_V1, grilles: grillesCitees(STOP_RULES_V1) })),
-    ).toBe(SHA_REGLES_GRILLES_2026_11_11);
+    ).toBe(SHA_REGLES_GRILLES_2026_11_20);
   });
 
   it('le libellé d’extinction est une phrase française stable', () => {
@@ -463,6 +472,15 @@ describe('stopRulesV1 — verrou de contenu', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('STOP-STR de bout en bout — calculateScore réel, table réelle, configuration réelle du service', () => {
+  // LES TABLES RÉTABLIES ([[D-543]]). STOP-STR, `R-STR-01` et `R-STR-02` sont
+  // suspendues pour relecture : la table livrée n'éteint plus rien, et
+  // `suspensionLignesStress.guard.test.ts` le fige. Ces bancs prouvent le
+  // MÉCANISME que leur rétablissement rendrait : ils jouent les deux tables
+  // avec leurs lignes suspendues repassées `publiee`, rien d'autre de changé.
+  const ARRET_RETABLI = STOP_RULES_V1.map(regle => ({ ...regle, statut: 'publiee' as const }));
+  const ORIENTATION_RETABLIE = ORIENTATION_RULES_V1.map(regle =>
+    regle.statut === 'suspendue' ? { ...regle, statut: 'publiee' as const } : regle,
+  );
   // LA CONFIGURATION EST CELLE QUE LE SERVICE ÉMET, PAS UNE VARIANTE DE
   // CONFORT — revue wn-reviewer du 2026-08-13 (B3). `orientationService`
   // verrouille `reglesArret` et `exclureDejaRepondu` ENSEMBLE : une table
@@ -535,11 +553,11 @@ describe('STOP-STR de bout en bout — calculateScore réel, table réelle, conf
         reponseStr01,
       ],
       idsQuestionnairesAssignes: [],
-      regles: ORIENTATION_RULES_V1,
+      regles: ORIENTATION_RETABLIE,
       // Drapeau burn-out : la seconde jambe de `R2-STR-02`. Extrait comme en
       // production, depuis une anamnèse brute — pas un objet forgé à la main.
       drapeaux: extraireDrapeauxAnamnese({ facteurs_declenchants: ['Stress aigu / burn-out'] }),
-      reglesArret: STOP_RULES_V1,
+      reglesArret: ARRET_RETABLI,
       // Le service ne fournit JAMAIS l'un sans l'autre.
       exclureDejaRepondu: true,
       maintenantMs: MAINTENANT,

@@ -58,6 +58,7 @@ vi.mock('@/lib/clinical/orientationRulesV1', async (importOriginal) => {
 });
 
 import { GET } from './route';
+import { lignesSuspenduesPourRelecture } from '@/lib/clinical/lignesSuspendues';
 
 // [[D-495]] : l'orientation, la convergence et la chaîne C1 lisent
 // l'admissibilité des claims au corpus. Tout couple est admissible ici — les
@@ -253,6 +254,11 @@ describe('GET /api/praticien/orientation', () => {
       expect(payload.reglesNonEvaluees).toEqual([]);
       // Servi par la route, vide et jamais absent ([[D-500]] §4).
       expect(payload.arretsNonEvalues).toEqual([]);
+      // [[D-543]] §4 : la route relaie la liste du service — lue sur les
+      // tables, pas sur le dossier. Sans ce relais, le panneau retomberait
+      // en silence sur une liste vide.
+      expect(payload.lignesSuspendues).toEqual(lignesSuspenduesPourRelecture());
+      expect(payload.lignesSuspendues.length).toBeGreaterThan(0);
     });
 
     // D-433 §3 : un déclencheur au-delà de la fenêtre de son instrument (PSS-10,

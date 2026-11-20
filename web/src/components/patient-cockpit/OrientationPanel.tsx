@@ -16,6 +16,7 @@ import { CATALOGUE_DEFINITIONS } from '@/lib/bibliotheque';
 import { MESSAGE_DEJA_ASSIGNE } from '@/lib/assignations/messages';
 import { anciennete } from '@/lib/assignations/peremption';
 import { LIBELLE_EXTINCTION } from '@/lib/clinical/stopRulesLibelles';
+import { LIGNE_LIGNES_SUSPENDUES_RELECTURE } from '@/lib/synthese/blocReglesNonServies';
 import { Badge } from '@/components/ui/Badge';
 import { useFocusApresRelecture } from '@/components/ui/useFocusApresRelecture';
 
@@ -618,6 +619,23 @@ export function OrientationPanel({
   ) : null;
 
   /**
+   * Les lignes suspendues pour relecture — [[D-543]]. Lues sur les tables, pas
+   * sur le dossier : la note s'affiche dès que la liste n'est pas vide, que la
+   * ligne eût concerné ce patient ou non. Une seule phrase, au texte validé mot
+   * pour mot, la même qu'en synthèse ; ni identifiant ni décompte
+   * (`20261119-1303-a`).
+   */
+  const lignesSuspendues =
+    reponse?.ok && reponse.actif === true && Array.isArray(reponse.lignesSuspendues)
+      ? reponse.lignesSuspendues
+      : [];
+  const blocLignesSuspendues = lignesSuspendues.length > 0 ? (
+    <div role="note" className="mt-3 rounded-lg border border-status-warning/40 bg-status-warning/10 p-2">
+      <p className="text-xs text-foreground">{LIGNE_LIGNES_SUSPENDUES_RELECTURE}</p>
+    </div>
+  ) : null;
+
+  /**
    * Le repli des propositions écartées — [[D-178]], troisième arbitrage.
    *
    * LE GESTE DOIT DÉGAGER L'ÉCRAN, sinon il ne sert qu'à consigner ; mais rien
@@ -747,6 +765,7 @@ export function OrientationPanel({
           )}
           {blocArretsSuspendus}
           {blocNonAppliquees}
+          {blocLignesSuspendues}
           {blocNonEvaluees}
           {blocArretsNonEvalues}
           {blocEcartees}
@@ -967,6 +986,7 @@ export function OrientationPanel({
           )}
           {blocArretsSuspendus}
           {blocNonAppliquees}
+          {blocLignesSuspendues}
           {blocNonEvaluees}
           {blocArretsNonEvalues}
           {blocEcartees}
