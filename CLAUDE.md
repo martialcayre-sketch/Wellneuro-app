@@ -263,6 +263,10 @@ node scripts/wn-etat-reel.mjs      # état réel du dépôt — rapporte, ne ré
   forment un lot). En l'absence du responsable (rien écrit depuis une
   heure), la session enchaîne le lot suivant après son handoff (`D-510` §7). Pause de plus d'une heure : `/compact` avant de partir
   (cache chaud) ou handoff puis `/clear` — jamais `/compact` au retour.
+- **Session de passe de l'orchestrateur cloud** (`D-540`) : sa consigne
+  `docs/claude/templates/ORCHESTRATEUR_PASSE.md` prime sur ce paragraphe —
+  un lot `cloud` au plus, puis arrêt ; jamais de lot suivant, de merge ni
+  de T2/T3. `gh pr` est refusé en cloud (GraphQL) : lire en `gh api`.
 - Le hook de fraîcheur Git impose une branche contenant `origin/main` au
   démarrage et rejuge à chaque tentative d'édition. Jamais de
   pull/merge/rebase automatique. Sa branche, dans son worktree, sans

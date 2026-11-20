@@ -21,10 +21,16 @@
 //     où il vit.
 
 export const BOITES_FILES = ['A', 'A bis', 'B', 'C', 'D'];
-export const BOITES_FIXES = [...BOITES_FILES, 'guichet', 'integrateur'];
+// `orchestrateur` : boîte émettrice de la passe cloud (`D-540`, complète `D-503` §2).
+export const BOITES_FIXES = [...BOITES_FILES, 'guichet', 'integrateur', 'orchestrateur'];
 export const OBJETS_MESSAGE = ['prete', 'merge_fait', 'reponse_arrivee', 'chevauchement', 'porte_levee', 'autre'];
 export const ETATS_MESSAGE = ['emis', 'lu', 'traite'];
 export const ETATS_LOT = ['pret', 'pris', 'bloque', 'fait'];
+// Champs du carnet pour la voie cloud (`D-540` §3, amendée le 2026-11-20).
+// Facultatifs : absents, le lot est de la voie Mac.
+export const LIEUX_LOT = ['cloud', 'mac'];
+export const NATURES_LOT = ['ordinaire', 'reservee'];
+export const RISQUES_LOT = ['P0', 'P1', 'P2'];
 export const NATURES_QUESTION = ['ordinaire', 'clinique', 'migration'];
 export const STATUTS_QUESTION = ['ouverte', 'en_seance', 'repondue', 'close'];
 
@@ -179,6 +185,10 @@ export function controlerLots(lots, questions = null) {
     if (!Number.isInteger(l.ordre)) r.anomalie(l.id, 'ordre', '`ordre` doit être un entier');
     if (l.reprises !== undefined && !(Number.isInteger(l.reprises) && l.reprises >= 0)) r.anomalie(l.id, 'reprises', '`reprises` doit être un entier positif ou nul');
     if (l.questions !== undefined && !Array.isArray(l.questions)) r.anomalie(l.id, 'questions', '`questions` doit être une liste d\'identifiants');
+    for (const [c, valeurs] of [['lieu', LIEUX_LOT], ['nature', NATURES_LOT], ['risque', RISQUES_LOT]]) {
+      if (!vide(l[c]) && !valeurs.includes(l[c])) r.anomalie(l.id, c, `« ${court(l[c])} » n'est pas une valeur de \`${c}\` (${valeurs.join(', ')})`);
+    }
+    if (l.lieu === 'cloud' && (l.nature !== 'ordinaire' || l.risque === 'P0')) r.anomalie(l.id, 'lieu', 'un lot `cloud` est `ordinaire` et non P0 (`D-540` §3)');
     controlerHorodatages(l, ['pris_le', 'tenu_le', 'fait_le', 'inscrit_le'], r);
     if (!vide(l.apres)) {
       if (l.apres === l.id) r.anomalie(l.id, 'apres', 'un lot ne peut pas être son propre préalable');

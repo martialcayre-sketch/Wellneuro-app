@@ -197,8 +197,8 @@ test('gh absent : le champ PR porte disponible=false et une raison, jamais un ta
 /**
  * Un faux `gh` posé en tête de `PATH`, qui rend toujours la même chose.
  *
- * POURQUOI. `collecterPrOuvertes` appelle `gh pr list --json
- * number,title,isDraft,updatedAt` — un appel LIVE à l'API GitHub. N1 compare
+ * POURQUOI. `collecterPrOuvertes` appelle `gh api --paginate --slurp
+ * repos/{owner}/{repo}/pulls?state=open` — un appel LIVE à l'API GitHub. N1 compare
  * deux exécutions par `deepEqual` : il comparait donc des données que GitHub
  * fait bouger tout seul. Deux causes le faisaient rougir, aucune n'ayant le
  * moindre rapport avec le code testé :
@@ -222,8 +222,8 @@ function posePasserelleGhDeterministe() {
   fs.writeFileSync(
     faux,
     '#!/bin/sh\n'
-      + 'echo \'[{"number":1,"title":"banc","isDraft":false,'
-      + '"updatedAt":"2026-01-01T00:00:00Z"}]\'\n',
+      + 'echo \'[[{"number":1,"title":"banc","draft":false,"state":"open",'
+      + '"updated_at":"2026-01-01T00:00:00Z"}]]\'\n',
   );
   fs.chmodSync(faux, 0o755);
   return { dossier, PATH: `${dossier}${path.delimiter}${process.env.PATH ?? ''}` };
@@ -266,7 +266,9 @@ test("N1 — régression : le rapport ne dépend pas du cwd d'appel", () => {
     // silencieusement cessé de couvrir le chemin nominal — la classe « un
     // garde qui ne descend pas assez bas », déjà rencontrée sur ce dépôt.
     assert.equal(rapportRacine.prOuvertes.disponible, true, 'le faux `gh` n’a pas été appelé');
-    assert.deepEqual(rapportRacine.prOuvertes.prs.map(pr => pr.number), [1]);
+    assert.deepEqual(rapportRacine.prOuvertes.prs, [
+      { number: 1, title: 'banc', isDraft: false, updatedAt: '2026-01-01T00:00:00Z' },
+    ]);
 
     // `genereLe` porte l'horodatage d'exécution : seul champ qui peut varier
     // légitimement entre les deux appels.

@@ -30,6 +30,7 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { lireCampagnesSurDisque } from './lib/campagnes-sur-disque.mjs';
+import { aplatirPages, cheminPrs, versPrGraphql } from './lib/gh-rest.mjs';
 import { rendreVueCampagnesActives } from './lib/vue-campagnes-actives.mjs';
 import { readCampaignTruth, readMachineState } from './wn-state.mjs';
 
@@ -156,18 +157,25 @@ export function lireRegistreCertification(racine) {
 }
 
 /**
- * PR ouvertes via `gh`. `gh` absent, non authentifié, ou en erreur réseau ne
- * doit jamais se confondre avec « aucune PR ouverte » — d'où la valeur
- * explicite `{ disponible: false, raison }` plutôt qu'un tableau vide.
+ * PR ouvertes via `gh api` (REST : `gh pr list` passe par GraphQL, refusé en
+ * cloud — `D-540`, constat du 2026-11-20). `gh` absent, non authentifié, en
+ * erreur réseau, ou une réponse d'une autre forme ne doit jamais se confondre
+ * avec « aucune PR ouverte » — d'où la valeur explicite
+ * `{ disponible: false, raison }` plutôt qu'un tableau vide.
  */
 export function collecterPrOuvertes(racine) {
   try {
-    const sortie = execFileSync('gh', ['pr', 'list', '--json', 'number,title,isDraft,updatedAt'], {
+    const sortie = execFileSync('gh', ['api', '--paginate', '--slurp', cheminPrs({ etat: 'open' })], {
       cwd: racine,
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'ignore'],
     });
-    return { disponible: true, prs: JSON.parse(sortie) };
+    const liste = aplatirPages(JSON.parse(sortie));
+    if (liste === null) return { disponible: false, raison: 'réponse de gh api inattendue' };
+    const vues = liste.map(versPrGraphql);
+    if (vues.some((v) => v === null)) return { disponible: false, raison: 'PR illisible dans la réponse de gh api' };
+    const prs = vues.map(({ number, title, isDraft, updatedAt }) => ({ number, title, isDraft, updatedAt }));
+    return { disponible: true, prs };
   } catch (err) {
     const raison = String(err && err.message ? err.message : 'gh indisponible').split('\n')[0];
     return { disponible: false, raison };

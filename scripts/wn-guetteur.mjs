@@ -46,6 +46,8 @@ import { readFileSync, appendFileSync, existsSync, realpathSync } from 'node:fs'
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { aplatirPages, cheminPrs, versPrGraphql } from './lib/gh-rest.mjs';
+
 const RACINE = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 export const MOTIF = /^[\s>*_~`#-]*pr[êe]te[\s*_`]*@[\s*_`]*([0-9a-f]{7,40})\b/im;
@@ -81,7 +83,8 @@ export function ligneDeclaration(d) {
 }
 
 /**
- * État d'une PR lu par `gh pr view --json state,mergedAt,mergeCommit,closedAt`.
+ * État d'une PR, aux champs GraphQL `state`, `mergedAt`, `mergeCommit`,
+ * `closedAt` (lue en REST puis convertie par `versPrGraphql`).
  * Rend la ligne d'événement, ou null tant que la PR est ouverte.
  */
 export function evenementMerge(n, pr) {
@@ -129,8 +132,14 @@ export async function guetter(lire, { iter = 45, pas = 60, attendre, journal = (
 const gh = (args) =>
   JSON.parse(execFileSync('gh', args, { cwd: RACINE, encoding: 'utf8', maxBuffer: 64e6, stdio: ['ignore', 'pipe', 'pipe'] }));
 
+// REST, pas `gh pr list` / `gh pr view` : GraphQL est refusé (403) dans une
+// session cloud (`D-540`, constat du 2026-11-20).
 function lirePrsOuvertes() {
-  const prs = gh(['pr', 'list', '--state', 'open', '--json', 'number,headRefOid', '--limit', '200']);
+  const liste = aplatirPages(gh(['api', '--paginate', '--slurp', cheminPrs({ etat: 'open' })]));
+  if (liste === null) throw new Error('liste des PR ouvertes illisible');
+  const prs = liste.map(versPrGraphql);
+  // Une PR sans numéro ferait manquer une déclaration « prête » en silence.
+  if (prs.some((p) => p === null)) throw new Error('PR ouverte illisible dans la liste');
   return prs.map((p) => ({
     ...p,
     commentaires: gh(['api', '--paginate', '--slurp', `repos/{owner}/{repo}/issues/${p.number}/comments`]).flat(),
@@ -214,7 +223,9 @@ async function principal(argv) {
     const [n] = o.reste;
     if (!/^\d+$/.test(n || '') || o.reste.length !== 1) { console.error(USAGE); return 4; }
     lire = () => {
-      const e = evenementMerge(n, gh(['pr', 'view', n, '--json', 'state,mergedAt,mergeCommit,closedAt']));
+      const pr = versPrGraphql(gh(['api', `repos/{owner}/{repo}/pulls/${n}`]));
+      if (!pr) throw new Error(`PR ${n} illisible`);
+      const e = evenementMerge(n, pr);
       return e ? [e] : [];
     };
   } else if (sonde === 'release-db') {

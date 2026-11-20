@@ -21,6 +21,13 @@
 #
 # Prérequis : gh (authentifié). Chaque suppression affiche son SHA : tout
 # reste récupérable via le reflog (~90 j) ou la PR GitHub.
+#
+# GitHub se lit en REST (`gh api repos/…`), jamais par `gh pr` : GraphQL est
+# refusé (403) dans une session cloud (`D-540`, constat du 2026-11-20). Sous
+# `gh pr`, ce refus passait EN SILENCE : la liste des PR ouvertes revenait
+# vide (leurs branches n'étaient plus protégées) et chaque preuve manquait
+# (« aucune preuve »), code 0. Désormais, la liste illisible arrête le script
+# (code 3), et une preuve illisible se dit « lecture GitHub en échec ».
 set -euo pipefail
 
 APPLIQUER=0
@@ -37,8 +44,13 @@ echo "→ Synchronisation avec origin (fetch --prune)…"
 git fetch --prune origin >/dev/null
 
 # Branches à ne jamais toucher : main, PR ouvertes, branches extraites.
+# Sans la liste des PR ouvertes, rien n'est protégé : arrêt, jamais de suite.
+if ! OUVERTES=$(gh api --paginate 'repos/{owner}/{repo}/pulls?state=open&per_page=100' --jq '.[].head.ref'); then
+  echo "Lecture des PR ouvertes impossible (gh api) : arrêt, rien n'est examiné." >&2
+  exit 3
+fi
 PROTEGEES=" main "
-for b in $(gh pr list --state open --json headRefName --jq '.[].headRefName'); do
+for b in $OUVERTES; do
   PROTEGEES="$PROTEGEES$b "
 done
 for b in $(git worktree list --porcelain | sed -n 's|^branch refs/heads/||p'); do
@@ -47,15 +59,21 @@ done
 
 protegee() { case "$PROTEGEES" in *" $1 "*) return 0;; *) return 1;; esac; }
 
+# Nom de branche admis tel quel dans une requête REST (`head=<owner>:<nom>`).
+branche_sure() { case "$1" in *..*|'') return 1;; *[!A-Za-z0-9._/-]*) return 1;; *) return 0;; esac; }
+
 # Preuve d'obsolescence d'un commit porté par une branche nommée.
-# Sortie : "PR #N mergée" / "ancêtre de main" si prouvé, code retour 1 sinon.
+# Sortie : "PR #N mergée" / "ancêtre de main" si prouvé (code 0) ; code 1
+# sans preuve ; code 2 si GitHub n'a pas pu être lu (jamais pris pour une
+# absence de preuve).
 preuve() { # $1 = sha du tip, $2 = nom de head côté PR
   if git merge-base --is-ancestor "$1" origin/main 2>/dev/null; then
     echo "ancêtre de main"; return 0
   fi
+  branche_sure "$2" || return 1
   local pr
-  pr=$(gh pr list --state merged --head "$2" --json number,headRefOid \
-    --jq '.[0] | "\(.number) \(.headRefOid)"' 2>/dev/null) || return 1
+  pr=$(gh api "repos/{owner}/{repo}/pulls?state=closed&head={owner}:$2&per_page=100" \
+    --jq '[.[] | select(.merged_at != null)][0] // empty | "\(.number) \(.head.sha)"' 2>/dev/null) || return 2
   [ -n "$pr" ] || return 1
   local num sha
   num=${pr%% *}; sha=${pr##* }
@@ -93,6 +111,8 @@ git worktree list --porcelain | awk '
     else
       echo "SUPPRIMABLE ($motif) : $chemin [$branche @ ${tip:0:7}]"
     fi
+  elif [ $? -eq 2 ]; then
+    echo "À EXAMINER (lecture GitHub en échec) : $chemin [$branche @ ${tip:0:7}]"
   else
     echo "À EXAMINER (aucune preuve) : $chemin [$branche @ ${tip:0:7}]"
   fi
@@ -118,9 +138,15 @@ for br in $(git for-each-ref refs/heads --format='%(refname:short)'); do
     else
       echo "SUPPRIMABLE ($motif) : $br (${tip:0:7})"
     fi
+  elif [ $? -eq 2 ]; then
+    echo "À EXAMINER (lecture GitHub en échec) : $br (${tip:0:7})"
   else
-    etat=$(gh pr list --state closed --head "$br" --json number \
-      --jq 'if length > 0 then "PR #\(.[0].number) fermée sans merge" else "aucune PR" end' 2>/dev/null)
+    etat=""
+    if branche_sure "$br"; then
+      etat=$(gh api "repos/{owner}/{repo}/pulls?state=closed&head={owner}:$br&per_page=100" \
+        --jq 'map(select(.merged_at == null)) | if length > 0 then "PR #\(.[0].number) fermée sans merge" else "aucune PR" end' 2>/dev/null) \
+        || etat="lecture GitHub en échec"
+    fi
     echo "À EXAMINER (${etat:-aucune PR}) : $br (${tip:0:7})"
   fi
 done
@@ -140,6 +166,8 @@ for rb in $(git for-each-ref 'refs/remotes/origin/**' --format='%(refname:short)
     else
       echo "SUPPRIMABLE ($motif) : origin/$br (${tip:0:7})"
     fi
+  elif [ $? -eq 2 ]; then
+    echo "À EXAMINER (lecture GitHub en échec) : origin/$br (${tip:0:7})"
   else
     echo "À EXAMINER (aucune preuve) : origin/$br (${tip:0:7})"
   fi
