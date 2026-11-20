@@ -44,6 +44,8 @@ describe('PortailPage — restauration de session', () => {
     expect(screen.getByText('Vérification de votre session…')).not.toBeNull();
     await waitFor(() => expect(screen.getByText('Merci !')).not.toBeNull());
     expect(screen.queryByPlaceholderText('votre@email.fr')).toBeNull();
+    // PAT-7h : « Merci ! » est le h1 de U09.
+    expect(screen.getByRole('heading', { level: 1, name: 'Merci !' })).toBeTruthy();
     expect(replace).not.toHaveBeenCalled();
   });
 

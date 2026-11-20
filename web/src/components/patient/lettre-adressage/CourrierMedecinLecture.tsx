@@ -74,7 +74,7 @@ export function CourrierMedecinLecture({ token }: { token: string }) {
   if (etat.statut === 'chargement') {
     return (
       <PatientCard padding="sm">
-        <h1 className="text-2xl font-semibold text-foreground">{TITRE_LETTRE}</h1>
+        <h1 className="font-display text-2xl font-bold leading-tight text-foreground">{TITRE_LETTRE}</h1>
         <div className="mt-3"><p className="text-sm text-muted-foreground">Chargement du courrier…</p></div>
       </PatientCard>
     );
@@ -83,7 +83,7 @@ export function CourrierMedecinLecture({ token }: { token: string }) {
   if (etat.statut === 'erreur') {
     return (
       <PatientCard padding="sm">
-        <h1 className="text-2xl font-semibold text-foreground">{TITRE_LETTRE}</h1>
+        <h1 className="font-display text-2xl font-bold leading-tight text-foreground">{TITRE_LETTRE}</h1>
         <div className="mt-3"><PatientErrorState message={etat.message} onReessayer={etat.definitif ? undefined : () => void charger()} /></div>
       </PatientCard>
     );
@@ -93,7 +93,7 @@ export function CourrierMedecinLecture({ token }: { token: string }) {
   if (!lettre) {
     return (
       <PatientCard padding="sm">
-        <h1 className="text-2xl font-semibold text-foreground">{TITRE_LETTRE}</h1>
+        <h1 className="font-display text-2xl font-bold leading-tight text-foreground">{TITRE_LETTRE}</h1>
         <div className="mt-3"><p className="text-base text-foreground">{AUCUN_COURRIER}</p></div>
       </PatientCard>
     );
@@ -108,7 +108,7 @@ export function CourrierMedecinLecture({ token }: { token: string }) {
       {lettre.etat === 'servie' && lettre.texte && <AvisLectureDatee />}
       <PatientCard>
         <header className="border-b border-border pb-5 print:hidden">
-          <h1 className="text-2xl font-semibold text-foreground">{TITRE_LETTRE}</h1>
+          <h1 className="font-display text-2xl font-bold leading-tight text-foreground">{TITRE_LETTRE}</h1>
           {date && <p className="mt-1 text-sm text-muted-foreground">{date}</p>}
           {lettre.etat === 'servie' && <p className="mt-3 text-base text-foreground">{PHRASE_ACCOMPAGNEMENT}</p>}
           {lettre.etat === 'retiree' && <p className="mt-3 text-base text-foreground">{MENTION_RETIREE}</p>}

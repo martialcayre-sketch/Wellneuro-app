@@ -92,7 +92,7 @@ describe('Courrier pour votre médecin (D-262, LOT-03a)', () => {
     await afficher();
     expect(screen.getByText(AUCUN_COURRIER)).toBeTruthy();
     // Le titre de la page reste son `h1`, même sans courrier (PAT-7b).
-    expect(screen.getByRole('heading', { level: 1, name: TITRE_LETTRE })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 1, name: TITRE_LETTRE }).className).toContain('font-display'); // PAT-7h : Lora
     expect(tracesPosees()).toEqual([]);
   });
 
