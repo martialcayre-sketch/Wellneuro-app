@@ -7131,9 +7131,9 @@
     "practitionerReviewRequired": true,
     "lifecycleStatus": "raw",
     "vigilance": "Faible",
-    "requiredAction": "Transcrire et structurer",
-    "comment": "Créer transcription, indication, durée, fréquence, contre-indications et version patient.",
-    "auditDate": "2026-07-12"
+    "requiredAction": "Pièce interne ingérée le 2026-11-20 sur demande du responsable (lot LOT_115_2026-11-20) : transcription automatique non relue, extraits mot pour mot ; claims en attente de validation, énoncés comme affirmations du cours ; aucun texte au dépôt (D-251 §4)",
+    "comment": "Vidéo de cours du praticien (id Drive 1SaD4XJ2Kz219oR_ljE8N7UFw1MsI1Ufl ; durée 15:05). Transcription automatique locale (mlx-whisper large-v3-turbo, langue française), non relue ; corrections d'écoute évidentes seules, listées : Lies-Movement Deprocessing Reprogrammation, → suppression de la reprise (1); pendiculation → pandiculation (2); se Bush → se bouchent (1); Kanadi Sodana Pranayama → nadi shodhana pranayama (1); MDR qui nettoie → EMDR qui nettoie (1); Guéranda Samita → Gheranda Samhita (1). Silences et segments inaudibles écartés. Licence interne (cours du praticien, usage interne, non diffusé). Passages : 5 ; claims : 5, tous « en attente de validation ». Besoins touchés (à confirmer) : 6 (respiration), 9 (stress). Les affirmations thérapeutiques du cours restent des affirmations du cours, non des faits établis ; aucune fréquence, durée ni dose n'en est tirée comme recommandation.",
+    "auditDate": "2026-11-20"
   },
   {
     "sourceId": "WN-SRC-0269",
@@ -7159,9 +7159,9 @@
     "practitionerReviewRequired": true,
     "lifecycleStatus": "raw",
     "vigilance": "Faible",
-    "requiredAction": "Transcrire et structurer",
-    "comment": "Créer transcription, indication, durée, fréquence, contre-indications et version patient.",
-    "auditDate": "2026-07-12"
+    "requiredAction": "Pièce interne ingérée le 2026-11-20 sur demande du responsable (lot LOT_116_2026-11-20) : transcription automatique non relue, extraits mot pour mot ; claims en attente de validation, énoncés comme affirmations du cours ; aucun texte au dépôt (D-251 §4)",
+    "comment": "Vidéo de cours du praticien (id Drive 1xGGtwgmxy7L0zJqcdNm1fR_lXVwWM0es ; durée 08:23). Transcription automatique locale (mlx-whisper large-v3-turbo, langue française), non relue ; corrections d'écoute évidentes seules, listées : pendiculation → pandiculation (4). Silences et segments inaudibles écartés. Licence interne (cours du praticien, usage interne, non diffusé). Passages : 3 ; claims : 5, tous « en attente de validation ». Besoins touchés (à confirmer) : 9 (stress), 6 (respiration). Les affirmations thérapeutiques du cours restent des affirmations du cours, non des faits établis ; aucune fréquence, durée ni dose n'en est tirée comme recommandation.",
+    "auditDate": "2026-11-20"
   },
   {
     "sourceId": "WN-SRC-0270",
@@ -7188,9 +7188,9 @@
     "practitionerReviewRequired": true,
     "lifecycleStatus": "raw",
     "vigilance": "Faible",
-    "requiredAction": "Transcrire et structurer",
-    "comment": "Créer transcription, indication, durée, fréquence, contre-indications et version patient.",
-    "auditDate": "2026-07-12"
+    "requiredAction": "Pièce interne ingérée le 2026-11-20 sur demande du responsable (lot LOT_117_2026-11-20) : transcription automatique non relue, extraits mot pour mot ; claims en attente de validation, énoncés comme affirmations du cours ; aucun texte au dépôt (D-251 §4)",
+    "comment": "Vidéo de cours du praticien (id Drive 1zRI9g1CjnoTJeFzTK-rlqS5_5r3wLPwD ; durée 32:06). Transcription automatique locale (mlx-whisper large-v3-turbo, langue française), non relue ; corrections d'écoute évidentes seules, listées : pendiculation → pandiculation (3). Silences et segments inaudibles écartés. Licence interne (cours du praticien, usage interne, non diffusé). Passages : 9 ; claims : 7, tous « en attente de validation ». Besoins touchés (à confirmer) : 10 (sérotonine), 9 (stress). Les affirmations thérapeutiques du cours restent des affirmations du cours, non des faits établis ; aucune fréquence, durée ni dose n'en est tirée comme recommandation.",
+    "auditDate": "2026-11-20"
   },
   {
     "sourceId": "WN-SRC-0271",
@@ -7216,9 +7216,9 @@
     "practitionerReviewRequired": true,
     "lifecycleStatus": "raw",
     "vigilance": "Faible",
-    "requiredAction": "Transcrire et structurer",
-    "comment": "Créer transcription, indication, durée, fréquence, contre-indications et version patient.",
-    "auditDate": "2026-07-12"
+    "requiredAction": "Pièce interne ingérée le 2026-11-20 sur demande du responsable (lot LOT_118_2026-11-20) : transcription automatique non relue, extraits mot pour mot ; claims en attente de validation, énoncés comme affirmations du cours ; aucun texte au dépôt (D-251 §4)",
+    "comment": "Vidéo de cours du praticien (id Drive 1yfCTosgu5rAEeyPXddPGzAQSFQcq3-Km ; durée 01:53). Transcription automatique locale (mlx-whisper large-v3-turbo, langue française), non relue ; corrections d'écoute évidentes seules, listées : asthémie → asthénie (1). Silences et segments inaudibles écartés. Licence interne (cours du praticien, usage interne, non diffusé). Passages : 1 ; claims : 3, tous « en attente de validation ». Besoins touchés (à confirmer) : 10 (dopamine), 3 (rythme). Les affirmations thérapeutiques du cours restent des affirmations du cours, non des faits établis ; aucune fréquence, durée ni dose n'en est tirée comme recommandation.",
+    "auditDate": "2026-11-20"
   },
   {
     "sourceId": "WN-SRC-0272",
@@ -7244,9 +7244,9 @@
     "practitionerReviewRequired": true,
     "lifecycleStatus": "raw",
     "vigilance": "Faible",
-    "requiredAction": "Transcrire et structurer",
-    "comment": "Créer transcription, indication, durée, fréquence, contre-indications et version patient.",
-    "auditDate": "2026-07-12"
+    "requiredAction": "Pièce interne ingérée le 2026-11-20 sur demande du responsable (lot LOT_119_2026-11-20) : transcription automatique non relue, extraits mot pour mot ; claims en attente de validation, énoncés comme affirmations du cours ; aucun texte au dépôt (D-251 §4)",
+    "comment": "Vidéo de cours du praticien (id Drive 1xk1kad1WMTxcTLRNb2Ztf4KNQv_7-qeO ; durée 17:32). Transcription automatique locale (mlx-whisper large-v3-turbo, langue française), non relue ; corrections d'écoute évidentes seules, listées : Schulz → Schultz (1); pendiculation → pandiculation (1). Silences et segments inaudibles écartés. Licence interne (cours du praticien, usage interne, non diffusé). Passages : 4 ; claims : 2, tous « en attente de validation ». Besoins touchés (à confirmer) : 9 (stress), 3 (rythme). Les affirmations thérapeutiques du cours restent des affirmations du cours, non des faits établis ; aucune fréquence, durée ni dose n'en est tirée comme recommandation.",
+    "auditDate": "2026-11-20"
   },
   {
     "sourceId": "WN-SRC-0273",
@@ -7272,9 +7272,9 @@
     "practitionerReviewRequired": true,
     "lifecycleStatus": "raw",
     "vigilance": "Faible",
-    "requiredAction": "Transcrire et structurer",
-    "comment": "Créer transcription, indication, durée, fréquence, contre-indications et version patient.",
-    "auditDate": "2026-07-12"
+    "requiredAction": "Pièce interne ingérée le 2026-11-20 sur demande du responsable (lot LOT_120_2026-11-20) : transcription automatique non relue, extraits mot pour mot ; claims en attente de validation, énoncés comme affirmations du cours ; aucun texte au dépôt (D-251 §4)",
+    "comment": "Vidéo de cours du praticien (id Drive 1xIPM2PVCOynndUrdTzYHPRdePuIjXvL7 ; durée 16:19). Transcription automatique locale (mlx-whisper large-v3-turbo, langue française), non relue ; corrections d'écoute évidentes seules, listées : pendiculation → pandiculation (1). Silences et segments inaudibles écartés. Licence interne (cours du praticien, usage interne, non diffusé). Passages : 5 ; claims : 2, tous « en attente de validation ». Besoins touchés (à confirmer) : 9 (stress), 10 (pensées, émotions). Les affirmations thérapeutiques du cours restent des affirmations du cours, non des faits établis ; aucune fréquence, durée ni dose n'en est tirée comme recommandation.",
+    "auditDate": "2026-11-20"
   },
   {
     "sourceId": "WN-SRC-0274",
@@ -7300,9 +7300,9 @@
     "practitionerReviewRequired": true,
     "lifecycleStatus": "raw",
     "vigilance": "Faible",
-    "requiredAction": "Transcrire et structurer",
-    "comment": "Créer transcription, indication, durée, fréquence, contre-indications et version patient.",
-    "auditDate": "2026-07-12"
+    "requiredAction": "Pièce interne ingérée le 2026-11-20 sur demande du responsable (lot LOT_121_2026-11-20) : transcription automatique non relue, extraits mot pour mot ; claims en attente de validation, énoncés comme affirmations du cours ; aucun texte au dépôt (D-251 §4)",
+    "comment": "Vidéo de cours du praticien (id Drive 1d3aW5E_nj_EsHYbS7xmWJv2B_PBPqIl7 ; durée 11:43). Transcription automatique locale (mlx-whisper large-v3-turbo, langue française), non relue ; corrections d'écoute évidentes seules, listées : pendiculation → pandiculation (1). Silences et segments inaudibles écartés. Licence interne (cours du praticien, usage interne, non diffusé). Passages : 4 ; claims : 4, tous « en attente de validation ». Besoins touchés (à confirmer) : 9 (stress). Les affirmations thérapeutiques du cours restent des affirmations du cours, non des faits établis ; aucune fréquence, durée ni dose n'en est tirée comme recommandation.",
+    "auditDate": "2026-11-20"
   },
   {
     "sourceId": "WN-SRC-0275",
@@ -7329,9 +7329,9 @@
     "practitionerReviewRequired": true,
     "lifecycleStatus": "raw",
     "vigilance": "Faible",
-    "requiredAction": "Transcrire et structurer",
-    "comment": "Créer transcription, indication, durée, fréquence, contre-indications et version patient.",
-    "auditDate": "2026-07-12"
+    "requiredAction": "Pièce interne ingérée le 2026-11-20 sur demande du responsable (lot LOT_122_2026-11-20) : transcription automatique non relue, extraits mot pour mot ; claims en attente de validation, énoncés comme affirmations du cours ; aucun texte au dépôt (D-251 §4)",
+    "comment": "Vidéo de cours du praticien (id Drive 1cGFOZnceietqEIkHwhGGHVQOr2y__Q5U ; durée 12:20). Transcription automatique locale (mlx-whisper large-v3-turbo, langue française), non relue ; corrections d'écoute évidentes seules, listées : pendiculation → pandiculation (2). Silences et segments inaudibles écartés. Licence interne (cours du praticien, usage interne, non diffusé). Passages : 4 ; claims : 4, tous « en attente de validation ». Besoins touchés (à confirmer) : 6 (respiration), 9 (stress), 8 (plaisir). Les affirmations thérapeutiques du cours restent des affirmations du cours, non des faits établis ; aucune fréquence, durée ni dose n'en est tirée comme recommandation.",
+    "auditDate": "2026-11-20"
   },
   {
     "sourceId": "WN-SRC-0276",
@@ -7357,9 +7357,9 @@
     "practitionerReviewRequired": true,
     "lifecycleStatus": "raw",
     "vigilance": "Faible",
-    "requiredAction": "Transcrire et structurer",
-    "comment": "Créer transcription, indication, durée, fréquence, contre-indications et version patient.",
-    "auditDate": "2026-07-12"
+    "requiredAction": "Pièce interne ingérée le 2026-11-20 sur demande du responsable (lot LOT_123_2026-11-20) : transcription automatique non relue, extraits mot pour mot ; claims en attente de validation, énoncés comme affirmations du cours ; aucun texte au dépôt (D-251 §4)",
+    "comment": "Vidéo de cours du praticien (id Drive 1Y_WqYylRX4HOh7oj7qNFccL-KOuW66DD ; durée 09:17). Transcription automatique locale (mlx-whisper large-v3-turbo, langue française), non relue ; corrections d'écoute évidentes seules, listées : immunothérapie → luminothérapie (1). Silences et segments inaudibles écartés. Licence interne (cours du praticien, usage interne, non diffusé). Passages : 4 ; claims : 3, tous « en attente de validation ». Besoins touchés (à confirmer) : 10 (lumière), 3 (rythme). Les affirmations thérapeutiques du cours restent des affirmations du cours, non des faits établis ; aucune fréquence, durée ni dose n'en est tirée comme recommandation.",
+    "auditDate": "2026-11-20"
   },
   {
     "sourceId": "WN-SRC-0277",
@@ -7385,9 +7385,9 @@
     "practitionerReviewRequired": true,
     "lifecycleStatus": "raw",
     "vigilance": "Faible",
-    "requiredAction": "Transcrire et structurer",
-    "comment": "Créer transcription, indication, durée, fréquence, contre-indications et version patient.",
-    "auditDate": "2026-07-12"
+    "requiredAction": "Pièce interne ingérée le 2026-11-20 sur demande du responsable (lot LOT_124_2026-11-20) : transcription automatique non relue, extraits mot pour mot ; claims en attente de validation, énoncés comme affirmations du cours ; aucun texte au dépôt (D-251 §4)",
+    "comment": "Vidéo de cours du praticien (id Drive 1Y3vOilwCEN3EnuqsC8CcnOs6lrL_rx6d ; durée 24:15). Transcription automatique locale (mlx-whisper large-v3-turbo, langue française), non relue ; corrections d'écoute évidentes seules, listées : pendiculation → pandiculation (1). Silences et segments inaudibles écartés. Licence interne (cours du praticien, usage interne, non diffusé). Passages : 6 ; claims : 4, tous « en attente de validation ». Besoins touchés (à confirmer) : 10 (dopamine, lumière), 3 (rythme). Les affirmations thérapeutiques du cours restent des affirmations du cours, non des faits établis ; aucune fréquence, durée ni dose n'en est tirée comme recommandation.",
+    "auditDate": "2026-11-20"
   },
   {
     "sourceId": "WN-SRC-0278",
@@ -7413,9 +7413,9 @@
     "practitionerReviewRequired": true,
     "lifecycleStatus": "raw",
     "vigilance": "Faible",
-    "requiredAction": "Transcrire et structurer",
-    "comment": "Créer transcription, indication, durée, fréquence, contre-indications et version patient.",
-    "auditDate": "2026-07-12"
+    "requiredAction": "Pièce interne ingérée le 2026-11-20 sur demande du responsable (lot LOT_125_2026-11-20) : transcription automatique non relue, extraits mot pour mot ; claims en attente de validation, énoncés comme affirmations du cours ; aucun texte au dépôt (D-251 §4)",
+    "comment": "Vidéo de cours du praticien (id Drive 1LaofcCTFsZg2FZO9Sg86xutGnYHrnz5p ; durée 12:48). Transcription automatique locale (mlx-whisper large-v3-turbo, langue française), non relue ; corrections d'écoute évidentes seules, listées : aucune. Silences et segments inaudibles écartés. Licence interne (cours du praticien, usage interne, non diffusé). Passages : 3 ; claims : 2, tous « en attente de validation ». Besoins touchés (à confirmer) : 9 (stress), 6 (respiration). Les affirmations thérapeutiques du cours restent des affirmations du cours, non des faits établis ; aucune fréquence, durée ni dose n'en est tirée comme recommandation.",
+    "auditDate": "2026-11-20"
   },
   {
     "sourceId": "WN-SRC-0279",
@@ -7442,9 +7442,9 @@
     "practitionerReviewRequired": true,
     "lifecycleStatus": "raw",
     "vigilance": "Faible",
-    "requiredAction": "Transcrire et structurer",
-    "comment": "Créer transcription, indication, durée, fréquence, contre-indications et version patient.",
-    "auditDate": "2026-07-12"
+    "requiredAction": "Pièce interne ingérée le 2026-11-20 sur demande du responsable (lot LOT_126_2026-11-20) : transcription automatique non relue, extraits mot pour mot ; claims en attente de validation, énoncés comme affirmations du cours ; aucun texte au dépôt (D-251 §4)",
+    "comment": "Vidéo de cours du praticien (id Drive 1KrgmxUQWRZMcV_yLsK7r_Re6QC5Seo3_ ; durée 23:00). Transcription automatique locale (mlx-whisper large-v3-turbo, langue française), non relue ; corrections d'écoute évidentes seules, listées : pendiculation → pandiculation (2). Silences et segments inaudibles écartés. Licence interne (cours du praticien, usage interne, non diffusé). Passages : 6 ; claims : 2, tous « en attente de validation ». Besoins touchés (à confirmer) : 10 (sérotonine), 3 (rythme). Les affirmations thérapeutiques du cours restent des affirmations du cours, non des faits établis ; aucune fréquence, durée ni dose n'en est tirée comme recommandation.",
+    "auditDate": "2026-11-20"
   },
   {
     "sourceId": "WN-SRC-0280",
@@ -7471,9 +7471,9 @@
     "practitionerReviewRequired": true,
     "lifecycleStatus": "raw",
     "vigilance": "Faible",
-    "requiredAction": "Transcrire et structurer",
-    "comment": "Créer transcription, indication, durée, fréquence, contre-indications et version patient.",
-    "auditDate": "2026-07-12"
+    "requiredAction": "Pièce interne ingérée le 2026-11-20 sur demande du responsable (lot LOT_127_2026-11-20) : transcription automatique non relue, extraits mot pour mot ; claims en attente de validation, énoncés comme affirmations du cours ; aucun texte au dépôt (D-251 §4)",
+    "comment": "Vidéo de cours du praticien (id Drive 1EcZTgcPErqiUGAOWX56018_uYtJey6NG ; durée 18:41). Transcription automatique locale (mlx-whisper large-v3-turbo, langue française), non relue ; corrections d'écoute évidentes seules, listées : pendiculation → pandiculation (2); l'Institut SYN → l'Institut SIIN (1); du SYN → du SIIN (1). Silences et segments inaudibles écartés. Licence interne (cours du praticien, usage interne, non diffusé). Passages : 5 ; claims : 2, tous « en attente de validation ». Besoins touchés (à confirmer) : 6 (respiration), 9 (stress). Les affirmations thérapeutiques du cours restent des affirmations du cours, non des faits établis ; aucune fréquence, durée ni dose n'en est tirée comme recommandation.",
+    "auditDate": "2026-11-20"
   },
   {
     "sourceId": "WN-SRC-0281",
@@ -7499,9 +7499,9 @@
     "practitionerReviewRequired": true,
     "lifecycleStatus": "raw",
     "vigilance": "Faible",
-    "requiredAction": "Transcrire et structurer",
-    "comment": "Créer transcription, indication, durée, fréquence, contre-indications et version patient.",
-    "auditDate": "2026-07-12"
+    "requiredAction": "Pièce interne ingérée le 2026-11-20 sur demande du responsable (lot LOT_128_2026-11-20) : transcription automatique non relue, extraits mot pour mot ; claims en attente de validation, énoncés comme affirmations du cours ; aucun texte au dépôt (D-251 §4)",
+    "comment": "Vidéo de cours du praticien (id Drive 1BoXkK0_EsPyJJewOo4r1OYpBczs92MDH ; durée 23:38). Transcription automatique locale (mlx-whisper large-v3-turbo, langue française), non relue ; corrections d'écoute évidentes seules, listées : pendiculation → pandiculation (1). Silences et segments inaudibles écartés. Licence interne (cours du praticien, usage interne, non diffusé). Passages : 7 ; claims : 2, tous « en attente de validation ». Besoins touchés (à confirmer) : 9 (stress). Les affirmations thérapeutiques du cours restent des affirmations du cours, non des faits établis ; aucune fréquence, durée ni dose n'en est tirée comme recommandation.",
+    "auditDate": "2026-11-20"
   },
   {
     "sourceId": "WN-SRC-0282",

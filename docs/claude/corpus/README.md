@@ -121,7 +121,11 @@ validations ou revues d'instruments, des recommandations sur la variabilité de 
 fréquence cardiaque, `WN-SRC-0746` à `0755` ; quatre notices seules,
 `WN-SRC-0756` à `0759`, faute de licence qui admette le texte ou de lecture de la
 licence chez l'éditeur),
-dont seuls des extraits ciblés sont ingérés. Le manuscrit soumis `WN-SRC-0546`
+dont seuls des extraits ciblés sont ingérés. Les quatorze vidéos de cours du
+praticien, `WN-SRC-0268` à `0281`, sont ingérées depuis le 2026-11-20 comme
+pièces internes (transcription automatique non relue, erreurs d'écoute évidentes
+seules corrigées et listées à la notice, claims en attente de validation ; aucun
+texte au dépôt). Le manuscrit soumis `WN-SRC-0546`
 est `deprecated` : remplacé par sa version publiée `WN-SRC-0564`, ses claims ne
 sont pas retenus ; ses claims signés sont exclus de la recherche et ses passages
 inactifs depuis la migration du 2026-11-19 (D-490), rien n'étant supprimé. Les plages `0525` à `0539` et `0556` à `0559` sont
