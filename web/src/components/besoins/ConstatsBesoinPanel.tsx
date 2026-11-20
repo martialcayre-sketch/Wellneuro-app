@@ -366,7 +366,7 @@ export function ConstatsBesoinPanel({ idPatient }: { idPatient: string }) {
 
   return (
     <section aria-labelledby="constats-besoin-titre" className="mt-6 rounded-xl border border-border p-4">
-      <h3 id="constats-besoin-titre" className="text-base font-semibold text-foreground">Constats sur les besoins sans score</h3>
+      <h2 id="constats-besoin-titre" className="text-base font-semibold text-foreground">Constats sur les besoins sans score</h2>
       <p className="mt-1 text-xs text-muted-foreground">{AVERTISSEMENT_MESURE}</p>
       {erreur && <p role="alert" className="mt-2 text-sm text-status-danger">{erreur}</p>}
       {avis && <p role="alert" className="mt-2 text-sm text-status-danger">{avis}</p>}

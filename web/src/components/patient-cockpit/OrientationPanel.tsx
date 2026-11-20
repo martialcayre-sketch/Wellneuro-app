@@ -704,9 +704,9 @@ export function OrientationPanel({
           table, sans signification pour un praticien (audit 2026-09-02,
           fuite dev). L'identité exacte de la table reste lisible dans le
           repli « Provenance de la table » en pied de section. */}
-      <h3 ref={titreRef} tabIndex={-1} className="mt-1 font-display text-base font-bold tracking-[-0.02em] text-foreground">
+      <h2 ref={titreRef} tabIndex={-1} className="mt-1 font-display text-base font-bold tracking-[-0.02em] text-foreground">
         Explorations complémentaires proposées
-      </h3>
+      </h2>
 
       {lecture === 'chargement' ? (
         <p role="status" className="mt-2 text-xs text-muted-foreground">

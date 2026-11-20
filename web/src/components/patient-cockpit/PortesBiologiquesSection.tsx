@@ -158,14 +158,14 @@ export function PortesBiologiquesSection({ idPatient }: { idPatient: string }) {
     // `<section>` ET NON `<div>` : `aria-labelledby` sur un élément sans rôle ne
     // nomme rien pour un lecteur d'écran — la région n'existait pas.
     <section className="mt-5 border-t border-border pt-4" aria-labelledby="portes-biologiques-title">
-      <h4
+      <h3
         id="portes-biologiques-title"
         ref={titreRef}
         tabIndex={-1}
         className="rounded text-sm font-semibold text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
       >
         Biologie : ce que disent les sources, ce que mesure le dossier
-      </h4>
+      </h3>
       <p className="mt-1 text-xs text-muted-foreground">
         Chaque source est citée telle quelle, à côté du dernier résultat saisi au dossier. Aucune
         comparaison n’est faite : le rapprochement vous revient.

@@ -63,9 +63,9 @@ export function CeQuiComptePanel({ idPatient }: { idPatient: string }) {
 
   return (
     <section className="rounded-xl border border-border bg-surface p-4">
-      <h3 ref={titreRef} tabIndex={-1} className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+      <h2 ref={titreRef} tabIndex={-1} className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
         Ce qui compte pour le patient
-      </h3>
+      </h2>
       <p className="mt-1 text-xs text-muted-foreground">
         Déposé au portail par le patient, conservé tel quel. Ni noté, ni résumé.
       </p>

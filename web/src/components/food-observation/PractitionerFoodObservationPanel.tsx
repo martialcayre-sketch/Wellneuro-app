@@ -635,7 +635,7 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
         <div>
           {/* Sous le nom du dossier (h2) : l'onglet titre en h3, ses panneaux en
               h4 (Q2 a). Mention de version du prototype retirée (Q9 a, [[D-488]]). */}
-          <h3 className="font-display text-3xl font-bold text-foreground">Trajectoire alimentaire</h3>
+          <h2 className="font-display text-3xl font-bold text-foreground">Trajectoire alimentaire</h2>
         </div>
         <Link href={`/dashboard/patients/${encodeURIComponent(idPatient)}`} className="inline-flex min-h-11 items-center text-sm text-muted-foreground hover:underline">
           ← Retour fiche patient
@@ -668,9 +668,9 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
             className="bg-surface border border-border rounded-xl p-4 space-y-1"
             data-testid="ja-praticien-cycle"
           >
-            <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Action du protocole diffusé
-            </h4>
+            </h3>
             <p className="text-sm font-medium text-foreground">{episode.content.action.labelPatient}</p>
             <p className="text-sm text-muted-foreground">{episode.content.action.simplePlan}</p>
             <p className="text-xs text-muted-foreground">
@@ -707,9 +707,9 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
         className="bg-surface border border-border rounded-xl p-4 space-y-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
         data-testid="ja-praticien-transmissions"
       >
-        <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           Ce que le patient a transmis
-        </h4>
+        </h3>
         {!echecTransmissions && listeTronquee && (
           <p className="text-xs text-muted-foreground">
             Les transmissions les plus récentes. Il peut en exister d’autres, plus anciennes.
@@ -892,7 +892,7 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
       </div>
 
       <section className="bg-surface border border-border rounded-xl p-4 space-y-3" data-testid="ja-praticien-formulaire">
-        <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Saisie rapide praticien</h4>
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Saisie rapide praticien</h3>
         <p className="text-xs text-muted-foreground">
           Mobile: privilégier une friction principale et une note courte optionnelle.
         </p>
@@ -954,7 +954,7 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
       </section>
 
       <section className="bg-surface border border-border rounded-xl p-4 space-y-2" data-testid="ja-praticien-constats">
-        <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Constats directs</h4>
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Constats directs</h3>
         {constats.length === 0 ? (
           <p className="text-base text-muted-foreground">Aucun constat direct pour l’instant.</p>
         ) : (
@@ -972,7 +972,7 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
           observation qui n'existait pas, au moment où il décide. Il ne rend plus
           que ce que le patient a effectivement décrit. */}
       <section className="bg-surface border border-border rounded-xl p-4 space-y-3" data-testid="ja-praticien-calibrage">
-        <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Bilan de calibrage</h4>
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Bilan de calibrage</h3>
         {/* Le bilan se lit sur les transmissions : non lues, il ne dit pas
             « aucune journée » — il redit T-62 ; « Réessayer » est au-dessus. */}
         {echecTransmissions ? (
@@ -1006,7 +1006,7 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
       </section>
 
       <section className="bg-surface border border-border rounded-xl p-4 space-y-2" data-testid="ja-praticien-moments-explorer">
-        <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">3 moments à explorer</h4>
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">3 moments à explorer</h3>
         <ul className="space-y-1 text-base text-foreground">
           {momentsToExplore.map((moment) => (
             <li key={moment}>• {moment}</li>
@@ -1015,7 +1015,7 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
       </section>
 
       <section className="bg-surface border border-border rounded-xl p-4 space-y-3" data-testid="ja-praticien-revue-decision">
-        <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Revue pré-remplie (Accepter / Modifier)</h4>
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Revue pré-remplie (Accepter / Modifier)</h3>
 
         <label className="block text-sm text-muted-foreground">
           Action liée à une assiette recommandée
@@ -1176,7 +1176,7 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
       </section>
 
       <section className="bg-surface border border-border rounded-xl p-4 space-y-2" data-testid="ja-praticien-historique">
-        <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Historique local</h4>
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Historique local</h3>
         {traces.length === 0 ? (
           <p className="text-base text-muted-foreground">Aucune trace praticien enregistrée.</p>
         ) : (

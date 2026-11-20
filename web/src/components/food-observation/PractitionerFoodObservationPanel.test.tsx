@@ -669,12 +669,12 @@ describe('échecs de lecture (T-62, T-63)', () => {
     await waitFor(() => expect(document.activeElement).toBe(bloc));
   });
 
-  it('n’affiche plus les mentions de version du prototype (Q9 a) ; titre de l’onglet en h3', async () => {
+  it('n’affiche plus les mentions de version du prototype (Q9 a) ; titre de l’onglet en h2', async () => {
     render(<PractitionerFoodObservationPanel idPatient="PAT_TEST" />);
     await screen.findByTestId('ja-praticien-cycle');
     expect(screen.queryByText(/Prototype JA5-03/)).toBeNull();
     expect(screen.queryByText(/Version JA5-05/)).toBeNull();
-    expect(screen.getByRole('heading', { level: 3, name: 'Trajectoire alimentaire' })).toBeTruthy();
-    expect(screen.getByRole('heading', { level: 4, name: 'Ce que le patient a transmis' })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 2, name: 'Trajectoire alimentaire' })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 3, name: 'Ce que le patient a transmis' })).toBeTruthy();
   });
 });

@@ -56,8 +56,9 @@ export function LectureEtatPassePanel({
   repereInitial?: string | null;
   masquerSelecteur?: boolean;
   onRetourPresent?: () => void;
-  /** Fixé par l'appelant ([[D-481]] complément DOC-15, Q1) : la fiche garde
-   * h3, le copilote passe en h2 sous son h1. Le sous-titre suit, sans saut. */
+  /** Fixé par l'appelant ([[D-481]] complément DOC-15, Q1) : le copilote passe
+   * en h2 sous son h1 ; la fiche aussi depuis que le nom du dossier y est le
+   * h1 (PRA-6e, question 20261117-1423-d). Le sous-titre suit, sans saut. */
   niveauTitre?: 2 | 3;
 }) {
   const Titre = niveauTitre === 2 ? 'h2' : 'h3';

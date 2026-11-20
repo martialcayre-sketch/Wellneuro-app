@@ -82,7 +82,7 @@ test.describe('Lectures hors contrat (PRA-6h)', () => {
     await expect(page.getByText('Une erreur est survenue')).toHaveCount(0);
 
     await alerte.getByRole('button', { name: 'Réessayer' }).click();
-    const titre = page.getByRole('heading', { level: 2, name: 'Sophie Nicola' });
+    const titre = page.getByRole('heading', { level: 1, name: 'Sophie Nicola' });
     await expect(titre).toBeVisible();
     await expect(titre).toBeFocused();
   });

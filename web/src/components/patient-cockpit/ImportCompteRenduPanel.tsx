@@ -749,7 +749,7 @@ export function ImportCompteRenduPanel({
 
   return (
     <div ref={racineRef} className="mt-4 rounded-lg border border-border p-3">
-      <h4 className="text-sm font-medium text-foreground">Importer un compte rendu de laboratoire</h4>
+      <h3 className="text-sm font-medium text-foreground">Importer un compte rendu de laboratoire</h3>
       <p className="mt-1 text-xs text-muted-foreground">
         Avant la lecture, vous masquez l’identité du patient sur chaque page : seules les pages masquées sont
         transmises au service de lecture (Anthropic), jamais le document d’origine. Les lignes lues vous sont proposées : rien
@@ -810,11 +810,11 @@ export function ImportCompteRenduPanel({
             </p>
           )}
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h5 className="text-sm font-normal text-foreground">
+            <h4 className="text-sm font-normal text-foreground">
               Compte rendu déposé le {formatDateHeure(detail.deposeLe)}
               {transmisParLePatient && ' — transmis par le patient'}
               {courant?.laboratoireLu && ` — ${courant.laboratoireLu}`}
-            </h5>
+            </h4>
             {/* LE REGARD AVANT LA LECTURE ([[D-269]] §1) : le document s'ouvre
                 dans un onglet, servi par la route du praticien ; rien ne part
                 chez Anthropic. Plus rien à montrer une fois effacé. */}

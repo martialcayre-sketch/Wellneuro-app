@@ -269,7 +269,7 @@ export function ComprehensionPanel({ idPatient }: { idPatient: string }) {
       className="mt-6 rounded-lg border border-border bg-surface p-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
     >
       <header className="mb-3">
-        <h4 className="text-base font-semibold">Ce que j’ai compris de vous</h4>
+        <h3 className="text-base font-semibold">Ce que j’ai compris de vous</h3>
         <p className="text-sm text-muted-foreground">
           Votre compréhension, écrite pour le patient et publiée telle quelle. Ce n’est ni un
           diagnostic, ni une orientation : c’est ce que vous avez retenu de lui.
@@ -361,7 +361,7 @@ export function ComprehensionPanel({ idPatient }: { idPatient: string }) {
               dit ce qui a été dit, et l'état dérivé de chaque message. */}
           {desaccords.length > 0 && (
             <div className="space-y-2">
-              <h5 className="text-sm font-medium">« Ce n’est pas exactement ça »</h5>
+              <h4 className="text-sm font-medium">« Ce n’est pas exactement ça »</h4>
               <ul className="space-y-2">
                 {desaccords.map((desaccord) => (
                   <li

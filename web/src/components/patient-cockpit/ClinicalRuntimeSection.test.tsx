@@ -2102,7 +2102,7 @@ describe('ClinicalRuntimeSection — recoupement contradiction ↔ décision (`D
 });
 
 describe('EpisodeConfirmationPanel — PRA-3b, PR 3 (Q2 a)', () => {
-  it('titre h4 sous la phase, sous-parties h5, geste avec anneau de focus', () => {
+  it('titre h3 sous la phase, sous-parties h4, geste avec anneau de focus', () => {
     render(
       <EpisodeConfirmationPanel
         proposal={proposal}
@@ -2111,9 +2111,9 @@ describe('EpisodeConfirmationPanel — PRA-3b, PR 3 (Q2 a)', () => {
         onConfirm={vi.fn()}
       />,
     );
-    expect(screen.getByRole('heading', { level: 4, name: /Confirmation de l’épisode/ })).toBeTruthy();
-    expect(screen.getByRole('heading', { level: 5, name: 'Conditions requises' })).toBeTruthy();
-    expect(screen.queryAllByRole('heading', { level: 3 })).toHaveLength(0);
+    expect(screen.getByRole('heading', { level: 3, name: /Confirmation de l’épisode/ })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 4, name: 'Conditions requises' })).toBeTruthy();
+    expect(screen.queryAllByRole('heading', { level: 2 })).toHaveLength(0);
     const bouton = screen.getByRole('button', { name: /Confirmer l’épisode/ });
     expect(bouton.className).toContain('min-h-11');
     expect(bouton.className).toContain('focus-visible:ring-2');

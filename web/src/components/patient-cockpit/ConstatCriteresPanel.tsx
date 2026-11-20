@@ -139,9 +139,9 @@ export function ConstatCriteresPanel({
       className="rounded-xl border border-border bg-surface p-4"
     >
       {/* h4 sous la phase « Décision » (h3), PRA-3b Q2 a. */}
-      <h4 id="constat-criteres-title" className="text-sm font-semibold text-foreground">
+      <h3 id="constat-criteres-title" className="text-sm font-semibold text-foreground">
         Critères cliniques du dossier
-      </h4>
+      </h3>
       <p className="mt-2 text-sm text-muted-foreground">
         Une règle peut être conditionnée à un critère. Tant qu’un critère n’est pas renseigné, la
         règle qui en dépend est refusée — non parce que le critère est absent, mais parce que

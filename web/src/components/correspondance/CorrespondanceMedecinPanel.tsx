@@ -165,11 +165,11 @@ export function CorrespondanceMedecinPanel({ idPatient }: { idPatient: string })
   return (
     <div className="flex flex-col gap-4">
     <section aria-labelledby="correspondance-patient" className="rounded-xl border border-border bg-surface p-4">
-      <h3 ref={relecturePatient.titreRef} tabIndex={-1} id="correspondance-patient" className="text-sm font-semibold text-foreground">
+      <h2 ref={relecturePatient.titreRef} tabIndex={-1} id="correspondance-patient" className="text-sm font-semibold text-foreground">
         {/* Le patient n'est plus le seul destinataire : l'alerte de sécurité et le
             signalement vous écrivent au sujet du dossier ([[D-398]] §1, Q4). */}
         E-mails du dossier
-      </h3>
+      </h2>
       <p className="mt-1 text-xs text-muted-foreground">
         Historique des e-mails envoyés par Wellneuro : au patient, et à vous au sujet de ce dossier. Le
         contenu des messages et les adresses ne sont pas recopiés dans ce journal.
@@ -241,9 +241,9 @@ export function CorrespondanceMedecinPanel({ idPatient }: { idPatient: string })
     </section>
 
     <section aria-labelledby="correspondance-medecin" className="rounded-xl border border-border bg-surface p-4">
-      <h3 ref={relectureMedecin.titreRef} tabIndex={-1} id="correspondance-medecin" className="text-sm font-semibold text-foreground">
+      <h2 ref={relectureMedecin.titreRef} tabIndex={-1} id="correspondance-medecin" className="text-sm font-semibold text-foreground">
         Correspondance avec le médecin traitant
-      </h3>
+      </h2>
       <p className="mt-1 text-xs text-muted-foreground">
         L’application n’envoie rien au médecin et ne lui ouvre aucun accès. Vous consignez ici, en texte
         seul, les échanges faits par vos canaux habituels (courrier, e-mail du cabinet).
@@ -364,7 +364,7 @@ export function CorrespondanceMedecinPanel({ idPatient }: { idPatient: string })
 
       {etat === 'chargee' && (
         <div className="mt-4 border-t border-border pt-3">
-          <h4 className="text-sm font-semibold text-foreground">Consigner un échange</h4>
+          <h3 className="text-sm font-semibold text-foreground">Consigner un échange</h3>
 
           {!accepteConsignation && (
             <p role="status" className="mt-2 text-base text-muted-foreground">

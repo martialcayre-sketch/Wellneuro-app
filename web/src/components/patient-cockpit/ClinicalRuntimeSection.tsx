@@ -2108,9 +2108,9 @@ export function ClinicalRuntimeSection({
           className="rounded-xl border border-border bg-surface p-4 text-base"
         >
           {/* h4 sous la phase « Décision » (h3), PRA-3b Q2 a. */}
-          <h4 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
             Ce que le patient met en avant
-          </h4>
+          </h3>
           <dl className="mt-3 flex flex-col gap-3">
             <div>
               <dt className="text-sm text-muted-foreground">Plainte la plus intense</dt>
@@ -2199,9 +2199,9 @@ export function ClinicalRuntimeSection({
           className="rounded-xl border border-status-warning/40 bg-status-warning/5 p-4"
         >
           {/* h4 sous la phase « Décision » (h3) ; la lettre d'adressage en h5. */}
-          <h4 className="text-sm font-semibold uppercase tracking-wide text-status-warning">
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-status-warning">
             Ce qui suspend la décision
-          </h4>
+          </h3>
           <div className="mt-3 flex flex-col gap-3">
             {(review?.safetyFindings ?? []).map((constat) => (
               <TwoLevelReading
@@ -2737,7 +2737,7 @@ export function ClinicalRuntimeSection({
                 aria-label="Réévaluation — résumé du cycle"
                 className="rounded-xl border border-border bg-surface p-4 text-sm"
               >
-                <h4 ref={relectureReevaluation.titreRef} tabIndex={-1} className="font-semibold text-foreground">Réévaluation — où en est le cycle</h4>
+                <h3 ref={relectureReevaluation.titreRef} tabIndex={-1} className="font-semibold text-foreground">Réévaluation — où en est le cycle</h3>
                 {trajectoire?.discordanceOrdreCycles && (
                   <p
                     role="status"

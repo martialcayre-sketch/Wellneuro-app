@@ -64,9 +64,9 @@ export function MeteoAdhesionPanel({
       className="rounded-xl border border-border bg-surface p-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
     >
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h4 id="meteo-adhesion-title" className="text-sm font-semibold text-foreground">
+        <h3 id="meteo-adhesion-title" className="text-sm font-semibold text-foreground">
           Météo d’adhésion
-        </h4>
+        </h3>
         <span className="text-xs text-muted-foreground">Signal praticien — jamais affiché au patient</span>
       </div>
 

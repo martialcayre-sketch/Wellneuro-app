@@ -371,9 +371,9 @@ function DeclarationsDuDossier({ idPatient }: { idPatient: string }) {
       aria-labelledby={idTitre}
       data-testid="declarations-dossier-bp13"
     >
-      <h4 id={idTitre}className="text-xs font-medium text-foreground">
+      <h3 id={idTitre}className="text-xs font-medium text-foreground">
         Déclarations du dossier — pas l’état au prélèvement
-      </h4>
+      </h3>
       <p className="text-xs text-muted-foreground">
         Elles datent de leur déclaration et ne remplissent aucun champ du contexte.
       </p>

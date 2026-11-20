@@ -133,12 +133,12 @@ export function SelectionPrioritePanel({
     <section aria-labelledby="selection-priorite-title" className="mt-4">
       {/* h4 lisible sous la phase « Décision » (h3), même texte (PRA-3b Q2 a) ;
           il était en petites capitales `text-xs`. */}
-      <h4
+      <h3
         id="selection-priorite-title"
         className="font-display text-base font-semibold text-foreground mb-3"
       >
         Priorité retenue
-      </h4>
+      </h3>
       <div className="rounded-xl border border-border bg-surface p-4 shadow-card">
         {/* LA PHRASE DE PÉREMPTION — la dette que `D-127` avait nommée sans la
             traiter. Sans elle, le praticien retrouvait « aucune priorité

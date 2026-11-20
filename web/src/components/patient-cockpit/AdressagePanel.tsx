@@ -76,7 +76,7 @@ export function AdressagePanel({
   if (sansConsultationPorteuse) {
     return (
       <div className="mt-4 rounded-lg border border-border bg-surface p-3">
-        <h5 className="text-sm font-medium text-foreground">Lettre d’adressage au médecin</h5>
+        <h4 className="text-sm font-medium text-foreground">Lettre d’adressage au médecin</h4>
         <p className="mt-1 text-sm text-muted-foreground">
           Validez d’abord une consultation pour rédiger la lettre : elle ne couvre ces constats
           qu’une fois l’anamnèse validée.
@@ -87,7 +87,7 @@ export function AdressagePanel({
 
   return (
     <div className="mt-4 rounded-lg border border-border bg-surface p-3">
-      <h5 className="text-sm font-medium text-foreground">Lettre d’adressage au médecin</h5>
+      <h4 className="text-sm font-medium text-foreground">Lettre d’adressage au médecin</h4>
       <p className="mt-1 text-xs text-muted-foreground">
         Établie à partir des signaux <strong>déclarés par le patient</strong> ci-dessus, dans un
         registre non prescriptif : l’appréciation de ces éléments, comme la conduite à tenir,
