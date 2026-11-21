@@ -1058,6 +1058,23 @@ test('RELEASE — la sentinelle d’un AUTRE run ne conclut jamais au vert', () 
   }
 });
 
+// Pendant du cas « autre run » de la release (revue de l'écart de #2304) :
+// l'invariant ancré ne voit pas un second grep sans id ajouté ailleurs.
+test('contre-épreuve — la sentinelle d’un AUTRE run ne conclut jamais au vert', () => {
+  const { base, local } = depotJouet({ migrations: false });
+  try {
+    const r = jouer(scriptDeLEtape('Vérification — migrate status'), {
+      cwd: local,
+      bin: poserScalingoOneOff(base, { echecs: 0, logs: 'WN_STATUT_DB_OK id=999-1\n' }),
+      env: { WN_RELEASE_ID: ID_JOUET },
+    });
+    assert.notEqual(r.code, 0);
+    assert.match(r.sortie, /Aucune sentinelle de statut/);
+  } finally {
+    rmSync(base, { recursive: true, force: true });
+  }
+});
+
 test('contre-épreuve — le CLI échoue MAIS rend un identifiant : on suit ce conteneur, sans relancer', () => {
   const { base, local } = depotJouet({ migrations: false });
   try {

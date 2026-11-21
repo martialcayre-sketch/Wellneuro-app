@@ -26,12 +26,13 @@ l'étape sans un mot, la sortie du CLI restant captive.
   ancré sur le `grep -q` lui-même. Un message qui citait la sentinelle avec son
   id le gardait vert, alors qu'un grep nu lisait le mot seul (revue
   `wn-reviewer`).
-- **Banc de comportement** (`scripts/release-db-comportement.test.mjs`) : neuf
+- **Banc de comportement** (`scripts/release-db-comportement.test.mjs`) : dix
   cas, joués avec un `scalingo` factice :
   - 504 passager ou persistant ;
   - contre-épreuve muette ;
   - « base PAS à jour » ;
   - CLI en échec qui rend quand même un identifiant ;
+  - sentinelle de statut d'un autre run, qui ne conclut jamais au vert ;
   - et, pour la release, 504, sortie sans identifiant, sentinelle de ce run,
     et sentinelle d'un autre run, qui ne conclut jamais au vert.
 - Aucun chemin déclencheur de `release-db` n'est touché : ce merge ne lance

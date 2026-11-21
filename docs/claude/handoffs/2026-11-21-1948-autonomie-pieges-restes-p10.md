@@ -66,7 +66,13 @@ lit « base non migrée », et pousse à relancer une release.
   - P2-2 : une release sans identifiant dit l'état INCONNU, et un cas le couvre ;
   - P2-3 : `|| true` sur l'extraction de l'identifiant ;
   - P2-4 : la sortie et le code du CLI sont montrés à chaque essai en échec.
-- Après corrections : comportement et invariants à 73 sur 73. Mutation du P1 rejouée (`grep -q "WN_RELEASE_DB_OK"`
+- `wn-reviewer` sur l'écart 6ecb53f7..ee22c197 : GO, avec deux P2 résiduels.
+  - Le rappel surestime le gel : écarté. Le gel ne vaut que si le run porte une migration non attestée ; l'erreur
+    va dans le sens prudent, et un dispatch n'écrit rien sur une base à jour.
+  - Pas de cas « sentinelle d'un autre run » côté contre-épreuve : corrigé par un cas neuf. La mutation
+    `grep -q "WN_STATUT_DB_OK"` nu rougit ce cas et l'invariant, puis le fichier est rétabli.
+  - Bancs à 74 sur 74.
+- Après les corrections du NO-GO : comportement et invariants à 73 sur 73. Mutation du P1 rejouée (`grep -q "WN_RELEASE_DB_OK"`
   nu dans la release) : deux rouges, le cas « autre run » et l'invariant ; le fichier est rétabli ensuite.
 - T1 complet (`npm run check`) : vert (code 0), anti-secrets compris. T2 n'est pas joué : aucun E2E n'est concerné.
 - Aucun chemin déclencheur de `release-db` n'est touché : le merge ne lance aucun run.
