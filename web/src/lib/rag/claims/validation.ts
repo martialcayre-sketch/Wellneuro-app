@@ -1,4 +1,4 @@
-import { RAG_MAX_BATCH_SIZE, RAG_MAX_CONTENT_LENGTH } from '@/lib/rag/config';
+import { RAG_MAX_CONTENT_LENGTH } from '@/lib/rag/config';
 import { normalizeWellneuroText, sha256WellneuroText } from '@/lib/rag/validation';
 import { CLES_LIEN_CLAIM } from './clesLien';
 
@@ -195,13 +195,23 @@ function parseClaim(value: unknown, index: number): RagClaimInput {
   };
 }
 
+// Plafond d'un lot de claims, plus bas que celui des chunks (RAG_MAX_BATCH_SIZE).
+// La route écrit tout le lot dans une seule transaction Prisma (5 s par défaut,
+// `upsertRagClaims`) : contre la base de production, 50 claims l'ont fait
+// expirer (500, rollback complet, 0 claim écrit) quand 10 passaient. Le refus
+// tombe ici, en 422 et avant tout embedding, au lieu d'un 500 après 5 s.
+export const RAG_MAX_CLAIMS_BATCH_SIZE = 10;
+
 export function parseRagClaimsIngestPayload(value: unknown): RagClaimsIngestPayload {
   const record = asRecord(value);
   if (!Array.isArray(record.claims) || record.claims.length === 0) {
     throw new Error('claims doit être une liste non vide.');
   }
-  if (record.claims.length > RAG_MAX_BATCH_SIZE) {
-    throw new Error(`Un lot d'ingestion ne peut pas dépasser ${RAG_MAX_BATCH_SIZE} claims.`);
+  if (record.claims.length > RAG_MAX_CLAIMS_BATCH_SIZE) {
+    throw new Error(
+      `Un lot d'ingestion ne peut pas dépasser ${RAG_MAX_CLAIMS_BATCH_SIZE} claims ` +
+        `(reçu ${record.claims.length}) : envoyer par paquets de ${RAG_MAX_CLAIMS_BATCH_SIZE} au plus.`,
+    );
   }
 
   const claims = record.claims.map(parseClaim);

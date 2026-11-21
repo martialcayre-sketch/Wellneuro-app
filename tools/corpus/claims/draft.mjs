@@ -28,7 +28,7 @@ import OpenAI from 'openai';
 import { chunksDeSource, batchId } from '../chunk/chunk.mjs';
 import { exclureDeLOrientation } from './lib/filtre-orientation.mjs';
 
-const { parseRagClaimsIngestPayload } = await import('@/lib/rag/claims/validation');
+const { parseRagClaimsIngestPayload, RAG_MAX_CLAIMS_BATCH_SIZE } = await import('@/lib/rag/claims/validation');
 const { normalizeWellneuroText, sha256WellneuroText } = await import('@/lib/rag/validation');
 
 const home = os.homedir();
@@ -207,9 +207,9 @@ async function main() {
     }
   }
 
-  // Contrôle de conformité au VRAI contrat serveur avant écriture (par lots ≤ 64).
-  for (let i = 0; i < claims.length; i += 64) {
-    parseRagClaimsIngestPayload({ claims: claims.slice(i, i + 64) });
+  // Contrôle de conformité au VRAI contrat serveur avant écriture, par lots du plafond serveur.
+  for (let i = 0; i < claims.length; i += RAG_MAX_CLAIMS_BATCH_SIZE) {
+    parseRagClaimsIngestPayload({ claims: claims.slice(i, i + RAG_MAX_CLAIMS_BATCH_SIZE) });
   }
 
   await fs.mkdir(OUTDIR, { recursive: true });
