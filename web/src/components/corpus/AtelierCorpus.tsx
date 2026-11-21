@@ -110,7 +110,7 @@ export function AtelierCorpus() {
           >
             Sources en revue
           </h2>
-          <div className="flex items-center gap-2">
+          <div className="flex max-w-full items-center gap-2">
             <label htmlFor="filtre-notebook" className="text-sm text-muted-foreground">
               Notebook
             </label>
@@ -118,7 +118,7 @@ export function AtelierCorpus() {
               id="filtre-notebook"
               value={notebookChoisi}
               onChange={(e) => setNotebookChoisi(e.target.value)}
-              className={CLASSE_SELECT}
+              className={`min-w-0 ${CLASSE_SELECT}`}
             >
               <option value="">Tous</option>
               {notebooks.map((n) => (

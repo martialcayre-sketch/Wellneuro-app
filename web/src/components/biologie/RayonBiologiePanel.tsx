@@ -192,7 +192,7 @@ export function RayonBiologiePanel() {
                       className="flex w-full flex-wrap items-center justify-between gap-2 rounded-xl border border-border bg-surface p-3 text-left shadow-card hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                     >
                       <span className="flex min-w-0 flex-col">
-                        <span className="font-medium text-foreground">{analyte.libelle}</span>
+                        <span className="font-medium text-foreground max-[319px]:hyphens-auto max-[319px]:[overflow-wrap:anywhere]">{analyte.libelle}</span>
                         <span className="text-xs text-muted-foreground">
                           {libelleTechnique(analyte.typePrelevement)}
                           {analyte.unite ? ` · ${analyte.unite}` : ''}

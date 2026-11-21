@@ -314,6 +314,27 @@
       scroll-padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
     }
   }
+
+  /* Reflow à 195 px (PRA-6m ; convention du dépôt : zoom 200 % sur un
+   * téléphone de 390 px). Sans borne, un <select> prend la largeur de sa plus
+   * longue option et un <input> sa largeur native, et sort de l'écran. Une
+   * largeur maximale en pourcentage le tient dans son conteneur quand celui-ci
+   * a une largeur définie ; quand c'est le conteneur qui suit la largeur du
+   * champ (item de grille ou de flex), le correctif est posé sur lui, écran par
+   * écran (`grid-cols-1`, `max-w-full`). Sous WebKit, un <select> plus étroit que sa plus longue
+   * option garde en outre un contenu interne qui déborde de sa boîte et fait
+   * défiler la page de quelques pixels (P51, P52) : `overflow: hidden` le
+   * rogne, sans rien changer à ce qui s'affiche. `:where` : spécificité nulle,
+   * toute classe utilitaire l'emporte. Praticien seul, et sous 320 px
+   * seulement : aucun effet ailleurs. */
+  @media (max-width: 319px) {
+    :where([data-theme='praticien']) :where(input, select, textarea) {
+      max-width: 100%;
+    }
+    :where([data-theme='praticien']) :where(select) {
+      overflow: hidden;
+    }
+  }
 }
 
 /*

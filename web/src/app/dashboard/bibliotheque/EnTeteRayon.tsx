@@ -29,7 +29,7 @@ export function EnTeteRayon({
         id={idTitre}
         ref={titreRef}
         tabIndex={titreRef ? -1 : undefined}
-        className={`font-display text-3xl font-bold tracking-[-0.02em] text-foreground${
+        className={`font-display text-3xl font-bold tracking-[-0.02em] text-foreground [overflow-wrap:anywhere] max-[319px]:hyphens-auto${
           titreRef ? ' rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-focus-ring' : ''
         }`}
       >

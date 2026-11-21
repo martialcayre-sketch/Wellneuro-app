@@ -289,7 +289,7 @@ function LigneFiche({
           {fiche.population && (
             <>
               {' '}
-              · population <span className="font-mono">{fiche.population}</span>
+              · population <span className="font-mono [overflow-wrap:anywhere]">{fiche.population}</span>
             </>
           )}
         </p>

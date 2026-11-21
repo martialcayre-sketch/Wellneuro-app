@@ -13,21 +13,21 @@ export default async function ParametresPage() {
     <div className="flex flex-col gap-6">
       <div>
         {/* Titre de page en h1, titres de zone en h2 (PRA-2b, Q2). */}
-        <h1 className="font-display text-3xl font-bold tracking-[-0.02em] text-foreground">Paramètres</h1>
+        <h1 className="font-display text-3xl font-bold tracking-[-0.02em] text-foreground [overflow-wrap:anywhere] max-[319px]:hyphens-auto">Paramètres</h1>
         <p className="text-base text-muted-foreground">Profil et gouvernance clinique — lecture seule.</p>
       </div>
 
       {/* Deux cartes côte à côte au bureau, empilées ailleurs. */}
-      <div className="grid items-start gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
       <div className="bg-surface border border-border rounded-xl shadow-card p-4">
         <h2 className="flex items-center gap-2 font-display text-lg font-semibold text-foreground mb-3">
           <User size={18} strokeWidth={TRAIT_ICONE} className="text-muted-foreground" aria-hidden="true" />
           Profil praticien
         </h2>
         <dl className="text-sm">
-          <div className="flex justify-between py-1.5 border-b border-border">
+          <div className="flex justify-between py-1.5 border-b border-border max-[319px]:flex-wrap max-[319px]:gap-x-3">
             <dt className="text-muted-foreground">Email</dt>
-            <dd className="text-foreground">{email || '—'}</dd>
+            <dd className="text-foreground max-[319px]:min-w-0 max-[319px]:[overflow-wrap:anywhere]">{email || '—'}</dd>
           </div>
         </dl>
       </div>
@@ -38,11 +38,11 @@ export default async function ParametresPage() {
           Gouvernance clinique
         </h2>
         <dl className="text-sm">
-          <div className="flex justify-between py-1.5 border-b border-border">
+          <div className="flex justify-between py-1.5 border-b border-border max-[319px]:flex-wrap max-[319px]:gap-x-3">
             <dt className="text-muted-foreground">Version du moteur d’équilibre</dt>
             <dd className="font-mono text-foreground">{VERSION_SCORE_EQUILIBRE}</dd>
           </div>
-          <div className="flex justify-between py-1.5 border-b border-border">
+          <div className="flex justify-between py-1.5 border-b border-border max-[319px]:flex-wrap max-[319px]:gap-x-3">
             <dt className="text-muted-foreground">Version des prompts de synthèse</dt>
             <dd className="font-mono text-foreground">{VERSION_PROMPT_SYNTHESE}</dd>
           </div>

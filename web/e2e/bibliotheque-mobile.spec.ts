@@ -111,3 +111,52 @@ test.describe('Reflow à 320 px (WCAG 1.4.10) — PRA-6g', () => {
     await attendreAucunDebordement(page);
   });
 });
+
+// PRA-6m — la convention du dépôt, plus stricte que WCAG : 195 px CSS, soit
+// le zoom 200 % d'un téléphone de 390 px (D-506, la même que le portail
+// patient depuis PAT-7e et PAT-7f). Le constat PRA-6 (§3.7) y voyait seize
+// écrans praticien déborder. Chaque écran tenu ici est un écran corrigé par
+// PRA-6m ou déjà tenu. Manque P37 (Questionnaires) : sa rangée d'actions vit
+// dans `PacksPanel`, reprise après le lot qui tient ce fichier (handoff de
+// PRA-6m). Comme à 320 px, la largeur est posée par le test, et les deux moteurs
+// le jouent. Le titre de page suffit comme signal de rendu : les écrans dont
+// le débordement venait d'un contenu chargé après lui l'attendent en plus.
+const ECRANS_195: Array<{ id: string; url: string; titre: string; attendre?: (page: Page) => Promise<void> }> = [
+  { id: 'P01 Fil du jour', url: '/dashboard', titre: 'Le Fil du jour',
+    // Les cartes du Fil se chargent après le titre : c'est elles qui débordaient.
+    attendre: async page => {
+      await expect(page.getByTestId('fil-du-jour').getByRole('heading', { name: "Aujourd'hui" })).toBeVisible({ timeout: 10000 });
+    } },
+  { id: 'P25 Biologie du dossier', url: '/dashboard/patients/PAT_SEED_01?onglet=biologie', titre: 'Importer un compte rendu de laboratoire' },
+  { id: 'P33 Agenda', url: '/dashboard/agenda', titre: 'Agenda & consultations' },
+  { id: 'P34 Copilote', url: '/dashboard/copilote', titre: 'Consultation copilote' },
+  { id: 'P35 Trajectoires', url: '/dashboard/trajectoires', titre: 'Fiche-trajectoire' },
+  { id: 'P36 Cabinet', url: '/dashboard/cabinet', titre: 'Comptes du cabinet' },
+  { id: 'P40 Analyses biologiques', url: '/dashboard/bibliotheque/biologie', titre: 'Analyses biologiques' },
+  { id: 'P44 Compléments', url: '/dashboard/bibliotheque/complements', titre: 'Compléments alimentaires' },
+  { id: 'P46 Connaissances', url: '/dashboard/bibliotheque/connaissances', titre: 'Connaissances' },
+  { id: 'P47 Corpus', url: '/dashboard/corpus', titre: 'Atelier corpus' },
+  { id: 'P49 Règles', url: '/dashboard/regles', titre: 'Atelier de règles cliniques' },
+  { id: 'P51 Synthèses', url: '/dashboard/synthese', titre: 'Synthèse IA & Booklet' },
+  { id: 'P52 Documents', url: '/dashboard/documents', titre: 'Documents contextuels' },
+  { id: 'P53 Correspondance', url: '/dashboard/correspondance', titre: 'Correspondance' },
+  { id: 'P57 Paramètres', url: '/dashboard/parametres', titre: 'Paramètres' },
+];
+
+test.describe('Reflow à 195 px (zoom 200 % sur 390 px) — PRA-6m', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.setViewportSize({ width: 195, height: 332 });
+    await page.context().addCookies([await praticienSessionCookie(PRATICIEN_EMAIL)]);
+  });
+
+  for (const ecran of ECRANS_195) {
+    test(`${ecran.id} tient à 195 px`, async ({ page }) => {
+      await page.goto(ecran.url);
+      await expect(page.getByRole('heading', { name: ecran.titre, exact: true })).toBeVisible({ timeout: 15000 });
+      if (ecran.attendre) await ecran.attendre(page);
+      await page.waitForLoadState('networkidle');
+
+      await attendreAucunDebordement(page);
+    });
+  }
+});

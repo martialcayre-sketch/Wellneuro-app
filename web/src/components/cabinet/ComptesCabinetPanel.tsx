@@ -57,7 +57,7 @@ function TableauDesComptes<K extends string>({
   libelles: Record<K, string>;
 }) {
   return (
-    <section className="flex flex-col gap-2 rounded-xl border border-border bg-surface p-4 shadow-card">
+    <section className="flex min-w-0 flex-col gap-2 rounded-xl border border-border bg-surface p-4 shadow-card">
       <h2 className="font-display text-xl font-semibold text-foreground">{titre}</h2>
       {note && <p className="text-sm text-muted-foreground">{note}</p>}
       <p className="text-base font-medium text-foreground">{libelleEffectif(tableau.effectif)}</p>
@@ -79,7 +79,7 @@ function TableauDesComptes<K extends string>({
         <tbody>
           {tableau.lignes.map(ligne => (
             <tr key={ligne.cle} className="border-b border-border last:border-b-0">
-              <th scope="row" className="py-2 pr-4 text-left font-normal text-foreground">
+              <th scope="row" className="py-2 pr-4 text-left font-normal text-foreground max-[319px]:pr-2 max-[319px]:hyphens-auto max-[319px]:[overflow-wrap:anywhere]">
                 {libelles[ligne.cle]}
               </th>
               <td className="py-2 text-right font-mono tabular-nums text-foreground">

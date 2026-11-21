@@ -443,7 +443,7 @@ export function BibliothequePanel({ entrees }: { entrees: BibliothequeEntree[] }
           <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(0,1.05fr),minmax(0,1fr),minmax(280px,0.7fr)]">
             {/* Catalogue */}
             <section className="rounded-xl border border-border bg-surface shadow-card">
-              <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
+              <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-4 max-[319px]:flex-wrap max-[319px]:gap-y-0">
                 <h2 className="font-display text-lg font-semibold text-foreground">Catalogue</h2>
                 <span className="font-mono text-2xs text-muted-foreground">
                   {filtres.length}/{entrees.length} instruments
