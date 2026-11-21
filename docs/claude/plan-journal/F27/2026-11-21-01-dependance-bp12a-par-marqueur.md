@@ -1,0 +1,4 @@
+- **Mise à jour (2026-11-21, dépendance BP-12a lue par marqueur)** : arbitrage ordinaire du responsable, sans décision `D-xxx` ni changement clinique. Lot `bp27-cadrage` (file B).
+  - **Question** `20261120-2257-b` : la table de la campagne BIO-PARCOURS compte BP-12a (fiches d'usage, critère de fin : texte validé de toutes les fiches que le dossier de preuve permet d'écrire) parmi les préalables de BP-27, alors que `D-544` raisonne marqueur par marqueur (§3, §7).
+  - **Réponse du responsable** = A : avant le lot de code d'un marqueur, seules comptent les fiches d'usage de ce marqueur. Les fiches des autres marqueurs ne le bloquent pas.
+  - **Effet** : la ligne BP-27 de `CAMPAGNE.md` et les préalables de cette fiche portent « BP-12a (fiches du marqueur choisi) ». Rien ne change au rattachement des claims (`D-544` §8, étape 1), ni aux exigences d'ouverture de `D-544` §7.
