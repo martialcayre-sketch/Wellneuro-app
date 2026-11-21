@@ -34,6 +34,17 @@ pensait à un délai sous charge.
 - **Écarté** : modifier la garde, en tolérant un client hors de l'arbre ou en ne suivant plus les liens. Cela
   aurait affaibli un verrou clinique-adjacent (D-480) pour arranger l'outillage. C'est l'outillage qui s'écartait
   d'un vrai checkout.
+- **Deux gardes voisines compensaient déjà le lien**, relevé par `wn-reviewer` :
+  - `web/src/lib/bio-parcours/outillageBancs.guard.test.ts` ;
+  - `web/src/lib/atelier-bibliotheque-options/cockpit.guard.test.ts`.
+
+  Leur `dansLeDepot` ramène le client relié à son chemin dans le dépôt. `importeurs.guard` ne le faisait pas : c'est
+  pourquoi elle seule rougissait. Cette compensation devient sans effet, mais reste sans danger. Elle est gardée en
+  défense en profondeur ; seuls ses commentaires sont devenus faux (§6).
+- **Durcissements de la revue** :
+  - `dereference: true`, puis refus d'une copie qui n'est pas un dossier ;
+  - les gardes « déjà dans l'arbre », parents compris, passent de `existsSync` à `lstatSync` : un lien cassé suivi
+    abattait sinon le processus dans `cpSync`.
 - **Risque** : P1. C'est de l'outillage de merge (orchestration, garde-fou), hors liste P0 de `POLITIQUE_REVUE.md`.
   Revue : `wn-reviewer` sur la tête, puis PR-Agent → 0.
 
@@ -47,9 +58,19 @@ pensait à un délai sous charge.
 
 ## 5. Validations exécutées
 
-- **Banc du contrôle** (`node --test scripts/wn-controle-fusion.test.mjs`) : 41 sur 41.
-- **Mutation** : remettre le `symlinkSync` du client fait rougir le seul cas neuf (40 sur 41) ; le fichier est
-  rétabli ensuite.
+- **Banc du contrôle** (`node --test scripts/wn-controle-fusion.test.mjs`) : 41 sur 41 au premier commit, puis 44
+  sur 44 avec les trois cas de la revue.
+- **Mutations**, chacune rétablie ensuite :
+  - remettre le `symlinkSync` du client fait rougir son seul cas (40 sur 41) ;
+  - retirer `dereference` fait rougir un seul cas, celui du client relié ;
+  - remettre `existsSync` à la garde du client, ou à celle des parents, fait rougir chaque fois un seul cas, celui
+    du lien cassé correspondant.
+- **Revue `wn-reviewer`** sur 828e9b24 : GO, sans P0 ni P1. Verdicts sur ses trois P2 :
+  - P2-1, client relié : corrigé ;
+  - P2-2, lien cassé : corrigé ;
+  - P2-3, commentaires : corrigés dans ce diff ; ceux des deux gardes voisines sont routés (§6).
+  - Sa remarque « réécriture redondante d'`index.js` dans le cas neuf » est écartée : le cas écrit un contenu non
+    vide, que la fixture laisse vide, pour prouver que c'est bien le contenu de la source qui est copié.
 - **De bout en bout** : `materialiser` corrigé sur l'arbre de la branche, puis la garde seule passe 10 sur 10.
   Avant, sur `origin/main`, elle était à 9 sur 10.
 - **Toutes les gardes du contrôle** (`jouerGardes` sur l'arbre corrigé, même exécuteur que le contrôle) : 189 `ok`
@@ -66,6 +87,9 @@ pensait à un délai sous charge.
   « préexistant ». Le changement de script invalide la clé, ce qui ne demande aucun geste.
 - Non vérifié : sur Linux, `COPYFILE_FICLONE` se replie sur une copie simple (23 Mo). Le contrôle ne tourne
   aujourd'hui que sur le Mac de l'intégrateur.
+- Routé vers un lot ultérieur, faute de périmètre ici : les commentaires de `dansLeDepot` dans
+  `outillageBancs.guard.test.ts` (lignes 39-51 et 187-212) et `cockpit.guard.test.ts` (lignes 168-180) disent encore
+  que le contrôle pose le client en lien symbolique. Il faut les corriger, en gardant la compensation.
 - Pièges encore à traiter dans le lot :
   - one-off Scalingo recyclé ;
   - réservation WN-SRC ;
