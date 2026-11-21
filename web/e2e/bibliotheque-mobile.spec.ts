@@ -141,9 +141,7 @@ test.describe('Reflow à 320 px (WCAG 1.4.10) — PRA-6g', () => {
 // le zoom 200 % d'un téléphone de 390 px (D-506, la même que le portail
 // patient depuis PAT-7e et PAT-7f). Le constat PRA-6 (§3.7) y voyait seize
 // écrans praticien déborder. Chaque écran tenu ici est un écran corrigé par
-// PRA-6m ou déjà tenu. Manque P37 (Questionnaires) : sa rangée d'actions vit
-// dans `PacksPanel`, reprise après le lot qui tient ce fichier (handoff de
-// PRA-6m). Comme à 320 px, la largeur est posée par le test, et les deux moteurs
+// PRA-6m ou déjà tenu. Comme à 320 px, la largeur est posée par le test, et les deux moteurs
 // le jouent. Le titre de page suffit comme signal de rendu : les écrans dont
 // le débordement venait d'un contenu chargé après lui l'attendent en plus.
 const ECRANS_195: Array<{ id: string; url: string; titre: string; attendre?: (page: Page) => Promise<void> }> = [
@@ -157,6 +155,12 @@ const ECRANS_195: Array<{ id: string; url: string; titre: string; attendre?: (pa
   { id: 'P34 Copilote', url: '/dashboard/copilote', titre: 'Consultation copilote' },
   { id: 'P35 Trajectoires', url: '/dashboard/trajectoires', titre: 'Fiche-trajectoire' },
   { id: 'P36 Cabinet', url: '/dashboard/cabinet', titre: 'Comptes du cabinet' },
+  // La liste des packs se charge après le titre : sa rangée d'actions débordait.
+  { id: 'P37 Questionnaires', url: '/dashboard/bibliotheque/questionnaires', titre: 'Questionnaires',
+    attendre: async page => {
+      await expect(page.getByRole('heading', { name: 'Nouveau pack de questionnaires' })).toBeVisible({ timeout: 10000 });
+      await expect(page.getByText('Chargement des packs...')).toHaveCount(0, { timeout: 10000 });
+    } },
   { id: 'P40 Analyses biologiques', url: '/dashboard/bibliotheque/biologie', titre: 'Analyses biologiques' },
   { id: 'P44 Compléments', url: '/dashboard/bibliotheque/complements', titre: 'Compléments alimentaires' },
   { id: 'P46 Connaissances', url: '/dashboard/bibliotheque/connaissances', titre: 'Connaissances' },

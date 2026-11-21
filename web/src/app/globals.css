@@ -321,18 +321,23 @@
    * largeur maximale en pourcentage le tient dans son conteneur quand celui-ci
    * a une largeur définie ; quand c'est le conteneur qui suit la largeur du
    * champ (item de grille ou de flex), le correctif est posé sur lui, écran par
-   * écran (`grid-cols-1`, `max-w-full`). Sous WebKit, un <select> plus étroit que sa plus longue
-   * option garde en outre un contenu interne qui déborde de sa boîte et fait
-   * défiler la page de quelques pixels (P51, P52) : `overflow: hidden` le
-   * rogne, sans rien changer à ce qui s'affiche. `:where` : spécificité nulle,
-   * toute classe utilitaire l'emporte. Praticien seul, et sous 320 px
-   * seulement : aucun effet ailleurs. */
+   * écran (`grid-cols-1`, `max-w-full`).
+   *
+   * Sous WebKit, un <select> plus étroit que le texte de son option choisie
+   * garde ce texte en débordement interne, qui fait défiler la page sans
+   * qu'aucun élément ne dépasse (P51, P52). `contain: paint` le rogne : sous
+   * WebKit Linux, la liste garde son apparence native et le moteur force
+   * `overflow: visible`, si bien qu'un `overflow: hidden` y restait sans effet
+   * (constaté au CI de PRA-6m). Le contour de focus, peint par la liste
+   * elle-même, n'est pas rogné. `:where` : spécificité nulle, toute classe
+   * utilitaire l'emporte. Praticien seul, et sous 320 px seulement : aucun
+   * effet ailleurs. */
   @media (max-width: 319px) {
     :where([data-theme='praticien']) :where(input, select, textarea) {
       max-width: 100%;
     }
     :where([data-theme='praticien']) :where(select) {
-      overflow: hidden;
+      contain: paint;
     }
   }
 }

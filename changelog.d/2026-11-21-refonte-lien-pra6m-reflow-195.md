@@ -13,8 +13,11 @@ de 320 px, la mise en page ne change pas.
   patron du portail.
 - **Champs de formulaire** : sous 320 px, un champ du praticien ne dépasse
   plus son conteneur (`max-width: 100%`, spécificité nulle, `globals.css`), et
-  une liste `<select>` rogne son contenu interne, qui sous WebKit dépassait de
-  7 px quand la plus longue option ne tenait pas (P51, P52). Là où le
+  une liste `<select>` rogne son contenu interne (`contain: paint`). Sous
+  WebKit, le texte de l'option choisie dépassait de la liste et faisait
+  défiler la page sans qu'aucun élément ne dépasse (P51, P52). Sous WebKit
+  Linux, la liste garde son apparence native et `overflow` y est forcé à
+  `visible` : seule la containment rogne partout. Là où le
   conteneur prenait la largeur native des champs, la grille reçoit
   `grid-cols-1` (Agenda, Correspondance, Paramètres, Atelier des règles) et les
   libellés `max-w-full` (Compléments, Corpus).
@@ -25,9 +28,9 @@ de 320 px, la mise en page ne change pas.
   résumé replié du rail, libellés d'analyte, codes de population, lignes du
   tableau du cabinet et adresse des Paramètres qui se replient ; compteurs de
   l'Atelier des règles empilés ; choix d'analyte de la saisie d'un bilan sur sa
-  propre ligne.
+  propre ligne ; actions d'un pack (« Modifier », « Désactiver ») sous son nom.
 
-Mesure sous WebKit (iPhone 13), 195 × 332, fixtures seules : quinze écrans
-sur seize passent à 0. Banc : `bibliotheque-mobile.spec.ts` reçoit un test
-par écran à 195 px, joué sous Chromium et WebKit. Reste, nommé au handoff :
-P37 (rangée d'actions de `PacksPanel`, fichier tenu par PRA-6l).
+Mesure sous WebKit (iPhone 13), 195 × 332, fixtures seules : les seize écrans
+passent à 0. Banc : `bibliotheque-mobile.spec.ts` reçoit un test par écran à
+195 px, joué sous Chromium et WebKit ; quand rien ne dépasse et que la page
+défile pourtant, son détecteur nomme le coupable par retrait.
