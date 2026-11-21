@@ -246,4 +246,191 @@ describe('SynthesePanel — la réponse d’un envoi ne touche que les cases de 
     expect(ecran.queryAllByRole('button', { name: 'Voir / gérer' })).toHaveLength(0);
     expect(lectures.filter(id => id === SOPHIE.idPatient)).toHaveLength(1);
   });
+
+  it('patient changé pendant l’envoi : « Booklet envoyé à… » ne paraît pas sous le nouveau (PRA-6k)', async () => {
+    const { liberer } = stubEnvoi();
+    const { container } = render(<SynthesePanel initialPatientId="PAT_SEED_01" />);
+    const ecran = within(container);
+
+    await envoyerA(ecran);
+    fireEvent.change(ecran.getByRole('combobox', { name: 'Patient' }), { target: { value: JENNIFER.idPatient } });
+    expect(await ecran.findByText(VIDE)).toBeTruthy();
+    liberer(rep({ success: true, emailMasque: 's***@exemple.test' }));
+    await laisserFiler();
+
+    expect(ecran.queryByText(/Booklet envoyé à/)).toBeNull();
+  });
+});
+
+// PRA-6k, lot de la refonte Lien. Deux courses de la même famille, démontrées
+// dans le code, sans occurrence observée (handoff PRA-6c, § 6) :
+//   3. C2 de wn-reviewer : « Créer le brouillon » ouvrait la synthèse créée
+//      après sa réponse, quoi qu'il soit arrivé pendant la requête.
+//   4. Le retour d'un geste arrivé après un changement de patient paraissait
+//      sous le choix du nouveau.
+
+const MSG_CREE = 'Brouillon praticien enregistré. Validez-le avant de préparer le booklet.';
+
+const brouillonDe = (idSynthese: string, narratif: string, idPatient = SOPHIE.idPatient) => ({
+  idSynthese,
+  idPatient,
+  dateGeneration: '2026-09-01T10:00:00.000Z',
+  modele: 'claude',
+  statut: 'Brouillon_IA',
+  dateValidation: null,
+  notesPraticien: null,
+  syntheseJson: {
+    resume_praticien: 'Résumé interne.',
+    axes_prioritaires: [],
+    points_de_vigilance: [],
+    questions_entretien: [],
+    narratif_patient: narratif,
+    limites: 'À valider.',
+  },
+  updatedAt: '2026-09-01T10:05:00.000Z',
+});
+
+/** Les gestes (POST, PUT, PATCH de la synthèse) restent en vol jusqu'à `liberer`. */
+function stubGestes(listes: Record<string, unknown[]>) {
+  const enVol: ReturnType<typeof enAttente>[] = [];
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (entree: unknown, init?: RequestInit) => {
+      const url = String(entree);
+      if (url.includes('/api/praticien/patients-pg')) return rep({ patients: [SOPHIE, JENNIFER] });
+      if (url.includes('/api/praticien/synthese') && init?.method && init.method !== 'GET') {
+        const attente = enAttente();
+        enVol.push(attente);
+        return attente.promesse;
+      }
+      const id = new URL(url, 'http://localhost').searchParams.get('idPatient') ?? '';
+      return rep({ syntheses: listes[id] ?? [] });
+    }),
+  );
+  return {
+    liberer: async (r: Response) => {
+      await waitFor(() => expect(enVol.length).toBeGreaterThan(0));
+      enVol.shift()!.liberer(r);
+      await laisserFiler();
+    },
+  };
+}
+
+const vers = (ecran: ReturnType<typeof within>, idPatient: string) =>
+  fireEvent.change(ecran.getByRole('combobox', { name: 'Patient' }), { target: { value: idPatient } });
+
+async function rediger(ecran: ReturnType<typeof within>) {
+  fireEvent.click(await ecran.findByRole('button', { name: 'Rédiger une synthèse' }));
+  fireEvent.change(ecran.getByLabelText('Résumé interne praticien'), { target: { value: 'Mon résumé.' } });
+  fireEvent.change(ecran.getByLabelText('Texte destiné au patient'), { target: { value: 'Mon texte.' } });
+  fireEvent.click(ecran.getByRole('button', { name: 'Créer le brouillon' }));
+}
+
+describe('SynthesePanel — le brouillon créé ne s’ouvre que si son éditeur l’est encore (PRA-6k, C2 de wn-reviewer)', () => {
+  it('patient changé pendant la création : le brouillon de l’ancien ne s’ouvre pas sous le nouveau', async () => {
+    const { liberer } = stubGestes({ [SOPHIE.idPatient]: [] });
+    const { container } = render(<SynthesePanel initialPatientId={SOPHIE.idPatient} />);
+    const ecran = within(container);
+
+    await rediger(ecran);
+    vers(ecran, JENNIFER.idPatient);
+    expect(await ecran.findByText(VIDE)).toBeTruthy();
+    await liberer(rep({ success: true, synthese: brouillonDe('SYN_CREE', 'Mon texte.') }));
+
+    expect(ecran.getByRole('heading', { level: 2, name: /Synthèses de Jennifer Martin/ })).toBeTruthy();
+    expect(ecran.queryByRole('heading', { name: /SYN_CREE/ })).toBeNull();
+    expect(ecran.queryByRole('button', { name: 'Fermer' })).toBeNull();
+    expect(ecran.queryByText(MSG_CREE)).toBeNull();
+  });
+
+  it('synthèse B ouverte pendant la création : B reste ouverte, son édition non enregistrée intacte', async () => {
+    const { liberer } = stubGestes({ [SOPHIE.idPatient]: [brouillonDe('SYN_B', 'Texte de B.')] });
+    const { container } = render(<SynthesePanel initialPatientId={SOPHIE.idPatient} />);
+    const ecran = within(container);
+
+    await rediger(ecran);
+    fireEvent.click(ecran.getByRole('button', { name: 'Voir / gérer' }));
+    fireEvent.change(ecran.getByLabelText('Texte destiné au patient'), { target: { value: 'Édition de B non enregistrée.' } });
+    await liberer(rep({ success: true, synthese: brouillonDe('SYN_CREE', 'Mon texte.') }));
+
+    expect(ecran.getByRole('heading', { name: /SYN_B/ })).toBeTruthy();
+    expect(ecran.queryByRole('heading', { name: /SYN_CREE/ })).toBeNull();
+    expect((ecran.getByLabelText('Texte destiné au patient') as HTMLTextAreaElement).value).toBe('Édition de B non enregistrée.');
+    // Le retour paraît sous le choix du patient, pas dans l'éditeur de B.
+    expect(within(ecran.getByRole('heading', { name: 'Patient' }).parentElement!).getByText(MSG_CREE)).toBeTruthy();
+  });
+
+  it('création refusée après l’ouverture de B : l’échec paraît sous le choix du patient, pas dans un éditeur refermé', async () => {
+    const { liberer } = stubGestes({ [SOPHIE.idPatient]: [brouillonDe('SYN_B', 'Texte de B.')] });
+    const { container } = render(<SynthesePanel initialPatientId={SOPHIE.idPatient} />);
+    const ecran = within(container);
+
+    await rediger(ecran);
+    fireEvent.click(ecran.getByRole('button', { name: 'Voir / gérer' }));
+    await liberer(rep({ error: 'Création refusée pour ce dossier.' }, false));
+
+    expect(within(ecran.getByRole('heading', { name: 'Patient' }).parentElement!).getByText('Création refusée pour ce dossier.')).toBeTruthy();
+    expect(ecran.getByRole('heading', { name: /SYN_B/ })).toBeTruthy();
+  });
+});
+
+describe('SynthesePanel — le retour d’un geste ne paraît pas sous un autre patient (PRA-6k)', () => {
+  it('génération réussie après le choix d’un autre patient : « Synthèse générée… » ne paraît pas', async () => {
+    const { liberer } = stubGestes({ [SOPHIE.idPatient]: [] });
+    const { container } = render(<SynthesePanel initialPatientId={SOPHIE.idPatient} />);
+    const ecran = within(container);
+
+    fireEvent.click(await ecran.findByRole('button', { name: /Générer une synthèse IA/ }));
+    vers(ecran, JENNIFER.idPatient);
+    expect(await ecran.findByText(VIDE)).toBeTruthy();
+    await liberer(rep({ success: true }));
+
+    expect(ecran.getByRole('heading', { level: 2, name: /Synthèses de Jennifer Martin/ })).toBeTruthy();
+    expect(ecran.queryByText(/Synthèse générée/)).toBeNull();
+  });
+
+  it('génération refusée après le choix d’un autre patient : l’échec ne paraît pas sous le nouveau', async () => {
+    const { liberer } = stubGestes({ [SOPHIE.idPatient]: [] });
+    const { container } = render(<SynthesePanel initialPatientId={SOPHIE.idPatient} />);
+    const ecran = within(container);
+
+    fireEvent.click(await ecran.findByRole('button', { name: /Générer une synthèse IA/ }));
+    vers(ecran, JENNIFER.idPatient);
+    expect(await ecran.findByText(VIDE)).toBeTruthy();
+    await liberer(rep({ error: 'Génération refusée pour ce dossier.' }, false));
+
+    expect(ecran.queryByText('Génération refusée pour ce dossier.')).toBeNull();
+    expect(ecran.queryByRole('alert')).toBeNull();
+  });
+
+  it('validation réussie après le choix d’un autre patient : « Synthèse validée. » ne paraît pas', async () => {
+    const { liberer } = stubGestes({ [SOPHIE.idPatient]: [brouillonDe('SYN_A', 'Texte de A.')] });
+    const { container } = render(<SynthesePanel initialPatientId={SOPHIE.idPatient} />);
+    const ecran = within(container);
+
+    fireEvent.click(await ecran.findByRole('button', { name: 'Voir / gérer' }));
+    fireEvent.click(ecran.getByRole('button', { name: 'Valider la synthèse' }));
+    vers(ecran, JENNIFER.idPatient);
+    expect(await ecran.findByText(VIDE)).toBeTruthy();
+    await liberer(rep({ success: true, statut: 'Validee_Praticien' }));
+
+    expect(ecran.queryByText('Synthèse validée.')).toBeNull();
+  });
+
+  it('création réussie après le choix d’un autre patient, puis retour au premier : rien ne se rouvre', async () => {
+    const { liberer } = stubGestes({ [SOPHIE.idPatient]: [] });
+    const { container } = render(<SynthesePanel initialPatientId={SOPHIE.idPatient} />);
+    const ecran = within(container);
+
+    await rediger(ecran);
+    vers(ecran, JENNIFER.idPatient);
+    expect(await ecran.findByText(VIDE)).toBeTruthy();
+    vers(ecran, SOPHIE.idPatient);
+    await liberer(rep({ success: true, synthese: brouillonDe('SYN_CREE', 'Mon texte.') }));
+
+    // Le retour, sous le patient du geste, dit le fait ; le détail ne s'ouvre
+    // pas : l'éditeur du brouillon a été fermé par le changement de patient.
+    expect(ecran.getByText(MSG_CREE)).toBeTruthy();
+    expect(ecran.queryByRole('heading', { name: /SYN_CREE/ })).toBeNull();
+  });
 });

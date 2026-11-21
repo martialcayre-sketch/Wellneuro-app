@@ -300,9 +300,12 @@ describe('SynthesePanel — un succès ne réinstalle pas une synthèse qui n’
 
     await repondre(200, { success: true, syntheseJson: brouillon(V2, 'Ma version.').syntheseJson, updatedAt: V2 });
 
-    // Le retour paraît sous le patient ; aucun détail n'est ouvert.
-    expect(await ecran.findByText('Brouillon praticien enregistré.')).toBeTruthy();
+    // Aucun détail n'est ouvert ; et le retour, qui parle du dossier de
+    // Sophie, ne paraît pas sous Jennifer (PRA-6k).
+    // La réponse est traitée quand « Générer » se réactive (fin de `saving`).
+    await waitFor(() => expect((ecran.getByRole('button', { name: /Générer une synthèse IA/ }) as HTMLButtonElement).disabled).toBe(false));
     expect(ecran.queryByRole('button', { name: 'Fermer' })).toBeNull();
+    expect(ecran.queryByText('Brouillon praticien enregistré.')).toBeNull();
     expect(ecran.queryByRole('heading', { name: /SYN_BROUILLON/ })).toBeNull();
   });
 
