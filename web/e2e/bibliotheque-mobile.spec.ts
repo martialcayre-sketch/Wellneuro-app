@@ -52,7 +52,32 @@ async function debordantsDeLaPage(page: Page): Promise<string[]> {
         textes.push(`texte dans ${nom(n.parentElement)}`);
       }
     }
-    return [...elements, ...textes].slice(0, 8);
+    if (elements.length > 0 || textes.length > 0) return [...elements, ...textes].slice(0, 8);
+    // Rien ne dépasse, et la page défile pourtant : un débordement interne à
+    // un élément qui, lui, tient dans l'écran (le contenu d'une liste
+    // `<select>` sous WebKit, PRA-6m). Le coupable est nommé par retrait : le
+    // plus profond élément dont le retrait (`display: none`, rétabli aussitôt)
+    // ramène la page à sa largeur.
+    const chaine: string[] = [];
+    let courant: Element = document.body;
+    for (let profondeur = 0; profondeur < 40; profondeur++) {
+      const coupable = [...courant.children].find(enfant => {
+        const style = (enfant as HTMLElement).style;
+        const avant = style.display;
+        style.display = 'none';
+        const tient = document.documentElement.scrollWidth <= largeur;
+        style.display = avant;
+        return tient;
+      });
+      if (!coupable) break;
+      chaine.push(nom(coupable).slice(0, 60));
+      courant = coupable;
+    }
+    const mesure = (e: Element) => {
+      const style = getComputedStyle(e);
+      return `largeur ${Math.round(e.getBoundingClientRect().width)}, scrollWidth ${e.scrollWidth}, overflow ${style.overflowX}, appearance ${style.appearance}`;
+    };
+    return [`par retrait : ${chaine.slice(-3).join(' > ') || 'aucun'} (${courant === document.body ? '' : mesure(courant)}) ; parent : ${courant.parentElement ? mesure(courant.parentElement) : ''}`];
   });
 }
 
