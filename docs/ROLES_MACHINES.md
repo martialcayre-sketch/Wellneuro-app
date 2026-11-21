@@ -538,8 +538,10 @@ Elle est elle-même la session du lot ; elle ne lance aucune autre session
 (amendement du 2026-11-20).
 
 - **Sa consigne** est `docs/claude/templates/ORCHESTRATEUR_PASSE.md`, lue
-  sur `origin/main`. La routine ne porte, hors dépôt, que l'adresse de la
-  page de suivi.
+  sur `origin/main`. La routine porte, hors dépôt, l'adresse de la page de
+  suivi, l'amorçage (clone du dépôt, contrôle des crochets) et le repli :
+  sans dépôt, sans crochets ou sans consigne, une ligne de journal
+  `erreur_script`, puis l'arrêt (`D-540`, amendement du 2026-11-21).
 - **Sa décision** se lit dans `node scripts/wn-orchestrateur-passe.mjs`,
   sur un export des registres et son manifeste. Ce script applique la
   garde « aucun lot `cloud` pris sans PR, aucune intention en vol », la
