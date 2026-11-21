@@ -104,7 +104,11 @@ test.describe.serial('Portail — mon dossier à deux voix', () => {
     await page.goto(`/portail/${JETON}/dossier`);
     await expect(page.getByRole('heading', { name: 'Mon dossier, à deux voix' })).toBeVisible();
 
-    const rendu = ((await page.locator('body').textContent()) ?? '').toLowerCase();
+    // `innerText()`, jamais `textContent()` : ce dernier lit aussi les
+    // `<script>` du flux RSC, dont le `buildId` aléatoire contenait « taux »
+    // au CI de #821 — un rouge sans rapport avec l'écran.
+    // `e2ePieges.guard.test.ts` refuse la forme d'avant.
+    const rendu = (await page.locator('body').innerText()).toLowerCase();
     for (const interdit of ['score', 'niveau', 'moyenne', 'taux', 'points', 'sur 10']) {
       expect(rendu, `« ${interdit} » n’a rien à faire sur cet écran`).not.toContain(interdit);
     }
@@ -114,7 +118,7 @@ test.describe.serial('Portail — mon dossier à deux voix', () => {
     await page.goto(`/portail/${JETON}/dossier`);
     await expect(page.getByText('ne vous êtes pas encore prononcé')).toBeVisible();
 
-    const rendu = (await page.locator('body').textContent()) ?? '';
+    const rendu = await page.locator('body').innerText();
     expect(rendu).not.toContain('non ratifié');
     expect(rendu).not.toContain('refusé');
   });
@@ -167,7 +171,7 @@ test.describe.serial('Portail — mon dossier à deux voix', () => {
 
     // Et aucun bouton pour retirer la réponse : il n'existe pas de verbe pour
     // cela, ni dans l'écran ni dans la route.
-    const rendu = (await page.locator('body').textContent()) ?? '';
+    const rendu = await page.locator('body').innerText();
     expect(rendu).not.toContain('Annuler ma réponse');
     expect(rendu).not.toContain('Supprimer');
   });
