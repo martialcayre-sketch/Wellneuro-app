@@ -1822,7 +1822,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 #### F27 · BP-27 : évaluateur par marqueur
 - **Identifiant, piste** : BP-27 ; plages par population, discordance signée ; parcours.
 - **Rang** : 6 proposé [Hypothese].
-- **Portes, préalables** : BP-03, BP-05, BP-12a, BP-13, BIO-INGEST LOT-07 (fait) (`docs/claude/campagnes/2026-10-04-bio-parcours/CAMPAGNE.md:140`) ; ci ; ligne de registre IA ; porte 5 si un site IA neuf.
+- **Portes, préalables** : BP-03, BP-05, BP-12a (fiches du marqueur choisi seulement, `20261120-2257-b`), BP-13, BIO-INGEST LOT-07 (fait) (`docs/claude/campagnes/2026-10-04-bio-parcours/CAMPAGNE.md:140`) ; ci ; ligne de registre IA ; porte 5 si un site IA neuf.
 - **Migration, release-db** : oui ; rang 6, après la chaîne de l'outil du rang 5.
 - **Décisions, textes** : une D-xxx par marqueur et par usage, avec ses claims (D-122) ; D-157 amendée marqueur par marqueur ; signatures de la main du responsable.
 - **Critère de fin** : chaque marqueur sous sa D-xxx ; propose sans poser ; drapeau posé sur preuves propres.
