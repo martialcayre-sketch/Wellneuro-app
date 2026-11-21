@@ -896,9 +896,14 @@ jobs:
             exit 1
           fi
           echo "$SORTIE"
-          ONEOFF=$(echo "$SORTIE" | grep -oE 'one-off-[0-9]+' | head -1)
+          ONEOFF=$(echo "$SORTIE" | grep -oE 'one-off-[0-9]+' | head -1 || true)
           if [ -z "$ONEOFF" ]; then
-            echo "❌ Impossible d'identifier le conteneur one-off." >&2
+            # Le CLI a répondu « succès » : c'est le cas où le conteneur a le
+            # PLUS probablement démarré. Même consigne que l'échec ci-dessus.
+            echo "❌ Impossible d'identifier le conteneur one-off dans la sortie du CLI." >&2
+            echo "   État INCONNU : la release a pu démarrer. NE PAS RELANCER à" >&2
+            echo "   l'aveugle — lire les one-offs (scalingo --app $SCALINGO_APP ps)," >&2
+            echo "   puis l'état de la base par conteneur (npx prisma migrate status)." >&2
             exit 1
           fi
           echo "→ Suivi de $ONEOFF…"
@@ -936,25 +941,40 @@ jobs:
       # doublon né d'un 504 trompeur est sans effet. La release, elle, n'en a pas.
       - name: "Vérification — migrate status sur conteneur"
         run: |
-          RAPPEL="   La release, elle, A ÉTÉ APPLIQUÉE (sentinelle WN_RELEASE_DB_OK id=$WN_RELEASE_ID
-             à l'étape précédente) : NE PAS LA RELANCER. Constater par conteneur :
-             scalingo --app $SCALINGO_APP run -d 'npx prisma migrate status'"
+          # Le rappel NE NOMME PAS la sentinelle de release : son texte exact
+          # n'apparaît que dans le grep qui la lit, et l'invariant « sentinelles
+          # liées au run » le cherche là (revue wn-reviewer de #2304).
+          # La sortie qu'il pointe est celle de la sonde : ce run se classe
+          # « inconnu », et gèle les chemins déclencheurs jusqu'à un
+          # workflow_dispatch humain ou un revert (D-520 §3 bis, §5).
+          RAPPEL="   La release, elle, A ÉTÉ APPLIQUÉE (sentinelle de release de ce run, étape
+             précédente). Ne pas la relancer à l'aveugle : constater d'abord par conteneur,
+             scalingo --app $SCALINGO_APP run -d 'npx prisma migrate status'.
+             Tant que ce run n'est pas attesté, la sonde gèle les chemins déclencheurs ;
+             la base constatée à jour, la sortie est un workflow_dispatch humain de
+             release-db (D-520 §5), qui n'écrit rien en base à jour et atteste l'application."
           ONEOFF=""
           for essai in 1 2 3; do
-            # `if !` et non une affectation nue : sous `bash -e`, un CLI en échec
-            # (504, délai) faisait sortir l'étape sans un mot.
-            if ! SORTIE=$(scalingo --app "$SCALINGO_APP" --region "$SCALINGO_REGION" \
+            # Le code est capturé, pas laissé à `bash -e` : un CLI en échec (504,
+            # délai) faisait sortir l'étape sans un mot.
+            CODE=0
+            SORTIE=$(scalingo --app "$SCALINGO_APP" --region "$SCALINGO_REGION" \
               run --detached -e WN_RELEASE_ID="$WN_RELEASE_ID" \
-              "bash scripts/release-db-statut.sh" 2>&1); then
-              echo "— lancement du one-off de vérification en échec ($essai/3) :" >&2
+              "bash scripts/release-db-statut.sh" 2>&1) || CODE=$?
+            # `|| true` : sous un éventuel `pipefail`, un grep sans résultat
+            # ferait sortir l'étape avant les nouvelles tentatives.
+            ONEOFF=$(echo "$SORTIE" | grep -oE 'one-off-[0-9]+' | head -1 || true)
+            if [ "$CODE" -ne 0 ] || [ -z "$ONEOFF" ]; then
+              echo "— lancement du one-off de vérification ($essai/3) : code $CODE, identifiant ${ONEOFF:-absent} :" >&2
+              echo "$SORTIE" >&2
             fi
-            ONEOFF=$(echo "$SORTIE" | grep -oE 'one-off-[0-9]+' | head -1)
             if [ -n "$ONEOFF" ]; then break; fi
-            echo "$SORTIE" >&2
             if [ "$essai" -lt 3 ]; then sleep 20; fi
           done
           if [ -z "$ONEOFF" ]; then
-            echo "❌ one-off de vérification non lancé après 3 tentatives (API Scalingo ?)." >&2
+            # « Aucun identifiant », pas « non lancé » : un 504 peut mentir, et
+            # des conteneurs de lecture ont pu démarrer sans qu'on le sache.
+            echo "❌ aucun identifiant de one-off de vérification obtenu après 3 tentatives (API Scalingo ?)." >&2
             echo "$RAPPEL" >&2
             exit 1
           fi

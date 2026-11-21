@@ -37,8 +37,13 @@ lit « base non migrée », et pousse à relancer une release.
 - **Release** : aucune nouvelle tentative, par décision. Un 504 peut mentir, et un second lancement serait une
   seconde release. Seul le message change : la sortie du CLI est montrée, l'état est dit INCONNU, avec quoi lire
   avant tout geste. Le code de sortie reste 1.
-- Ni `docs/DEPLOIEMENT_RELEASE_DB.md` ni la règle `pr-revue-et-release-db.md` ne sont modifiés : aucun des deux ne
-  décrit cette étape en échec, et le message du workflow porte la consigne.
+- Le rappel de la contre-épreuve pointe la sortie que laisse la sonde. Un run dont la contre-épreuve rougit se
+  classe `inconnu` (`classerRunReleaseDb`) ; sa migration reste alors au reliquat de la sonde, et les chemins
+  déclencheurs gèlent jusqu'à un `workflow_dispatch` humain ou un revert (règle §5 piège 2, D-520 §3 bis). Le
+  message dit donc « ne pas relancer à l'aveugle ; constater, puis dispatch humain », et non « ne pas relancer ».
+  Pour la machine, le rouge reste `inconnu` : seul le lecteur humain n'y lit plus une release ratée.
+- Ni `docs/DEPLOIEMENT_RELEASE_DB.md` ni la règle `pr-revue-et-release-db.md` ne sont modifiés : la règle décrit
+  déjà la conséquence (piège 2), et le message du workflow porte la consigne.
 
 ## 4. Fichiers modifiés
 
@@ -49,9 +54,20 @@ lit « base non migrée », et pousse à relancer une release.
 
 ## 5. Validations exécutées
 
-- `node --test scripts/release-db-comportement.test.mjs` : 41 sur 41, dont les 5 neufs.
-- Mutation de référence, le workflow d'`origin/main` rétabli puis remis : les cas 37, 38, 39 et 41 rougissent. Le
-  cas 40 (« base PAS à jour ») est une garde de non-régression, verte des deux côtés.
+- Premier commit (6ecb53f7) : banc à 41 sur 41, dont 5 cas neufs. Mutation de référence avec le workflow
+  d'`origin/main` : 4 cas rouges sur 5 ; « base PAS à jour » est une garde de non-régression.
+- Contre-revue Codex P0 (`wn-codex-avis.mjs`, avis conforme) : un P2, corrigé. « Non lancé » devient « aucun
+  identifiant obtenu », car un 504 peut mentir.
+- `wn-reviewer` sur 6ecb53f7 : NO-GO pour un P1, plus quatre P2. Tous sont corrigés dans le commit de revue :
+  - P1 : le rappel citait `WN_RELEASE_DB_OK id=$WN_RELEASE_ID`, ce qui gardait vert l'invariant « sentinelles
+    liées au run » même avec un `grep -q` nu. Le rappel ne nomme plus la sentinelle, l'invariant est ancré sur
+    `grep -q "…"`, et un cas joue la sentinelle d'un autre run ;
+  - P2-1 : le rappel pointe la sortie du gel (§3) ;
+  - P2-2 : une release sans identifiant dit l'état INCONNU, et un cas le couvre ;
+  - P2-3 : `|| true` sur l'extraction de l'identifiant ;
+  - P2-4 : la sortie et le code du CLI sont montrés à chaque essai en échec.
+- Après corrections : comportement et invariants à 73 sur 73. Mutation du P1 rejouée (`grep -q "WN_RELEASE_DB_OK"`
+  nu dans la release) : deux rouges, le cas « autre run » et l'invariant ; le fichier est rétabli ensuite.
 - T1 complet (`npm run check`) : vert (code 0), anti-secrets compris. T2 n'est pas joué : aucun E2E n'est concerné.
 - Aucun chemin déclencheur de `release-db` n'est touché : le merge ne lance aucun run.
 

@@ -170,9 +170,12 @@ test('les sentinelles des one-offs sont liées au run courant', () => {
     'l’identifiant de run doit exister et inclure la tentative',
   );
   for (const sentinelle of ['WN_RELEASE_DB_OK', 'WN_RELEASE_DB_ECHEC', 'WN_STATUT_DB_OK', 'WN_STATUT_DB_ECHEC']) {
+    // ANCRÉ SUR LE GREP, pas sur le texte seul : un message qui citerait la
+    // sentinelle avec son id gardait vert ce banc pendant qu'un `grep -q` nu
+    // lisait le mot seul (revue wn-reviewer de #2304).
     assert.match(
       bloc,
-      new RegExp(`${sentinelle} id=\\$WN_RELEASE_ID`),
+      new RegExp(`grep -q "${sentinelle} id=\\$WN_RELEASE_ID"`),
       `le grep de ${sentinelle} doit exiger l'id du run, pas le mot seul`,
     );
   }

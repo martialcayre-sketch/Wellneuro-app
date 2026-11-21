@@ -881,10 +881,15 @@ test('D-248 — parité de la règle « en vol » entre release-db et le déploy
  * les suivants `one-off-42` ; `logs` rend `logs` (texte) ; chaque `run` est
  * compté. Et un `sleep` qui rend la main aussitôt.
  */
-function poserScalingoOneOff(base, { echecs, logs = '' }) {
+function poserScalingoOneOff(base, { echecs, logs = '', echecAvecId = false, succesSansId = false }) {
   const bin = join(base, 'bin');
   mkdirSync(bin, { recursive: true });
   writeFileSync(join(base, 'logs.txt'), logs);
+  // `echecAvecId` : le CLI rend une erreur ET un identifiant (le 504 qui ment).
+  // `succesSansId` : le CLI rend 0 sans identifiant.
+  const echec = echecAvecId
+    ? `echo "Run 'scalingo -a app-jouet logs -F one-off-42' to get the output"; echo "An error occurred: 504 Gateway Time-out (jouet)" >&2; exit 1`
+    : `echo "An error occurred: 504 Gateway Time-out (jouet)" >&2; exit 1`;
   writeFileSync(
     join(bin, 'scalingo'),
     `#!/bin/bash
@@ -893,7 +898,8 @@ for arg in "$@"; do
     run)
       echo x >> "${base}/runs"
       n=$(wc -l < "${base}/runs")
-      if [ "$n" -le ${echecs} ]; then echo "An error occurred: 504 Gateway Time-out (jouet)" >&2; exit 1; fi
+      if [ "$n" -le ${echecs} ]; then ${echec}; fi
+      ${succesSansId ? 'echo "Starting one-off (sortie tronquée)"; exit 0' : ':'}
       echo "Starting one-off for app 'app-jouet'."
       echo "Run 'scalingo -a app-jouet logs -F one-off-42' to get the output"
       exit 0 ;;
@@ -938,11 +944,15 @@ test('504 persistant — la contre-épreuve refuse après trois essais, en disan
     assert.equal(compter(base, 'runs'), 3);
     // Le rouge ne se tait plus : la cause est montrée...
     assert.match(r.sortie, /504 Gateway Time-out/);
-    assert.match(r.sortie, /non lancé après 3 tentatives/);
-    // ...et il ne se lit plus comme une release ratée.
+    assert.match(r.sortie, /aucun identifiant de one-off de vérification obtenu après 3 tentatives/);
+    // ...et il ne se lit plus comme une release ratée ; la sortie qu'il pointe
+    // est celle de la sonde (run « inconnu », gel) : le dispatch humain.
     assert.match(r.sortie, /A ÉTÉ APPLIQUÉE/);
-    assert.match(r.sortie, new RegExp(`WN_RELEASE_DB_OK id=${ID_JOUET}`));
-    assert.match(r.sortie, /NE PAS LA RELANCER/);
+    assert.match(r.sortie, /Ne pas la relancer à l'aveugle/);
+    assert.match(r.sortie, /workflow_dispatch humain/);
+    // Le rappel ne nomme pas la sentinelle : son texte exact n'appartient qu'au
+    // grep qui la lit, où l'invariant « liées au run » la cherche.
+    assert.doesNotMatch(r.sortie, /WN_RELEASE_DB_OK id=/);
   } finally {
     rmSync(base, { recursive: true, force: true });
   }
@@ -994,6 +1004,73 @@ test('504 au lancement de la RELEASE — un seul essai, jamais deux, et l’éta
     assert.match(r.sortie, /504 Gateway Time-out/);
     assert.match(r.sortie, /État INCONNU/);
     assert.match(r.sortie, /NE PAS RELANCER/);
+  } finally {
+    rmSync(base, { recursive: true, force: true });
+  }
+});
+
+test('RELEASE — le CLI rend 0 sans identifiant : un seul essai, état INCONNU', () => {
+  const { base, local } = depotJouet({ migrations: false });
+  try {
+    const r = jouer(scriptDeLEtape('Release en one-off'), {
+      cwd: local,
+      bin: poserScalingoOneOff(base, { echecs: 0, succesSansId: true }),
+      env: { WN_RELEASE_ID: ID_JOUET },
+    });
+    assert.notEqual(r.code, 0);
+    assert.equal(compter(base, 'runs'), 1);
+    assert.match(r.sortie, /État INCONNU/);
+    assert.match(r.sortie, /NE PAS RELANCER/);
+  } finally {
+    rmSync(base, { recursive: true, force: true });
+  }
+});
+
+test('RELEASE — la sentinelle de CE run conclut au vert, en un seul lancement', () => {
+  const { base, local } = depotJouet({ migrations: false });
+  try {
+    const r = jouer(scriptDeLEtape('Release en one-off'), {
+      cwd: local,
+      bin: poserScalingoOneOff(base, { echecs: 0, logs: `WN_RELEASE_DB_OK id=${ID_JOUET}\n` }),
+      env: { WN_RELEASE_ID: ID_JOUET },
+    });
+    assert.equal(r.code, 0, r.sortie);
+    assert.equal(compter(base, 'runs'), 1);
+  } finally {
+    rmSync(base, { recursive: true, force: true });
+  }
+});
+
+// Le faux vert que l'invariant textuel ne voyait plus (revue wn-reviewer de
+// #2304) : un `OK` laissé par un AUTRE run dans la fenêtre de logs.
+test('RELEASE — la sentinelle d’un AUTRE run ne conclut jamais au vert', () => {
+  const { base, local } = depotJouet({ migrations: false });
+  try {
+    const r = jouer(scriptDeLEtape('Release en one-off'), {
+      cwd: local,
+      bin: poserScalingoOneOff(base, { echecs: 0, logs: 'WN_RELEASE_DB_OK id=999-1\n' }),
+      env: { WN_RELEASE_ID: ID_JOUET },
+    });
+    assert.notEqual(r.code, 0);
+    assert.match(r.sortie, /Aucune sentinelle après 10 min/);
+  } finally {
+    rmSync(base, { recursive: true, force: true });
+  }
+});
+
+test('contre-épreuve — le CLI échoue MAIS rend un identifiant : on suit ce conteneur, sans relancer', () => {
+  const { base, local } = depotJouet({ migrations: false });
+  try {
+    const r = jouer(scriptDeLEtape('Vérification — migrate status'), {
+      cwd: local,
+      bin: poserScalingoOneOff(base, { echecs: 1, echecAvecId: true, logs: `WN_STATUT_DB_OK id=${ID_JOUET}\n` }),
+      env: { WN_RELEASE_ID: ID_JOUET },
+    });
+    assert.equal(r.code, 0, r.sortie);
+    // UN lancement : l'identifiant rendu malgré l'erreur suffit à suivre.
+    // (Sur un vert, `jouer` ne capte pas stderr : le message d'échec du CLI ne
+    // s'y lit pas ; le cas 504 persistant ci-dessus le prouve.)
+    assert.equal(compter(base, 'runs'), 1);
   } finally {
     rmSync(base, { recursive: true, force: true });
   }
