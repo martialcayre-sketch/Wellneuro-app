@@ -228,7 +228,7 @@ export function AgendaSommeilJournal({ idAssignation, onRetourHub }: Props) {
   const alerteRefus = erreur !== '' ? (
     <div
       role="alert"
-      className="rounded-xl border border-status-warning/40 bg-status-warning/10 px-4 py-3 text-sm text-status-warning text-center"
+      className="rounded border border-status-warning/40 bg-status-warning/10 px-4 py-3 text-sm text-status-warning text-center"
     >
       {erreur}
     </div>
@@ -277,7 +277,7 @@ export function AgendaSommeilJournal({ idAssignation, onRetourHub }: Props) {
       {alerteRefus}
       {alerteRefus && sessionExpiree && <LienReconnexion />}
       {merci && (
-        <div className="rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-foreground text-center">
+        <div className="rounded border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-foreground text-center">
           Merci, à demain matin.
         </div>
       )}

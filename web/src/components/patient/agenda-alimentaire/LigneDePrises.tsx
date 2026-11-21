@@ -219,7 +219,7 @@ export function LigneDePrises({ prises, onChange, desactive = false }: Props) {
         ref={piste}
         data-testid="piste-prises"
         onPointerDown={desactive ? undefined : surPiste}
-        className={`relative h-24 w-full rounded-xl border border-border bg-muted/40 ${
+        className={`relative h-24 w-full rounded border border-border bg-muted/40 ${
           desactive ? 'opacity-40' : 'cursor-pointer'
         }`}
       >

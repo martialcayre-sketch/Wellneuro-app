@@ -171,7 +171,7 @@ function Puces<T extends string>({
               aria-pressed={actif}
               aria-label={aria ? aria(opt) : undefined}
               onClick={() => onChange(opt)}
-              className={`min-h-11 rounded-xl px-4 py-2 text-sm border text-left transition-colors ${
+              className={`min-h-11 rounded px-4 py-2 text-sm border text-left transition-colors ${
                 actif
                   ? 'bg-primary text-primary-foreground border-primary'
                   : 'bg-transparent text-foreground border-border hover:bg-muted'
@@ -210,7 +210,7 @@ function Compteur({
   onChange: (v: number | undefined) => void;
 }) {
   const bouton =
-    'min-h-11 min-w-11 rounded-xl border border-border text-lg text-foreground ' +
+    'min-h-11 min-w-11 rounded border border-border text-lg text-foreground ' +
     'hover:bg-muted disabled:opacity-40 disabled:hover:bg-transparent';
   const idQuestion = useId();
   return (
@@ -253,7 +253,7 @@ function ConfirmerHabituel({ heure, onConfirmer }: { heure: string; onConfirmer:
     <button
       type="button"
       onClick={onConfirmer}
-      className="min-h-11 rounded-xl border border-primary/40 px-4 py-2 text-sm text-primary hover:bg-primary/10"
+      className="min-h-11 rounded border border-primary/40 px-4 py-2 text-sm text-primary hover:bg-primary/10"
     >
       Comme d’habitude : {heure}
     </button>
@@ -457,7 +457,7 @@ export function SaisieNuitForm({
   const signale = (bloc: Bloc) =>
     tentees.has(ETAPE_DU_BLOC[bloc]) && manquants.some((m) => m.bloc === bloc);
   const classeBloc = (bloc: Bloc) =>
-    `rounded-xl outline-none transition-shadow ${
+    `rounded outline-none transition-shadow ${
       signale(bloc) ? 'ring-2 ring-status-warning/60 ring-offset-4 ring-offset-surface' : ''
     }`;
   const ancre = (bloc: Bloc) => (el: HTMLDivElement | null) => {
@@ -819,7 +819,7 @@ export function SaisieNuitForm({
                         type="button"
                         aria-pressed={actif}
                         onClick={() => basculerFacteur(cle)}
-                        className={`min-h-11 rounded-xl px-4 py-2 text-sm border transition-colors ${
+                        className={`min-h-11 rounded px-4 py-2 text-sm border transition-colors ${
                           actif
                             ? 'bg-primary text-primary-foreground border-primary'
                             : 'bg-transparent text-foreground border-border hover:bg-muted'
@@ -833,7 +833,7 @@ export function SaisieNuitForm({
                     type="button"
                     aria-pressed={facteurs.rienDeParticulier === true}
                     onClick={basculerRien}
-                    className={`min-h-11 rounded-xl px-4 py-2 text-sm border transition-colors ${
+                    className={`min-h-11 rounded px-4 py-2 text-sm border transition-colors ${
                       facteurs.rienDeParticulier
                         ? 'bg-primary text-primary-foreground border-primary'
                         : 'bg-transparent text-muted-foreground border-dashed border-border hover:bg-muted'

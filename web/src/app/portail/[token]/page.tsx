@@ -222,7 +222,7 @@ function ConsentScreen({ token, email, onAccepted }: { token: string; email: str
       <PatientPageHeader title="Votre consentement au suivi" />
       {/* Zone de lecture posée sur sable (prototype PAT-2) ; le texte du
           consentement ne change pas. */}
-      <div className="mt-2 rounded-xl bg-lien-sand p-4">
+      <div className="mt-2 rounded bg-lien-sand p-4">
         <DocumentTrust document={getDocumentCourant('consentement_suivi')} />
       </div>
       <label className="flex min-h-11 items-start gap-3 mt-6 cursor-pointer">

@@ -441,7 +441,7 @@ export function GenericQuestionnaire({
 
       {/* Actions brouillon */}
       <div className="flex flex-col sm:flex-row gap-2 pt-2 border-t border-border">
-        <PatientButton variant="ghost" onClick={handleSauvegarder} className="flex-1">
+        <PatientButton variant="link" onClick={handleSauvegarder} className="flex-1">
           Sauvegarder le brouillon
         </PatientButton>
         <PatientButton variant="neutral" onClick={() => setConfirmDialog('reset')} className="flex-1">

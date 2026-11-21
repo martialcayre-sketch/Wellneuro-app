@@ -15,7 +15,7 @@ export function AvisLectureDatee() {
   return (
     <section
       aria-label={TITRE_LECTURE_DATEE}
-      className="rounded-xl border border-border bg-surface px-4 py-3 print:hidden"
+      className="rounded border border-border bg-surface px-4 py-3 print:hidden"
     >
       <p className="text-sm font-semibold text-foreground">{TITRE_LECTURE_DATEE}</p>
       <p className="mt-1 text-sm text-muted-foreground">{TEXTE_LECTURE_DATEE}</p>
