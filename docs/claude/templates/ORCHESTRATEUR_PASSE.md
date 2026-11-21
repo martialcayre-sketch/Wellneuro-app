@@ -1,8 +1,11 @@
 # Consigne de la passe de l'orchestrateur cloud (`D-540`, amendée le 2026-11-20)
 
-Cette consigne est versée au dépôt ; la consigne de la routine, hors dépôt, ne
-porte que l'adresse de la page de suivi de la file D et l'ordre de suivre ce
-fichier tel qu'il est sur `origin/main`. Aucune adresse de page n'entre ici.
+Cette consigne est versée au dépôt ; la consigne de la routine, hors dépôt,
+porte l'adresse de la page de suivi de la file D, l'ordre de suivre ce
+fichier tel qu'il est sur `origin/main`, et les deux blocs qui doivent valoir
+avant que le dépôt ne soit lisible : l'amorçage (clone, contrôle des
+crochets) et le repli (ligne de journal `erreur_script`, puis arrêt), décrits
+par `D-540`, amendement du 2026-11-21. Aucune adresse de page n'entre ici.
 
 La passe **est** la session du lot (réponse `20261120-1231-d`) : elle ne lance
 aucune session. Elle tient au plus un lot, puis s'arrête. Ses valeurs de départ
