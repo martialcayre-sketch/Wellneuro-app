@@ -12,6 +12,8 @@
 import { test, expect } from '@playwright/test';
 import { praticienSessionCookie, patientPortailSessionCookie } from './helpers/auth';
 import { resetPortailState, accuserPorteTrust, closePrisma } from './helpers/db';
+import { dateJourParis } from '../src/lib/dateParis';
+import { decalerDate } from '../src/lib/agenda-sommeil/nuit';
 
 const PATIENT = { idPatient: 'PAT_SEED_03', email: 'michel.dogne@fictif.wellneuro.fr' };
 
@@ -62,10 +64,12 @@ test.describe('Hub patient — agenda du sommeil', () => {
     // était refusée, et ce test échouait deux heures par nuit, sur `main` comme
     // sur toute branche qui en descend. Le CI du 2026-07-30 à 23 h 29 UTC, soit
     // 1 h 29 à Paris, est tombé dedans.
-    const dateParis = (decalageJours: number) => new Intl.DateTimeFormat('fr-CA', {
-      timeZone: 'Europe/Paris', year: 'numeric', month: '2-digit', day: '2-digit',
-    }).format(new Date(Date.now() + decalageJours * 86_400_000));
-    const hier = dateParis(-1);
+    //
+    // Et « hier » se décale sur le CALENDRIER, jamais de 24 h : le dernier
+    // dimanche d'octobre dure 25 h à Paris, et entre 23 h et minuit
+    // `Date.now() - 86_400_000` tombait encore le jour même (T3 du 2026-10-25 à
+    // 23 h 32). `e2ePieges.guard.test.ts` refuse la forme d'avant.
+    const hier = decalerDate(dateJourParis(), -1);
     const saisie = await page.request.post('/api/portail/agenda-sommeil', {
       data: {
         idAssignation,

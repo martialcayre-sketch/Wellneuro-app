@@ -21,7 +21,7 @@
 // Les drapeaux `WN_CB_ENABLED` et `WN_CB_PROPOSITION` sont posés par
 // `webServer.env` et par la seule commande `npm run build` : sans eux la route
 // rend 503 et ce spec passerait au vert en ne trouvant rien à cliquer.
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, type Locator, type Page } from '@playwright/test';
 import { praticienSessionCookie } from './helpers/auth';
 import { confirmerEpisodeT0, ouvrirOngletBiologie } from './helpers/biologie';
 import {
@@ -194,32 +194,59 @@ test.describe('Document patient biologie — consigner, puis relire après recha
     context,
   }) => {
     await context.addCookies([await praticienSessionCookie()]);
-    const panneau = await ouvrirPanneauProposition(page);
 
-    // Le geste est REOFFERT après rechargement : `dejaConsigne` ne survit pas à
-    // la page. C'est voulu — un nouveau passage sur la fiche rouvre le geste —,
-    // et c'est ce qui rend la garde serveur nécessaire plutôt que décorative.
-    const etablir = panneau.getByRole('button', {
-      name: 'Établir et consigner le document patient',
-    });
-    await expect(etablir).toBeEnabled();
-    await etablir.click();
-
-    // LES DEUX GARDES SONT ORDONNÉES, et le rechargement a effacé les jetons
-    // de confirmation du test 1 : le registre re-refuse d'abord s'il mord, et
-    // ce n'est qu'une fois SON second temps tranché que le doublon apparaît.
-    // Les enchaîner dans cet ordre n'est pas une précaution — c'est la
-    // séquence que la route impose (« un texte inadapté au patient se signale
-    // avant sa redondance »).
-    const malgreRegistre = panneau.getByRole('button', {
-      name: 'Consigner malgré le registre signalé',
-    });
-    const secondeCopie = panneau.getByRole('button', { name: 'Consigner une seconde copie' });
-    await expect(malgreRegistre.or(secondeCopie).first()).toBeVisible();
-    if ((await malgreRegistre.count()) > 0) await malgreRegistre.click();
+    /**
+     * Un geste « établir » sur une page neuve. Rend `true` si la garde du
+     * doublon a mordu, `false` si une pièce neuve a été consignée.
+     *
+     * Le geste est REOFFERT après rechargement : `dejaConsigne` ne survit pas
+     * à la page. C'est voulu — un nouveau passage sur la fiche rouvre le
+     * geste —, et c'est ce qui rend la garde serveur nécessaire plutôt que
+     * décorative.
+     *
+     * LES DEUX GARDES SONT ORDONNÉES, et le rechargement a effacé les jetons
+     * de confirmation précédents : le registre re-refuse d'abord s'il mord, et
+     * ce n'est qu'une fois SON second temps tranché que le doublon apparaît.
+     * Les enchaîner dans cet ordre n'est pas une précaution — c'est la
+     * séquence que la route impose (« un texte inadapté au patient se signale
+     * avant sa redondance »).
+     */
+    async function etablirSurPageNeuve(panneau: Locator): Promise<boolean> {
+      const etablir = panneau.getByRole('button', {
+        name: 'Établir et consigner le document patient',
+      });
+      await expect(etablir).toBeEnabled();
+      await etablir.click();
+      const malgreRegistre = panneau.getByRole('button', {
+        name: 'Consigner malgré le registre signalé',
+      });
+      const secondeCopie = panneau.getByRole('button', { name: 'Consigner une seconde copie' });
+      const consigne = panneau.getByText(/Document consigné au dossier\. Provenance :/);
+      await expect(malgreRegistre.or(secondeCopie).or(consigne).first()).toBeVisible();
+      if ((await malgreRegistre.count()) > 0) {
+        await malgreRegistre.click();
+        await expect(secondeCopie.or(consigne).first()).toBeVisible();
+      }
+      return (await secondeCopie.count()) > 0;
+    }
 
     // Le texte dérivé ne porte que la DATE (pas l'heure) : deux consignations
-    // du même jour produisent le MÊME texte, donc le doublon est déterministe.
+    // du même jour produisent le MÊME texte. Mais celle du test 1 peut dater
+    // de la VEILLE — une suite qui franchit minuit entre les deux tests
+    // (iPhone 13, 00:00:10 UTC, PR #1595) : le texte a changé, la pièce est
+    // neuve, et le doublon attendu ne venait jamais. Le test fabrique alors
+    // lui-même sa première pièce du jour et recommence : deux gestes à
+    // quelques secondes d'intervalle ne franchissent pas minuit deux fois.
+    let panneau = await ouvrirPanneauProposition(page);
+    if (!(await etablirSurPageNeuve(panneau))) {
+      panneau = await ouvrirPanneauProposition(page);
+      expect(
+        await etablirSurPageNeuve(panneau),
+        'deux gestes du même jour : la garde du doublon devait mordre au second',
+      ).toBe(true);
+    }
+
+    const secondeCopie = panneau.getByRole('button', { name: 'Consigner une seconde copie' });
     await expect(secondeCopie).toBeVisible();
     await expect(panneau.getByRole('alert')).toContainText(/déjà consigné à ce dossier/);
 
