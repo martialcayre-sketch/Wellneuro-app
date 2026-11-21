@@ -1,8 +1,8 @@
 # Registre sanitaire du corpus clinique
 
-`source_registry.json` contient 795 notices normalisées : 391 issues du pack WN
+`source_registry.json` contient 825 notices normalisées : 391 issues du pack WN
 Ultimate v2 (`NNFC1_Annee1`, `NNPP2_Annee2`), 116 instruments du cabinet
-(`INSTRUMENTS_CABINET`), et 288 sources externes (`SOURCES_EXTERNES` — BP-07 :
+(`INSTRUMENTS_CABINET`), et 318 sources externes (`SOURCES_EXTERNES` — BP-07 :
 avis d'agence, recommandation, essai, règlement, `WN-SRC-0508` à `0511`, puis
 pour la position P5 v0.3 une recommandation de l'OMS, `WN-SRC-0555` ; besoin 2 :
 trois avis d'agence, un rapport d'évaluation, une recommandation de pratique,
@@ -128,7 +128,17 @@ nidra, la pleine conscience, l'EMDR, la lumière, les odeurs, les espaces verts,
 l'audition et des outils de mesure, `WN-SRC-0760` à `0782` ; quarante et une
 notices seules, `WN-SRC-0783` à `0823`, dont trois textes à ingérer après
 fourniture du PDF par le responsable (`WN-SRC-0784`, `0802`, `0804`) et quatre
-documents officiels), dont seuls des extraits ciblés sont ingérés. Les quatorze vidéos de cours du
+documents officiels ; besoin 11 « sens et valeurs », douze textes libres ingérés le
+2026-11-21 sur accord du responsable (CC BY, un CC BY-NC et trois manuscrits
+d'auteur portant la mention de fouille de textes) : validations d'échelles de
+pleine conscience, revues et essais sur la méditation et ses effets indésirables,
+le BDNF périphérique, le séquençage du traitement du stress post-traumatique et le
+sens de la vie, `WN-SRC-0826`, `0829`, `0832` à `0837`, `0840`, `0841`, `0843` et
+`0845` ; dix-huit notices seules, `WN-SRC-0824`, `0825`, `0827`, `0828`, `0830`,
+`0831`, `0838`, `0839`, `0842`, `0844` et `0846` à `0853`, dont cinq textes à
+ingérer après fourniture du PDF par le responsable (`WN-SRC-0825`, `0827`, `0838`,
+`0842`, `0844`), quatre documents officiels et quatre fiches de registre d'essais),
+dont seuls des extraits ciblés sont ingérés. Les quatorze vidéos de cours du
 praticien, `WN-SRC-0268` à `0281`, sont ingérées depuis le 2026-11-20 comme
 pièces internes (transcription automatique non relue, erreurs d'écoute évidentes
 seules corrigées et listées à la notice, claims en attente de validation ; aucun
