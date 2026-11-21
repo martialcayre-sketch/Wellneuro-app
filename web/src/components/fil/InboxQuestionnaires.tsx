@@ -403,7 +403,7 @@ export function InboxQuestionnaires() {
                                 type="button"
                                 onClick={() => void poserValidite(reponse.idReponse, 'VALID')}
                                 disabled={saving}
-                                className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-border px-3 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                                className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-border px-3 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                               >
                                 Rétablir dans le raisonnement
                               </button>
@@ -432,7 +432,7 @@ export function InboxQuestionnaires() {
                                     type="button"
                                     onClick={() => void poserValidite(reponse.idReponse, 'INVALID', retrait.motif)}
                                     disabled={saving || retrait.motif.trim().length < MOTIF_MIN}
-                                    className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                                    className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                                   >
                                     {saving ? 'Enregistrement...' : 'Confirmer le retrait'}
                                   </button>
@@ -440,7 +440,7 @@ export function InboxQuestionnaires() {
                                     type="button"
                                     onClick={() => setRetrait(null)}
                                     disabled={saving}
-                                    className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-border px-3 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                                    className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-border px-3 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                                   >
                                     Annuler
                                   </button>
@@ -451,7 +451,7 @@ export function InboxQuestionnaires() {
                                 type="button"
                                 onClick={() => setRetrait({ idReponse: reponse.idReponse, motif: '', erreur: '' })}
                                 disabled={saving}
-                                className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-border px-3 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                                className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-border px-3 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                               >
                                 Retirer du raisonnement clinique
                               </button>
@@ -468,7 +468,7 @@ export function InboxQuestionnaires() {
             <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-5 py-4">
               <Link
                 href={detail ? `/dashboard/patients/${encodeURIComponent(detail.idPatient)}?onglet=trajectoire` : '#'}
-                className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-border px-3 text-sm font-medium text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-border px-3 text-sm font-medium text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
               >
                 <ExternalLink aria-hidden="true" strokeWidth={TRAIT_ICONE} size={16} />
                 Ouvrir la fiche-trajectoire
@@ -477,7 +477,7 @@ export function InboxQuestionnaires() {
                 type="button"
                 onClick={() => void confirmerLecture()}
                 disabled={saving || reponsesDetail.length === 0 || Boolean(detail?.loading)}
-                className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
               >
                 {saving ? <Eye aria-hidden="true" strokeWidth={TRAIT_ICONE} size={16} /> : <CheckCheck aria-hidden="true" strokeWidth={TRAIT_ICONE} size={16} />}
                 {saving ? 'Confirmation...' : 'Confirmer la lecture'}

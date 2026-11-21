@@ -22,7 +22,7 @@ type SuggestedPackSelection = {
 // les boutons passent par `ui/Button`. Une case garde sa taille, sa ligne fait
 // la zone de clic de 44 px (`CLASSE_CASE`).
 const inputCls =
-  'min-h-11 bg-surface border border-border rounded-lg px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring';
+  'min-h-11 [&:is(select)]:h-11 bg-surface border border-border rounded-lg px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring';
 const CLASSE_CASE =
   'flex min-h-11 items-center gap-2 text-sm text-foreground hover:bg-muted/50 rounded px-1 py-0.5 cursor-pointer has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-focus-ring';
 
