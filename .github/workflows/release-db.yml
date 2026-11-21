@@ -877,11 +877,24 @@ jobs:
           # près — un invariant CI verrouille cette symétrie.
           EMPREINTE=$(cd web && find prisma/migrations -type f | LC_ALL=C sort | xargs sha256sum | sha256sum | cut -d' ' -f1)
           echo "→ Empreinte des migrations approuvées : $EMPREINTE"
-          SORTIE=$(scalingo --app "$SCALINGO_APP" --region "$SCALINGO_REGION" \
+          # Le code du CLI est lu par `if !` : sous `bash -e`, une affectation
+          # `SORTIE=$(…)` en échec faisait sortir l'étape SANS UN MOT, la
+          # sortie du CLI restant captive. JAMAIS DE NOUVELLE TENTATIVE ICI :
+          # un 504 (ou un délai) peut rendre une erreur alors que le one-off a
+          # démarré, et un second lancement serait une seconde release.
+          if ! SORTIE=$(scalingo --app "$SCALINGO_APP" --region "$SCALINGO_REGION" \
             run --detached \
             -e WN_RELEASE_ID="$WN_RELEASE_ID" \
             -e WN_MIGRATIONS_EMPREINTE="$EMPREINTE" \
-            "bash scripts/release-db-scalingo.sh" 2>&1)
+            "bash scripts/release-db-scalingo.sh" 2>&1); then
+            echo "$SORTIE"
+            echo "❌ Le CLI a rendu une erreur au lancement du one-off de release." >&2
+            echo "   État INCONNU : sur un 504 ou un délai, le conteneur a pu démarrer" >&2
+            echo "   malgré l'erreur. NE PAS RELANCER à l'aveugle — lire d'abord les" >&2
+            echo "   one-offs de l'app (scalingo --app $SCALINGO_APP ps) et leurs logs," >&2
+            echo "   puis l'état de la base par conteneur (npx prisma migrate status)." >&2
+            exit 1
+          fi
           echo "$SORTIE"
           ONEOFF=$(echo "$SORTIE" | grep -oE 'one-off-[0-9]+' | head -1)
           if [ -z "$ONEOFF" ]; then
@@ -913,13 +926,38 @@ jobs:
       # add-on), pas celle du script de release. Sentinelles liées au run,
       # comme la release — le texte de `migrate status`, lui, ne peut pas
       # porter d'id.
+      #
+      # CETTE ÉTAPE NE TOURNE QU'APRÈS UNE RELEASE APPLIQUÉE (pas d'`if:` : elle
+      # suit le vert de la précédente, donc sa sentinelle `WN_RELEASE_DB_OK`).
+      # Son rouge dit « contre-épreuve manquante », jamais « base non migrée » —
+      # le 2026-08-24, un 504 de l'API au lancement du one-off a fait lire un
+      # run rouge comme une release ratée. D'où, ici et ici seulement, des
+      # NOUVELLES TENTATIVES de lancement : ce one-off ne fait que lire, et un
+      # doublon né d'un 504 trompeur est sans effet. La release, elle, n'en a pas.
       - name: "Vérification — migrate status sur conteneur"
         run: |
-          SORTIE=$(scalingo --app "$SCALINGO_APP" --region "$SCALINGO_REGION" \
-            run --detached -e WN_RELEASE_ID="$WN_RELEASE_ID" \
-            "bash scripts/release-db-statut.sh" 2>&1)
-          ONEOFF=$(echo "$SORTIE" | grep -oE 'one-off-[0-9]+' | head -1)
-          [ -n "$ONEOFF" ] || { echo "❌ one-off de vérification introuvable." >&2; exit 1; }
+          RAPPEL="   La release, elle, A ÉTÉ APPLIQUÉE (sentinelle WN_RELEASE_DB_OK id=$WN_RELEASE_ID
+             à l'étape précédente) : NE PAS LA RELANCER. Constater par conteneur :
+             scalingo --app $SCALINGO_APP run -d 'npx prisma migrate status'"
+          ONEOFF=""
+          for essai in 1 2 3; do
+            # `if !` et non une affectation nue : sous `bash -e`, un CLI en échec
+            # (504, délai) faisait sortir l'étape sans un mot.
+            if ! SORTIE=$(scalingo --app "$SCALINGO_APP" --region "$SCALINGO_REGION" \
+              run --detached -e WN_RELEASE_ID="$WN_RELEASE_ID" \
+              "bash scripts/release-db-statut.sh" 2>&1); then
+              echo "— lancement du one-off de vérification en échec ($essai/3) :" >&2
+            fi
+            ONEOFF=$(echo "$SORTIE" | grep -oE 'one-off-[0-9]+' | head -1)
+            if [ -n "$ONEOFF" ]; then break; fi
+            echo "$SORTIE" >&2
+            if [ "$essai" -lt 3 ]; then sleep 20; fi
+          done
+          if [ -z "$ONEOFF" ]; then
+            echo "❌ one-off de vérification non lancé après 3 tentatives (API Scalingo ?)." >&2
+            echo "$RAPPEL" >&2
+            exit 1
+          fi
           echo "→ Suivi de $ONEOFF…"
           for i in $(seq 1 30); do
             LOGS=$(scalingo --app "$SCALINGO_APP" --region "$SCALINGO_REGION" \
@@ -936,6 +974,7 @@ jobs:
             sleep 10
           done
           echo "❌ Aucune sentinelle de statut après 5 min — vérifier à la main." >&2
+          echo "$RAPPEL" >&2
           exit 1
 
       # Plus de garde anti-recul en fin de job (D-467, 2026-11-09) : l'auto-déploiement

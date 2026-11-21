@@ -865,3 +865,136 @@ test('D-248 — parité de la règle « en vol » entre release-db et le déploy
   assert.deepEqual(cotéReleaseDb, cotéDeployeur);
   assert.deepEqual(cotéDeployeur, ['d-vide', 'd0', 'd1', 'd10', 'd2', 'd3']);
 });
+
+// ── UN 504 AU LANCEMENT D'UN ONE-OFF (autonomie-pieges-restes, partie 10) ────
+//
+// Le 2026-08-24, la contre-épreuve n'a pas pu créer son conteneur (504 de
+// l'API) : run rouge, base pourtant migrée, et un rouge qu'on lisait « release
+// ratée ». Sous `bash -e`, l'affectation `SORTIE=$(scalingo … run …)` en échec
+// faisait sortir l'étape SANS UN MOT. Désormais : la contre-épreuve, qui ne fait
+// que lire, retente trois fois et rappelle en refusant que la release A EU LIEU ;
+// la release, elle, ne retente JAMAIS — un 504 peut mentir, et un second
+// lancement serait une seconde release.
+
+/**
+ * `scalingo` dont les `echecs` premiers `run` rendent un 504 (sans conteneur),
+ * les suivants `one-off-42` ; `logs` rend `logs` (texte) ; chaque `run` est
+ * compté. Et un `sleep` qui rend la main aussitôt.
+ */
+function poserScalingoOneOff(base, { echecs, logs = '' }) {
+  const bin = join(base, 'bin');
+  mkdirSync(bin, { recursive: true });
+  writeFileSync(join(base, 'logs.txt'), logs);
+  writeFileSync(
+    join(bin, 'scalingo'),
+    `#!/bin/bash
+for arg in "$@"; do
+  case "$arg" in
+    run)
+      echo x >> "${base}/runs"
+      n=$(wc -l < "${base}/runs")
+      if [ "$n" -le ${echecs} ]; then echo "An error occurred: 504 Gateway Time-out (jouet)" >&2; exit 1; fi
+      echo "Starting one-off for app 'app-jouet'."
+      echo "Run 'scalingo -a app-jouet logs -F one-off-42' to get the output"
+      exit 0 ;;
+    logs) cat "${base}/logs.txt"; exit 0 ;;
+  esac
+done
+exit 0
+`,
+  );
+  writeFileSync(join(bin, 'sleep'), '#!/bin/sh\nexit 0\n');
+  chmodSync(join(bin, 'scalingo'), 0o755);
+  chmodSync(join(bin, 'sleep'), 0o755);
+  return bin;
+}
+
+const ID_JOUET = '123-1';
+
+test('504 — la contre-épreuve retente son lancement, et conclut au vert si un essai passe', () => {
+  const { base, local } = depotJouet({ migrations: false });
+  try {
+    const r = jouer(scriptDeLEtape('Vérification — migrate status'), {
+      cwd: local,
+      bin: poserScalingoOneOff(base, { echecs: 2, logs: `WN_STATUT_DB_OK id=${ID_JOUET}\n` }),
+      env: { WN_RELEASE_ID: ID_JOUET },
+    });
+    assert.equal(r.code, 0, r.sortie);
+    assert.equal(compter(base, 'runs'), 3);
+  } finally {
+    rmSync(base, { recursive: true, force: true });
+  }
+});
+
+test('504 persistant — la contre-épreuve refuse après trois essais, en disant que la release A EU LIEU', () => {
+  const { base, local } = depotJouet({ migrations: false });
+  try {
+    const r = jouer(scriptDeLEtape('Vérification — migrate status'), {
+      cwd: local,
+      bin: poserScalingoOneOff(base, { echecs: 99 }),
+      env: { WN_RELEASE_ID: ID_JOUET },
+    });
+    assert.notEqual(r.code, 0);
+    assert.equal(compter(base, 'runs'), 3);
+    // Le rouge ne se tait plus : la cause est montrée...
+    assert.match(r.sortie, /504 Gateway Time-out/);
+    assert.match(r.sortie, /non lancé après 3 tentatives/);
+    // ...et il ne se lit plus comme une release ratée.
+    assert.match(r.sortie, /A ÉTÉ APPLIQUÉE/);
+    assert.match(r.sortie, new RegExp(`WN_RELEASE_DB_OK id=${ID_JOUET}`));
+    assert.match(r.sortie, /NE PAS LA RELANCER/);
+  } finally {
+    rmSync(base, { recursive: true, force: true });
+  }
+});
+
+test('contre-épreuve muette — le refus après le délai rappelle aussi que la release a eu lieu', () => {
+  const { base, local } = depotJouet({ migrations: false });
+  try {
+    const r = jouer(scriptDeLEtape('Vérification — migrate status'), {
+      cwd: local,
+      bin: poserScalingoOneOff(base, { echecs: 0 }),
+      env: { WN_RELEASE_ID: ID_JOUET },
+    });
+    assert.notEqual(r.code, 0);
+    assert.match(r.sortie, /Aucune sentinelle de statut/);
+    assert.match(r.sortie, /A ÉTÉ APPLIQUÉE/);
+  } finally {
+    rmSync(base, { recursive: true, force: true });
+  }
+});
+
+test('contre-épreuve en ÉCHEC — « base non à jour » reste dit tel quel, sans rappel rassurant', () => {
+  const { base, local } = depotJouet({ migrations: false });
+  try {
+    const r = jouer(scriptDeLEtape('Vérification — migrate status'), {
+      cwd: local,
+      bin: poserScalingoOneOff(base, { echecs: 0, logs: `WN_STATUT_DB_ECHEC id=${ID_JOUET}\n` }),
+      env: { WN_RELEASE_ID: ID_JOUET },
+    });
+    assert.notEqual(r.code, 0);
+    assert.match(r.sortie, /PAS à jour/);
+    assert.doesNotMatch(r.sortie, /A ÉTÉ APPLIQUÉE/);
+  } finally {
+    rmSync(base, { recursive: true, force: true });
+  }
+});
+
+test('504 au lancement de la RELEASE — un seul essai, jamais deux, et l’état est dit INCONNU', () => {
+  const { base, local } = depotJouet({ migrations: false });
+  try {
+    const r = jouer(scriptDeLEtape('Release en one-off'), {
+      cwd: local,
+      bin: poserScalingoOneOff(base, { echecs: 99 }),
+      env: { WN_RELEASE_ID: ID_JOUET },
+    });
+    assert.notEqual(r.code, 0);
+    // UN lancement : un 504 peut mentir, et un second serait une seconde release.
+    assert.equal(compter(base, 'runs'), 1);
+    assert.match(r.sortie, /504 Gateway Time-out/);
+    assert.match(r.sortie, /État INCONNU/);
+    assert.match(r.sortie, /NE PAS RELANCER/);
+  } finally {
+    rmSync(base, { recursive: true, force: true });
+  }
+});
