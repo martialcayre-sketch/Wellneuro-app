@@ -20,6 +20,30 @@ Trois verdicts, rendus par les hooks PreToolUse de `.claude/settings.json` :
   `autonomie-frictions`), `prisma format` est aussi refusé, mais lu sur la
   commande **masquée** comme la « demande » : il ne détruit rien, et une
   prose qui le cite doit rester libre ; `prisma format --check` passe.
+  Depuis le 2026-11-16 (lot `autonomie-pieges-restes`), un `$VAR:x` non
+  accolé (`"$NEW:refs/heads/x"`, `$HOTE:tmp`) est refusé : zsh lit `:r`,
+  `:h`, `:t`, `:fe`, `:gh`… comme un modificateur. Guillemets doubles et
+  heredoc à délimiteur nu compris, puisque zsh y développe ; apostrophes hors
+  guillemets doubles, `\$` (heredoc nu compris) et heredoc à délimiteur cité
+  restent libres — un heredoc écrit dans le corps d'un heredoc cité est du
+  texte. La lecture suit les citations : un `<<` n'ouvre un heredoc qu'en
+  contexte de code (`$(…)` compris), jamais entre guillemets ou apostrophes,
+  dans un commentaire (lu tel quel) ni dans `$((…))`.
+  `${NEW}:refs/…` passe. Depuis le 2026-11-20 (même lot, partie 6), une
+  commande **en tâche de fond** dont la dernière commande est un `echo`, un
+  `printf` ou un `print` de `$?` (ou `${?}`) est refusée. Le code de la
+  tâche serait celui d'`echo` (0), et la notification dirait « exit code 0 »
+  même sur un échec. Le refus vaut aussi derrière une redirection (`>> f`,
+  `>&2`, `2>&1`), un `;`, `}` ou `&` final, ou un tube vers `tee` ou `cat`.
+  Il l'emporte sur « demande », enveloppe sûre comprise. La forme permise est
+  `…; c=$?; echo "code=$c" >> f; exit $c`. Au premier plan, la session lit la
+  sortie elle-même, et la commande passe. Le crochet lit le dernier segment de
+  la structure. **Trous assumés** :
+  - des guillemets contenant `;`, `&` ou `|` (`echo "a;b $?"`) ;
+  - `echo $?; exit` sans argument ;
+  - un `echo` final dans `if`, `for` ou `while`.
+
+  **Faux positif assumé** : un commentaire final qui cite `echo $?`.
 - **demande** — migration **destructive** sous `prisma/migrations/` ou
   `supabase/migrations/` (DROP, TRUNCATE, DELETE ou UPDATE sans WHERE,
   RENAME, ALTER … TYPE, MERGE, `EXECUTE` dynamique, DISABLE TRIGGER,

@@ -512,6 +512,7 @@ describe('AtelierCorpusPanel (Atelier corpus v1)', () => {
     fireEvent.change(screen.getByLabelText(/Motif du rejet/), { target: { value: 'Doublon' } });
 
     fireEvent.click(screen.getByRole('button', { name: 'Soumettre les décisions (2)' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer les décisions' }));
 
     await waitFor(() => expect(appelsPost()).toHaveLength(2));
     const posts = appelsPost();
@@ -547,6 +548,7 @@ describe('AtelierCorpusPanel (Atelier corpus v1)', () => {
 
     fireEvent.change(screen.getByLabelText(/Motif du rejet/), { target: { value: 'Erroné' } });
     fireEvent.click(screen.getByRole('button', { name: 'Soumettre les décisions (1)' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer la décision' }));
 
     // Une seule décision part : le 2e claim, non marqué, n'est jamais soumis.
     await waitFor(() => expect(appelsPost()).toHaveLength(1));
@@ -584,6 +586,7 @@ describe('AtelierCorpusPanel (Atelier corpus v1)', () => {
     fireEvent.click(screen.getAllByRole('button', { name: 'À valider' })[0]);
     fireEvent.click(screen.getAllByRole('button', { name: 'À valider' })[1]);
     fireEvent.click(screen.getByRole('button', { name: 'Soumettre les décisions (2)' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer les décisions' }));
 
     // La file se vide, MAIS le retour d'audit reste lisible.
     await waitFor(() => expect(screen.getByText(/Aucun claim en attente/)).toBeTruthy());
@@ -606,6 +609,7 @@ describe('AtelierCorpusPanel (Atelier corpus v1)', () => {
       target: { value: 'Motif B' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Soumettre les décisions (2)' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer les décisions' }));
 
     await waitFor(() => expect(appelsPost()).toHaveLength(2));
     const parId = Object.fromEntries(
@@ -637,6 +641,7 @@ describe('AtelierCorpusPanel (Atelier corpus v1)', () => {
     fireEvent.click(screen.getAllByRole('button', { name: 'À valider' })[0]);
     fireEvent.click(screen.getAllByRole('button', { name: 'À valider' })[1]);
     fireEvent.click(screen.getByRole('button', { name: 'Soumettre les décisions (2)' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer les décisions' }));
 
     await waitFor(() => expect(screen.getByText(/1 décision enregistrée/)).toBeTruthy());
     // Le claim en échec est nommé, jamais compté comme signé.
@@ -662,11 +667,126 @@ describe('AtelierCorpusPanel (Atelier corpus v1)', () => {
     fireEvent.click(screen.getAllByRole('button', { name: 'À valider' })[0]);
     fireEvent.click(screen.getAllByRole('button', { name: 'À valider' })[1]);
     fireEvent.click(screen.getByRole('button', { name: 'Soumettre les décisions (2)' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer les décisions' }));
 
     // Le run s'arrête au 1er conflit : une seule tentative, résumé honnête.
     await waitFor(() => expect(screen.getByText(/interrompu/)).toBeTruthy());
     expect(appelsPost()).toHaveLength(1);
     expect(screen.getByText(/0 décision/)).toBeTruthy();
+  });
+
+  // Q7 (a) de D-481, complément DOC-13 : la soumission est confirmée (T-71,
+  // T-72) ; la confirmation précède l'acte sans le changer.
+  it('revue en lot : « Soumettre » ouvre la confirmation T-71 et ne soumet rien ; « Annuler » referme', async () => {
+    fetchMock.mockImplementation(router({ listeDefaut: LISTE_2 }));
+    render(<AtelierCorpusPanel />);
+    await waitFor(() => expect(screen.getByText(/WN-CL-0056-002/)).toBeTruthy());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Revue en lot' }));
+    fireEvent.click(screen.getAllByRole('button', { name: 'À valider' })[0]);
+    fireEvent.click(screen.getAllByRole('button', { name: 'À rejeter' })[1]);
+    fireEvent.change(screen.getByLabelText(/Motif du rejet/), { target: { value: 'Doublon' } });
+    const declencheur = screen.getByRole('button', { name: 'Soumettre les décisions (2)' });
+    fireEvent.click(declencheur);
+
+    const dialogue = screen.getByRole('alertdialog');
+    expect(dialogue.textContent).toContain(
+      'Soumettre 2 décisions (1 validation, 1 rejet) ? Chaque décision est enregistrée séparément.',
+    );
+    expect(screen.getByRole('button', { name: 'Confirmer les décisions' })).toBeTruthy();
+    expect(appelsPost()).toHaveLength(0);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Annuler' }));
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+    expect(appelsPost()).toHaveLength(0);
+    // Les marques restent posées.
+    expect(screen.getByRole('button', { name: 'Soumettre les décisions (2)' })).toBeTruthy();
+  });
+
+  it('revue en lot : les marques sont des boutons pressés bordés, sans aplat (Q6)', async () => {
+    fetchMock.mockImplementation(router({ listeDefaut: LISTE_2 }));
+    render(<AtelierCorpusPanel />);
+    await waitFor(() => expect(screen.getByText(/WN-CL-0056-002/)).toBeTruthy());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Revue en lot' }));
+    const aValider = screen.getAllByRole('button', { name: 'À valider' })[0];
+    const aRejeter = screen.getAllByRole('button', { name: 'À rejeter' })[1];
+    fireEvent.click(aValider);
+    fireEvent.click(aRejeter);
+    expect(aValider.getAttribute('aria-pressed')).toBe('true');
+    expect(aRejeter.getAttribute('aria-pressed')).toBe('true');
+    for (const marque of [aValider, aRejeter]) {
+      expect(marque.className).toContain('min-h-11');
+      expect(marque.className).toContain('focus-visible:ring-focus-ring');
+      expect(marque.className).not.toMatch(/(^|\s)bg-primary(\s|$)/);
+      expect(marque.className).not.toContain('bg-status-danger ');
+    }
+    expect(aValider.className).toContain('border-primary bg-primary/10');
+    expect(aRejeter.className).toContain('border-status-danger bg-status-danger/10');
+  });
+
+  it('revue en lot : T-71 ne compte que les marques des claims affichés, jamais celles d’un claim sorti de la file', async () => {
+    let tentatives = 0;
+    fetchMock.mockImplementation((url: string, options?: { method?: string }) => {
+      if (options?.method === 'POST') {
+        tentatives += 1;
+        return Promise.resolve(
+          json({ ok: false, reason: 'etat_divergent', error: 'La file a changé sous vous.' }, false),
+        );
+      }
+      if (url.startsWith('/api/praticien/corpus/claims?')) {
+        // Après le conflit, le 1er claim a été décidé ailleurs : il quitte la file.
+        const liste =
+          tentatives > 0
+            ? { ...LISTE_2, total: 1, claims: [CLAIM_2], compteurs: { ...COMPTEURS, enAttenteValidation: 1 } }
+            : LISTE_2;
+        return Promise.resolve(json(liste));
+      }
+      return Promise.resolve(json({}, false));
+    });
+    render(<AtelierCorpusPanel />);
+    await waitFor(() => expect(screen.getByText(/WN-CL-0056-002/)).toBeTruthy());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Revue en lot' }));
+    fireEvent.click(screen.getAllByRole('button', { name: 'À valider' })[0]);
+    fireEvent.click(screen.getAllByRole('button', { name: 'À valider' })[1]);
+    fireEvent.click(screen.getByRole('button', { name: 'Soumettre les décisions (2)' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer les décisions' }));
+    await waitFor(() => expect(screen.getByText(/interrompu/)).toBeTruthy());
+    await waitFor(() => expect(screen.queryByText(/WN-CL-0056-001/)).toBeNull());
+
+    // Seule la marque du claim encore affiché compte, et seule elle partira.
+    fireEvent.click(screen.getByRole('button', { name: 'Soumettre les décisions (1)' }));
+    expect(screen.getByRole('alertdialog').textContent).toContain('Soumettre 1 décision (1 validation) ?');
+    expect(screen.getByRole('button', { name: 'Confirmer la décision' })).toBeTruthy();
+  });
+
+  it('revue en lot : retirer toutes les marques, confirmation ouverte, la referme sans question à zéro', async () => {
+    fetchMock.mockImplementation(router({ listeDefaut: LISTE_2 }));
+    render(<AtelierCorpusPanel />);
+    await waitFor(() => expect(screen.getByText(/WN-CL-0056-002/)).toBeTruthy());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Revue en lot' }));
+    fireEvent.click(screen.getAllByRole('button', { name: 'À valider' })[0]);
+    fireEvent.click(screen.getByRole('button', { name: 'Soumettre les décisions (1)' }));
+    expect(screen.getByRole('alertdialog')).toBeTruthy();
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'À valider' })[0]);
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+    expect(screen.queryByText(/Soumettre 0/)).toBeNull();
+    expect((screen.getByRole('button', { name: 'Soumettre les décisions (0)' }) as HTMLButtonElement).disabled).toBe(true);
+    expect(appelsPost()).toHaveLength(0);
+  });
+
+  it('les onglets sont à 44 px, l’onglet actif sans aplat (Q5, Q6)', async () => {
+    fetchMock.mockImplementation(router({ listeDefaut: LISTE_2 }));
+    render(<AtelierCorpusPanel />);
+    await waitFor(() => expect(screen.getByText(/WN-CL-0056-002/)).toBeTruthy());
+    const actif = screen.getByRole('tab', { name: 'En attente' });
+    expect(actif.getAttribute('aria-selected')).toBe('true');
+    expect(actif.className).toContain('min-h-11');
+    expect(actif.className).toContain('bg-surface font-semibold');
+    expect(actif.className).not.toContain('bg-primary');
   });
 });
 
@@ -965,5 +1085,25 @@ describe('AtelierCorpusPanel — exclusion de la recherche ([[D-490]])', () => {
     await waitFor(() => expect(appelsGet().at(-1)?.[0]).toContain('&claim=WN-CL-0061-008'));
     expect(appelsGet().at(-1)?.[0]).not.toContain('exclu=1');
     expect((screen.getByLabelText('Exclus de la recherche seulement') as HTMLInputElement).checked).toBe(false);
+  });
+});
+
+// P47 (PRA-6h, pra6-constat §3.2) : chaque groupe de la `<dl>` des compteurs
+// ne porte que des `<dt>` et des `<dd>` (axe `definition-list`).
+describe('AtelierCorpusPanel — structure de la liste des compteurs (PRA-6h)', () => {
+  it('la `<dl>` ne contient que des groupes `<div>` de `<dt>`/`<dd>`', async () => {
+    fetchMock.mockImplementation(router());
+    await attendreLaFile();
+
+    const dl = document.querySelector('dl');
+    expect(dl).not.toBeNull();
+    for (const groupe of Array.from(dl!.children)) {
+      expect(groupe.tagName).toBe('DIV');
+      for (const enfant of Array.from(groupe.children)) {
+        expect(['DT', 'DD']).toContain(enfant.tagName);
+      }
+    }
+    // Le texte de la supersession reste affiché, dans un `<dd>`.
+    expect(screen.getByText(/0 version supersédée/).tagName).toBe('DD');
   });
 });

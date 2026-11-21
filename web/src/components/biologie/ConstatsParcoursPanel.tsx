@@ -418,14 +418,14 @@ export function ConstatsParcoursPanel({ idPatient }: { idPatient: string }) {
 
   return (
     <section aria-labelledby="constats-parcours-titre" className="mt-6 rounded-xl border border-border p-4">
-      <h3
+      <h2
         id="constats-parcours-titre"
         ref={titreRef}
         tabIndex={-1}
         className="rounded text-base font-semibold text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
       >
         Constats du parcours
-      </h3>
+      </h2>
       <p className="mt-1 text-xs text-muted-foreground">{AVERTISSEMENT_FILET}</p>
       {erreur && (
         <div className="mt-2 rounded-lg border border-status-danger/60 p-3">
@@ -460,7 +460,7 @@ export function ConstatsParcoursPanel({ idPatient }: { idPatient: string }) {
             const offerte = donnees.offertes.some(o => o.hypotheseCode === code);
             return (
               <li key={code} className="rounded-lg border border-border p-3">
-                <h4 className="text-sm font-medium text-foreground">{libelle(code)}</h4>
+                <h3 className="text-sm font-medium text-foreground">{libelle(code)}</h3>
                 {tete ? <Acte acte={tete} /> : <p className="text-xs text-muted-foreground">Aucun constat posé.</p>}
                 {/* Sous un constat CONFIRMÉ seulement : toutes les options de l'hypothèse (BP-17 PR 6). */}
                 {tete?.acte === 'pose' && tete.verdict === 'confirmee' && donnees.optionsBibliotheque && (

@@ -7,6 +7,7 @@ import type { SyntheseSchema } from '@/lib/anthropic';
 // l'écran et le serveur ne peuvent plus diverger. Même motif pour la liste des
 // priorités admises.
 import { MAX_AXES_PRIORITAIRES, PRIORITES_AXE } from '@/lib/synthese-praticien';
+import { TRAIT_ICONE } from '@/components/ui/icone';
 
 type NiveauPriorite = SyntheseSchema['axes_prioritaires'][number]['niveau_priorite'];
 
@@ -52,10 +53,19 @@ type Props = {
   onCancel?: () => void;
   saving?: boolean;
   saveLabel?: string;
+  /**
+   * [[D-513]] §5 : `limites` est contrôlé comme les autres champs ordinaires ;
+   * il devient éditable pour que chaque blocage ait une issue. Seulement pour un
+   * brouillon IA : un brouillon praticien porte un texte fixe, réécrit à
+   * l'enregistrement (`validerBrouillonPraticien`).
+   */
+  limitesEditable?: boolean;
 };
 
+// Q7 de PRA-5 ([[D-481]] complément DOC-15) : 44 px et focus visible.
 const champ =
-  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground';
+  'min-h-11 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring';
+const focus = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring';
 
 function lignes(value: string): string[] {
   // Conserve la ligne vide terminale pendant la frappe ; le serveur nettoie
@@ -116,6 +126,7 @@ export function SynthesePraticienEditor({
   onCancel,
   saving = false,
   saveLabel = 'Enregistrer le brouillon',
+  limitesEditable = false,
 }: Props) {
   // Compté, pas booléen : le message dit combien d'axes restent à trancher, ce
   // qui évite au praticien de les rouvrir un par un pour trouver lequel.
@@ -232,9 +243,9 @@ export function SynthesePraticienEditor({
         <button
           type="button"
           onClick={basculerRecherche}
-          className="inline-flex items-center gap-2 text-sm font-medium text-foreground hover:text-accent"
+          className={`inline-flex min-h-11 items-center gap-2 rounded-lg text-sm font-medium text-foreground hover:text-accent ${focus}`}
         >
-          <Search size={16} aria-hidden="true" />
+          <Search size={16} strokeWidth={TRAIT_ICONE} aria-hidden="true" />
           {rechercheOuverte ? 'Fermer la recherche' : 'Rechercher / remplacer'}
         </button>
 
@@ -264,7 +275,7 @@ export function SynthesePraticienEditor({
               <button
                 type="button"
                 onClick={chercherSuivant}
-                className="rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
+                className={`min-h-11 rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground hover:bg-muted ${focus}`}
               >
                 Occurrence suivante
               </button>
@@ -280,14 +291,14 @@ export function SynthesePraticienEditor({
               <button
                 type="button"
                 onClick={remplacerCourant}
-                className="rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
+                className={`min-h-11 rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground hover:bg-muted ${focus}`}
               >
                 Remplacer
               </button>
               <button
                 type="button"
                 onClick={remplacerTout}
-                className="rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
+                className={`min-h-11 rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground hover:bg-muted ${focus}`}
               >
                 Remplacer tout
               </button>
@@ -333,15 +344,15 @@ export function SynthesePraticienEditor({
 
       <section className="border-y border-border py-4">
         <div className="mb-3 flex items-center justify-between gap-3">
-          <h4 className="text-sm font-semibold text-foreground">Axes prioritaires</h4>
+          <h3 className="text-sm font-semibold text-foreground">Axes prioritaires</h3>
           <button
             type="button"
             onClick={ajouterAxe}
             disabled={value.axes_prioritaires.length >= MAX_AXES_PRIORITAIRES}
             title="Ajouter un axe prioritaire"
-            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border text-foreground hover:bg-muted disabled:opacity-40"
+            className={`inline-flex h-11 w-11 items-center justify-center rounded-lg border border-border text-foreground hover:bg-muted disabled:opacity-40 ${focus}`}
           >
-            <Plus size={17} aria-hidden="true" />
+            <Plus size={18} strokeWidth={TRAIT_ICONE} aria-hidden="true" />
             <span className="sr-only">Ajouter un axe prioritaire</span>
           </button>
         </div>
@@ -349,7 +360,7 @@ export function SynthesePraticienEditor({
         <div className="divide-y divide-border">
           {value.axes_prioritaires.map((axe, index) => (
             <div key={index} className="grid gap-3 py-4 first:pt-0 last:pb-0">
-              <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_180px_40px]">
+              <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_180px_44px]">
                 <label className="grid gap-1 text-xs font-medium text-muted-foreground">
                   Libellé de l’axe
                   <input
@@ -383,9 +394,9 @@ export function SynthesePraticienEditor({
                   type="button"
                   onClick={() => modifier('axes_prioritaires', value.axes_prioritaires.filter((_, i) => i !== index))}
                   title="Supprimer cet axe"
-                  className="mt-5 inline-flex h-10 w-10 items-center justify-center rounded-lg text-status-danger hover:bg-status-danger/10"
+                  className={`mt-5 inline-flex h-11 w-11 items-center justify-center rounded-lg text-status-danger hover:bg-status-danger/10 ${focus}`}
                 >
-                  <Trash2 size={17} aria-hidden="true" />
+                  <Trash2 size={18} strokeWidth={TRAIT_ICONE} aria-hidden="true" />
                   <span className="sr-only">Supprimer cet axe</span>
                 </button>
               </div>
@@ -440,6 +451,18 @@ export function SynthesePraticienEditor({
         </label>
       </div>
 
+      {limitesEditable && (
+        <label className="grid gap-2 text-sm font-medium text-foreground">
+          Limites
+          <textarea
+            value={value.limites}
+            onChange={event => modifier('limites', event.target.value)}
+            rows={2}
+            className={`${champ} resize-y`}
+          />
+        </label>
+      )}
+
       <div className="flex flex-wrap items-center gap-2 border-t border-border pt-4">
         {axesSansPriorite > 0 && (
           <p className="basis-full text-xs text-status-warning">
@@ -452,9 +475,9 @@ export function SynthesePraticienEditor({
           type="button"
           onClick={onSave}
           disabled={saving || axesSansPriorite > 0}
-          className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
+          className={`inline-flex min-h-11 items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60 ${focus}`}
         >
-          <Save size={16} aria-hidden="true" />
+          <Save size={16} strokeWidth={TRAIT_ICONE} aria-hidden="true" />
           {saving ? 'Enregistrement...' : saveLabel}
         </button>
         {onCancel && (
@@ -462,9 +485,9 @@ export function SynthesePraticienEditor({
             type="button"
             onClick={onCancel}
             disabled={saving}
-            className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-60"
+            className={`inline-flex min-h-11 items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-60 ${focus}`}
           >
-            <X size={16} aria-hidden="true" />
+            <X size={16} strokeWidth={TRAIT_ICONE} aria-hidden="true" />
             Annuler
           </button>
         )}

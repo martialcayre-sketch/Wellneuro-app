@@ -76,7 +76,7 @@ export function MesEchangesJournal({ token, depotOuvert = false }: { token: stri
 
   return (
     <article className="space-y-6">
-      <h1 className="text-2xl font-semibold text-foreground">{TITRE_MES_ECHANGES}</h1>
+      <h1 className="font-display text-2xl font-bold leading-tight text-foreground">{TITRE_MES_ECHANGES}</h1>
       <EncartUrgenceSuicide ecran="mes_echanges" />
 
       {etat.statut === 'chargement' && (
@@ -105,7 +105,7 @@ export function MesEchangesJournal({ token, depotOuvert = false }: { token: stri
                       <li key={entree.cle}>
                         <a
                           href={`/portail/${token}/${entree.chemin}`}
-                          className="flex items-center justify-between gap-3 py-2 text-base text-foreground hover:underline"
+                          className="flex min-h-11 items-center justify-between gap-3 py-2 text-base text-foreground hover:underline"
                         >
                           <span>
                             <span className="font-semibold">{LIBELLE_SENS[entree.sens]}</span> · {entree.objet}

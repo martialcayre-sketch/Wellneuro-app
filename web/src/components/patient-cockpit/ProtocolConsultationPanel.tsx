@@ -41,9 +41,9 @@ export function ProtocolConsultationPanel({
   if (!decisionCard || !protocolDraft) {
     return (
       <section aria-labelledby="patient-protocol-preview-title">
-        <h3 id="patient-protocol-preview-title" className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+        <h2 id="patient-protocol-preview-title" className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
           Clôture et aperçu patient
-        </h3>
+        </h2>
         <div className="rounded-xl border border-border bg-surface p-4">
           <p className="text-base font-semibold text-foreground">Aperçu du protocole indisponible — protocole relu et validation pour diffusion requis</p>
           <p className="mt-1 text-base text-muted-foreground">Aucun contenu n’est transmis au patient.</p>
@@ -72,7 +72,7 @@ export function ProtocolConsultationPanel({
       <section aria-labelledby="consultation-close-title" className="rounded-xl border border-border bg-surface p-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h3 id="consultation-close-title" className="text-sm font-semibold text-foreground">Résumé de clôture praticien</h3>
+            <h2 id="consultation-close-title" className="text-sm font-semibold text-foreground">Résumé de clôture praticien</h2>
             <p className="mt-1 text-sm text-muted-foreground">{libelleRetenu ?? 'Priorité praticien indisponible'}</p>
           </div>
           <div className="flex flex-wrap gap-2 text-xs">
@@ -107,7 +107,7 @@ export function ProtocolConsultationPanel({
       </section>
 
       <section aria-labelledby="patient-protocol-preview-title" className="rounded-xl border border-border bg-surface p-4">
-        <h3 id="patient-protocol-preview-title" className="text-sm font-semibold text-foreground">Aperçu du protocole — vue patient</h3>
+        <h2 id="patient-protocol-preview-title" className="text-sm font-semibold text-foreground">Aperçu du protocole — vue patient</h2>
         {!approved ? (
           <p className="mt-2 text-base text-muted-foreground">Aperçu verrouillé — validation pour diffusion requise.</p>
         ) : (

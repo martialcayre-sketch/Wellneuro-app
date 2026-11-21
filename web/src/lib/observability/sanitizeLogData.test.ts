@@ -39,6 +39,28 @@ describe('sanitizeLogData', () => {
     });
   });
 
+  it('masque le récit du patient et les résumés praticien, sous toutes leurs graphies', () => {
+    const out = sanitizeMetadata({
+      narratif_patient: 'récit',
+      narratifPatient: 'récit',
+      resume_praticien: 'résumé',
+      resumePraticien: 'résumé',
+      resumeBiologiePraticien: 'biologie',
+      points_de_vigilance_biologie: 'vigilance',
+      ok: true,
+    });
+
+    expect(out).toEqual({
+      narratif_patient: '[redacted]',
+      narratifPatient: '[redacted]',
+      resume_praticien: '[redacted]',
+      resumePraticien: '[redacted]',
+      resumeBiologiePraticien: '[redacted]',
+      points_de_vigilance_biologie: '[redacted]',
+      ok: true,
+    });
+  });
+
   it('sérialise les erreurs de manière sûre', () => {
     const err = new Error('timeout on api for test@wellneuro.fr');
     const out = sanitizeError(err);

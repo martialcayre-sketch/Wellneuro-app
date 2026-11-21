@@ -51,8 +51,8 @@
 // ATTENTION, CES DOSSIERS NE SONT PAS EN LECTURE SEULE. Une première rédaction
 // l'affirmait, sur la foi de l'en-tête de `helpers/db.ts` (« n'agit que sur
 // Michel Dogné ») — c'est faux depuis que `provisionnerReponseOrientation`
-// écrit une seconde passation `Q_STR_02` pour SOPHIE
-// (`orientation-file-envoi.spec.ts`). D'où l'ancrage des lignes plus bas :
+// écrit une seconde passation pour SOPHIE (`orientation-file-envoi.spec.ts`) —
+// `Q_STR_02` jusqu'au 2026-11-20, `Q_SOM_01` depuis ([[D-543]]). D'où l'ancrage des lignes plus bas :
 // c'est la conséquence concrète, et l'affirmation contraire aurait fait
 // conclure à un bug là où il n'y a qu'un doublon attendu.
 import { test, expect, type Page } from '@playwright/test';
@@ -112,7 +112,10 @@ test.describe('Fiche patient — colonne « Qualité » du détail des réponses
     // catalogue (verdict certify du 2026-07-31, 0 divergence critique) : cette
     // ligne prouve désormais que l'alignement atteint l'écran, et elle tombe si
     // la clé régresse d'un côté ou de l'autre.
-    await attendreBadgeQualite(table, /PSQI/, 'Scoring vérifié (Drive)', 'success');
+    // Ancrée sur l'interprétation du seed depuis le 2026-11-20 ([[D-543]]) :
+    // `provisionnerReponseOrientation` écrit désormais un second PSQI pour
+    // SOPHIE — même raison que la PSS-10 ci-dessus.
+    await attendreBadgeQualite(table, /PSQI.*Mauvais dormeur/, 'Scoring vérifié (Drive)', 'success');
   });
 
   test('une passation antérieure à la reconstruction de son instrument reste « Non interprétable »', async ({ page, context }) => {

@@ -25,6 +25,7 @@ import { readFileSync, statSync } from 'node:fs';
 import { dirname, isAbsolute, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
+import { aplatirPages, brancheSure, cheminPrs, estMergee } from './lib/gh-rest.mjs';
 import { REPERTOIRE as REPERTOIRE_DECISIONS, lireDecisions } from './lib/registre-decisions.mjs';
 import { readCampaignTruth, readMachineState, writeMachineState } from './wn-state.mjs';
 
@@ -303,6 +304,17 @@ function gh(args, cwd = RACINE) {
   }
 }
 
+/**
+ * PR d'une branche, en REST (`gh pr list` passe par GraphQL, refusé en
+ * cloud : `D-540`, constat du 2026-11-20). `null` si la lecture échoue ou si
+ * le nom de branche ne passe pas tel quel dans la requête : jamais `[]`, qui
+ * se lirait « aucune PR ».
+ */
+function prsDeLaBranche(etat, branche) {
+  if (!brancheSure(branche)) return null;
+  return aplatirPages(jsonOuNull(gh(['api', '--paginate', '--slurp', cheminPrs({ etat, tete: branche })])));
+}
+
 function jsonOuNull(texte) {
   if (!texte) return null;
   try {
@@ -416,7 +428,8 @@ export function synchroniserOrigin(defaut, { local = false } = {}) {
  * la PR — le tip local doit être contenu dans le `headRefOid` d'une PR mergée.
  */
 function chercherPrMergee(branche, tip) {
-  const liste = jsonOuNull(gh(['pr', 'list', '--state', 'merged', '--head', branche, '--json', 'number,headRefOid']));
+  const fermees = prsDeLaBranche('closed', branche);
+  const liste = fermees === null ? null : fermees.filter(estMergee).map((pr) => ({ number: pr.number, headRefOid: pr.head?.sha }));
   if (!Array.isArray(liste) || liste.length === 0) return null;
 
   const candidat = liste.find(
@@ -551,7 +564,7 @@ function collecterFaits(options = {}) {
   let prOuverte = null;
   let prMergee = null;
   if (!local && branche && branche !== defaut) {
-    const ouvertes = jsonOuNull(gh(['pr', 'list', '--state', 'open', '--head', branche, '--json', 'number']));
+    const ouvertes = prsDeLaBranche('open', branche);
     if (!Array.isArray(ouvertes)) {
       ghDisponible = false;
     } else {

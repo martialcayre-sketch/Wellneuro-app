@@ -530,11 +530,11 @@ describe('EstimeMesurePanel — le geste de correction (D-124)', () => {
     expect(screen.queryByText(/ne se corrige pas par une saisie praticien/)).toBeNull();
   });
 
-  it('titre du panneau en h3, analyte en h4 ; les gestes d’une mesure forment une rangée sous elle, à 44 px (PRA-3b, P25)', async () => {
+  it('titre du panneau en h2, analyte en h3 ; les gestes d’une mesure forment une rangée sous elle, à 44 px (PRA-3b, P25)', async () => {
     monterAvec([ORIGINE]);
     await waitFor(() => expect(screen.getByText('Ferritine')).toBeTruthy());
-    expect(screen.getByRole('heading', { level: 3, name: 'Estimé ↔ mesuré' })).toBeTruthy();
-    expect(screen.getByRole('heading', { level: 4, name: 'Ferritine' })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 2, name: 'Estimé ↔ mesuré' })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 3, name: 'Ferritine' })).toBeTruthy();
     const corriger = screen.getByRole('button', { name: /^Corriger la mesure du/ });
     const rangee = corriger.parentElement!;
     expect(rangee.tagName).toBe('DIV');

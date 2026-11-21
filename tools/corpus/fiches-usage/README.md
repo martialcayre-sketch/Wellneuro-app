@@ -83,7 +83,7 @@ rejoué rend `BROUILLON_INCHANGE`.
 
 ## La consigne versionnée
 
-`versionConsigne` vaut `fiche-usage-v9+<empreinte des deux consignes>`,
+`versionConsigne` vaut `fiche-usage-v12+<empreinte des deux consignes>`,
 épinglée dans `lib/consigne.mjs` et gardée par `lib/consigne.test.mjs`.
 
 Depuis la v2 (`D-501`), le message d'une fiche porte ses cinq axes signés,
@@ -149,6 +149,33 @@ si, et seulement si, aucun claim fourni ne porte sur l'objet de la rubrique,
 dont la v9 précise le sens pour « interpretations » et
 « resultats_consequences ». La contre-lecture examine alors tous les claims
 fournis.
+
+Depuis la v10 (`D-501` §13), un niveau d'apport qu'une source déclare sans
+problème de sécurité est une limite supérieure de sécurité, même exprimé en
+quantité consommée : il s'écrit en constat, attribué à sa source, avec sa
+population, ses exceptions et ses réserves. Une mention de dose ou d'apport
+sans valeur chiffrée n'est pas une quantité de prise ; la clause de doute ne
+vise plus qu'une valeur chiffrée. Sous « preuves_limitees », un claim qui
+recommande lui-même l'usage de l'examen s'écrit attribué à sa source, la
+phrase se terminant par « , mais cet usage n'est pas établi. ». Deux critères
+concrets disent quand un claim porte sur « resultats_consequences » (il nomme
+un résultat possible de l'analyte) et sur « limites » (il énonce une limite
+de l'examen ou de son marqueur).
+
+Depuis la v11 (`D-501` §14), un moment de prise est une quantité de prise ;
+la forme attribuée et réservée de la v10 vaut dans toute rubrique,
+« precautions » comprise ; une limite de la littérature sur un supplément ou
+une option ne porte pas sur « limites » ; un argument de causalité ne porte
+pas sur « surveillance_arret » ; dans « resultats_consequences », un résultat
+se nomme sans être interprété, et sous « preuves_limitees » aucune
+conséquence décisionnelle ne s'y écrit.
+
+Depuis la v12 (`D-501` §16), le mode « libellé » cite, des deux côtés, les
+douze termes que `D-535` refuse dans le libellé d'une hypothèse, tels que
+les tient `web/src/lib/fiches-usage/registreLibelleHypothese.ts` : un mot qui
+en contient un tombe sous lui, et le libellé se reformule en gardant le
+nutriment et le sens bas. La liste ne vise pas les populations. Le banc v12
+relit le registre du code : un terme ajouté ou retiré d'un seul côté rougit.
 
 ## Ce que l'outil ne voit pas
 

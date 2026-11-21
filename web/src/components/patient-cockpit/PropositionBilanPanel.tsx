@@ -259,7 +259,7 @@ function FormulaireCourrier({
 
   return (
     <div className="mt-3 rounded-lg border border-border p-3">
-      <h4 className="text-sm font-medium text-foreground">Courrier au médecin traitant</h4>
+      <h3 className="text-sm font-medium text-foreground">Courrier au médecin traitant</h3>
       <p className="mt-1 text-xs text-muted-foreground">
         Établi à partir de la proposition ci-dessus, dans un registre non prescriptif :
         la décision de demander ces explorations, comme leur interprétation, revient au
@@ -409,7 +409,7 @@ function FormulaireDocumentPatient({
 
   return (
     <div className="mt-3 rounded-lg border border-border p-3">
-      <h4 className="text-sm font-medium text-foreground">Document remis au patient</h4>
+      <h3 className="text-sm font-medium text-foreground">Document remis au patient</h3>
       <p className="mt-1 text-xs text-muted-foreground">
         La trace écrite de ce qui est proposé au patient et pourquoi, dans son registre —
         aucune valeur d’analyse, aucune demande. <strong>Aucun envoi automatique</strong> —
@@ -514,7 +514,7 @@ function DocumentsRemis({
 
   return (
     <div className="mt-3 rounded-lg border border-border p-3">
-      <h4 className="text-sm font-medium text-foreground">Documents déjà remis</h4>
+      <h3 className="text-sm font-medium text-foreground">Documents déjà remis</h3>
 
       {lecture === 'chargement' && (
         <p className="mt-1 text-xs text-muted-foreground">Lecture du dossier…</p>
@@ -756,13 +756,13 @@ export function PropositionBilanPanel({
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         {/* Cible du focus après « Réessayer » réussi (PropositionBilanSection). */}
-        <h3
+        <h2
           id="proposition-bilan-title"
           tabIndex={-1}
           className="rounded font-display text-base font-semibold text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
         >
           Biologie — proposition de bilan
-        </h3>
+        </h2>
         <span className="rounded-full border border-border px-2 py-1 text-xs text-muted-foreground">
           {/* Le badge suit l'état RÉEL de l'étage 2 (D-122 §2) : « aucune
               valeur conservée » deviendrait faux drapeau levé — la

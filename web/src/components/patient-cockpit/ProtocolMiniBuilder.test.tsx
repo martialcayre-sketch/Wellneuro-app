@@ -1445,12 +1445,12 @@ describe('ProtocolMiniBuilder — un protocole chargé reste lisible (PRA-3b Q13
     expect(fireEvent.keyDown(plan, { key: 'a' })).toBe(true);
   });
 
-  it('« Actions » est un titre de niveau 4, et nomme le sommaire d’ancres dès deux actions', () => {
+  it('« Actions » est un titre de niveau 3, et nomme le sommaire d’ancres dès deux actions', () => {
     const { container } = render(
       <ProtocolMiniBuilder decisionCard={card()} versionActive={versionActive([actionLongue(1)])} />,
     );
     const ui = within(container);
-    expect(ui.getByRole('heading', { level: 4, name: 'Actions (1/7)' })).toBeTruthy();
+    expect(ui.getByRole('heading', { level: 3, name: 'Actions (1/7)' })).toBeTruthy();
     // Une seule action : rien à sommer.
     expect(ui.queryByRole('navigation', { name: 'Actions (1/7)' })).toBeNull();
 

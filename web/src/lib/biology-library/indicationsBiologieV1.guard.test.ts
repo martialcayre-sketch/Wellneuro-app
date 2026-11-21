@@ -1,7 +1,9 @@
 import { readFileSync } from 'fs';
 import path from 'path';
 import { describe, expect, it } from 'vitest';
+import { sha256 } from '@/lib/clinical/corpusSyntheseV1';
 import {
+  GRILLES_INDICATIONS,
   INDICATIONS_BIOLOGIE_METADATA,
   INDICATIONS_BIOLOGIE_SHA256,
   INDICATIONS_BIOLOGIE_V1,
@@ -58,12 +60,27 @@ const CODE_SANS_COMMENTAIRES = SOURCE.split('\n')
 // RE-SIGNÉE LE 2026-09-16 : trois instruments cités confrontés à leur publication
 // et réalignés — BDI-13, IRLS, score de Francis ([[D-199]]). Ce banc a rougi seul
 // le jour où leur cotation a bougé, et c'est ce qu'on lui demande.
-const SHA_CONTENU_2026_09_16 = '33894e9c6afbd6b3f59a8bb33396aefa56890f57a120f255908ebaf942adef19';
+// RE-SIGNÉE LE 2026-11-16 À 23:25:39 UTC (2026-11-17 à Paris ; F34, étape 3,
+// [[D-382]] §6) SUR LA MÊME CHAÎNE :
+// aucune règle, grille ni cotation n'a bougé ; seule la date de signature a
+// changé, et ce littéral reste celui du 2026-09-16.
+// RE-SIGNÉE LE 2026-11-19 ([[D-543]]) : `BIO-STR-01` passe `suspendue`, pour
+// relecture ; le contenu change, donc le littéral (ancien : `33894e9c…42adef19`).
+const SHA_CONTENU_2026_11_19 = '3449036275ad96a8ffef89dd692a94908a9edc976b40ef5871d5a0630b241519';
 
 describe('indications biologie — le verrou de signature ne peut pas être neutralisé', () => {
   it('le sha publié est celui du contenu réellement porté par la table', () => {
     expect(INDICATIONS_BIOLOGIE_V1).toHaveLength(15);
-    expect(INDICATIONS_BIOLOGIE_SHA256).toBe(SHA_CONTENU_2026_09_16);
+    expect(INDICATIONS_BIOLOGIE_SHA256).toBe(SHA_CONTENU_2026_11_19);
+  });
+
+  // Contre-épreuve de [[D-543]] §3 : `BIO-STR-01` repassée `publiee`, le
+  // contenu hache exactement l'ancienne signature. Seul le statut a bougé.
+  it('hors le statut suspendu, la table est celle signée le 2026-09-16 (D-543)', () => {
+    const retablie = INDICATIONS_BIOLOGIE_V1.map(regle =>
+      regle.statut === 'suspendue' ? { ...regle, statut: 'publiee' as const } : regle);
+    expect(sha256(JSON.stringify({ regles: retablie, grilles: GRILLES_INDICATIONS })))
+      .toBe('33894e9c6afbd6b3f59a8bb33396aefa56890f57a120f255908ebaf942adef19');
   });
 
   // Le piège exact de la revue : `shaPerimetre` câblé sur la constante au lieu
@@ -92,7 +109,7 @@ describe('indications biologie — le verrou de signature ne peut pas être neut
   // changement d'état s'accompagne du tableau de `docs/FEATURE_FLAGS.md`
   // (gardé par `verrousSignatureDocumentes.guard`).
   it('l\'état livré est signé aux cinq termes, et le verdict le dit', () => {
-    expect(INDICATIONS_BIOLOGIE_METADATA.dateValidation).toBe('2026-09-16T00:00:00.000Z');
+    expect(INDICATIONS_BIOLOGIE_METADATA.dateValidation).toBe('2026-11-19T12:38:04.000Z');
     expect(INDICATIONS_BIOLOGIE_METADATA.claimsSource.length).toBe(29);
     expect(INDICATIONS_BIOLOGIE_METADATA.shaPerimetre).toBe(INDICATIONS_BIOLOGIE_SHA256);
     expect(signatureIndicationsValide(INDICATIONS_BIOLOGIE_METADATA)).toBe(true);
@@ -122,7 +139,7 @@ describe('indications biologie — le verrou de signature ne peut pas être neut
         validationExterne: true,
         dateValidation: '2026-08-16T00:00:00.000Z',
         claimsSource: [{ claimId: 'WN-CL-0000-001', versionClaim: 'v1.0' }],
-        shaPerimetre: SHA_CONTENU_2026_09_16,
+        shaPerimetre: SHA_CONTENU_2026_11_19,
       }),
     ).toBe(true);
   });
@@ -137,7 +154,7 @@ describe('indications biologie — le verrou de signature ne peut pas être neut
           validationExterne: true,
           dateValidation: '2026-08-16T00:00:00.000Z',
           claimsSource: [{ claimId: 'WN-CL-0000-001', versionClaim: 'v1.0' }],
-          shaPerimetre: SHA_CONTENU_2026_09_16,
+          shaPerimetre: SHA_CONTENU_2026_11_19,
         },
         shaApresAjout,
       ),

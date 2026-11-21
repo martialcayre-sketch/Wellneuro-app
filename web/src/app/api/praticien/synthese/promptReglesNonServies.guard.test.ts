@@ -17,7 +17,10 @@ const TITRE_SECTION = '## Règles non appliquées par le service';
 const SECTION_PRECEDENTE = "## Règles d'orientation non évaluées";
 const SECTION_SUIVANTE = '## Besoins mesurés et non mesurés';
 
-const EMPREINTE_SECTION = '670504254d48761e';
+// Amendée en v39 ([[D-543]], `20261119-1303-a` et `20261119-1635-a`) : une puce
+// « Lignes suspendues pour relecture », « quatre » devient « cinq » ; validée mot
+// pour mot par le responsable.
+const EMPREINTE_SECTION = '7c344e86f1b56d42';
 
 function section(): string {
   const debut = CONSIGNE.indexOf(TITRE_SECTION);

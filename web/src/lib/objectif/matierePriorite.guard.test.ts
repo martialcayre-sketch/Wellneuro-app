@@ -155,3 +155,21 @@ describe('matière de priorité — la surface exposée', () => {
     expect(get?.[0]).not.toContain('anthropic');
   });
 });
+
+// [[D-513]] §7 : la règle de `priorite-v2`, validée mot pour mot le 2026-11-17
+// (`docs/claude/propositions/2026-11-17-h95b-code-textes/README.md`, §2).
+describe('consigne de priorité v2 — aucune reprise de biologie (D-513 §7)', () => {
+  it('la règle est présente au mot près, après celle des recommandations', () => {
+    const appel = source(APPEL);
+    const regle = [
+      `"- aucun résultat de biologie : ne reprends aucun nom d'analyse biologique,",`,
+      `"  aucune valeur et aucun intervalle de laboratoire. Si l'un des deux textes",`,
+      `"  en contient, ne t'en sers ni pour fonder ni pour justifier la priorité,",`,
+      `'  ne le qualifie pas, ne le situe par rapport à aucun intervalle et ne le',`,
+      `"  rapproche d'aucune autre donnée ;",`,
+    ].map((l) => `  ${l}`).join('\n');
+    expect(appel).toContain(regle);
+    expect(appel.indexOf("aucune recommandation de traitement, de complément ni d'examen")).toBeLessThan(appel.indexOf(regle));
+    expect(appel).toContain("export const VERSION_CONSIGNE = 'priorite-v2';");
+  });
+});

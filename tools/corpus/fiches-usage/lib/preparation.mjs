@@ -49,6 +49,36 @@ export function requeteRedaction(modele, consigne, message) {
   };
 }
 
+/**
+ * Le plafond de sortie de la contre-lecture, raisonnement compris. À 4 096
+ * jetons, la contre-lecture des précautions de `FU_POLY_AOX_P6` (41 claims)
+ * s'est arrêtée inachevée (essai v9 du 2026-11-16, journal F05, rang 04).
+ * Arbitrage du responsable (liste commune `20261116-1518-b`) : le plafond
+ * monte, le raisonnement ne change pas, et la cause d'un arrêt est gardée.
+ */
+export const JETONS_SORTIE_CONTRE_LECTURE = 16000;
+
+/**
+ * Le verdict d'une contre-lecture, lu depuis la réponse du relecteur : un
+ * accord, un refus motivé, ou un échec TECHNIQUE, qui n'est ni l'un ni l'autre.
+ * Une réponse inachevée dit sa cause (`incomplete_details.reason`), gardée
+ * seulement si elle a la forme d'un code, comme le code d'arrêt du rédacteur.
+ */
+export function lireVerdictContreLecture(rep) {
+  if (rep?.status && rep.status !== 'completed') {
+    const brute = rep.incomplete_details?.reason;
+    const cause = typeof brute === 'string' && /^[a-z_]{1,40}$/u.test(brute) ? `, ${brute}` : '';
+    return { fidele: false, technique: true, raison: `contre-lecture inachevée (${rep.status}${cause})` };
+  }
+  try {
+    const v = parseJsonLache(rep?.output_text || '');
+    if (typeof v?.fidele !== 'boolean') throw new Error('verdict sans « fidele »');
+    return { fidele: v.fidele, raison: String(v.raison || '') };
+  } catch {
+    return { fidele: false, technique: true, raison: 'verdict illisible' };
+  }
+}
+
 /** La clé d'un claim épinglé dans l'instantané local. */
 export const cleClaim = c => `${c.claimId}::${c.versionClaim}`;
 

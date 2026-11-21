@@ -130,6 +130,17 @@ const IMPORTEURS_ADMIS = [
   // cinquième lecteur hors biologie (2026-11-14).
   'web/src/lib/export-dossier/assembler.ts',
   'web/src/lib/export-dossier/biologieExport.ts',
+  // Le bloc de biologie de la synthèse ([[D-513]] §2, H95 part B) : la série
+  // de la fiche, le contexte de prélèvement et les faits du laboratoire avec
+  // les silences de [[D-267]] §5, sous son drapeau propre — par l'entrée
+  // publiée, sixième lecteur hors biologie (2026-11-17).
+  'web/src/lib/clinical/blocBiologieSynthese.ts',
+  'web/src/lib/clinical/blocBiologieSyntheseService.ts',
+  'web/src/lib/clinical/syntheseBiologieDrapeau.ts',
+  // Les lignes suspendues pour relecture ([[D-543]]) : les seuls identifiants
+  // des règles d'indication au statut `suspendue`, par l'entrée publiée,
+  // septième lecteur hors biologie (2026-11-19). Aucune valeur, aucun dossier.
+  'web/src/lib/clinical/lignesSuspendues.ts',
   'web/src/app/api/praticien/patients/route.ts',
   'web/src/app/api/praticien/protocoles/versions/route.ts',
   // Pages et composants praticien. La page unique de la biologie est le

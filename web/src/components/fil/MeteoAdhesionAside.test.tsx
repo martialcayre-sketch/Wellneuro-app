@@ -10,7 +10,7 @@ afterEach(() => {
 });
 
 function stubMeteo(payload: unknown) {
-  vi.stubGlobal('fetch', vi.fn(async () => ({ json: async () => payload }) as unknown as Response));
+  vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => payload }) as unknown as Response));
 }
 
 describe('MeteoAdhesionAside', () => {
@@ -28,6 +28,8 @@ describe('MeteoAdhesionAside', () => {
     await waitFor(() => expect(screen.getByText('Sophie Nicola')).toBeTruthy());
     // Libellé textuel présent (le symbole ◐ est aria-hidden, le texte porte le sens).
     expect(screen.getByText('Fragile')).toBeTruthy();
+    // Cible de 44 px pour le nom (PRA-6d, constat à l'écran : 23 px).
+    expect(screen.getByRole('link', { name: 'Sophie Nicola' }).className).toContain('min-h-11');
     expect(screen.getByText(/jamais un score de risque chiffré/i)).toBeTruthy();
     expect(screen.getByText(/Jamais montrée aux patients/i)).toBeTruthy();
   });

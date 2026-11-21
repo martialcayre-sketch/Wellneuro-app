@@ -50,7 +50,7 @@ describe('bibliothèque des options au cockpit', () => {
       />,
     );
     const items = bloc().querySelectorAll('li');
-    expect([...items].map(li => li.querySelector('h6')?.textContent)).toEqual(['OPT_BANC_A', 'OPT_BANC_B']);
+    expect([...items].map(li => li.querySelector('h5')?.textContent)).toEqual(['OPT_BANC_A', 'OPT_BANC_B']);
     expect(bloc().textContent).toContain('Texte validé synthétique.');
     expect(bloc().textContent).toContain('Validé le 13/11/2026');
     expect(bloc().textContent).toContain('Sources : Information manquante (déclarée) · WN-PE-0001@v1.0');

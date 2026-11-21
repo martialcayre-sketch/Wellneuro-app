@@ -36,6 +36,15 @@ export const LIGNE_ARRETS_SUSPENDUS_CLAIMS =
 export const LIGNE_ARRETS_SUSPENDUS_VALIDITE =
   "Règles d'arrêt suspendues : la validité de leurs sources n'a pas pu être vérifiée. Ces règles ne retirent aucune exploration.";
 export const LIGNE_ARRETS_NON_EVALUES = "Règles d'arrêt non évaluées : ces règles ne retirent aucune exploration.";
+/**
+ * Les lignes suspendues pour relecture ([[D-543]], `20261119-1303-a`). Texte
+ * validé mot pour mot par le responsable le 2026-11-19, étendu aux règles
+ * d'arrêt le 2026-11-20 (`20261119-1635-a`) ; repris tel quel au
+ * cockpit (`OrientationPanel`). Générique à dessein : il reste vrai si une
+ * seule des lignes suspendues est rétablie.
+ */
+export const LIGNE_LIGNES_SUSPENDUES_RELECTURE =
+  "Lignes suspendues pour relecture : certaines règles d'orientation ou d'arrêt, indications de bilan biologique ou signaux de discordance sont suspendus, le temps d'être relus. Ils ne proposent aucune exploration, aucun bilan ni aucune discordance, et ne retirent aucune exploration. Leur absence ne dit rien du patient.";
 
 /**
  * Le texte exact de la ligne de vigilance déterministe ([[D-511]] §4), repris du
@@ -100,6 +109,14 @@ function reglesNonAppliquees(orientation: Actif): { regleId: string; claims: { c
   return liste(orientation.reglesNonAppliquees).flatMap(r => {
     const regle = r as { regleId?: unknown; claims?: unknown } | null;
     return chaine(regle?.regleId) ? [{ regleId: regle.regleId, claims: couples(regle.claims) }] : [];
+  });
+}
+
+/** Les identifiants des lignes suspendues pour relecture, lus défensivement ([[D-543]]). */
+function lignesSuspendues(orientation: Actif): string[] {
+  return liste(orientation.lignesSuspendues).flatMap(l => {
+    const ligne = l as { regleId?: unknown } | null;
+    return chaine(ligne?.regleId) ? [ligne.regleId] : [];
   });
 }
 
@@ -171,7 +188,8 @@ export function passationsArretsNonEvalues(orientation: ResultatOrientation | nu
 }
 
 /**
- * Le bloc, ou une chaîne vide quand aucune des quatre situations ne se présente.
+ * Le bloc, ou une chaîne vide quand aucune des cinq situations ne se présente
+ * (la cinquième, les lignes suspendues pour relecture, depuis [[D-543]]).
  *
  * `sourcesNonVerifiees` est la lecture partagée de `generation.ts` : verrou de
  * l'orientation ouvert et corpus illisible. La ligne n'existe que SEULE, sur une
@@ -192,6 +210,7 @@ export function construireBlocReglesNonServies(
     if (sourcesNonVerifiees) lignes.push(LIGNE_SOURCES_NON_VERIFIEES);
   } else {
     if (reglesNonAppliquees(orientation).length > 0) lignes.push(LIGNE_ORIENTATION_NON_APPLIQUEES);
+    if (lignesSuspendues(orientation).length > 0) lignes.push(LIGNE_LIGNES_SUSPENDUES_RELECTURE);
     const suspendus = arretsSuspendus(orientation);
     if (suspendus.some(a => a.motif === 'claims_non_admissibles')) lignes.push(LIGNE_ARRETS_SUSPENDUS_CLAIMS);
     if (suspendus.some(a => a.motif === 'validite_non_verifiee')) lignes.push(LIGNE_ARRETS_SUSPENDUS_VALIDITE);
@@ -211,14 +230,18 @@ export type TraceReglesNonServies = {
   reglesNonAppliquees: { regleId: string; claims: { claimId: string; versionClaim: string }[] }[];
   arretsSuspendus: { stopRuleId: string; motif: MotifSuspension; claims: { claimId: string; versionClaim: string }[] }[];
   arretsNonEvalues: string[];
+  lignesSuspendues: string[];
 };
 
 /** Les identifiants et motifs, pour la trace seulement ([[D-511]] §5). */
 export function traceReglesNonServies(orientation: ResultatOrientation | null): TraceReglesNonServies {
-  if (orientation?.actif !== true) return { reglesNonAppliquees: [], arretsSuspendus: [], arretsNonEvalues: [] };
+  if (orientation?.actif !== true) {
+    return { reglesNonAppliquees: [], arretsSuspendus: [], arretsNonEvalues: [], lignesSuspendues: [] };
+  }
   return {
     reglesNonAppliquees: reglesNonAppliquees(orientation),
     arretsSuspendus: arretsSuspendus(orientation),
     arretsNonEvalues: arretsNonEvalues(orientation).map(arret => arret.stopRuleId),
+    lignesSuspendues: lignesSuspendues(orientation),
   };
 }

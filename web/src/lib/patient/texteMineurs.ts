@@ -1,16 +1,24 @@
 /**
- * LE TEXTE DES MINEURS SERVI AU JEUNE — G-11 (H38), texte 2B ; ACT-5 (H78).
+ * LE TEXTE DES MINEURS SERVI AU JEUNE — G-11 (H38), texte 2B ; ACT-5 (H78) ;
+ * réécrit par [[D-537]] §7.
  *
- * Texte validé tel quel par le responsable le 2026-10-14 (#1441), mot pour mot :
- * `docs/claude/propositions/2026-10-14-g11-textes-patient/README.md`, « 2B — Pour
- * le jeune ». Il ne change plus sans nouvelle validation ; le banc le compare à
+ * Texte validé tel quel par le responsable le 2026-11-17, mot pour mot :
+ * `docs/claude/propositions/2026-11-17-texte-2b-neuf/README.md`. Il remplace le
+ * 2B validé le 2026-10-14, qui disait encore « l'un de tes parents » et « Ce
+ * n'est pas secret pour tes parents » (contraires à D-537 §1 et §2). Il ne
+ * change plus sans nouvelle validation ; le banc compare chaque variante à
  * cette source. Seules les apostrophes sont typographiques ici.
+ *
+ * DEUX VARIANTES, UNE SEULE SECTION DIFFÈRE : la première. Moins de 15 ans,
+ * aucun circuit d'admission (D-537 §4) ; 15 à 17 ans, le circuit à venir est
+ * annoncé sans être promis. Les quatre sections suivantes sont communes.
  *
  * SERVI À UN SEUL CAS : un dossier ouvert dont la date de naissance dit moins de
  * 18 ans (`statutAge === 'mineur'`, D-284 §4). Jamais à un majeur, jamais à un
  * dossier sans date — celui-là se voit d'abord demander sa date. L'écran ne
  * décide rien : la pause des questionnaires et de la biologie reste celle des
- * routes (`gardeAge.ts`).
+ * routes (`gardeAge.ts`). Une tranche inconnue sert la variante des moins de
+ * 15 ans, qui n'annonce aucune ouverture.
  *
  * LE TEXTE 2A (au titulaire de l'autorité parentale) N'EST PAS SERVI : il décrit
  * une validation en ligne par un titulaire, qui n'existe qu'avec J3-mineurs
@@ -20,6 +28,8 @@
  * Module pur, sans dépendance Node : lu par un composant client.
  */
 
+import type { TrancheMineur } from './gardeAge';
+
 export type SectionTexteMineur = Readonly<{
   titre: string;
   texte: string;
@@ -27,28 +37,59 @@ export type SectionTexteMineur = Readonly<{
   numerosAppelables?: readonly string[];
 }>;
 
-export const TEXTE_MINEUR_JEUNE: readonly SectionTexteMineur[] = Object.freeze([
-  Object.freeze({
-    titre: 'Avant 18 ans, un parent donne d’abord son accord',
-    texte:
-      'Ton accompagnement commence quand l’un de tes parents, ou la personne qui exerce l’autorité parentale, a donné son accord. D’ici là, les questionnaires attendent.',
-  }),
+const ENTREE_MOINS_15: SectionTexteMineur = Object.freeze({
+  titre: 'Avant 15 ans, l’accompagnement ne se fait pas ici',
+  texte:
+    'Pour l’instant, cet espace n’accompagne pas les personnes de moins de 15 ans. Les questionnaires restent en pause. Tu peux en parler avec le praticien.',
+});
+
+const ENTREE_15_17: SectionTexteMineur = Object.freeze({
+  titre: 'Avant 18 ans, ton accompagnement attend encore',
+  texte:
+    'Pour l’instant, l’accompagnement ne s’ouvre pas encore ici avant 18 ans, et les questionnaires restent en pause. Quand il s’ouvrira, il faudra l’accord des personnes qui exercent l’autorité parentale sur toi (le plus souvent tes deux parents), et le tien aussi. Tu pourras ensuite retirer ton accord quand tu veux.',
+});
+
+/** L'encart d'urgence, seul servi aussi au mineur dont le dossier est clos. */
+export const SECTION_URGENCE_MINEUR: SectionTexteMineur = Object.freeze({
+  titre: 'En cas d’urgence',
+  texte:
+    'Si tu te sens en danger ou très mal, n’attends pas de réponse ici : appelle le 15 ou le 112. Si quelque chose t’inquiète à la maison ou ailleurs, tu peux aussi appeler le 119 (Allô enfance en danger), gratuit, jour et nuit.',
+  numerosAppelables: Object.freeze(['15', '112', '119']),
+});
+
+const SUITE_COMMUNE: readonly SectionTexteMineur[] = Object.freeze([
   Object.freeze({
     titre: 'Ton avis compte',
     texte:
       'Le praticien t’explique ce qu’il propose, et tu peux poser toutes tes questions. Tu peux aussi dire ce que tu ne veux pas.',
   }),
   Object.freeze({
-    titre: 'Ce n’est pas secret pour tes parents',
-    texte: 'Tes parents peuvent demander à savoir ce que contient ton dossier.',
+    titre: 'Ce que tes parents peuvent savoir',
+    texte:
+      'Tes parents peuvent demander des informations sur ton dossier. Le praticien examine chaque demande, en tenant compte de ton âge, de ta vie privée et de ton intérêt. Wellneuro ne leur ouvre pas d’accès à cet espace. Personne ne peut te promettre que tout restera secret, ni que tout leur sera montré.',
   }),
   Object.freeze({
-    titre: 'En cas d’urgence',
+    titre: 'L’intelligence artificielle',
     texte:
-      'Si tu te sens en danger ou très mal, n’attends pas de réponse ici : appelle le 15 ou le 112. Si quelque chose t’inquiète à la maison ou ailleurs, tu peux aussi appeler le 119 (Allô enfance en danger), gratuit, jour et nuit.',
-    numerosAppelables: Object.freeze(['15', '112', '119']),
+      'Pendant l’accompagnement, certains documents sont préparés avec l’aide d’un outil d’intelligence artificielle, à partir de tes réponses. Le praticien relit chaque document avant qu’il te parvienne. Même quand ton nom est masqué, ce qui reste parle de ta santé : masquer ne rend pas anonyme.',
   }),
+  SECTION_URGENCE_MINEUR,
 ]);
+
+export const TEXTE_MINEUR_MOINS_15: readonly SectionTexteMineur[] = Object.freeze([
+  ENTREE_MOINS_15,
+  ...SUITE_COMMUNE,
+]);
+
+export const TEXTE_MINEUR_15_17: readonly SectionTexteMineur[] = Object.freeze([
+  ENTREE_15_17,
+  ...SUITE_COMMUNE,
+]);
+
+/** La variante servie : celle des 15-17 ans à ce seul cas, sinon celle des moins de 15 ans. */
+export function texteMineurJeune(tranche: TrancheMineur | null | undefined): readonly SectionTexteMineur[] {
+  return tranche === '15_17' ? TEXTE_MINEUR_15_17 : TEXTE_MINEUR_MOINS_15;
+}
 
 /**
  * Découpe un texte en morceaux, chaque numéro appelable isolé, sans rien

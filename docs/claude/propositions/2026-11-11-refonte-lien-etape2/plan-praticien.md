@@ -187,6 +187,14 @@ Consultation copilote et son panneau contextuel escamotable ; synthèses
 menu ; impression sans rail ni menu (X06). **Réception** : partage d'écran
 protégé en mode consultation ; aucun score ni export ajouté pour remplir
 une colonne libérée (cadrage v3 l.295).
+Prototype validé par écrit le 2026-11-16, itération 2 (Q1 à Q14 en a, Q10
+et Q14 cliniques comprises), complément DOC-15 de [[D-481]] ; textes T-74 à
+T-76 acceptés et inscrits dans [[D-488]] par DOC-15 ; Q10 amende [[D-354]]
+(en mode consultation, la fiche ne rend aucun lien qui la quitte). Trois PR,
+chacune reçue séparément : PR 1 impression (X06, classes `print:` sur le
+chrome seulement) ; PR 2 copilote (P34, panneau de contexte et T-15) ; PR 3
+synthèses et documents (P51, P52, T-74 à T-76, et Q10 dans la fiche ; revue
+`wn-reviewer` en plus).
 
 ### PRA-6 — Vérification et stabilisation
 
@@ -195,6 +203,16 @@ largeurs, zoom 200 %, clavier et lecteur d'écran, mouvement réduit, états
 dégradés, Chromium et WebKit. Relecture `ui-ux-pro-max` de l'ensemble.
 Comparaison aux prototypes de l'étape 3. Les écarts restants deviennent des
 lots nommés, pas des corrections silencieuses.
+
+**Constat du 2026-11-17** : vérification locale sur fixtures, P51, P52 et Q10
+compris après la PR 3 de PRA-5. Une correction minime, PRA-6a (#2227) ; lots
+nommés PRA-6b à PRA-6j proposés dans [`pra6-constat.md`](pra6-constat.md),
+questions `20261117-1421-d` à `1423-d` de la liste commune.
+
+**PRA-6b** : noms accessibles des champs de P02 et P37, et des deux listes de
+P52. Textes T-77 à T-79 et trois réemplois acceptés le 2026-11-17
+(`20261117-2150-d`), inscrits dans [[D-488]] par DOC-17 ; posés par la PR de
+PRA-6b, après le merge de DOC-17.
 
 ## 4. Coordination avec le plan patient
 

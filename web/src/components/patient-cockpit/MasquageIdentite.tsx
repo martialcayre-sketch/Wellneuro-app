@@ -360,7 +360,7 @@ export function MasquageIdentite({
 
   return (
     <section aria-label="Masquer l’identité du patient" className="mt-2 rounded-lg border border-border/60 p-3">
-      <h5 className="text-sm font-medium text-foreground">Masquer l’identité du patient avant la lecture</h5>
+      <h4 className="text-sm font-medium text-foreground">Masquer l’identité du patient avant la lecture</h4>
       <p className="mt-1 text-xs text-muted-foreground">
         Tracez un rectangle sur chaque mention qui identifie le patient, sur chaque page : nom, prénom, date de
         naissance, adresse, téléphone, e-mail, numéros de dossier ou de sécurité sociale. Seules les pages ainsi

@@ -1,7 +1,7 @@
 ---
 id: "LOT-12"
 titre: "BP-12a — Fiches d'usage : structure signée, texte en base"
-statut: "à_faire (fiche proposée le 2026-10-15 ; dix arbitrages rendus le 2026-10-15 ; décision du lot D-314 écrite ; cinq arbitrages de forme rendus le 2026-10-16, D-314 §8 ; migration mergée (#1488) et appliquée en production le 2026-10-16, constat par conteneur ; code consommateur écrit sur branche, douze arbitrages rendus le 2026-10-16 ; code mergé (#1498) et déployé le 2026-10-16, structure vide ; validateur posé en production le 2026-10-16 ; première signature à quatre dossiers clos, arbitrage 28 ; structure écrite et signée le 2026-11-01, D-401, arbitrages 29 à 40)"
+statut: "en_cours (fiche proposée le 2026-10-15 ; dix arbitrages rendus le 2026-10-15 ; décision du lot D-314 écrite ; cinq arbitrages de forme rendus le 2026-10-16, D-314 §8 ; migration mergée (#1488) et appliquée en production le 2026-10-16, constat par conteneur ; code consommateur écrit sur branche, douze arbitrages rendus le 2026-10-16 ; code mergé (#1498) et déployé le 2026-10-16, structure vide ; validateur posé en production le 2026-10-16 ; première signature à quatre dossiers clos, arbitrage 28 ; structure écrite et signée le 2026-11-01, D-401, arbitrages 29 à 40 ; re-signée par D-434, D-446, D-457 et D-477, release-db constatées ; textes des fiches en cours de validation par acte daté, journal de F05 ; critère de done non atteint — statut rapproché le 2026-11-20)"
 dépend_de: "LOT-07, LOT-09"
 ---
 

@@ -106,7 +106,14 @@ export function InboxQuestionnaires() {
   const chargerInbox = useCallback(async () => {
     setLoading(true);
     await fetch('/api/praticien/inbox-questionnaires')
-      .then(async r => (await r.json()) as InboxQuestionnairesApiResponse)
+      .then(async r => {
+        // Une réponse hors contrat (500 d'un autre émetteur, `{error}`) est un
+        // échec de lecture, pas une liste : elle tombe dans l'état indisponible
+        // du panneau au lieu de faire tomber la page (PRA-6h).
+        const json = (await r.json()) as InboxQuestionnairesApiResponse;
+        if (!r.ok || !Array.isArray(json?.lignes)) throw new Error('Réponse hors contrat');
+        return json;
+      })
       .then(setData)
       .catch(() => setData({ ok: false, lignes: [], unavailable: true }))
       .finally(() => setLoading(false));
@@ -463,7 +470,7 @@ export function InboxQuestionnaires() {
                 href={detail ? `/dashboard/patients/${encodeURIComponent(detail.idPatient)}?onglet=trajectoire` : '#'}
                 className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-border px-3 text-sm font-medium text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
               >
-                <ExternalLink aria-hidden="true" size={16} />
+                <ExternalLink aria-hidden="true" strokeWidth={TRAIT_ICONE} size={16} />
                 Ouvrir la fiche-trajectoire
               </Link>
               <button
@@ -472,7 +479,7 @@ export function InboxQuestionnaires() {
                 disabled={saving || reponsesDetail.length === 0 || Boolean(detail?.loading)}
                 className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
               >
-                {saving ? <Eye aria-hidden="true" size={16} /> : <CheckCheck aria-hidden="true" size={16} />}
+                {saving ? <Eye aria-hidden="true" strokeWidth={TRAIT_ICONE} size={16} /> : <CheckCheck aria-hidden="true" strokeWidth={TRAIT_ICONE} size={16} />}
                 {saving ? 'Confirmation...' : 'Confirmer la lecture'}
               </button>
             </div>

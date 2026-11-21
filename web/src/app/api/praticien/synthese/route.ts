@@ -19,7 +19,11 @@ import {
   validerBrouillonPraticien
 } from '@/lib/synthese-praticien';
 import { logger } from '@/lib/observability/logger';
+import { motifAffiche, verdictContamination } from '@/lib/synthese/contaminationBiologie';
+import { motifBlocageContamination } from '@/lib/synthese/gardeContamination';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
+import { TYPES_CORRESPONDANCE_PATIENT } from '@/lib/correspondance/patient';
+import { FILTRE_ENVOIS_PARTIS } from '@/lib/correspondance/reservation';
 import {
   createRequestContext,
   finalizeLogContext,
@@ -39,6 +43,9 @@ import {
   type EtatDossier
 } from '@/lib/patient/cycleDeVie';
 const MESSAGE_ERREUR_GENERATION = 'Erreur lors de la génération de la synthèse. Réessayez.';
+const MESSAGE_SYNTHESE_MODIFIEE = 'La synthèse a été modifiée entre-temps. Rechargez-la avant de recommencer.';
+// L'écran recharge la synthèse sur ce code (`SynthesePanel`).
+const CODE_SYNTHESE_MODIFIEE = 'synthese_modifiee';
 
 // Gabarit littéral pour le journal des accès (G-TRUST-04) — jamais l'URL reçue.
 const ROUTE_JOURNAL = '/api/praticien/synthese';
@@ -102,6 +109,11 @@ export async function GET(req: Request) {
         dateValidation: true,
         notesPraticien: true,
         syntheseJson: true,
+        // Version optimiste : l'écran la renvoie au PATCH.
+        updatedAt: true,
+        // [[D-513]] §5 : lue pour dire, ici, si la synthèse est suspecte. Elle
+        // ne part pas au client (retirée ci-dessous).
+        donneesEntree: true,
       },
     });
 
@@ -123,10 +135,16 @@ export async function GET(req: Request) {
         select: { idQuestionnaire: true },
       });
       const ids = passations.map(p => p.idQuestionnaire);
-      return syntheses.map(s => ({
-        ...s,
-        avertissementMesureRetiree: avertissementSyntheseAnterieure(ids, s.dateGeneration),
-      }));
+      return syntheses.map(({ donneesEntree, ...s }) => {
+        // Affichage seulement : le blocage, et sa ligne de journal, se font à la
+        // validation et aux sorties (`motifBlocageContamination`).
+        const verdict = verdictContamination(s.syntheseJson, donneesEntree);
+        return {
+          ...s,
+          avertissementMesureRetiree: avertissementSyntheseAnterieure(ids, s.dateGeneration),
+          motifSuspecte: verdict.suspecte ? motifAffiche(verdict, s.statut) : null,
+        };
+      });
     })();
 
     return withCorrelationHeader(
@@ -381,6 +399,7 @@ export async function PUT(req: Request) {
         dateValidation: record.dateValidation,
         notesPraticien: record.notesPraticien,
         syntheseJson: record.syntheseJson,
+        updatedAt: record.updatedAt,
       },
     }), requestContext);
   } catch (err) {
@@ -407,6 +426,8 @@ export async function PATCH(req: Request) {
     action?: 'enregistrer' | 'valider' | 'rejeter' | 'annoter' | 'effacer';
     notes?: string;
     synthese?: unknown;
+    /** `updatedAt` de la synthèse que l'écran affiche (ISO). Facultatif. */
+    version?: unknown;
   };
 
   let body: PatchBody;
@@ -423,6 +444,13 @@ export async function PATCH(req: Request) {
   if (!idSynthese || !action) {
     return withCorrelationHeader(NextResponse.json({ error: 'idSynthese et action sont requis.' }, { status: 400 }), requestContext);
   }
+  // VERSION OPTIMISTE (lot synthese-version-optimiste) : l'écran envoie le
+  // `updatedAt` de la synthèse qu'il affiche. Absente, la fenêtre se réduit à
+  // celle de la requête (lecture d'entrée → verrou).
+  const versionClient = typeof body.version === 'string' ? new Date(body.version) : null;
+  if (body.version != null && (versionClient === null || Number.isNaN(versionClient.getTime()))) {
+    return withCorrelationHeader(NextResponse.json({ error: 'Version de synthèse invalide.' }, { status: 400 }), requestContext);
+  }
 
   const emailSession = emailPraticien(session);
   if (!emailSession) {
@@ -435,6 +463,12 @@ export async function PATCH(req: Request) {
     });
     if (!existing) {
       return withCorrelationHeader(NextResponse.json({ error: 'Synthèse introuvable.' }, { status: 404 }), requestContext);
+    }
+    if (versionClient && versionClient.getTime() !== existing.updatedAt.getTime()) {
+      return withCorrelationHeader(NextResponse.json(
+        { error: MESSAGE_SYNTHESE_MODIFIEE, code: CODE_SYNTHESE_MODIFIEE },
+        { status: 409 },
+      ), requestContext);
     }
 
     let statut = existing.statut;
@@ -471,6 +505,16 @@ export async function PATCH(req: Request) {
         syntheseJson = validateSyntheseSchema(body.synthese) as unknown as Prisma.InputJsonValue;
       }
     } else if (action === 'valider') {
+      // Seul un brouillon se valide — l'écran ne propose rien d'autre. Sans ce
+      // refus, un onglet périmé revalidait une synthèse déjà validée, corrigée
+      // ou imprimée, avec une date de validation postérieure à l'impression
+      // (constat de wn-reviewer, lot synthese-enregistrer-verrou).
+      if (existing.statut !== 'Brouillon_IA' && existing.statut !== 'Brouillon_Praticien') {
+        return withCorrelationHeader(NextResponse.json(
+          { error: 'Seul un brouillon (IA ou praticien) peut être validé.' },
+          { status: 409 },
+        ), requestContext);
+      }
       if (existing.statut === 'Brouillon_Praticien' || existing.modele === MODELE_REDACTION_PRATICIEN) {
         const validation = validerBrouillonPraticien(existing.syntheseJson);
         if (!validation.ok) {
@@ -478,6 +522,27 @@ export async function PATCH(req: Request) {
         }
         syntheseJson = validation.synthese as Prisma.InputJsonValue;
       }
+      // [[D-513]] §5 : une synthèse suspecte ne se valide pas, quel que soit
+      // l'auteur du texte. Le contrôle se rejoue à chaque validation ; une
+      // correction dans l'éditeur le lève.
+      const motifSuspecte = motifBlocageContamination({
+        idSynthese,
+        syntheseJson: syntheseJson ?? existing.syntheseJson,
+        donneesEntree: existing.donneesEntree,
+        statut: existing.statut,
+        sortie: 'validation',
+        requestContext,
+      });
+      if (motifSuspecte) {
+        return withCorrelationHeader(NextResponse.json(
+          { error: motifSuspecte, code: 'synthese_suspecte' },
+          { status: 409 },
+        ), requestContext);
+      }
+      // Le texte validé est CELUI QUI VIENT D'ÊTRE CONTRÔLÉ : réécrit tel quel,
+      // pour qu'un enregistrement concurrent ne fasse pas valider un texte que
+      // le contrôle n'a pas vu. « Validée » vaut donc « contrôlée ».
+      syntheseJson ??= existing.syntheseJson as Prisma.InputJsonValue;
       statut = 'Validee_Praticien';
       dateValidation = new Date();
     } else if (action === 'rejeter') {
@@ -486,16 +551,7 @@ export async function PATCH(req: Request) {
       statut = existing.statut === 'Validee_Praticien' && notes ? 'Corrigee_Praticien' : existing.statut;
       notesPraticien = notes;
     } else if (action === 'effacer') {
-      const bookletEnvoye = await prisma.bookletEnvoi.findFirst({
-        where: { idSynthese, statut: 'Envoye' },
-        select: { id: true },
-      });
-      if (bookletEnvoye) {
-        return withCorrelationHeader(NextResponse.json(
-          { error: 'Impossible de vider une synthèse dont le booklet a déjà été envoyé.' },
-          { status: 409 },
-        ), requestContext);
-      }
+      // Le contrôle du booklet envoyé se fait plus bas, SOUS LE VERROU.
       statut = 'Brouillon_Praticien';
       syntheseJson = nouveauBrouillonPraticien() as Prisma.InputJsonValue;
       dateValidation = null;
@@ -532,22 +588,109 @@ export async function PATCH(req: Request) {
     // SOUS LE VERROU DU DOSSIER que l'impression prend aussi
     // (`documentMedecinImprime.ts`) : une impression concurrente passe avant
     // ou après le contrôle, jamais entre le contrôle et l'écriture.
-    const figeeParImpression = action === 'effacer' || action === 'rejeter';
-    const record = figeeParImpression
-      ? await prisma.$transaction(async (tx) => {
-          await tx.$queryRaw`SELECT id FROM patients WHERE id_patient = ${existing.idPatient} FOR UPDATE`;
-          const imprimee = await tx.documentMedecinImprime.findFirst({
-            where: { idSynthese },
-            select: { id: true },
-          });
-          if (imprimee) return null;
-          return tx.syntheseIA.update({ where: { idSynthese }, data });
-        })
-      : await prisma.syntheseIA.update({ where: { idSynthese }, data });
+    //
+    // « ENREGISTRER » PREND LE MÊME VERROU et relit le statut sous lui : le
+    // brouillon a été lu plus haut, hors verrou, et `data` réécrit ce statut
+    // lu. Une validation suivie d'une impression entre la lecture et
+    // l'écriture était sinon remise en brouillon, son texte remplacé — celui
+    // que « Mon bilan » lit vivant (constat de wn-reviewer sur #2215).
+    //
+    // « VALIDER » ET « ANNOTER » AUSSI : ils réécrivent statut, texte et date de
+    // validation lus hors verrou (lot synthese-valider-annoter-conditionnels).
+    // Ni l'un ni l'autre n'entre au contrôle d'impression : une note se pose
+    // sur une synthèse imprimée (elle va au booklet), et « valider » n'atteint
+    // qu'un brouillon relu sous le verrou — l'impression exige une synthèse
+    // validée, un brouillon n'a donc jamais été imprimé. « REJETER » relit
+    // aussi : un onglet périmé ne retire pas du portail une synthèse validée
+    // et envoyée entre-temps (wn-reviewer, P3-1) ; le retrait voulu reste
+    // possible depuis un écran rechargé. Seul « effacer » ne relit pas le
+    // statut : il réinitialise quel que soit le statut, et le contrôle
+    // d'impression ci-dessous, sous le même verrou, garde ce qu'il ne doit pas
+    // défaire.
+    //
+    // TOUTES LES ACTIONS, « EFFACER » COMPRIS, COMPARENT `updatedAt` sous le
+    // verrou à la lecture d'entrée — elle-même égale, si l'écran l'a envoyée,
+    // à la version qu'il affiche (contrôlé plus haut). Statut et modèle seuls
+    // laissaient passer un « enregistrer » concurrent qui garde le brouillon
+    // brouillon : un « valider », un second « enregistrer » ou un « effacer »
+    // l'écrasait en silence (P3 de wn-reviewer sur #2221, P3-2 sur #2226 ;
+    // PR-Agent sur les deux). Lot synthese-version-optimiste.
+    //
+    // « EFFACER » CONTRÔLE AUSSI LE BOOKLET SOUS LE VERROU, que l'envoi du
+    // booklet prend avant de réserver sa ligne (`/api/praticien/booklet`). Lu
+    // hors verrou, un envoi concurrent pouvait partir d'une synthèse vidée
+    // entre-temps (P3-3 de wn-reviewer sur #2226). Le journal compte l'envoi
+    // parti OU en partance ; l'audit couvre les envois d'avant le journal.
+    const relitStatut = action !== 'effacer';
+    const figeeParImpression = action === 'effacer' || action === 'rejeter' || action === 'enregistrer';
+    let changeeEntreTemps = false;
+    let versionPerimee = false;
+    let bookletParti = false;
+    const record = await prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM patients WHERE id_patient = ${existing.idPatient} FOR UPDATE`;
+      if (action === 'effacer') {
+        const journal = await tx.correspondancePatient.findFirst({
+          where: {
+            idPatient: existing.idPatient,
+            type: TYPES_CORRESPONDANCE_PATIENT.booklet,
+            referenceId: idSynthese,
+            ...FILTRE_ENVOIS_PARTIS,
+          },
+          select: { id: true },
+        });
+        const audit = journal ?? await tx.bookletEnvoi.findFirst({
+          where: { idSynthese, statut: 'Envoye' },
+          select: { id: true },
+        });
+        if (audit) {
+          bookletParti = true;
+          return null;
+        }
+      }
+      const courante = await tx.syntheseIA.findUnique({
+        where: { idSynthese },
+        select: { statut: true, modele: true, updatedAt: true },
+      });
+      if (!courante) {
+        changeeEntreTemps = true;
+        return null;
+      }
+      if (relitStatut && (courante.statut !== existing.statut || courante.modele !== existing.modele)) {
+        changeeEntreTemps = true;
+        return null;
+      }
+      if (courante.updatedAt.getTime() !== existing.updatedAt.getTime()) {
+        versionPerimee = true;
+        return null;
+      }
+      if (figeeParImpression) {
+        const imprimee = await tx.documentMedecinImprime.findFirst({
+          where: { idSynthese },
+          select: { id: true },
+        });
+        if (imprimee) return null;
+      }
+      return tx.syntheseIA.update({ where: { idSynthese }, data });
+    });
+    if (bookletParti) {
+      return withCorrelationHeader(NextResponse.json(
+        { error: 'Impossible de vider une synthèse dont le booklet a déjà été envoyé.' },
+        { status: 409 },
+      ), requestContext);
+    }
+    if (changeeEntreTemps || versionPerimee) {
+      return withCorrelationHeader(NextResponse.json(
+        changeeEntreTemps && action === 'enregistrer'
+          ? { error: 'Seul un brouillon (IA ou praticien) non encore validé peut être modifié.', code: CODE_SYNTHESE_MODIFIEE }
+          : { error: MESSAGE_SYNTHESE_MODIFIEE, code: CODE_SYNTHESE_MODIFIEE },
+        { status: 409 },
+      ), requestContext);
+    }
     if (!record) {
+      const geste = action === 'effacer' ? 'vider' : action === 'rejeter' ? 'rejeter' : 'modifier';
       return withCorrelationHeader(NextResponse.json(
         {
-          error: `Impossible de ${action === 'effacer' ? 'vider' : 'rejeter'} une synthèse dont le document pour le médecin a été imprimé. Pour corriger, créez une nouvelle synthèse et imprimez-la : elle remplacera ce document pour le patient.`,
+          error: `Impossible de ${geste} une synthèse dont le document pour le médecin a été imprimé. Pour corriger, créez une nouvelle synthèse et imprimez-la : elle remplacera ce document pour le patient.`,
           reason: 'synthese_imprimee_pour_medecin',
         },
         { status: 409 },
@@ -573,13 +716,18 @@ export async function PATCH(req: Request) {
       methode: 'PATCH',
     });
 
+    // [[D-513]] §5 : le verdict RECALCULÉ sur ce qui vient d'être écrit — une
+    // correction dans l'éditeur lève le blocage à l'écran sans relecture.
+    const verdictApres = verdictContamination(record.syntheseJson, record.donneesEntree);
     return withCorrelationHeader(NextResponse.json({
       success: true,
       statut,
+      motifSuspecte: verdictApres.suspecte ? motifAffiche(verdictApres, statut) : null,
       syntheseJson: record.syntheseJson,
       modele: record.modele,
       dateValidation: record.dateValidation,
       notesPraticien: record.notesPraticien,
+      updatedAt: record.updatedAt,
     }), requestContext);
   } catch (err) {
     logger.error({

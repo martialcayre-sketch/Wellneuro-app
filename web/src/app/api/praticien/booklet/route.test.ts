@@ -22,6 +22,10 @@ const countCorrespondance = vi.fn();
 const findFirstCorrespondance = vi.fn();
 const countBookletEnvoi = vi.fn();
 const executeRaw = vi.fn();
+// LE VERROU DU DOSSIER et la relecture de la synthèse sous lui (lot
+// synthese-effacer-booklet-verrou) : « vider » la synthèse prend le même.
+const queryRaw = vi.fn();
+const findUniqueSynthese = vi.fn();
 // Le booklet part au patient : la prévisualisation qualifie la synthèse dont il
 // est tiré (antérieure au retrait d'interprétation ?), d'où cette lecture des
 // passations du dossier, en sélection minimale.
@@ -31,7 +35,10 @@ vi.mock('next-auth', () => ({ getServerSession: vi.fn(async () => ({ user: { ema
 vi.mock('@/lib/auth', () => ({ authOptions: {} }));
 vi.mock('@/lib/prisma', () => {
   const prisma = {
-    syntheseIA: { findFirst: (...a: unknown[]) => findFirst(...a) },
+    syntheseIA: {
+      findFirst: (...a: unknown[]) => findFirst(...a),
+      findUnique: (...a: unknown[]) => findUniqueSynthese(...a),
+    },
     patient: { findUnique: (...a: unknown[]) => findUniquePatient(...a) },
     journalAccesDossier: {
       create: (...a: unknown[]) => createJournal(...a),
@@ -49,6 +56,7 @@ vi.mock('@/lib/prisma', () => {
     },
     questionnaireReponse: { findMany: (...a: unknown[]) => findManyReponses(...(a as [])) },
     $executeRaw: (...a: unknown[]) => executeRaw(...a),
+    $queryRaw: (...a: unknown[]) => queryRaw(...a),
     // La transaction joue son corps sur le même client.
     $transaction: (corps: (tx: unknown) => unknown) => corps(prisma),
   };
@@ -91,6 +99,7 @@ function syntheseFixture(statut: string) {
     statut,
     dateValidation: new Date('2026-07-18T00:00:00.000Z'),
     dateGeneration: new Date('2026-07-17T00:00:00.000Z'),
+    updatedAt: new Date('2026-07-18T09:00:00.000Z'),
     notesPraticien: null,
     bookletEnvois: [],
     syntheseJson: {
@@ -122,6 +131,14 @@ beforeEach(() => {
   countBookletEnvoi.mockResolvedValue(0);
   executeRaw.mockReset();
   executeRaw.mockResolvedValue(1);
+  queryRaw.mockReset();
+  queryRaw.mockResolvedValue([]);
+  // Par défaut, la synthèse relue sous le verrou est celle lue en tête.
+  findUniqueSynthese.mockReset();
+  findUniqueSynthese.mockImplementation(async () => {
+    const lue = (await findFirst.mock.results.at(-1)?.value) as { updatedAt: Date; emailPatient: string } | null | undefined;
+    return lue ? { updatedAt: new Date(lue.updatedAt.getTime()), emailPatient: lue.emailPatient } : null;
+  });
   // `actif` manquait : `phaseDossier` lit `!etat.actif` et concluait
   // « désactivé » sur un dossier censé être en suivi. Aucun test n'allait
   // jusque-là, donc le fixture pouvait rester faux sans que rien ne rougisse.
@@ -720,13 +737,102 @@ describe('POST /api/praticien/booklet — ce que le journal de correspondance di
       });
     });
 
-    it('le renvoi confirmé ne se réserve pas : c’est un geste explicite', async () => {
+    // Le renvoi confirmé est un geste explicite : il part même si un autre
+    // vient de partir, donc il ne LIT PAS le registre. Mais sa ligne naît
+    // réservée : sans elle, « vider » la synthèse, sous le verrou du dossier,
+    // ne voyait pas un renvoi en vol (lot synthese-effacer-booklet-verrou).
+    it('le renvoi confirmé ne lit pas le registre, mais sa ligne naît réservée', async () => {
+      countCorrespondance.mockResolvedValue(1);
+      countBookletEnvoi.mockResolvedValue(1);
       const res = await envoyer({ forceSend: true });
 
       expect(res.status).toBe(200);
-      expect(executeRaw).not.toHaveBeenCalled();
-      expect(updateCorrespondance).not.toHaveBeenCalled();
-      expect(ligneJournal()).toMatchObject({ statut: 'Envoye', sourceId: 'AUDIT_1' });
+      expect(countCorrespondance).not.toHaveBeenCalled();
+      expect(countBookletEnvoi).not.toHaveBeenCalled();
+      expect(createCorrespondance).toHaveBeenCalledTimes(1);
+      // Restée marquée (processus arrêté), la ligne dit déjà « Renvoi ».
+      expect(createCorrespondance.mock.calls[0][0].data).toMatchObject({
+        type: 'booklet',
+        objet: 'Renvoi du bilan neuronutritionnel',
+        statut: 'Non_envoye',
+        erreurCourte: 'réservé : envoi en cours',
+        referenceId: 'SYN_1',
+      });
+      expect(createCorrespondance.mock.invocationCallOrder[0]).toBeLessThan(sendMail.mock.invocationCallOrder[0]);
+      // Un envoi, une ligne : le solde reprend la réservée.
+      expect(updateCorrespondance).toHaveBeenCalledWith({
+        where: { id: 'RES_1' },
+        data: {
+          objet: 'Renvoi du bilan neuronutritionnel',
+          statut: 'Envoye',
+          sourceType: 'booklet_envoi',
+          sourceId: 'AUDIT_1',
+          erreurCourte: null,
+        },
+      });
+    });
+
+    // P3-3 de wn-reviewer sur #2226 : l'envoi ne prenait pas le verrou du
+    // dossier, et « vider » contrôlait le booklet hors verrou. Le booklet
+    // pouvait partir d'une synthèse vidée entre-temps.
+    it.each([[{}], [{ forceSend: true }]])(
+      'prend le verrou du bilan, puis celui du dossier, et relit la synthèse sous lui (%o)',
+      async (corps) => {
+        const res = await envoyer(corps);
+        expect(res.status).toBe(200);
+
+        expect(queryRaw).toHaveBeenCalledTimes(1);
+        const [gabarit, ...valeurs] = queryRaw.mock.calls[0] as [TemplateStringsArray, ...unknown[]];
+        expect(gabarit.join('?')).toContain('FROM patients WHERE id_patient = ? FOR UPDATE');
+        expect(valeurs).toEqual(['PAT_1']);
+        expect(findUniqueSynthese).toHaveBeenCalledWith({ where: { idSynthese: 'SYN_1' }, select: { updatedAt: true, emailPatient: true } });
+
+        // Le verrou du bilan d'abord : le banc sur base réelle
+        // (`reservation.pg.test.ts`) compte deux envois en attente de lui.
+        const ordre = [
+          executeRaw.mock.invocationCallOrder[0],
+          queryRaw.mock.invocationCallOrder[0],
+          findUniqueSynthese.mock.invocationCallOrder[0],
+          createCorrespondance.mock.invocationCallOrder[0],
+          sendMail.mock.invocationCallOrder[0],
+        ];
+        expect(ordre).toEqual([...ordre].sort((a, b) => a - b));
+      },
+    );
+
+    it.each([
+      ['vidée, annotée ou rejetée entre-temps', { updatedAt: new Date('2026-07-18T09:00:05.000Z') }],
+      ['disparue entre-temps', null],
+    ])('une synthèse %s ne part pas : 409, rien de réservé ni d’envoyé', async (_cas, relue) => {
+      for (const corps of [{}, { forceSend: true }]) {
+        findUniqueSynthese.mockResolvedValueOnce(relue);
+        const res = await envoyer(corps);
+
+        expect(res.status).toBe(409);
+        expect((await res.json()).error).toBe('La synthèse a été modifiée entre-temps. Rechargez-la avant de recommencer.');
+      }
+      expect(createCorrespondance).not.toHaveBeenCalled();
+      expect(sendMail).not.toHaveBeenCalled();
+      expect(createBookletEnvoi).not.toHaveBeenCalled();
+    });
+
+    // Changer l'e-mail du dossier réécrit `email_patient` sans toucher
+    // `updatedAt` (lot synthese-conflit-texte-conserve) : la version seule ne
+    // voit plus le changement, l'adresse relue le voit (P2-1 de wn-reviewer).
+    it('une adresse changée entre-temps ne reçoit pas le livret de l’ancienne : 409, rien de réservé ni d’envoyé', async () => {
+      for (const corps of [{}, { forceSend: true }]) {
+        findUniqueSynthese.mockImplementationOnce(async () => {
+          const lue = (await findFirst.mock.results.at(-1)?.value) as { updatedAt: Date };
+          return { updatedAt: new Date(lue.updatedAt.getTime()), emailPatient: 'nouvelle.adresse@fictif.wellneuro.fr' };
+        });
+        const res = await envoyer(corps);
+
+        expect(res.status).toBe(409);
+        expect((await res.json()).error).toBe('La synthèse a été modifiée entre-temps. Rechargez-la avant de recommencer.');
+      }
+      expect(createCorrespondance).not.toHaveBeenCalled();
+      expect(sendMail).not.toHaveBeenCalled();
+      expect(createBookletEnvoi).not.toHaveBeenCalled();
     });
   });
 

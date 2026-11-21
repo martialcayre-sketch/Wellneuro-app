@@ -22,7 +22,9 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { adresseDIngestion, cheminVoisin, ErreurOutil, erreurSansTexte } from '../fiches/lib/assemblage.mjs';
 
 const { lireBrouillonVersionUsage, lireBrouillonLibelle } = await import('@/lib/fiches-usage/contrat');
-const { controlerVersionContreStructure, controlerLibelleContreStructure } = await import('@/lib/fiches-usage/controle');
+const { controlerVersionContreStructure, controlerLibelleContreStructure, controlerRegistreLibelle } = await import(
+  '@/lib/fiches-usage/controle'
+);
 
 const ROUTES = { version: '/api/internal/fiches-usage/ingest', libelle: '/api/internal/fiches-usage/libelles/ingest' };
 
@@ -55,7 +57,8 @@ function controler(brouillon) {
       return { sorte, id, lu, anomalies: controlerVersionContreStructure({ ...lu, rubriques: Object.keys(lu.contenu) }) };
     }
     const lu = lireBrouillonLibelle(brouillon);
-    return { sorte, id, lu, anomalies: controlerLibelleContreStructure(lu) };
+    // Le même contrôle que le serveur, registre des hypothèses compris (D-535).
+    return { sorte, id, lu, anomalies: [...controlerLibelleContreStructure(lu), ...controlerRegistreLibelle(lu)] };
   } catch (e) {
     // Le message d'un refus du contrat ne cite aucun texte ; il part au rapport,
     // jamais au terminal.

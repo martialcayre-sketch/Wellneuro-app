@@ -1,6 +1,8 @@
-// La consigne « fiche-usage-v9 » est épinglée : un octet changé sans bump de
+// La consigne « fiche-usage-v12 » est épinglée : un octet changé sans bump de
 // version rougit ici, et l'outil refuse de tourner ([[D-314]] §4).
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 import { test } from 'node:test';
 import { consignesVerifiees, EMPREINTE_ATTENDUE, empreinteConsignes, lireConsignes, VERSION_CONSIGNE } from './consigne.mjs';
 
@@ -217,4 +219,99 @@ test('v9 : phrase de quantité, « le dosage de » dans la question, objet des c
   assert.match(contreLecture, /Tout\s+autre terme de mesure ajouté à cette désignation/);
   assert.match(contreLecture, /est INFIDÈLE dans la « question », même porté par un claim/);
   assert.match(contreLecture, /la phrase d'absence est alors\s+INFIDÈLE/);
+});
+
+// [[D-501]] §13 : arbitrages cliniques du 2026-11-16 (20261116-2115-b,
+// 20261116-2116-b) et critères concrets de la phrase d'absence. Un niveau
+// d'apport déclaré sans problème de sécurité est une limite de sécurité ; une
+// mention sans valeur chiffrée n'est pas une quantité de prise ; sous
+// « preuves_limitees », la recommandation d'un claim s'écrit attribuée et
+// réservée dans la même phrase. Des deux côtés.
+test('v10 : limite de sécurité exprimée en apport, mention sans valeur, recommandation attribuée et réservée', () => {
+  const { redaction, contreLecture } = lireConsignes();
+  for (const c of [redaction, contreLecture]) {
+    assert.match(c, /un\s+niveau\s+d'apport\s+qu'une\s+source\s+déclare\s+sans\s+problème\s+de\s+sécurité\s+est\s+une\s+limite\s+supérieure\s+de\s+sécurité/i);
+    assert.match(c, /même\s+exprimé\s+en\s+quantité\s+consommée\s+par\s+prise\s+ou\s+par\s+jour/);
+    assert.match(c, /attribué\s+à\s+sa\s+source,\s+avec\s+sa\s+population,\s+ses\s+exceptions\s+et\s+ses\s+réserves/);
+    assert.match(c, /mention\s+de\s+dose\s+ou\s+d'apport\s+sans\s+valeur\s+chiffrée/);
+    // Contre-revue Codex (D-505), P1 : aucune garantie de sécurité générale,
+    // même portée par la source, détachée de ses conditions.
+    assert.match(c, /garantie\s+de\s+sécurité\s+générale,\s+détachée\s+de\s+(cette|sa)\s+population/);
+    assert.doesNotMatch(c, /que\s+la\s+source\s+ne\s+donne\s+pas/);
+    assert.match(c, /n'est\s+pas\s+une\s+quantité\s+de\s+prise/);
+    // La recommandation d'un claim : attribuée, toutes conditions, réserve fixe.
+    assert.match(c, /«\s+Selon\s+<source>,\s+…\s+»/);
+    assert.ok(c.includes("« , mais cet usage n'est pas") , 'réserve fixe');
+    assert.match(c, /«\s+,\s+mais\s+cet\s+usage\s+n'est\s+pas\s+établi\.\s+»/);
+    // Phrase d'absence : critères concrets pour résultats et limites.
+    assert.match(c, /nomme\s+un\s+résultat\s+possible\s+de\s+l'analyte\s+de\s+la\s+fiche/);
+    assert.match(c, /énonce\s+une\s+limite\s+de\s+l'examen\s+ou\s+de\s+son\s+marqueur/);
+  }
+  // La clause de doute ne vise plus qu'une valeur chiffrée (revue D-448 de #2186).
+  assert.match(redaction, /Toute autre valeur chiffrée, ou en cas de doute sur une\s+valeur chiffrée/);
+  assert.match(redaction, /Hors de cette phrase attribuée et réservée, rien ne présente\s+l'usage comme recommandé/);
+  assert.match(redaction, /n'en\s+tire\s+ni\s+qu'au-delà\s+l'apport\s+est\s+dangereux,\s+ni\s+qu'en\s+deçà\s+il\s+est\s+conseillé/);
+  assert.match(contreLecture, /sans l'attribution ou sans cette réserve, elle en est un/);
+  assert.match(contreLecture, /prolongé\s+en\s+danger\s+au-delà\s+ou\s+en\s+conseil\s+en\s+deçà,\s+il\s+en\s+est\s+un/);
+  // Le reste du statut ne bouge pas : « non_valide » garde sa règle.
+  assert.match(redaction, /« non_valide » :\s+le texte dit que l'usage n'est pas validé/);
+});
+
+// [[D-501]] §14 : cinq refus stables de l'essai v10 (20261116-2250-b). Le
+// moment de prise est une quantité de prise ; la forme attribuée et réservée
+// vaut dans toute rubrique ; une limite de la littérature n'est pas une limite
+// de l'examen ; un argument de causalité n'est pas une surveillance ; un
+// résultat ne s'interprète pas dans « resultats_consequences », et sous
+// « preuves_limitees » aucune conséquence décisionnelle ne s'y écrit. Des deux côtés.
+test('v11 : moment de prise, réserve en toute rubrique, objets de limites, surveillance_arret et resultats_consequences', () => {
+  const { redaction, contreLecture } = lireConsignes();
+  for (const c of [redaction, contreLecture]) {
+    assert.match(c, /une\s+durée\s+de\s+prise\s+ou\s+de\s+traitement,\s+un\s+moment\s+de\s+prise\s+\(le\s+soir,\s+au\s+repas,\s+à\s+jeun\)/);
+    assert.match(c, /«\s+precautions\s+»\s+comprise/);
+    assert.match(c, /Une\s+limite\s+de\s+la\s+littérature\s+sur\s+un\s+supplément,\s+une\s+option\s+ou\s+un\s+traitement/);
+    assert.match(c, /n'est\s+pas\s+une\s+limite\s+de\s+l'examen\s+ni\s+de\s+son\s+marqueur/);
+    assert.match(c, /Un\s+claim\s+porte\s+sur\s+l'objet\s+de\s+«\s+surveillance_arret\s+»\s+quand\s+il\s+dit\s+quoi\s+surveiller/);
+    assert.match(c, /un\s+argument\s+de\s+causalité\s+\(l'évolution\s+d'un\s+effet\s+après\s+l'arrêt\s+puis\s+la\s+reprise/);
+    assert.match(c, /ce\s+dont\s+il\s+témoigne,\s+ce\s+qu'il\s+reflète\s+ou\s+traduit/);
+    assert.match(c, /une\s+conséquence\s+décisionnelle\s+\(orienter\s+vers\s+une\s+complémentation,\s+une\s+prise\s+en\s+charge\s+ou\s+un\s+autre\s+examen\)/);
+  }
+  assert.match(redaction, /ne\s+s'écrit\s+que\s+sous\s+elle/);
+  // Contre-revue Codex (D-505), P1 : la condition de sécurité reste restituable.
+  // Contre-passe, P2 : la conséquence décisionnelle exclue ne compte pas pour
+  // la phrase d'absence, comme un fait empêché par un médicament nommé.
+  for (const c of [redaction, contreLecture]) {
+    assert.match(c, /conséquence\s+décisionnelle\s+qui\s+ne\s+s'écrit\s+pas\s+dans\s+«\s+resultats_consequences\s+»\s+sous\s+«\s+preuves_limitees\s+»\s+n'y\s+compte\s+pas\s+non\s+plus/);
+    assert.match(c, /sauf\s+une\s+condition\s+de\s+sécurité\s+ou\s+d'admissibilité\s+que\s+le\s+marqueur\s+«\s+oui\s+»\s+impose\s+d'y\s+restituer/);
+  }
+  assert.match(redaction, /complémentation,\s+une\s+prise\s+en\s+charge\s+ou\s+un\s+autre\s+examen\)\s+ne\s+s'y\s+écrit\s+pas,/);
+  assert.match(contreLecture, /complémentation,\s+une\s+prise\s+en\s+charge\s+ou\s+un\s+autre\s+examen\)\s+y\s+est\s+un\s+défaut/);
+  assert.match(contreLecture, /durée\s+de\s+prise\s+ou\s+de\s+traitement,\s+un\s+moment\s+de\s+prise\)\.\s+Elle\s+est\s+INFIDÈLE/);
+});
+
+// [[D-501]] §16 : la liste fermée de [[D-535]] §2 entre dans le mode
+// « libellé », des deux côtés, terme pour terme. Le banc la relit dans le
+// registre du code : un terme ajouté ou retiré là sans la consigne rougit ici.
+test('v12 : les douze termes de D-535, des deux côtés, égaux au registre du code', () => {
+  const registre = readFileSync(
+    path.join(import.meta.dirname, '..', '..', '..', '..', 'web', 'src', 'lib', 'fiches-usage', 'registreLibelleHypothese.ts'),
+    'utf8',
+  );
+  const termes = [];
+  for (const nom of ['TERMES_ECARTES_D331', 'RACINES_DIAGNOSTIQUES_LIBELLE', 'FORMULATIONS_DIAGNOSTIQUES_D535']) {
+    const bloc = registre.match(new RegExp(`export const ${nom} = \\[([^\\]]*)\\]`));
+    assert.ok(bloc, nom);
+    termes.push(...[...bloc[1].matchAll(/'([^']+)'/g)].map((m) => m[1]));
+  }
+  assert.equal(termes.length, 12);
+  const liste = termes.map((t) => `« ${t} »`);
+  const { redaction, contreLecture } = lireConsignes();
+  for (const c of [redaction, contreLecture]) {
+    const enLigne = c.replace(/\s+/g, ' ');
+    assert.ok(enLigne.includes(`ne contient aucun de ces douze termes : ${liste.slice(0, -1).join(', ')}, ${liste.at(-1)}.`), 'liste entière, dans l’ordre');
+    assert.match(enLigne, /un mot qui contient l'un d'eux tombe sous lui : « déficitaire », « excessif », « élevée », mais aussi « relevé »/);
+    assert.match(enLigne, /Cette liste ne vise pas le libellé d'une population\./);
+  }
+  assert.match(redaction.replace(/\s+/g, ' '), /le libellé se reformule en gardant le nutriment et le sens bas que décrivent les claims/);
+  assert.match(contreLecture.replace(/\s+/g, ' '), /n'est pas infidèle pour cela, s'il garde le nutriment et le sens bas qu'ils décrivent/);
+  assert.match(contreLecture.replace(/\s+/g, ' '), /un nom qui contient l'un des douze termes écartés, même dérivé ou contenu dans un autre mot/);
 });

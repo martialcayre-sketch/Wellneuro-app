@@ -12,6 +12,19 @@
 //   3. PREMIER ENVOI D'UN BILAN : deux clics simultanés, un seul envoi.
 //   4. CE QUI COMPTE COMME ENVOI : « Erreur », messagerie absente et refus de
 //      garde ne comptent pas ; un envoi parti ou en partance, si.
+//   5. VIDER UNE SYNTHÈSE CONTRE L'ENVOI DE SON BILAN (lot
+//      synthese-effacer-booklet-verrou) : un envoi en vol empêche le vidage ;
+//      un vidage glissé avant la réservation fait refuser l'envoi.
+//   6. VERSION OPTIMISTE DU PATCH DES SYNTHÈSES (lot
+//      synthese-version-optimiste) : un « enregistrer » qui garde le brouillon
+//      brouillon fait refuser le geste suivant, lu avant lui — enregistrer,
+//      valider ou vider ; une version périmée envoyée par l'écran aussi.
+//   7. UN CHANGEMENT D'E-MAIL NE PÉRIME PAS LES SYNTHÈSES (lot
+//      synthese-conflit-texte-conserve) : la route des patients réécrit la
+//      copie de l'adresse dans `syntheses_ia` sans toucher `updated_at` ; le
+//      geste de l'écran, sur la version lue avant, passe. Et le livret, lu
+//      avant un changement d'adresse commité sous ses yeux, ne part pas vers
+//      l'ancienne (P2-1 de wn-reviewer sur ce lot).
 //
 // LE CROISEMENT EST FORCÉ, pas espéré (patron de
 // `physio-traitements/physioTraitements.pg.test.ts`) : l'observateur tient le
@@ -58,6 +71,16 @@ vi.mock('@/lib/email/transportSmtp', () => ({ creerTransportSmtp: () => ({ sendM
 vi.mock('@/lib/anthropic', () => ({
   maskEmail: (e: string) => `masqué(${e.length})`,
   sanitizeAuditError: (e: unknown) => (e instanceof Error ? e.message : String(e)),
+  // La route des synthèses (§5) importe aussi ceux-ci ; aucun n'est appelé.
+  anthropic: {},
+  CLAUDE_MODEL: 'claude-banc',
+  SYSTEM_PROMPT_SYNTHESE: '',
+  VERSION_CORPUS_SYNTHESE: 'v-banc',
+  VERSION_PROMPT_SYNTHESE: 'v-banc',
+  VERSION_SCHEMA_SYNTHESE: 'v-banc',
+  validateSyntheseSchema: (value: unknown) => value,
+  analyserSortieSynthese: (value: unknown) => ({ ok: true, synthese: value }),
+  CORPUS_CLINIQUE_ACTIF: '',
 }));
 
 const SYNTHESE_JSON = {
@@ -78,6 +101,8 @@ describe.skipIf(!ACTIF)('réservation avant l’envoi — base réelle ([[D-398]
   let MARQUE_ENVOI_EN_COURS: typeof import('./reservation').MARQUE_ENVOI_EN_COURS;
   let relance: typeof import('@/app/api/praticien/assignations/relance/route').POST;
   let booklet: typeof import('@/app/api/praticien/booklet/route').POST;
+  let syntheseRoute: typeof import('@/app/api/praticien/synthese/route').PATCH;
+  let patientsRoute: typeof import('@/app/api/praticien/patients/route').PATCH;
   let acces: typeof import('@/app/api/praticien/token/route').POST;
   let revoquer: typeof import('@/app/api/praticien/token/route').DELETE;
   let observateur: pg.Client;
@@ -143,6 +168,22 @@ describe.skipIf(!ACTIF)('réservation avant l’envoi — base réelle ([[D-398]
     return issues;
   }
 
+  /** Attend que `n` requêtes attendent le verrou de `cle` que tient l'observateur. */
+  async function attendreAttentes(cle: string, n: number): Promise<void> {
+    const limite = Date.now() + 10_000;
+    for (;;) {
+      const { rows } = await observateur.query(
+        `SELECT count(*)::int AS n FROM pg_locks
+          WHERE locktype = 'advisory' AND NOT granted AND objsubid = 1
+            AND objid::bigint = (hashtext($1)::bigint & 4294967295) AND pid <> pg_backend_pid()`,
+        [cle],
+      );
+      if (rows[0].n >= n) return;
+      if (Date.now() > limite) throw new Error(`${n} requête(s) n'attendent pas le verrou « ${cle} »`);
+      await new Promise(r => setTimeout(r, 20));
+    }
+  }
+
   function valeurs<T>(issues: PromiseSettledResult<T>[]): T[] {
     return issues.map(r => {
       if (r.status === 'rejected') throw r.reason;
@@ -167,6 +208,8 @@ describe.skipIf(!ACTIF)('réservation avant l’envoi — base réelle ([[D-398]
     ({ reserverSousGarde, FILTRE_ENVOIS_PARTIS, MOTIFS_GARDE_ENVOI, MARQUE_ENVOI_EN_COURS } = await import('./reservation'));
     ({ POST: relance } = await import('@/app/api/praticien/assignations/relance/route'));
     ({ POST: booklet } = await import('@/app/api/praticien/booklet/route'));
+    ({ PATCH: syntheseRoute } = await import('@/app/api/praticien/synthese/route'));
+    ({ PATCH: patientsRoute } = await import('@/app/api/praticien/patients/route'));
     ({ POST: acces, DELETE: revoquer } = await import('@/app/api/praticien/token/route'));
   });
 
@@ -415,5 +458,258 @@ describe.skipIf(!ACTIF)('réservation avant l’envoi — base réelle ([[D-398]
       ['Envoye', null],
       ['Non_envoye', MARQUE_ENVOI_EN_COURS],
     ]);
+  });
+
+  // §5 — VIDER UNE SYNTHÈSE CONTRE L'ENVOI DE SON BILAN (P3-3 de wn-reviewer
+  // sur #2226). « Vider » lisait l'envoi hors verrou, et l'envoi ne prenait pas
+  // le verrou du dossier : le bilan pouvait partir d'une synthèse vidée.
+  async function syntheseValidee(): Promise<{ idPatient: string; idSynthese: string }> {
+    const idPatient = await dossier();
+    const idSynthese = `SYN_BANC_RES_${RUN}_${numero}`;
+    await prisma.syntheseIA.create({
+      data: {
+        idSynthese,
+        idPatient,
+        emailPatient: 'banc@example.test',
+        modele: 'banc',
+        donneesEntree: {},
+        syntheseJson: SYNTHESE_JSON,
+        statut: 'Validee_Praticien',
+        dateValidation: new Date(),
+      },
+    });
+    return { idPatient, idSynthese };
+  }
+
+  function vider(idSynthese: string): Promise<Response> {
+    return syntheseRoute(new Request('http://localhost/api/praticien/synthese', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ idSynthese, action: 'effacer' }),
+    }));
+  }
+
+  async function statutSynthese(idSynthese: string): Promise<string> {
+    const { rows } = await observateur.query('SELECT statut FROM syntheses_ia WHERE id_synthese = $1', [idSynthese]);
+    return rows[0].statut as string;
+  }
+
+  it('bilan : un envoi en vol (réservé, e-mail en cours) empêche de vider la synthèse', async () => {
+    const { idSynthese } = await syntheseValidee();
+    let relacher!: () => void;
+    const relais = new Promise<void>(r => { relacher = r; });
+    let atteint!: () => void;
+    const smtpAtteint = new Promise<void>(r => { atteint = r; });
+    sendMail.mockImplementationOnce(async () => {
+      atteint();
+      await relais;
+      return {};
+    });
+
+    const envoi = booklet(requete('http://localhost/api/praticien/booklet', { idSynthese, relectureConfirmee: true }));
+    await smtpAtteint;
+    let vidage: Response;
+    try {
+      // La réservation est commitée, l'e-mail n'est pas soldé : seule la
+      // ligne marquée dit qu'un bilan part.
+      vidage = await vider(idSynthese);
+    } finally {
+      relacher();
+    }
+    expect(vidage.status).toBe(409);
+    expect((await vidage.json()).error).toBe('Impossible de vider une synthèse dont le booklet a déjà été envoyé.');
+    expect((await envoi).status).toBe(200);
+    expect(await statutSynthese(idSynthese)).toBe('Validee_Praticien');
+  });
+
+  it('bilan : un vidage glissé entre la lecture et la réservation fait refuser l’envoi, et rien ne part', async () => {
+    const { idPatient, idSynthese } = await syntheseValidee();
+    const cle = `envoi_patient:booklet:${idSynthese}`;
+    // L'observateur tient le verrou du bilan : l'envoi a lu la synthèse et
+    // rendu le document, puis l'attend. Le vidage, qui ne le prend pas, passe.
+    await observateur.query('SELECT pg_advisory_lock(hashtext($1))', [cle]);
+    let envoi: Promise<Response> | undefined;
+    try {
+      envoi = booklet(requete('http://localhost/api/praticien/booklet', { idSynthese, relectureConfirmee: true }));
+      await attendreAttentes(cle, 1);
+      expect((await vider(idSynthese)).status).toBe(200);
+    } finally {
+      await observateur.query('SELECT pg_advisory_unlock(hashtext($1))', [cle]);
+    }
+
+    const res = await envoi!;
+    expect(res.status).toBe(409);
+    expect((await res.json()).error).toBe('La synthèse a été modifiée entre-temps. Rechargez-la avant de recommencer.');
+    expect(sendMail).not.toHaveBeenCalled();
+    expect(await lignesJournal(idPatient, 'booklet')).toEqual([]);
+    expect(await statutSynthese(idSynthese)).toBe('Brouillon_Praticien');
+  });
+
+  // §6 — VERSION OPTIMISTE (P3 de wn-reviewer sur #2221, P3-2 sur #2226 ;
+  // PR-Agent sur les deux). Statut et modèle relus sous le verrou laissaient
+  // passer un « enregistrer » qui garde le brouillon brouillon : le geste lu
+  // avant lui l'écrasait en silence.
+  async function brouillonIA(): Promise<{ idPatient: string; idSynthese: string }> {
+    const idPatient = await dossier();
+    const idSynthese = `SYN_BANC_RES_${RUN}_${numero}`;
+    await prisma.syntheseIA.create({
+      data: {
+        idSynthese,
+        idPatient,
+        emailPatient: 'banc@example.test',
+        modele: 'banc',
+        donneesEntree: {},
+        syntheseJson: SYNTHESE_JSON,
+        statut: 'Brouillon_IA',
+      },
+    });
+    return { idPatient, idSynthese };
+  }
+
+  function patchSynthese(corps: Record<string, unknown>): Promise<Response> {
+    return syntheseRoute(new Request('http://localhost/api/praticien/synthese', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(corps),
+    }));
+  }
+
+  /** Attend que `n` requêtes attendent un verrou de LIGNE (celui du dossier). */
+  async function attendreAttentesLigne(n: number): Promise<void> {
+    const limite = Date.now() + 10_000;
+    for (;;) {
+      const { rows } = await observateur.query(
+        `SELECT count(DISTINCT pid)::int AS n FROM pg_locks
+          WHERE NOT granted AND locktype IN ('transactionid', 'tuple') AND pid <> pg_backend_pid()`,
+      );
+      if (rows[0].n >= n) return;
+      if (Date.now() > limite) throw new Error(`${n} requête(s) n'attendent pas la ligne du dossier`);
+      await new Promise(r => setTimeout(r, 20));
+    }
+  }
+
+  /**
+   * Une connexion à part tient la ligne du dossier (`FOR UPDATE`, comme la
+   * route). La première requête la lit puis l'attend ; la seconde, lancée
+   * ensuite, l'attend derrière elle. Les deux ont lu la synthèse AVANT toute
+   * écriture ; la file d'attente de Postgres les sert dans l'ordre.
+   */
+  async function enSuiteSurDossier(idPatient: string, premiere: () => Promise<Response>, seconde: () => Promise<Response>): Promise<[Response, Response]> {
+    const teneur = new pg.Client({ connectionString: URL_BASE });
+    await teneur.connect();
+    try {
+      await teneur.query('BEGIN');
+      await teneur.query('SELECT id FROM patients WHERE id_patient = $1 FOR UPDATE', [idPatient]);
+      let a: Promise<Response> | undefined;
+      let b: Promise<Response> | undefined;
+      try {
+        a = premiere();
+        await attendreAttentesLigne(1);
+        b = seconde();
+        await attendreAttentesLigne(2);
+      } finally {
+        await teneur.query('COMMIT');
+      }
+      return [await a!, await b!];
+    } finally {
+      await teneur.end();
+    }
+  }
+
+  async function ligneSynthese(idSynthese: string): Promise<{ statut: string; narratif: string }> {
+    const { rows } = await observateur.query(
+      `SELECT statut, synthese_json->>'narratif_patient' AS narratif FROM syntheses_ia WHERE id_synthese = $1`,
+      [idSynthese],
+    );
+    return rows[0] as { statut: string; narratif: string };
+  }
+
+  const TEXTE_A = { ...SYNTHESE_JSON, narratif_patient: 'Texte enregistré en premier.' };
+
+  it.each([
+    ['un second enregistrer', { action: 'enregistrer', synthese: { ...SYNTHESE_JSON, narratif_patient: 'Texte écrasé.' } }],
+    ['une validation', { action: 'valider' }],
+    ['un vidage', { action: 'effacer' }],
+  ])('synthèse : un enregistrer passé devant fait refuser %s lu avant lui', async (_cas, geste) => {
+    const { idPatient, idSynthese } = await brouillonIA();
+    const [premier, second] = await enSuiteSurDossier(
+      idPatient,
+      () => patchSynthese({ idSynthese, action: 'enregistrer', synthese: TEXTE_A }),
+      () => patchSynthese({ idSynthese, ...geste }),
+    );
+    expect(premier.status).toBe(200);
+    expect(second.status).toBe(409);
+    expect(await second.json()).toEqual({
+      error: 'La synthèse a été modifiée entre-temps. Rechargez-la avant de recommencer.',
+      code: 'synthese_modifiee',
+    });
+    expect(await ligneSynthese(idSynthese)).toEqual({ statut: 'Brouillon_IA', narratif: TEXTE_A.narratif_patient });
+  });
+
+  it('synthèse : la version lue par l’écran fait passer le geste ; périmée, elle le fait refuser', async () => {
+    const { idSynthese } = await brouillonIA();
+    // La version telle que l'écran la reçoit : `updatedAt` passé par JSON.
+    const lue = await prisma.syntheseIA.findUniqueOrThrow({ where: { idSynthese }, select: { updatedAt: true } });
+    const version = JSON.parse(JSON.stringify(lue.updatedAt)) as string;
+
+    const premier = await patchSynthese({ idSynthese, action: 'enregistrer', synthese: TEXTE_A, version });
+    expect(premier.status).toBe(200);
+    const nouvelle = (await premier.json()).updatedAt as string;
+    expect(nouvelle).not.toBe(version);
+
+    // Un second onglet, resté sur la version d'avant.
+    const perime = await patchSynthese({ idSynthese, action: 'valider', version });
+    expect(perime.status).toBe(409);
+    expect((await perime.json()).code).toBe('synthese_modifiee');
+    expect(await ligneSynthese(idSynthese)).toEqual({ statut: 'Brouillon_IA', narratif: TEXTE_A.narratif_patient });
+
+    // L'onglet rechargé, sur la version rendue.
+    expect((await patchSynthese({ idSynthese, action: 'valider', version: nouvelle })).status).toBe(200);
+    expect((await ligneSynthese(idSynthese)).statut).toBe('Validee_Praticien');
+  });
+
+  it('e-mail : changer l’adresse du dossier réécrit la copie des synthèses sans en périmer la version', async () => {
+    const { idPatient, idSynthese } = await brouillonIA();
+    const lue = await prisma.syntheseIA.findUniqueOrThrow({ where: { idSynthese }, select: { updatedAt: true } });
+    const version = JSON.parse(JSON.stringify(lue.updatedAt)) as string;
+    const adresse = `michel.dogne+banc-res-${RUN.toLowerCase()}_${numero}-nouvelle@example.test`;
+
+    const res = await patientsRoute(new Request('http://localhost/api/praticien/patients', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ idPatient, email: adresse }),
+    }));
+    expect(res.status).toBe(200);
+
+    // Relue par Prisma, comme la route : `pg` lirait `updated_at` (sans
+    // fuseau) à l'heure locale du banc.
+    const apres = await prisma.syntheseIA.findUniqueOrThrow({ where: { idSynthese }, select: { emailPatient: true, updatedAt: true } });
+    expect(apres.emailPatient).toBe(adresse);
+    expect(apres.updatedAt.getTime()).toBe(lue.updatedAt.getTime());
+
+    // L'écran, resté sur la version lue avant le changement d'adresse.
+    expect((await patchSynthese({ idSynthese, action: 'valider', version })).status).toBe(200);
+    expect((await ligneSynthese(idSynthese)).statut).toBe('Validee_Praticien');
+  });
+
+  it('e-mail : un livret lu avant un changement d’adresse commité entre-temps ne part pas vers l’ancienne', async () => {
+    const { idPatient, idSynthese } = await syntheseValidee();
+    const adresse = `michel.dogne+banc-res-${RUN.toLowerCase()}_${numero}-nouvelle@example.test`;
+
+    // Le changement d'adresse attend la ligne du dossier en premier ; le
+    // livret lit la synthèse (ancienne adresse) puis l'attend derrière lui.
+    const [changement, envoi] = await enSuiteSurDossier(
+      idPatient,
+      () => patientsRoute(new Request('http://localhost/api/praticien/patients', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idPatient, email: adresse }),
+      })),
+      () => booklet(requete('http://localhost/api/praticien/booklet', { idSynthese, relectureConfirmee: true })),
+    );
+    expect(changement.status).toBe(200);
+    expect(envoi.status).toBe(409);
+    expect(sendMail).not.toHaveBeenCalled();
+    expect(await lignesJournal(idPatient, 'booklet')).toEqual([]);
   });
 });

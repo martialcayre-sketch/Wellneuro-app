@@ -1,0 +1,23 @@
+- **Mise à jour (2026-11-16, dossier du besoin 9, étape 3 : sources réunies)** : forme opaque (`D-251` §4), identifiants, comptes et mécanismes seulement. Suite de la lecture du corpus (`2026-11-16-04`, #2175). M1 à M5 (`20261116-1304-b` à `1308-b`, A partout) ont été tranchées et ne se reposent pas. La cible signée du 2026-10-18 (`2026-10-18-02`) n'est pas rouverte.
+  - **Liste soumise, accord donné** : la liste des pièces et publications à chercher, avec ce que le registre et la base portaient déjà, a été soumise au responsable en six envois. Il a donné son accord pour tous les documents, et pour les deux instruments de régulation émotionnelle proposés.
+  - **Envois** : six lots, par la route d'ingestion, depuis des conteneurs `scalingo run -d`. Tout est en attente de validation et rien n'est étiqueté.
+    - `LOT_067` : 2 passages, tirés des deux pièces de la PSS-10 du cabinet (`0398`, `0399`). Les transcriptions du Drive ont été vérifiées contre les PDF par sac de mots, sans écart ;
+    - `LOT_068` : 8 passages et 17 claims, tirés de trois sources déjà au registre sans passage (`0601`, `0605`, `0622`) ;
+    - `LOT_069` : 8 passages et 17 claims, tirés des publications des versions servies et d'une traduction diffusée par les auteurs d'une échelle (`0672` à `0678`) ;
+    - `LOT_070` : 4 passages et 11 claims, tirés de deux recommandations de méthode sur un biomarqueur, d'un article de méthode sur les rapports hormonaux et d'une revue (`0682` à `0685`) ;
+    - `LOT_071` : 5 passages et 13 claims, tirés d'une monographie communautaire, d'une revue systématique et d'une méta-analyse (`0686`, `0688`, `0689`) ;
+    - `LOT_072` : 7 passages et 13 claims, tirés d'une définition de classification internationale, d'une fiche mémo de la HAS et de deux publications d'instruments de régulation émotionnelle (`0690`, `0691`, `0694`, `0695`).
+  - **Contrôles** : chaque paragraphe de passage figure mot pour mot dans son texte source (résumés PubMed et Crossref, textes intégraux en libre accès, PDF et pages publiques). Chaque charge est passée par les parseurs de la route avant l'envoi. La prélecture (one-off-6264) a confirmé que ni les numéros ni les lots n'étaient pris. La relecture (one-off-739) a confirmé 34 passages actifs et 71 claims en attente, avec 105 empreintes identiques à la charge.
+  - **Registre** : 25 notices externes inscrites, de `0672` à `0696`, dont sept sans extrait, faute de texte obtenu : quatre sans résumé disponible et trois au téléchargement automatique refusé, refus non contourné (`0679` à `0681`, `0687`, `0692`, `0693`, `0696`). Les notices `0398`, `0399`, `0601`, `0605` et `0622` gardent leur rôle antérieur et mentionnent leur lot.
+  - **Constats** (détail au dossier privé) :
+    - la traduction française servie d'une échelle diffère de la traduction diffusée par ses auteurs sur trois items, qui portent la formulation de la version longue, chacun dans la même sous-échelle ;
+    - un questionnaire servi ajoute à la version française publiée une dimension dont l'origine reste à identifier ;
+    - la grille publiée d'une échelle n'est fournie que dans son manuel, payant ; sa documentation déconseille de montrer les scores calculés au répondant et toute interprétation automatisée ;
+    - la recommandation de la HAS ne nomme pas l'instrument d'épuisement servi, et précise que les instruments qu'elle cite ne sont pas construits pour l'évaluation individuelle ;
+    - aucune source sur les conditions de mesure du rapport des deux hormones le soir n'a été trouvée ; rien ne fonde le déclenchement de la règle du guide.
+  - **Restent ouverts** :
+    - les textes des sept notices sans extrait et le texte intégral de `0605`, à fournir ;
+    - les claims tirés des pièces du cabinet ;
+    - les autres plantes nommées au corpus, au-delà de la monographie réunie ;
+    - les droits des notices « à vérifier ».
+  - **Suite** : l'étiquetage et les positions viennent ensuite. Aucun code : `BESOIN_SOURCES`, la convergence, les grilles servies, la traduction servie et tout nouvel instrument relèvent chacun d'une décision distincte, appliquée par J3-12f après signature (`D-312` §3).

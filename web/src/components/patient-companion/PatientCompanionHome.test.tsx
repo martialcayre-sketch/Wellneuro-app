@@ -808,6 +808,37 @@ describe('PatientCompanionHome — lectures du protocole et du suivi', () => {
     expect(screen.queryByText(/arrivera bientôt/i)).toBeNull();
   });
 
+  // SUIVI NON RECONNU ([[D-488]] §7, étendu au hub par DOC-18) : le refus
+  // 404 se lit sans « Réessayer » ; le titre et le message restent.
+  it('un refus 404 « Suivi non reconnu. » se lit sans « Réessayer »', async () => {
+    fetchPar({
+      proto: () =>
+        Promise.resolve({
+          status: 404,
+          json: () => Promise.resolve({ ok: false, reason: 'not_found', error: 'Suivi non reconnu.' }),
+        } as Response),
+      checkin: json({ ok: false, reason: 'not_found', error: 'Suivi non reconnu.' }),
+    });
+    render(<PatientCompanionHome token="TOK" />);
+    expect((await screen.findByRole('alert')).textContent).toContain('Suivi non reconnu.');
+    expect(screen.getByRole('heading', { name: 'Votre accompagnement' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Réessayer' })).toBeNull();
+  });
+
+  it('une erreur technique du protocole garde « Réessayer »', async () => {
+    fetchPar({
+      proto: () =>
+        Promise.resolve({
+          status: 500,
+          json: () => Promise.resolve({ ok: false, reason: 'exception', error: 'Erreur technique.' }),
+        } as Response),
+      checkin: json({ ok: true, protocoleDiffuse: false, pointEtapeOuvert: null, points: [] }),
+    });
+    render(<PatientCompanionHome token="TOK" />);
+    expect((await screen.findByRole('alert')).textContent).toContain('Erreur technique.');
+    expect(screen.getByRole('button', { name: 'Réessayer' })).toBeTruthy();
+  });
+
   // SESSION EXPIRÉE (réponse 7 (b) du responsable, 2026-11-11) : retour au
   // gate du portail, pas un « Réessayer » qui ne peut pas réussir.
   it('une session expirée renvoie au gate du portail, sans erreur affichée', async () => {

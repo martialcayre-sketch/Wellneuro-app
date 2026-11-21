@@ -1455,7 +1455,12 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
   },
   {
     id: 'R-STR-01',
-    statut: 'publiee',
+    // SUSPENDUE POUR RELECTURE ([[D-543]], [[D-541]] §6.1). Elle lit une bande
+    // de la PSS-10, que les positions signées du besoin 9 ne fondent pas. La
+    // ligne reste écrite telle quelle pour être relue ; elle sera rétablie,
+    // corrigée ou retirée par une décision propre. Rétablir = repasser
+    // `publiee` et re-signer la table.
+    statut: 'suspendue',
     // SECOND TOUR — attend le retour du PSS-10 que `R2-STR-01` propose au
     // premier. `R2-STR-03` atteint la même cible dès le premier tour, mais
     // seulement sur la bande la plus sévère : ici, c'est la mesure de stress
@@ -1495,7 +1500,10 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
   },
   {
     id: 'R-STR-02',
-    statut: 'publiee',
+    // SUSPENDUE POUR RELECTURE ([[D-543]], [[D-541]] §6.1) — même motif que
+    // `R-STR-01` : sa jambe PSS-10 lit une bande que les positions signées du
+    // besoin 9 ne fondent pas. Ligne gardée telle quelle pour la relecture.
+    statut: 'suspendue',
     // SECOND TOUR — même axe que `R2-STR-02`, mais sur le PSS-10 revenu plutôt
     // que sur le questionnaire contextuel. Le drapeau est le même : ce qui
     // change entre les deux tours, c'est la qualité de la mesure qui l'accompagne.
@@ -1812,7 +1820,13 @@ export const ORIENTATION_METADATA: OrientationMetadata = {
   // pas une recommandation servie. Relu avant la recopie : la contre-preuve que
   // la table sans cette limite hache encore exactement l'empreinte précédente
   // (`16517749…`). Aucun claim ajouté ni retiré.
-  dateValidation: '2026-11-09T00:00:00.000Z',
+  //
+  // RE-SIGNÉE LE 2026-11-19 ([[D-543]], lot besoin9-suspension-code), PAR LE
+  // RESPONSABLE DANS LA SESSION DU LOT (« je signe »). Seul changement : le
+  // statut de `R-STR-01` et de `R-STR-02` passe de `publiee` à `suspendue`,
+  // pour relecture ([[D-541]] §6.1). Aucun déclencheur, aucune grille, aucune
+  // fenêtre, aucune ligne de convergence, aucun claim ne change.
+  dateValidation: '2026-11-19T12:38:04.000Z',
   // Posé le 2026-08-16 ([[D-067]]), repris le 2026-09-13 : la chaîne hex
   // qu'`ORIENTATION_RULES_SHA256` valait à la relecture, recopiée telle quelle —
   // JAMAIS la constante (déclarée après cet objet ; et la comparaison serait
@@ -1835,6 +1849,8 @@ export const ORIENTATION_METADATA: OrientationMetadata = {
   //   · 2026-11-07 — `16517749b23513d6a6146088b21c395314cba21e1e90f8679252cfec5af10cea`
   //     (D-455, lot H98 : `{ regles, grilles, fenetres, convergence }`, trois
   //     limites communes de convergence)
+  //   · 2026-11-09 — `a9aaaf32c7e8ab5903f8faa2b7b6982c0d79c1f64ac097f140f2a3d83351d914`
+  //     (D-470, lot t67 : quatrième limite commune de convergence)
   //
   // SECONDE ATTESTATION DU 2026-09-14, ET C'EST LA PREMIÈRE FOIS QUE LE
   // PÉRIMÈTRE COUVRE LE CALCUL. Un contre-audit a démontré le même jour que le
@@ -1850,7 +1866,7 @@ export const ORIENTATION_METADATA: OrientationMetadata = {
   // dérivation ne rendait rien —, puis le delta de périmètre sur les dix-huit
   // blocs de scoring. Les claims n'ont pas bougé : leur relecture du matin
   // couvre celle-ci.
-  shaPerimetre: 'a9aaaf32c7e8ab5903f8faa2b7b6982c0d79c1f64ac097f140f2a3d83351d914',
+  shaPerimetre: '6088b3c6d450057e7ebbc2d7d9c2b3041a18dca51ffc1caaacfbf6cb9e696891',
   claimsSource: [
     { claimId: 'WN-CL-0047-008', versionClaim: 'v1.0' },
     { claimId: 'WN-CL-0105-001', versionClaim: 'v1.0' },

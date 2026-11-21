@@ -27,6 +27,8 @@
 import { test, expect, type Page } from '@playwright/test';
 import { praticienSessionCookie, patientPortailSessionCookie } from './helpers/auth';
 import { resetPortailState, accuserPorteTrust, closePrisma } from './helpers/db';
+import { dateJourParis } from '../src/lib/dateParis';
+import { decalerDate } from '../src/lib/agenda-alimentaire/jour';
 
 const PATIENT = { idPatient: 'PAT_SEED_03', email: 'michel.dogne@fictif.wellneuro.fr' };
 
@@ -39,14 +41,15 @@ const PATIENT = { idPatient: 'PAT_SEED_03', email: 'michel.dogne@fictif.wellneur
  * échouerait deux heures par nuit. C'est arrivé au CI du 2026-07-30 sur le
  * jumeau du sommeil ; le piège est le même ici, la journée alimentaire courant
  * de 04:00 à 03:59.
+ *
+ * Et le décalage se fait sur le CALENDRIER, jamais de 24 h : le dernier
+ * dimanche d'octobre dure 25 h à Paris, et entre 23 h et minuit
+ * `Date.now() - 86_400_000` rendait encore la date du jour — « hier » valait
+ * aujourd'hui (T3 du 2026-10-25 à 23 h 32). `e2ePieges.guard.test.ts` refuse
+ * la forme d'avant.
  */
 function dateParis(decalageJours: number): string {
-  return new Intl.DateTimeFormat('fr-CA', {
-    timeZone: 'Europe/Paris',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(new Date(Date.now() + decalageJours * 86_400_000));
+  return decalerDate(dateJourParis(), decalageJours);
 }
 
 /** Assigne `Q_ALI_09` à Michel Dogné et rend l'identifiant d'assignation. */

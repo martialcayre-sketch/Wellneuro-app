@@ -31,8 +31,13 @@ import type { MatiereDepot, MatiereSynthese } from '@/lib/objectif/matierePriori
  * différents indiscernables en relecture.
  *
  * v1 (2026-09-11) : première consigne.
+ * v2 (D-513 §7) : défense en profondeur. Le résumé validé ne porte plus de
+ * biologie (champs dédiés, contrôle de contamination). La consigne interdit
+ * quand même toute reprise. Règle validée mot pour mot par le responsable le
+ * 2026-11-17 (`docs/claude/propositions/2026-11-17-h95b-code-textes/README.md`,
+ * §2).
  */
-export const VERSION_CONSIGNE = 'priorite-v1';
+export const VERSION_CONSIGNE = 'priorite-v2';
 
 /**
  * La borne. Elle ne bouge pas : `D-167` §3, et un CHECK la tient en base.
@@ -86,6 +91,11 @@ const CONSIGNE = [
   '- aucun diagnostic, aucune conclusion médicale, aucun score, aucun seuil,',
   '  aucune bande, aucun chiffre de mesure ;',
   "- aucune recommandation de traitement, de complément ni d'examen ;",
+  "- aucun résultat de biologie : ne reprends aucun nom d'analyse biologique,",
+  "  aucune valeur et aucun intervalle de laboratoire. Si l'un des deux textes",
+  "  en contient, ne t'en sers ni pour fonder ni pour justifier la priorité,",
+  '  ne le qualifie pas, ne le situe par rapport à aucun intervalle et ne le',
+  "  rapproche d'aucune autre donnée ;",
   "- le vocabulaire du patient est préféré à celui de l'outil quand les deux",
   '  disent la même chose ;',
   '- réponds par la formulation SEULE, sans guillemets, sans préambule, sans',

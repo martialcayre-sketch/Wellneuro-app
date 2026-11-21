@@ -16,7 +16,7 @@ export default function ConnaissancesPage() {
   return (
     <div className="flex flex-col gap-6">
       <EnTeteRayon
-        surtitre="Bibliothèque · cognition, douleurs chroniques, axe intestin-cerveau"
+        surtitre="Bibliothèque · claims validés du corpus"
         titre="Connaissances"
       >
         Claims validés du corpus, filtrés par rayon — statut et date de validation affichés quand
@@ -28,7 +28,7 @@ export default function ConnaissancesPage() {
       ) : (
         <div
           role="status"
-          className="rounded-xl border border-border bg-surface p-5 text-base text-muted-foreground shadow-card"
+          className="break-words rounded-xl border border-border bg-surface p-5 text-base text-muted-foreground shadow-card"
         >
           {getRechercheCorpusDisabledMessage()}
         </div>

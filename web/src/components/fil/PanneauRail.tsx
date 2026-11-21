@@ -60,7 +60,7 @@ export function PanneauRail({
               ligne, et `whitespace-nowrap` sur le résumé choisit QUELLE
               rupture : le résumé descend entier sous le titre au lieu de se
               couper en deux au milieu. */}
-          <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring">
+          <summary className="-my-2.5 flex min-h-11 cursor-pointer list-none flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring">
             <h2 className="font-display text-sm font-semibold text-foreground">{titre}</h2>
             <span className="flex items-center gap-1.5 whitespace-nowrap text-xs text-muted-foreground">
               {resumeVide}
@@ -72,7 +72,7 @@ export function PanneauRail({
               />
             </span>
           </summary>
-          <div className="mt-2 border-t border-border pt-2">{children}</div>
+          <div className="mt-5 border-t border-border pt-2">{children}</div>
         </details>
       </section>
     );

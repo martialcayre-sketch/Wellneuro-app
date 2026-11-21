@@ -129,10 +129,10 @@ describe('J21DecisionPanel', () => {
     expect(screen.getByRole('button', { name: 'Alléger' })).toBeTruthy();
   });
 
-  it('titres : panneau en h4, sous-parties en h5 (Q2 a)', () => {
+  it('titres : panneau en h3, sous-parties en h4 (Q2 a)', () => {
     render(<J21DecisionPanel resume={resume} />);
-    expect(screen.getByRole('heading', { level: 4, name: /Point d’étape J21/ })).toBeTruthy();
-    expect(screen.getByRole('heading', { level: 5, name: 'Ajuster le protocole' })).toBeTruthy();
-    expect(screen.getByRole('heading', { level: 5, name: 'Autres décisions' })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 3, name: /Point d’étape J21/ })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 4, name: 'Ajuster le protocole' })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 4, name: 'Autres décisions' })).toBeTruthy();
   });
 });

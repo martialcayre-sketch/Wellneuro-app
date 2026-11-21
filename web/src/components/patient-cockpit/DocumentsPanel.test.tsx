@@ -244,3 +244,105 @@ describe('DocumentsPanel', () => {
     expect(appelsImpression()).toHaveLength(0);
   });
 });
+
+// P52 (PRA-5 PR 3 ; [[D-481]] complément DOC-15, Q4 à Q6 ; T-75, T-76, T-17
+// de [[D-488]]) : un échec de lecture n'est pas une absence ; « Réessayer » ne
+// relance que la lecture en échec et le focus revient au bouton.
+describe('DocumentsPanel — échecs de lecture (Q4, Q5)', () => {
+  const T75 = 'Les synthèses validées n’ont pas pu être lues. Ce n’est pas une absence de synthèse validée.';
+  const T76 = 'La liste des patients n’a pas pu être lue.';
+  const VIDE = 'Aucune synthèse validée pour ce patient. Validez une synthèse dans « Synthèse IA & Booklet » d’abord.';
+  const lectures = (motif: string) => fetchMock.mock.calls.filter(([u]) => String(u).includes(motif)).length;
+
+  it('liste des patients en échec : T-76 en alerte, « Réessayer » ne relit qu’elle', async () => {
+    fetchMock.mockImplementation((url: string) =>
+      url.includes('/api/praticien/patients-pg')
+        ? Promise.resolve({ ok: false, json: async () => ({ patients: [], error: 'Erreur technique.' }) })
+        : Promise.resolve({ ok: true, json: async () => ({}) }),
+    );
+    render(<DocumentsPanel />);
+    const alerte = await screen.findByRole('alert');
+    expect(alerte.textContent).toContain(T76);
+
+    fireEvent.click(within(alerte).getByRole('button', { name: 'Réessayer' }));
+
+    await waitFor(() => expect(lectures('/api/praticien/patients-pg')).toBe(2));
+    await waitFor(() => expect(document.activeElement?.textContent).toBe('Réessayer'));
+    expect(lectures('/api/praticien/synthese')).toBe(0);
+  });
+
+  it('synthèses validées en échec : T-75, jamais le message vide ; « Réessayer » ne relit qu’elles', async () => {
+    let echec = true;
+    const sain = fetchMock.getMockImplementation()!;
+    fetchMock.mockImplementation((url: string) =>
+      url.includes('/api/praticien/synthese') && echec
+        ? Promise.resolve({ ok: false, json: async () => ({ error: 'Non authentifié.' }) })
+        : sain(url),
+    );
+    render(<DocumentsPanel initialPatientId="PAT_1" />);
+    const alerte = await screen.findByRole('alert');
+    expect(alerte.textContent).toContain(T75);
+    expect(screen.queryByText(VIDE)).toBeNull();
+
+    echec = false;
+    fireEvent.click(within(alerte).getByRole('button', { name: 'Réessayer' }));
+
+    await waitFor(() => expect(screen.getByRole('option', { name: /Validée/ })).toBeTruthy());
+    expect(screen.queryByText(T75)).toBeNull();
+    expect(lectures('/api/praticien/patients-pg')).toBe(1);
+    // PRA-6h, arbitrage 20261118-2228-d : relue avec succès, le focus va au
+    // titre du panneau, jamais à `body`.
+    const titre = screen.getByRole('heading', { name: 'Patient et synthèse validée' });
+    await waitFor(() => expect(document.activeElement).toBe(titre));
+    expect(titre.getAttribute('tabindex')).toBe('-1');
+  });
+
+  it('une réponse saine sans synthèse validée garde le message vide, sans alerte', async () => {
+    const sain = fetchMock.getMockImplementation()!;
+    fetchMock.mockImplementation((url: string) =>
+      url.includes('/api/praticien/synthese')
+        ? Promise.resolve({ ok: true, json: async () => ({ syntheses: [] }) })
+        : sain(url),
+    );
+    render(<DocumentsPanel initialPatientId="PAT_1" />);
+    expect(await screen.findByText(VIDE)).toBeTruthy();
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.getByRole('heading', { level: 2, name: 'Patient et synthèse validée' })).toBeTruthy();
+  });
+});
+
+describe('DocumentsPanel — retour d’envoi (Q6)', () => {
+  it('« Document envoyé au patient. » paraît une fois, en role=status, sous le geste', async () => {
+    const sain = fetchMock.getMockImplementation()!;
+    fetchMock.mockImplementation((url: string, init?: RequestInit) =>
+      url.includes('/api/praticien/booklet') && init?.method === 'POST'
+        ? Promise.resolve({ ok: true, json: async () => ({ success: true }) })
+        : sain(url),
+    );
+    render(<DocumentsPanel initialPatientId="PAT_1" />);
+    await waitFor(() => screen.getByRole('option', { name: /Validée/ }));
+    const [, selecteurSynthese] = screen.getAllByRole('combobox');
+    fireEvent.change(selecteurSynthese, { target: { value: 'SYN_1' } });
+    fireEvent.click(await screen.findByRole('checkbox', { name: /J’ai relu et je valide/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Envoyer au patient' }));
+
+    const retours = await screen.findAllByText('Document envoyé au patient.');
+    expect(retours).toHaveLength(1);
+    expect(retours[0].getAttribute('role')).toBe('status');
+  });
+});
+
+
+// PRA-6b (D-488, DOC-17) : les deux listes portaient le même nom, le titre
+// entier (revue `wn-reviewer` de #2224, constat 5). Chacune prend son segment.
+describe('DocumentsPanel — noms accessibles (PRA-6b)', () => {
+  it('les deux listes ont des noms distincts, pris au titre resté entier', async () => {
+    render(<DocumentsPanel initialPatientId="PAT_1" />);
+    await waitFor(() => screen.getByRole('option', { name: /Validée/ }));
+    expect(screen.getByRole('heading', { level: 2, name: 'Patient et synthèse validée' })).toBeTruthy();
+    const patient = screen.getByRole('combobox', { name: 'Patient' });
+    const synthese = screen.getByRole('combobox', { name: 'synthèse validée' });
+    expect(patient).not.toBe(synthese);
+    expect((patient as HTMLSelectElement).value).toBe('PAT_1');
+  });
+});

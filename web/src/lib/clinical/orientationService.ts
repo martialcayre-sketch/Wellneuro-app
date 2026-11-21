@@ -16,6 +16,7 @@ import {
 } from '@/lib/clinical/orientationEngine';
 import { FENETRES_ARRET, STOP_RULES_METADATA, STOP_RULES_SHA256, STOP_RULES_V1, type StopRule } from '@/lib/clinical/stopRulesV1';
 import { claimsAdmissiblesAuCorpus, couplesNonAdmissibles, type CoupleClaim } from '@/lib/clinical/admissibiliteClaims';
+import { lignesSuspenduesPourRelecture, type LigneSuspendue } from '@/lib/clinical/lignesSuspendues';
 import {
   reglesOrientationAdmissibles,
   type OrientationAdmissible,
@@ -234,6 +235,12 @@ export type ResultatOrientation =
        * dossier. Vide, jamais absent.
        */
       reglesNonAppliquees: RegleOrientationNonAppliquee[];
+      /**
+       * Lignes des tables d'orientation, d'arrêt, de contradictions et
+       * d'indications biologiques suspendues pour relecture ([[D-543]]) —
+       * lues sur les tables, pas sur le dossier. Vide, jamais absent.
+       */
+      lignesSuspendues: LigneSuspendue[];
     };
 
 // Verrou auto-portant : `validationExterne` seul serait un booléen qu'un flip
@@ -823,5 +830,6 @@ export async function evaluerOrientationPourPatient(
       : null,
     arretsSuspendus: arretAdmissible.suspendus,
     reglesNonAppliquees: orientationAdmissible.nonAppliquees,
+    lignesSuspendues: lignesSuspenduesPourRelecture(),
   };
 }

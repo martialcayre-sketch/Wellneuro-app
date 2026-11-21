@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { useFocusApresRelecture } from '@/components/ui/useFocusApresRelecture';
 import Link from 'next/link';
 import type { PreVol, SourcePreVol } from '@/lib/copilote/prevol';
 
@@ -29,6 +30,7 @@ export function PreVolPanel({ idPatient }: { idPatient: string }) {
   const [prevol, setPrevol] = useState<PreVol | null>(null);
   const [etat, setEtat] = useState<Etat>('chargement');
   const [erreur, setErreur] = useState<string>('');
+  const { titreRef, boutonRef, relire } = useFocusApresRelecture();
 
   const charger = useCallback(async () => {
     setEtat('chargement');
@@ -67,9 +69,10 @@ export function PreVolPanel({ idPatient }: { idPatient: string }) {
       <div role="alert" className="flex flex-col gap-3 rounded-xl border border-accent bg-status-warning/10 p-4 text-base text-status-warning">
         <span>{erreur} Rien ne peut être conclu de cet écran tant qu’il n’a pas été relu.</span>
         <button
+          ref={boutonRef}
           type="button"
-          onClick={() => void charger()}
-          className="min-h-9 self-start rounded-lg border border-accent px-3 py-1 text-xs font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+          onClick={() => void relire(charger)}
+          className="min-h-11 self-start rounded-lg border border-accent px-3 py-1 text-sm font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
         >
           Réessayer
         </button>
@@ -80,9 +83,9 @@ export function PreVolPanel({ idPatient }: { idPatient: string }) {
   return (
     <div className="flex flex-col gap-4">
       <section aria-labelledby="prevol-changements" className="rounded-xl border border-border bg-surface p-4 shadow-card">
-        <h3 id="prevol-changements" className="font-display text-lg font-semibold text-foreground">
+        <h2 ref={titreRef} tabIndex={-1} id="prevol-changements" className="font-display text-lg font-semibold text-foreground">
           Ce qui a changé
-        </h3>
+        </h2>
         <p className="mt-1 text-xs text-muted-foreground">
           {prevol.ancre.type === 'consultation'
             ? `Depuis la dernière consultation validée, le ${formatDate(prevol.ancre.date)}.`
@@ -114,9 +117,9 @@ export function PreVolPanel({ idPatient }: { idPatient: string }) {
       </section>
 
       <section aria-labelledby="prevol-questions" className="rounded-xl border border-border bg-surface p-4 shadow-card">
-        <h3 id="prevol-questions" className="font-display text-lg font-semibold text-foreground">
+        <h2 id="prevol-questions" className="font-display text-lg font-semibold text-foreground">
           Questions suggérées
-        </h3>
+        </h2>
         {prevol.questionsSuggerees.length === 0 ? (
           <p className="mt-2 text-base text-muted-foreground">
             Aucune question suggérée : rien dans les éléments ci-dessus n’en appelle une.
@@ -134,22 +137,29 @@ export function PreVolPanel({ idPatient }: { idPatient: string }) {
           Chaque question reformule un élément de la liste ci-dessus. Aucune n’est déduite d’une absence de donnée.
         </p>
       </section>
-
-      <section aria-labelledby="prevol-ailleurs" className="rounded-xl border border-border bg-muted/40 p-4">
-        <h3 id="prevol-ailleurs" className="font-display text-lg font-semibold text-foreground">
-          Discordances et objets cliniques
-        </h3>
-        <p className="mt-2 text-base text-muted-foreground">
-          Ils restent lus dans le poste de pilotage, phase « Compréhension » — le pré-vol n’en fait pas une seconde
-          copie, qui pourrait diverger de la première.
-        </p>
-        <Link
-          href={`/dashboard/patients/${encodeURIComponent(idPatient)}`}
-          className="mt-2 inline-flex min-h-11 items-center rounded-lg border border-border px-3 py-1 text-sm text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
-        >
-          Ouvrir le poste de pilotage →
-        </Link>
-      </section>
     </div>
+  );
+}
+
+// Les discordances ne sont pas une donnée du pré-vol : elles restent lues au
+// poste de pilotage. Le renvoi vit dans le contexte du copilote (P34, Q2) —
+// il ne dépend d'aucune lecture, et paraît donc quel que soit l'état du pré-vol.
+export function DiscordancesPanel({ idPatient }: { idPatient: string }) {
+  return (
+    <section aria-labelledby="prevol-ailleurs" className="rounded-xl border border-border bg-muted/40 p-4">
+      <h2 id="prevol-ailleurs" className="font-display text-lg font-semibold text-foreground">
+        Discordances et objets cliniques
+      </h2>
+      <p className="mt-2 text-base text-muted-foreground">
+        Ils restent lus dans le poste de pilotage, phase « Compréhension » — le pré-vol n’en fait pas une seconde
+        copie, qui pourrait diverger de la première.
+      </p>
+      <Link
+        href={`/dashboard/patients/${encodeURIComponent(idPatient)}`}
+        className="mt-2 inline-flex min-h-11 items-center rounded-lg border border-border px-3 py-1 text-sm text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+      >
+        Ouvrir le poste de pilotage →
+      </Link>
+    </section>
   );
 }

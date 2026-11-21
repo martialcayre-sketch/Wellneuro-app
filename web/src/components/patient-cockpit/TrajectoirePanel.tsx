@@ -231,7 +231,7 @@ export function TrajectoirePanel({
       <p className="text-2xs font-semibold uppercase tracking-wide text-muted-foreground">
         Fiche-trajectoire · identité patient durable
       </p>
-      <h3 className="mt-1 font-display text-lg font-bold tracking-[-0.02em] text-foreground">{titre}</h3>
+      <h2 className="mt-1 font-display text-lg font-bold tracking-[-0.02em] text-foreground">{titre}</h2>
       <p className="mt-1 text-xs text-muted-foreground">
         La Spirale indexe les jalons de mesure confirmés (lecture seule) — cliquer un repère relit la fiche telle
         qu’elle était à cette date. Les points d’étape J7/J14/J21 (pilotage) n’y figurent pas — seuls l’ancre du
@@ -352,6 +352,7 @@ export function TrajectoirePanel({
             repereInitial={repereSelectionne.date}
             masquerSelecteur
             onRetourPresent={() => setRepereActif(null)}
+            niveauTitre={2}
           />
           {lectureEtatDate === 'chargement' ? (
             <p role="status" className="text-xs text-muted-foreground">

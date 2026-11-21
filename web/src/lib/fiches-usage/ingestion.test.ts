@@ -132,6 +132,30 @@ describe('deposerBrouillonLibelle — l’empreinte posée par le serveur', () =
     expect(tx.ficheUsageLibelle.create).not.toHaveBeenCalled();
   });
 
+  it('refuse un libellé d’hypothèse hors registre (D-477 §2), avant toute transaction', async () => {
+    expect(await deposerBrouillonLibelle({ ...LIBELLE, libelle: 'Déficit diagnostiqué, synthétique' }, CONTEXTE)).toEqual({
+      issue: 'refusee',
+      anomalies: [{ code: 'libelle_hors_registre', termes: ['déficit', 'diagnos'] }],
+    });
+    expect(transaction).not.toHaveBeenCalled();
+  });
+
+  it('une anomalie de structure et une anomalie de registre sont rendues ensemble, dans cet ordre', async () => {
+    expect(
+      await deposerBrouillonLibelle({ ...LIBELLE, libelle: 'Carence synthétique', structureSha256: 'd'.repeat(64) }, CONTEXTE),
+    ).toEqual({
+      issue: 'refusee',
+      anomalies: [{ code: 'structure_perimee' }, { code: 'libelle_hors_registre', termes: ['carence'] }],
+    });
+    expect(transaction).not.toHaveBeenCalled();
+  });
+
+  it('le registre ne vise pas une population', async () => {
+    expect(
+      await deposerBrouillonLibelle({ ...LIBELLE, termeId: 'POP_SYNTH', nature: 'population', libelle: 'Population normale synthétique' }, CONTEXTE),
+    ).toEqual({ issue: 'deposee', id: 'l1', numero: 1 });
+  });
+
   it('refuse un terme que la structure ne déclare pas', async () => {
     expect(await deposerBrouillonLibelle({ ...LIBELLE, termeId: 'HYP_AUTRE' }, CONTEXTE)).toEqual({
       issue: 'refusee',

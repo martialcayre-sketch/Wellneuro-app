@@ -556,8 +556,11 @@ export function PacksPanel({
       {/* Assigner un pack */}
       <div className="bg-surface border border-border rounded-xl p-4 shadow-card">
         <h3 className="font-display text-lg font-semibold text-foreground mb-3">Assigner un pack à un patient</h3>
+        {/* Noms accessibles (D-488, DOC-17) : « Pack » et « Patient » reprennent
+            le premier choix sans l'astérisque, que `required` dit déjà ; la
+            date porte T-78. Aucun libellé visible n'est ajouté. */}
         <form className="grid grid-cols-1 md:grid-cols-2 gap-3" onSubmit={onAssignPack}>
-          <select required value={assignForm.idPack} onChange={e => setAssignForm(p => ({ ...p, idPack: e.target.value }))} className={inputCls}>
+          <select required aria-label="Pack" value={assignForm.idPack} onChange={e => setAssignForm(p => ({ ...p, idPack: e.target.value }))} className={inputCls}>
             <option value="">Pack *</option>
             {/* Même raison qu'au-dessus : le compte annoncé au moment de
                 choisir doit être celui qui partira, pas celui du pack stocké. */}
@@ -567,13 +570,13 @@ export function PacksPanel({
               </option>
             ))}
           </select>
-          <select required value={assignForm.emailPatient} onChange={e => setAssignForm(p => ({ ...p, emailPatient: e.target.value }))} className={inputCls}>
+          <select required aria-label="Patient" value={assignForm.emailPatient} onChange={e => setAssignForm(p => ({ ...p, emailPatient: e.target.value }))} className={inputCls}>
             <option value="">Patient *</option>
             {patients.map(pat => (
               <option key={pat.email} value={pat.email}>{`${pat.prenom} ${pat.nom} — ${pat.email}`}</option>
             ))}
           </select>
-          <input type="date" value={assignForm.dateLimite} onChange={e => setAssignForm(p => ({ ...p, dateLimite: e.target.value }))} className={inputCls} />
+          <input type="date" aria-label="Date limite (optionnel)" value={assignForm.dateLimite} onChange={e => setAssignForm(p => ({ ...p, dateLimite: e.target.value }))} className={inputCls} />
           <input value={assignForm.notes} onChange={e => setAssignForm(p => ({ ...p, notes: e.target.value }))} placeholder="Notes praticien (optionnel)" className={inputCls} maxLength={500} />
           <div className="flex items-center gap-3 md:col-span-2">
             <Button type="submit" disabled={assigning}>

@@ -263,6 +263,23 @@ les écrans déjà livrés, sans l'en-tête de U10 (après PAT-3b) : constat et
 lots nommés proposés PAT-7a à PAT-7d dans
 [`pat7-constat-partiel.md`](pat7-constat-partiel.md).
 
+**Suite le 2026-11-17** : écrans non vus (U13 à U17, U39 à U41) mesurés,
+PAT-7f proposé, U29 toujours non vu, dans
+[`pat7-constat-ecrans-non-vus.md`](pat7-constat-ecrans-non-vus.md).
+
+**M1 clos le 2026-11-17** (DOC-16) : le rail revient déplié au retour d'un
+questionnaire, limite acceptée et inscrite dans [[D-482]] §1.
+
+**Comparaison aux prototypes le 2026-11-18** : PAT-2 à PAT-6 comparés au
+build de `da125214`, PAT-7g (commandes à l'impression) et PAT-7h (titres)
+proposés, forme transverse à décider, dans
+[`pat7-constat-prototypes.md`](pat7-constat-prototypes.md).
+
+**PAT-7d cadré le 2026-11-20** (DOC-18, réponse `20261117-1243-d`) : [[D-488]]
+§7 étendu au hub (plus de « Réessayer » sous « Suivi non reconnu. ») et
+« Réessayer » inscrit sur U24 et U25 après un échec de lecture ; le code
+suit dans le lot PAT-7d.
+
 ## 4. Coordination avec le plan praticien
 
 - Aucune dépendance entre PAT-n et PRA-n.

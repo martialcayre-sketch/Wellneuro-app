@@ -1,0 +1,18 @@
+- **Mise à jour (2026-11-16, dossier du besoin 5, pièces attendues : textes intégraux fournis)** : forme opaque (`D-251` §4), identifiants, comptes et mécanismes seulement. Suite de `2026-11-16-03` (#2171). Le responsable a fourni cinq textes intégraux parmi les pièces attendues du besoin 5 et a donné son accord à l'envoi : `0575`, `0666`, `0667`, et deux nouvelles notices, `0697` et `0698`.
+  - **Envoi** : un lot, `LOT_074`, par la route d'ingestion, depuis des conteneurs `scalingo run -d`. Il compte 28 passages et 47 claims, tous en attente de validation, et rien n'est étiqueté. Pour `0666` et `0667`, les passages et les claims sont numérotés à la suite du résumé déjà ingéré.
+  - **Contrôles** :
+    - trois textes sont des scans sans couche de texte : ils ont été lus par deux passes d'OCR indépendantes (résolution et segmentation différentes) ;
+    - chaque phrase des passages a été cherchée dans les deux extractions de sa source ; pour le guide de `0575`, le passage vient de la version HTML de PubMed Central et le contrôle porte sur le PDF de l'éditeur ;
+    - 44 segments sur 493 diffèrent d'une extraction : bruit d'OCR, indices et exposants écrits à plat, phrases qui enjambent un saut de page ou un tableau, en-têtes de tableaux remis en forme ; chacun a été relu sur l'image de la page ;
+    - une erreur de la couche texte d'un PDF a été corrigée d'après l'image ; les tampons de téléchargement sont exclus des passages ;
+    - chaque charge est passée par les parseurs de la route avant l'envoi ; le parseur des claims refuse un champ réservé à l'étiquetage, retiré de la charge ;
+    - la prélecture (one-off-2868) a confirmé que le lot était libre et que la numérotation des deux notices déjà ingérées se poursuivait ;
+    - la relecture (one-off-1315) a confirmé 75 empreintes identiques à la charge, 28 passages actifs du lot et 47 claims en attente.
+  - **Registre** : trois notices mentionnent le lot ; deux notices ajoutées (`0697`, `0698`), droits à vérifier ; le README du corpus compte 670 notices.
+  - **Constats** (détail au dossier privé, aucune correction) :
+    - la grille servie du questionnaire de matinalité-vespéralité diffère de la grille publiée à une borne ;
+    - la grille servie de l'efficacité du sommeil de l'indice de qualité du sommeil diffère de l'impression originale à une borne ;
+    - la publication primaire de l'échelle de somnolence ne publie pas de bandes d'interprétation ;
+    - l'effectif d'un groupe diffère entre le résumé et le texte de la publication primaire de l'indice de qualité du sommeil ; un claim déjà signé reprend le chiffre du résumé.
+  - **Restent ouverts** : les textes de `0607`, `0609`, de la publication fondatrice de l'inventaire de fatigue et de son adaptation canadienne-française.
+  - **Suite** : signature des claims, étiquetage et positions. Aucun code : les grilles servies relèvent chacune d'une décision distincte, appliquée par J3-12f après signature (`D-312` §3).

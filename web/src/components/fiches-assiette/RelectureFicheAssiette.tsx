@@ -22,6 +22,7 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { useFocusApresRelecture } from '@/components/ui/useFocusApresRelecture';
 import type { ActeFicheApiResponse } from '@/app/api/praticien/fiches-assiette/actes/route';
 import type { VersionFicheApiResponse } from '@/app/api/praticien/fiches-assiette/version/route';
 import { derniereVersionValidee, MOTIF_MAX, type ActeFiche } from '@/lib/fiches-assiette/etat';
@@ -99,6 +100,9 @@ export function RelectureFicheAssiette({
   const sequence = useRef(0);
   const envoiRef = useRef(false);
   const titreRef = useRef<HTMLHeadingElement>(null);
+  // Succès : le titre de la version reçoit déjà le focus (effet sur `idAffiche`) ;
+  // échec : le bouton relit et reprend le focus.
+  const { boutonRef, relire } = useFocusApresRelecture();
   const idTitre = useId();
   const idMotif = useId();
 
@@ -230,9 +234,9 @@ export function RelectureFicheAssiette({
 
       {detail === null ? (
         <>
-          <h3 id={idTitre} className="font-display text-2xl font-bold tracking-[-0.02em] text-foreground">
+          <h2 id={idTitre} className="font-display text-2xl font-bold tracking-[-0.02em] text-foreground">
             Relecture d’une fiche
-          </h3>
+          </h2>
           {enCours ? (
             <p role="status" className="text-sm text-muted-foreground">
               Chargement de la version…
@@ -240,7 +244,7 @@ export function RelectureFicheAssiette({
           ) : (
             <div role="alert" className="flex flex-col items-start gap-2 text-sm text-status-danger">
               <p>{echec ?? 'Impossible de charger cette version.'}</p>
-              <Button type="button" variant="outline" onClick={() => void charger()}>
+              <Button ref={boutonRef} type="button" variant="outline" onClick={() => void relire(charger)}>
                 Réessayer
               </Button>
             </div>
@@ -252,14 +256,14 @@ export function RelectureFicheAssiette({
             <p className="text-xs font-semibold uppercase tracking-[.06em] text-solar-ink">
               Relecture · {detail.sourceId}
             </p>
-            <h3
+            <h2
               id={idTitre}
               ref={titreRef}
               tabIndex={-1}
               className="rounded-sm font-display text-2xl font-bold tracking-[-0.02em] text-foreground outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
             >
               Relecture — {detail.libelle}, v{detail.numero}
-            </h3>
+            </h2>
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <Badge variant={libelleEtat(detail.etat).variante}>{libelleEtat(detail.etat).texte}</Badge>
               {detail.etat.etat === 'illisible' && (
@@ -281,9 +285,9 @@ export function RelectureFicheAssiette({
               data-testid="relecture-source"
               className="flex min-w-0 flex-col gap-2 rounded-xl border border-border bg-surface p-4 shadow-card lg:max-h-[75vh] lg:overflow-y-auto"
             >
-              <h4 className="text-sm font-semibold uppercase tracking-[.05em] text-solar-ink">
+              <h3 className="text-sm font-semibold uppercase tracking-[.05em] text-solar-ink">
                 1 · Source — la Fiche MY
-              </h4>
+              </h3>
               <p className="text-xs text-muted-foreground">
                 Le texte extrait, tel que l’adaptation l’a lu : aucun rendu, aucune coupe.
               </p>
@@ -308,9 +312,9 @@ export function RelectureFicheAssiette({
               data-testid="relecture-adaptation"
               className="flex min-w-0 flex-col gap-3 rounded-xl border border-border bg-surface p-4 shadow-card lg:max-h-[75vh] lg:overflow-y-auto"
             >
-              <h4 className="text-sm font-semibold uppercase tracking-[.05em] text-solar-ink">
+              <h3 className="text-sm font-semibold uppercase tracking-[.05em] text-solar-ink">
                 2 · Adaptation — ce que le patient lirait
-              </h4>
+              </h3>
               {detail.contenu ? (
                 <Adaptation contenu={detail.contenu} claims={claims} />
               ) : (
@@ -458,9 +462,9 @@ function Reserves({ detail }: { detail: DetailVersionFiche }) {
   const portees = new Set((detail.contenu?.precautions ?? []).flatMap(p => p.claims));
   return (
     <section aria-label="Réserves de sécurité attendues" className="rounded-xl border border-border bg-surface p-4 shadow-card">
-      <h4 className="text-sm font-semibold uppercase tracking-[.05em] text-solar-ink">
+      <h3 className="text-sm font-semibold uppercase tracking-[.05em] text-solar-ink">
         3 · Réserves de sécurité attendues
-      </h4>
+      </h3>
       {reserves.length === 0 ? (
         <p className="mt-2 text-sm text-muted-foreground">
           Aucune réserve publiée pour cette assiette : aucune précaution n’est attendue.
@@ -501,9 +505,9 @@ function Provenance({ detail }: { detail: DetailVersionFiche }) {
   ];
   return (
     <section aria-label="Provenance de l’adaptation" className="rounded-xl border border-border bg-surface p-4 shadow-card">
-      <h4 className="text-sm font-semibold uppercase tracking-[.05em] text-solar-ink">
+      <h3 className="text-sm font-semibold uppercase tracking-[.05em] text-solar-ink">
         4 · Provenance de l’adaptation
-      </h4>
+      </h3>
       <p className="mt-1 text-xs text-muted-foreground">
         Un modèle a rédigé, un second a contre-lu ; ni l’un ni l’autre n’atteste. L’empreinte de la
         source se confronte au manifeste du snapshot.
@@ -534,7 +538,7 @@ function Historique({
 }) {
   return (
     <section aria-label="Historique" className="rounded-xl border border-border bg-surface p-4 shadow-card">
-      <h4 className="text-sm font-semibold uppercase tracking-[.05em] text-solar-ink">5 · Historique</h4>
+      <h3 className="text-sm font-semibold uppercase tracking-[.05em] text-solar-ink">5 · Historique</h3>
       {detail.actes.length === 0 ? (
         <p className="mt-2 text-sm text-muted-foreground">Aucun acte : cette version n’a jamais été validée ni retirée.</p>
       ) : (
@@ -656,7 +660,7 @@ function Gestes({
       aria-label="Décision"
       className="flex flex-col gap-4 rounded-xl border border-border bg-surface p-4 shadow-card"
     >
-      <h4 className="text-sm font-semibold uppercase tracking-[.05em] text-solar-ink">6 · Décision</h4>
+      <h3 className="text-sm font-semibold uppercase tracking-[.05em] text-solar-ink">6 · Décision</h3>
 
       {peutValider && (
         <div className="flex flex-col gap-3">
@@ -730,7 +734,7 @@ function Gestes({
                 disabled={envoi}
                 onChange={e => onMotif(e.target.value)}
                 placeholder="Motif du retrait (obligatoire)"
-                className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
               />
               <div className="flex flex-wrap gap-2">
                 <Button

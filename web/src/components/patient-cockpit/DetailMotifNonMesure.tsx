@@ -40,7 +40,7 @@ export function DetailMotifNonMesure({
           besoin il s'agit, en gardant le mot visible en tête. */}
       <summary
         aria-label={`${LIBELLE_GESTE_MOTIF} — ${besoin}`}
-        className="cursor-pointer py-0.5 underline underline-offset-2"
+        className="min-h-11 cursor-pointer py-3.5 underline underline-offset-2"
       >
         {LIBELLE_GESTE_MOTIF}
       </summary>
@@ -79,7 +79,7 @@ export function DetailEcartDecision({
     <details className="mt-0.5 text-xs text-muted-foreground">
       <summary
         aria-label={`${LIBELLE_GESTE_ECART} — ${besoin}`}
-        className="cursor-pointer py-0.5 underline underline-offset-2"
+        className="min-h-11 cursor-pointer py-3.5 underline underline-offset-2"
       >
         {LIBELLE_GESTE_ECART}
       </summary>

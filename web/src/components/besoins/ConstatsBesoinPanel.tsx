@@ -172,7 +172,7 @@ function FormulaireConstat({
           Le constat en vigueur est retiré : le besoin revient à « aucun constat posé ». Le retrait est daté et reste
           à l’historique, avec le constat qu’il retire.
         </p>
-        {erreur && <p role="alert" className="mt-2 text-xs text-destructive">{erreur}</p>}
+        {erreur && <p role="alert" className="mt-2 text-xs text-status-danger">{erreur}</p>}
         <div className="mt-2 flex flex-wrap gap-2">
           <button
             type="button"
@@ -273,7 +273,7 @@ function FormulaireConstat({
           className="mt-1 block min-h-11 rounded-lg border border-border bg-background px-2 text-sm"
         />
       </label>
-      {erreur && <p role="alert" className="text-xs text-destructive">{erreur}</p>}
+      {erreur && <p role="alert" className="text-xs text-status-danger">{erreur}</p>}
       <div className="flex flex-wrap gap-2">
         <button
           type="button"
@@ -366,10 +366,10 @@ export function ConstatsBesoinPanel({ idPatient }: { idPatient: string }) {
 
   return (
     <section aria-labelledby="constats-besoin-titre" className="mt-6 rounded-xl border border-border p-4">
-      <h3 id="constats-besoin-titre" className="text-base font-semibold text-foreground">Constats sur les besoins sans score</h3>
+      <h2 id="constats-besoin-titre" className="text-base font-semibold text-foreground">Constats sur les besoins sans score</h2>
       <p className="mt-1 text-xs text-muted-foreground">{AVERTISSEMENT_MESURE}</p>
-      {erreur && <p role="alert" className="mt-2 text-sm text-destructive">{erreur}</p>}
-      {avis && <p role="alert" className="mt-2 text-sm text-destructive">{avis}</p>}
+      {erreur && <p role="alert" className="mt-2 text-sm text-status-danger">{erreur}</p>}
+      {avis && <p role="alert" className="mt-2 text-sm text-status-danger">{avis}</p>}
       {donnees && (
         <ul className="mt-3 space-y-4">
           {donnees.offerts.map(offert => {

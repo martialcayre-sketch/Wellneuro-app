@@ -202,11 +202,11 @@ describe('espacement des entrées sur deux lignes ([[D-460]] §5)', () => {
         autres: new Set(liens.filter(l => l.getAttribute('aria-current') !== 'page').map(l => l.className)),
       };
     };
-    // Le rail est habillé Lien sans drapeau ([[D-481]] §3, lot PAT-1) ; le
-    // panneau garde ses classes d'avant.
+    // Le rail est habillé Lien sans drapeau ([[D-481]] §3, lot PAT-1), avec
+    // son `py-1` (PAT-7a) ; le panneau garde ses classes d'avant.
     expect(classesDe(rail())).toEqual({
-      actives: new Set(['flex min-h-11 items-center rounded-md bg-rail-surface px-3 font-semibold text-rail-foreground shadow-nav-active']),
-      autres: new Set(['flex min-h-11 items-center rounded-md px-3 text-rail-foreground hover:bg-rail-surface']),
+      actives: new Set(['flex min-h-11 items-center rounded-md bg-rail-surface px-3 py-1 font-semibold text-rail-foreground shadow-nav-active']),
+      autres: new Set(['flex min-h-11 items-center rounded-md px-3 py-1 text-rail-foreground hover:bg-rail-surface']),
     });
     fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
     expect(classesDe(screen.getByRole('dialog'))).toEqual({

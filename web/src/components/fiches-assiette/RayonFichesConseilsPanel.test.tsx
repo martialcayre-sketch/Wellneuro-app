@@ -89,9 +89,34 @@ describe('RayonFichesConseilsPanel — chaque état nommé pour ce qu’il est',
     expect(await screen.findByText('Chargement des fiches…')).toBeTruthy();
     expect(screen.queryByTestId('fiche-assiette-ASSIETTE_A_VALIDER')).toBeNull();
     // Le focus revient au titre du rayon, et il s'y VOIT au clavier (revue #1238).
-    const titre = screen.getByRole('heading', { name: 'Fiches conseils' });
+    const titre = screen.getByRole('heading', { level: 1, name: 'Fiches conseils' });
     await waitFor(() => expect(document.activeElement).toBe(titre));
     expect(titre.className).toContain('focus-visible:ring-2');
+  });
+
+  // PRA-4 Q1 (a) : l'en-tête passe par `EnTeteRayon`, au niveau des autres
+  // rayons, et reste au-dessus de la relecture — la page garde son h1.
+  it('h1 du rayon, gardé pendant la relecture, dont le titre se range dessous en h2', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url.startsWith('/api/praticien/fiches-assiette/version')) {
+          return { ok: false, status: 404, json: async () => ({ ok: false, reason: 'version_introuvable', error: 'Version introuvable.' }) };
+        }
+        return { ok: true, status: 200, json: async () => ({ ok: true, assiettes: LIGNES }) };
+      }),
+    );
+    render(<RayonFichesConseilsPanel />);
+    expect(screen.getByRole('heading', { level: 1, name: 'Fiches conseils' })).toBeTruthy();
+    expect(screen.getByText('Rayon fiches conseils · adaptées des Fiches MY, validées ici')).toBeTruthy();
+    expect(screen.getByRole('region', { name: 'Fiches conseils' })).toBeTruthy();
+
+    const aValider = within(await screen.findByTestId('fiche-assiette-ASSIETTE_A_VALIDER'));
+    fireEvent.click(aValider.getByRole('button', { name: 'Relire la v1' }));
+
+    expect(await screen.findByRole('heading', { level: 2, name: 'Relecture d’une fiche' })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 1, name: 'Fiches conseils' })).toBeTruthy();
+    expect(screen.queryByRole('heading', { level: 3 })).toBeNull();
   });
 
   it('un échec de chargement n’est pas une liste vide', async () => {

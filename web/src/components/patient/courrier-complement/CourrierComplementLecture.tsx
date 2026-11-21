@@ -127,7 +127,7 @@ export function CourrierComplementLecture({ token }: { token: string }) {
   if (etat.statut === 'chargement') {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-semibold text-foreground">{TITRE_COURRIER_COMPLEMENT}</h1>
+        <h1 className="font-display text-2xl font-bold leading-tight text-foreground">{TITRE_COURRIER_COMPLEMENT}</h1>
         <PatientCard padding="sm">
           <p className="text-sm text-muted-foreground">Chargement du courrier…</p>
         </PatientCard>
@@ -138,7 +138,7 @@ export function CourrierComplementLecture({ token }: { token: string }) {
   if (etat.statut === 'erreur') {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-semibold text-foreground">{TITRE_COURRIER_COMPLEMENT}</h1>
+        <h1 className="font-display text-2xl font-bold leading-tight text-foreground">{TITRE_COURRIER_COMPLEMENT}</h1>
         <PatientCard padding="sm">
           <PatientErrorState message={etat.message} onReessayer={etat.definitif ? undefined : () => void charger()} />
         </PatientCard>
@@ -150,7 +150,7 @@ export function CourrierComplementLecture({ token }: { token: string }) {
   if (courriers.length === 0) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-semibold text-foreground">{TITRE_COURRIER_COMPLEMENT}</h1>
+        <h1 className="font-display text-2xl font-bold leading-tight text-foreground">{TITRE_COURRIER_COMPLEMENT}</h1>
         <PatientCard padding="sm">
           <p className="text-base text-foreground">{AUCUN_COURRIER_COMPLEMENT}</p>
         </PatientCard>
@@ -166,7 +166,7 @@ export function CourrierComplementLecture({ token }: { token: string }) {
           consignation plus bas : la page qui date sert la phrase ([[D-297]] §4). */}
       {unServi && <AvisLectureDatee />}
       <header className="print:hidden">
-        <h1 className="text-2xl font-semibold text-foreground">{TITRE_COURRIER_COMPLEMENT}</h1>
+        <h1 className="font-display text-2xl font-bold leading-tight text-foreground">{TITRE_COURRIER_COMPLEMENT}</h1>
         {unServi && <p className="mt-3 text-base text-foreground">{PHRASE_COURRIER_COMPLEMENT}</p>}
       </header>
       {courriers.map(courrier => (

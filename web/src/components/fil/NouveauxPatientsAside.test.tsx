@@ -11,7 +11,7 @@ afterEach(() => {
 });
 
 function stub(payload: unknown) {
-  vi.stubGlobal('fetch', vi.fn(async () => ({ json: async () => payload }) as unknown as Response));
+  vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => payload }) as unknown as Response));
 }
 
 function source(over: Partial<SourceNouveauPatient> = {}): SourceNouveauPatient {
@@ -115,6 +115,8 @@ describe('NouveauxPatientsAside', () => {
     await waitFor(() => expect(screen.getByText('Jennifer Martin')).toBeTruthy());
     const noms = screen.getAllByRole('link').map(a => a.textContent);
     expect(noms.indexOf('Jennifer Martin')).toBeLessThan(noms.indexOf('Michel Dogné'));
+    // Cible de 44 px pour chaque nom (PRA-6d, constat à l'écran : 23 px).
+    expect(screen.getByRole('link', { name: 'Jennifer Martin' }).className).toContain('min-h-11');
     expect(screen.getByText('Accès non envoyé')).toBeTruthy();
   });
 

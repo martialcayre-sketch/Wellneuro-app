@@ -32,8 +32,11 @@ import {
 
 // Gabarit littéral pour le journal des accès (G-TRUST-04) — jamais l'URL reçue.
 const ROUTE_JOURNAL = '/api/praticien/booklet';
-// Objet du premier envoi : la réservation et son solde portent le même.
+// Objets de l'envoi et du renvoi, ceux du solde (`logBookletEnvoi`, littéraux
+// gardés par `bilans-confirmation-non-envoye.migration.test.ts`) : la ligne
+// réservée naît sous le même, et restée marquée elle dit donc juste.
 const OBJET_ENVOI_BILAN = 'Envoi du bilan neuronutritionnel';
+const OBJET_RENVOI_BILAN = 'Renvoi du bilan neuronutritionnel';
 // Motif d'une préparation qui échoue au rendu ([[D-404]]).
 const MOTIF_RENDU_IMPOSSIBLE = 'Rendu du bilan impossible.';
 
@@ -306,17 +309,48 @@ export async function POST(req: Request) {
       ), requestContext);
     }
 
-    // LE PREMIER ENVOI SE RÉSERVE ([[D-398]] §1, Q3). La lecture du registre,
-    // en tête de requête, ne voyait pas un envoi en vol : deux clics
-    // simultanés sur un bilan jamais envoyé partaient tous les deux. Sous le
-    // verrou du bilan, un envoi parti ou en partance renvoie à la confirmation
-    // du renvoi ; sinon la ligne du journal naît réservée, et le solde
-    // (`logBookletEnvoi`) la reprend. Le renvoi confirmé n'est pas réservé :
-    // c'est un geste explicite, qui part même si un autre vient de partir.
-    let reservation: string | undefined;
-    if (!forceSend) {
-      const reservee = await prisma.$transaction(async tx => {
-        await verrouillerEnvois(tx, `${TYPES_CORRESPONDANCE_PATIENT.booklet}:${idSynthese}`);
+    // L'ENVOI SE RÉSERVE ([[D-398]] §1, Q3). La lecture du registre, en tête
+    // de requête, ne voyait pas un envoi en vol : deux clics simultanés sur un
+    // bilan jamais envoyé partaient tous les deux. Sous le verrou du bilan, un
+    // premier envoi trouvant un envoi parti ou en partance renvoie à la
+    // confirmation du renvoi ; sinon la ligne du journal naît réservée, et le
+    // solde (`logBookletEnvoi`) la reprend. Le renvoi confirmé ne lit pas le
+    // registre : c'est un geste explicite, qui part même si un autre vient de
+    // partir — mais sa ligne naît réservée elle aussi (voir ci-dessous).
+    //
+    // SOUS LE VERROU DU DOSSIER, pris APRÈS celui du bilan : celui que « vider »
+    // la synthèse prend aussi (`/api/praticien/synthese`, PATCH). Cet ordre
+    // garde le croisement du banc sur base réelle (deux envois attendent le
+    // verrou du bilan, pas la ligne du dossier), et celui des autres e-mails
+    // réservés (verrou d'envoi, puis ligne du dossier). Le booklet
+    // est rendu depuis la synthèse lue en tête de requête : sous le verrou,
+    // elle est relue, et une synthèse modifiée entre-temps (vidée, annotée,
+    // rejetée) ne part pas. La ligne réservée, parti OU en partance, est ce que
+    // « vider » relit sous le même verrou : un vidage passe avant la relecture
+    // ou après la réservation, jamais entre les deux — et l'e-mail, qui part
+    // hors transaction, ne part plus d'une synthèse vidée entre-temps (lot
+    // synthese-effacer-booklet-verrou, P3-3 de wn-reviewer sur #2226).
+    const reservee = await prisma.$transaction(async tx => {
+      await verrouillerEnvois(tx, `${TYPES_CORRESPONDANCE_PATIENT.booklet}:${idSynthese}`);
+      await tx.$queryRaw`SELECT id FROM patients WHERE id_patient = ${synthese.idPatient} FOR UPDATE`;
+      // L'ADRESSE AUSSI EST RELUE (P2-1 de wn-reviewer, lot
+      // synthese-conflit-texte-conserve) : depuis ce lot, changer l'e-mail du
+      // dossier réécrit `email_patient` sans toucher `updatedAt`. Le livret ne
+      // part pas vers une adresse que le praticien vient de remplacer. Le
+      // changement d'adresse verrouille la même ligne du dossier : relue après
+      // ce verrou, la copie est celle du dossier.
+      const courante = await tx.syntheseIA.findUnique({
+        where: { idSynthese },
+        select: { updatedAt: true, emailPatient: true },
+      });
+      if (
+        !courante
+        || courante.updatedAt.getTime() !== synthese.updatedAt.getTime()
+        || courante.emailPatient !== synthese.emailPatient
+      ) {
+        return { changee: true as const };
+      }
+      if (!forceSend) {
         // LE JOURNAL EN UNE SEULE LECTURE, parti OU en partance : le solde
         // d'un envoi concurrent (marquée → `Envoye`) ne prend pas ce verrou,
         // et deux lectures séparées pouvaient le manquer entre elles (revue
@@ -333,21 +367,27 @@ export async function POST(req: Request) {
           ? journal
           : await tx.bookletEnvoi.count({ where: { idSynthese, statut: 'Envoye' } });
         if (dejaParti > 0) return null;
-        const { id } = await tx.correspondancePatient.create({
-          data: donneesReservation({
-            idPatient: synthese.idPatient,
-            type: TYPES_CORRESPONDANCE_PATIENT.booklet,
-            objet: OBJET_ENVOI_BILAN,
-            referenceType: 'synthese',
-            referenceId: idSynthese,
-          }),
-          select: { id: true },
-        });
-        return id;
+      }
+      const { id } = await tx.correspondancePatient.create({
+        data: donneesReservation({
+          idPatient: synthese.idPatient,
+          type: TYPES_CORRESPONDANCE_PATIENT.booklet,
+          objet: forceSend ? OBJET_RENVOI_BILAN : OBJET_ENVOI_BILAN,
+          referenceType: 'synthese',
+          referenceId: idSynthese,
+        }),
+        select: { id: true },
       });
-      if (reservee === null) return demanderConfirmationRenvoi();
-      reservation = reservee;
+      return { id };
+    });
+    if (reservee === null) return demanderConfirmationRenvoi();
+    if ('changee' in reservee) {
+      return withCorrelationHeader(NextResponse.json(
+        { error: 'La synthèse a été modifiée entre-temps. Rechargez-la avant de recommencer.' },
+        { status: 409 },
+      ), requestContext);
     }
+    const reservation = reservee.id;
 
     // Un refus du relais SMTP tombait dans le `catch` général, qui n'écrit
     // qu'un `logger.error` : ni ligne d'audit, ni ligne de journal. Un bilan
@@ -420,7 +460,7 @@ async function logBookletEnvoi(
   // garde de cycle de vie) — la page « Mon bilan » du portail sert cet
   // instantané, jamais le champ vivant.
   noteTransmise?: string | null,
-  // La ligne du journal réservée avant le premier envoi : elle est SOLDÉE ici,
+  // La ligne du journal réservée avant l'envoi ou le renvoi : elle est SOLDÉE ici,
   // jamais doublée d'une seconde — un envoi, une ligne, une clé de source.
   idReservation?: string,
 ) {

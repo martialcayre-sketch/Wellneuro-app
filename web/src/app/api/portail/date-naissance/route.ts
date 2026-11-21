@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authentifierPatientPortail, refusAutreDossier } from '@/lib/trust/portailAuth';
-import { statutAge, type StatutAge } from '@/lib/patient/gardeAge';
+import { statutAge, trancheMineur, type StatutAge, type TrancheMineur } from '@/lib/patient/gardeAge';
 import { accepteNouvelEnvoi, RAISON_DOSSIER_CLOS } from '@/lib/patient/cycleDeVie';
 
 export type PortailDateNaissanceResponse =
-  | { ok: true; statutAge: StatutAge }
+  | { ok: true; statutAge: StatutAge; trancheMineur: TrancheMineur | null }
   | { ok: false; reason: string; error: string };
 
 const FORMAT_ISO_JOUR = /^\d{4}-\d{2}-\d{2}$/;
@@ -85,7 +85,11 @@ export async function POST(req: Request): Promise<NextResponse<PortailDateNaissa
         { status: 409 },
       );
     }
-    return NextResponse.json({ ok: true, statutAge: statutAge(saisie, maintenant) });
+    return NextResponse.json({
+      ok: true,
+      statutAge: statutAge(saisie, maintenant),
+      trancheMineur: trancheMineur(saisie, maintenant),
+    });
   } catch (err) {
     console.error('[portail/date-naissance POST]', err instanceof Error ? err.message : String(err));
     return NextResponse.json({ ok: false, reason: 'exception', error: 'Erreur technique.' }, { status: 500 });

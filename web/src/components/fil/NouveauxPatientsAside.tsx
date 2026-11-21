@@ -54,7 +54,14 @@ export function NouveauxPatientsAside() {
 
   useEffect(() => {
     fetch('/api/praticien/nouveaux-patients')
-      .then(async r => (await r.json()) as NouveauxPatientsApiResponse)
+      .then(async r => {
+        // Une réponse hors contrat (500 d'un autre émetteur, `{error}`) est un
+        // échec de lecture, pas une liste : elle tombe dans l'état indisponible
+        // du panneau au lieu de faire tomber la page (PRA-6h).
+        const json = (await r.json()) as NouveauxPatientsApiResponse;
+        if (!r.ok || !Array.isArray(json?.lignes)) throw new Error('Réponse hors contrat');
+        return json;
+      })
       .then(setData)
       .catch(() => setData({ ok: false, lignes: [], fenetreJours: 30, unavailable: true }))
       .finally(() => setChargement(false));
@@ -106,7 +113,7 @@ export function NouveauxPatientsAside() {
               <div className="flex items-center justify-between gap-2">
                 <Link
                   href={`/dashboard/patients/${ligne.idPatient}`}
-                  className="min-w-0 truncate text-sm font-medium text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                  className="min-h-11 min-w-0 truncate py-3 text-sm font-medium text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                 >
                   {ligne.patient}
                 </Link>

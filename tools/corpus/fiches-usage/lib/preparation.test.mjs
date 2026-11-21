@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { test } from 'node:test';
 import {
+  JETONS_SORTIE_CONTRE_LECTURE,
   JETONS_SORTIE_REDACTION,
   axesDeLaFiche,
   claimsDeLaFiche,
@@ -11,6 +12,7 @@ import {
   contexteDeRubrique,
   designationsDeLaFiche,
   lireRedactionFiche,
+  lireVerdictContreLecture,
   lireReponseFiche,
   lireReponseLibelle,
   MARQUE_RESERVE,
@@ -196,6 +198,34 @@ test('la requête de rédaction : 64 000 jetons de sortie, raisonnement adaptati
     system: 'CONSIGNE',
     messages: [{ role: 'user', content: 'MESSAGE' }],
   });
+});
+
+test('une contre-lecture INACHEVÉE est un échec technique qui garde sa cause (essai v9, POLY P6)', () => {
+  assert.equal(JETONS_SORTIE_CONTRE_LECTURE, 16000);
+  assert.deepEqual(lireVerdictContreLecture({ status: 'incomplete', incomplete_details: { reason: 'max_output_tokens' }, output_text: '' }), {
+    fidele: false,
+    technique: true,
+    raison: 'contre-lecture inachevée (incomplete, max_output_tokens)',
+  });
+  // Sans cause, ou une cause hors forme de code : le statut seul, rien d'autre au terminal.
+  assert.equal(lireVerdictContreLecture({ status: 'incomplete' }).raison, 'contre-lecture inachevée (incomplete)');
+  assert.equal(lireVerdictContreLecture({ status: 'incomplete', incomplete_details: { reason: 'Texte libre !' } }).raison, 'contre-lecture inachevée (incomplete)');
+  // Un verdict partiel d'une réponse inachevée ne vaut jamais accord.
+  assert.equal(lireVerdictContreLecture({ status: 'incomplete', output_text: '{"fidele": true}' }).technique, true);
+});
+
+test('le verdict d\'une contre-lecture achevée : accord, refus motivé, ou verdict illisible', () => {
+  assert.deepEqual(lireVerdictContreLecture({ status: 'completed', output_text: '{"fidele": true, "raison": "R."}' }), { fidele: true, raison: 'R.' });
+  assert.deepEqual(lireVerdictContreLecture({ status: 'completed', output_text: '{"fidele": false, "raison": "Hors objet."}' }), { fidele: false, raison: 'Hors objet.' });
+  assert.deepEqual(lireVerdictContreLecture({ status: 'completed', output_text: '{"raison": "R."}' }), { fidele: false, technique: true, raison: 'verdict illisible' });
+  assert.deepEqual(lireVerdictContreLecture({ status: 'completed', output_text: '' }), { fidele: false, technique: true, raison: 'verdict illisible' });
+});
+
+test('câblage : rediger.mjs passe le plafond de contre-lecture et lit le verdict par lireVerdictContreLecture', async () => {
+  const source = await readFile(new URL('../rediger.mjs', import.meta.url), 'utf8');
+  assert.match(source, /max_output_tokens: JETONS_SORTIE_CONTRE_LECTURE,/);
+  assert.match(source, /return lireVerdictContreLecture\(rep\);/);
+  assert.doesNotMatch(source, /max_output_tokens: \d/);
 });
 
 test('câblage : rediger.mjs envoie requeteRedaction en streaming, sans autre appel au rédacteur', async () => {

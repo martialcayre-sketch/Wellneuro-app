@@ -55,7 +55,10 @@ type Assemblage = Extract<PortailDossierResponse, { objectifs: unknown }>;
 
 type Etat =
   | { phase: 'chargement' }
-  | { phase: 'erreur'; message: string }
+  // `reessayable` : échec de lecture (erreur technique, coupure réseau), que
+  // « Réessayer » peut lever ; un refus (401, 403, 503) ne l'est pas
+  // ([[D-488]], amendement DOC-18).
+  | { phase: 'erreur'; message: string; reessayable: boolean }
   | { phase: 'pret'; donnees: Assemblage };
 
 /** Date lisible en français, ou `null` — jamais comblée par autre chose. */
@@ -131,10 +134,11 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
           phase: 'erreur',
           message:
             (!data.ok && data.error) || 'Cette page n’a pas pu être chargée. Réessayez plus tard.',
+          reessayable: res.status >= 500 && res.status !== 503,
         });
       }
     } catch {
-      setEtat({ phase: 'erreur', message: 'Erreur réseau. Réessayez plus tard.' });
+      setEtat({ phase: 'erreur', message: 'Erreur réseau. Réessayez plus tard.', reessayable: true });
     }
   }, [token]);
 
@@ -338,6 +342,17 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
       <PatientCard className="space-y-4">
         <PatientPageHeader title="Mon dossier, à deux voix" />
         <PatientInlineMessage tone="error">{etat.message}</PatientInlineMessage>
+        {etat.reessayable && (
+          <PatientButton
+            variant="ghost"
+            onClick={() => {
+              setEtat({ phase: 'chargement' });
+              void charger();
+            }}
+          >
+            Réessayer
+          </PatientButton>
+        )}
       </PatientCard>
     );
   }
@@ -1180,7 +1195,7 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
           )}
           <a
             href={`/portail/${token}/ce-qui-compte`}
-            className="inline-flex text-sm text-primary hover:underline print:hidden"
+            className="inline-flex min-h-11 items-center text-sm text-primary hover:underline print:hidden"
           >
             Déposer ce qui compte pour moi aujourd’hui
           </a>
@@ -1258,7 +1273,7 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
                   garde structurelle qui le tient. */}
               <a
                 href={`/portail/${token}/comprehension`}
-                className="inline-flex text-sm text-primary hover:underline print:hidden"
+                className="inline-flex min-h-11 items-center text-sm text-primary hover:underline print:hidden"
               >
                 Répondre à ce texte
               </a>

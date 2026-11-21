@@ -23,7 +23,7 @@ import { PatientErrorState } from '@/components/patient/PatientErrorState';
 import { AvantDeCommencer } from '@/components/patient/trust/AvantDeCommencer';
 import { AccueilConditions } from '@/components/patient/trust/ConditionsUtilisation';
 import { DateNaissanceEcran, EcranCircuitMineur, EncartUrgenceMineur } from '@/components/patient/DateNaissanceEcran';
-import type { StatutAge } from '@/lib/patient/gardeAge';
+import type { StatutAge, TrancheMineur } from '@/lib/patient/gardeAge';
 import { PatientCompanionHome } from '@/components/patient-companion/PatientCompanionHome';
 import { NavAutresEspaces } from '@/components/patient/autres-espaces/NavAutresEspaces';
 import { MonParcoursAccueil } from '@/components/patient/MonParcoursAccueil';
@@ -54,6 +54,8 @@ export default function QuestionnairesHubPage() {
   // D-284 §3 et §4. `majeur` par défaut : ce n'est qu'un choix d'écran — les
   // routes d'écriture refusent de toute façon un dossier qui ne l'est pas.
   const [statut, setStatut] = useState<StatutAge>('majeur');
+  // D-537 §7 : la variante du texte 2B servie au mineur.
+  const [tranche, setTranche] = useState<TrancheMineur | null>(null);
   // Agendas du sommeil en cours : compte de nuits et position dans la fenêtre,
   // rien d'autre. En cas d'échec de lecture, tableau vide — le hub retombe sur
   // son comportement d'avant, jamais sur une supposition.
@@ -278,6 +280,7 @@ export default function QuestionnairesHubPage() {
       // Un dossier clos ne recueille plus rien : aucune date ne lui est demandée.
       const statutServi = data.dossierOuvert === false ? 'majeur' : (data.statutAge ?? 'majeur');
       setStatut(statutServi);
+      setTranche(data.trancheMineur ?? null);
       setAgeMajeur(data.statutAge === 'majeur');
       setMineurClos(data.dossierOuvert === false && data.statutAge === 'mineur');
       const enPause = statutServi !== 'majeur';
@@ -471,7 +474,7 @@ export default function QuestionnairesHubPage() {
         <PatientJourneyProgress steps={steps} />
       )}
 
-      {statut === 'mineur' && <EcranCircuitMineur />}
+      {statut === 'mineur' && <EcranCircuitMineur tranche={tranche} />}
       {mineurClos && <EncartUrgenceMineur />}
 
       {/* Ancre de la frise navigable quand la liste des questionnaires n'est
@@ -515,7 +518,7 @@ export default function QuestionnairesHubPage() {
         open={signauxProtocole.protocoleDiffuse || lectureProtocoleEchouee}
         className="group rounded-lg border border-border bg-surface"
       >
-        <summary className="flex min-h-12 cursor-pointer select-none list-none items-center justify-between gap-4 rounded-lg px-5 py-3 text-sm font-semibold text-foreground [&::-webkit-details-marker]:hidden">
+        <summary className="flex min-h-12 cursor-pointer select-none list-none items-center justify-between gap-4 rounded-lg px-5 py-3 text-sm font-semibold text-foreground [overflow-wrap:anywhere] max-[319px]:hyphens-auto [&::-webkit-details-marker]:hidden">
           Mon accompagnement
           <ChevronDown
             aria-hidden="true"

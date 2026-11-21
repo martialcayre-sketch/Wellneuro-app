@@ -211,3 +211,20 @@ describe('SynthesePraticienEditor', () => {
     });
   });
 });
+
+// [[D-513]] §5 : `limites` est contrôlé ; il devient éditable pour qu'un blocage
+// ait une issue réversible — sur un brouillon IA seulement.
+describe('SynthesePraticienEditor — le champ « Limites » (D-513)', () => {
+  it('éditable quand le panneau le demande', () => {
+    const onChange = vi.fn();
+    const value = { ...nouveauBrouillonPraticien(), limites: 'Intervalle à relire.' };
+    render(<SynthesePraticienEditor value={value} onChange={onChange} onSave={vi.fn()} limitesEditable />);
+    fireEvent.change(screen.getByLabelText('Limites'), { target: { value: 'À valider par le praticien.' } });
+    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ limites: 'À valider par le praticien.' }));
+  });
+
+  it('absent par défaut (brouillon praticien : texte fixe)', () => {
+    render(<SynthesePraticienEditor value={nouveauBrouillonPraticien()} onChange={vi.fn()} onSave={vi.fn()} />);
+    expect(screen.queryByLabelText('Limites')).toBeNull();
+  });
+});

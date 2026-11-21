@@ -283,7 +283,7 @@ describe('POST — produit un tirage', () => {
     await post();
     const data = prisma.propositionPrioriteIA.create.mock.calls[0][0].data;
     expect(data.modele).toBe('claude-modele-de-banc');
-    expect(data.versionConsigne).toBe('priorite-v1');
+    expect(data.versionConsigne).toBe('priorite-v2');
   });
 
   it('refuse une réponse vide plutôt que d’enregistrer une ligne muette', async () => {

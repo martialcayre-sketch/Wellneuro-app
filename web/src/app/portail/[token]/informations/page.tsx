@@ -23,7 +23,7 @@ const formatDate = (iso: string) =>
 function CarteCentre({ id, titre, children }: { id: string; titre: string; children: React.ReactNode }) {
   return (
     <section id={id} className="w-full">
-      <PatientCard className="space-y-3">
+      <PatientCard className="space-y-3 [overflow-wrap:anywhere] max-[319px]:hyphens-auto">
         <h2 className="font-display text-lg font-bold text-foreground">{titre}</h2>
         {children}
       </PatientCard>
@@ -100,11 +100,14 @@ export default function InformationsPage() {
 
   return (
     <div className="w-full max-w-2xl space-y-4">
-      <div className="flex items-center justify-between gap-3">
+      {/* `flex-wrap` : au zoom (320 px, confort 112,5 %), le lien de retour passe
+          sous le titre au lieu de pousser la page hors de l'écran (PAT-7c,
+          WCAG 1.4.10). */}
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
         <PatientPageHeader title="Informations, confidentialité et droits" />
         <Link
           href={`/portail/${token}/questionnaires`}
-          className="shrink-0 text-sm text-primary hover:underline print:hidden"
+          className="inline-flex min-h-11 shrink-0 items-center text-sm text-primary hover:underline print:hidden"
         >
           ← Mon parcours
         </Link>

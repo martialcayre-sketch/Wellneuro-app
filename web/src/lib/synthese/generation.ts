@@ -63,6 +63,15 @@ import {
   VIGILANCE_CONVERGENCES_NON_EVALUEES,
 } from '@/lib/synthese/blocReglesNonServies';
 import { formesDeScoreDuNarratif } from '@/lib/synthese/narratifFormesDeScore';
+import { lireBlocBiologiePourSynthese } from '@/lib/clinical/blocBiologieSyntheseService';
+import type { TraceBlocBiologie } from '@/lib/synthese/contaminationBiologie';
+import {
+  appelerRestitutionBiologie,
+  narratifAvecReceptionBilan,
+  phraseReceptionBilan,
+  VERSION_PROMPT_SYNTHESE_BIOLOGIE,
+  type TraceAppelBiologie,
+} from '@/lib/synthese/appelBiologie';
 import {
   MODELE_REDACTION_PRATICIEN,
   VERSION_SYNTHESE_PRATICIEN,
@@ -642,6 +651,13 @@ export type GenererArgs = {
   /** Verrous de la convergence ouverts et corpus illisible ([[D-511]] §4). */
   convergencesNonEvaluees: boolean;
   /**
+   * Le bloc de biologie ([[D-513]] §2), `null` sans bloc : drapeau éteint,
+   * aucun résultat, ou lecture en échec. Il ne part JAMAIS dans `userMessage` :
+   * seul le second appel le reçoit, après la réussite de l'appel principal
+   * ([[D-539]] §2).
+   */
+  blocBiologie: TraceBlocBiologie | null;
+  /**
    * QUI A DEMANDÉ CETTE GÉNÉRATION — inscrit dans `donneesEntree`, jamais dans
    * le prompt.
    *
@@ -825,6 +841,50 @@ export async function genererSynthesePersistee(
     });
   }
 
+  // LE SECOND APPEL ET L'ASSEMBLAGE — [[D-539]] §2 et §5. APRÈS la réussite de
+  // l'appel principal, jamais avant ni en même temps : un bloc ne part pas pour
+  // une synthèse qui ne sera pas enregistrée. Calculé au mieux : quelle que soit
+  // son issue, la synthèse suit son cours. Les deux champs biologiques sont
+  // ceux du second appel, vides sans lui ; la phrase du narratif est posée par
+  // le code dès que le bloc a été construit, que l'appel réussisse ou non.
+  let appelBiologie: TraceAppelBiologie | null = null;
+  if (args.blocBiologie !== null) {
+    const resultat = await appelerRestitutionBiologie(args.blocBiologie, { maxRetries: requestOptions?.maxRetries });
+    metricsCache.input_tokens += resultat.metriques.input_tokens;
+    metricsCache.output_tokens += resultat.metriques.output_tokens;
+    metricsCache.cache_creation_input_tokens += resultat.metriques.cache_creation_input_tokens;
+    metricsCache.cache_read_input_tokens += resultat.metriques.cache_read_input_tokens;
+    appelBiologie = { versionPrompt: VERSION_PROMPT_SYNTHESE_BIOLOGIE, modele: CLAUDE_MODEL, issue: resultat.issue };
+    if (resultat.issue === 'reussi') {
+      synthese.resume_biologie_praticien = resultat.sortie.resume_biologie_praticien;
+      synthese.points_de_vigilance_biologie = resultat.sortie.points_de_vigilance_biologie;
+      if (resultat.relance) {
+        logger.warn({
+          event: EVENT_CODES.SYNTHESE_BIOLOGIE_SCHEMA_REJETE_RELANCE,
+          domain: 'SYNTHESE_IA',
+          // Les écarts du premier tour : structurels, ou le texte fixe du
+          // contrôle de D-545 §4 — jamais le bloc ni la sortie.
+          message: `Second appel de biologie : sortie rejetée (${resultat.ecartsRelance.join(' ; ')}), relance conforme`,
+          context: finalizeLogContext(args.requestContext, { retryable: true }),
+        });
+      }
+    } else {
+      // Une ligne, sans le bloc, sans la sortie du modèle, sans le message brut
+      // du fournisseur : l'issue, et la classe d'erreur ou les violations
+      // structurelles.
+      logger.warn({
+        event: EVENT_CODES.SYNTHESE_BIOLOGIE_APPEL_ECHOUE,
+        domain: 'SYNTHESE_IA',
+        message: resultat.issue === 'echec_appel'
+          ? `Second appel de biologie en échec après l'envoi (${resultat.erreur}) : champs biologiques vides`
+          : `Second appel de biologie : sortie rejetée après la relance (${resultat.violations.join(' ; ')}) : champs biologiques vides`,
+        context: finalizeLogContext(args.requestContext, { retryable: true }),
+      });
+    }
+    const phrase = phraseReceptionBilan(args.blocBiologie);
+    if (phrase !== null) synthese.narratif_patient = narratifAvecReceptionBilan(synthese.narratif_patient, phrase);
+  }
+
   state.idSynthese = createPublicId('SYN');
 
   // Signalement technique ([[D-462]] §4) : des codes de forme, jamais le texte
@@ -872,6 +932,13 @@ export async function genererSynthesePersistee(
         ...traceReglesNonServies(args.orientation),
         sourcesOrientationNonVerifiees: args.sourcesOrientationNonVerifiees,
         convergencesNonEvaluees: args.convergencesNonEvaluees,
+        // [[D-539]] §2 : le bloc parti au second appel (forme `TraceBlocBiologie`,
+        // lue par le contrôle de contamination et la règle des anciennes
+        // synthèses), conservé aussi quand l'appel échoue après l'envoi ; et la
+        // version de sa consigne, le modèle et l'issue. `null` tous deux sans
+        // bloc : drapeau éteint, aucun résultat, ou lecture en échec.
+        blocBiologie: args.blocBiologie,
+        appelBiologie,
         metadonneesPrompt: {
           versionPrompt: VERSION_PROMPT_SYNTHESE,
           versionSchema: VERSION_SCHEMA_SYNTHESE,
@@ -1306,6 +1373,22 @@ export async function preparerGeneration(
       });
     }
 
+    // Bloc de biologie ([[D-513]] §2, [[D-539]] §2) — best-effort : une lecture
+    // en échec est un échec de CONSTRUCTION, rien ne part, et la ligne de
+    // journal ne porte que la classe d'erreur, jamais son message (une erreur de
+    // base peut citer des valeurs). Drapeau éteint : aucune lecture.
+    let blocBiologie: TraceBlocBiologie | null = null;
+    try {
+      blocBiologie = await lireBlocBiologiePourSynthese(idPatient);
+    } catch (biologieErr) {
+      logger.warn({
+        event: EVENT_CODES.SYNTHESE_BIOLOGIE_BLOC_INDISPONIBLE,
+        domain: 'SYNTHESE_IA',
+        message: `Bloc de biologie non construit (${biologieErr instanceof Error ? biologieErr.name : typeof biologieErr}) : aucun second appel, champs biologiques vides`,
+        context: finalizeLogContext(requestContext, { retryable: true }),
+      });
+    }
+
     const blocReglesNonEvaluees = construireBlocReglesNonEvaluees(orientation);
     const blocReglesNonServies = construireBlocReglesNonServies(orientation, sourcesOrientationNonVerifiees);
     const userMessage = buildUserMessage(
@@ -1330,6 +1413,7 @@ export async function preparerGeneration(
       blocReglesNonServies,
       sourcesOrientationNonVerifiees,
       convergencesNonEvaluees,
+      blocBiologie,
       requestContext,
     };
 

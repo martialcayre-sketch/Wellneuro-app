@@ -81,6 +81,7 @@ import { DetailProvenance } from '@/components/patient-cockpit/DetailProvenance'
 import { Chip } from '@/components/ui/Chip';
 import { SpiraleTrajectoire } from '@/components/ui/SpiraleTrajectoire';
 import { ModeConsultation } from '@/components/ui/ModeConsultation';
+import { useFocusApresRelecture } from '@/components/ui/useFocusApresRelecture';
 import { ChiffresMasquesProvider, useChiffresMasques, ValeurMasquee } from '@/components/patient-cockpit/ChiffresMasques';
 import { PatientPreview } from '@/components/PatientPreview';
 import { DetailBesoinsPanel } from '@/components/DetailBesoinsPanel';
@@ -347,9 +348,9 @@ function libelleStatut(id: IdPhase, statut: StatutPhase): string {
 // Le statut n'est jamais porté par la seule couleur : icône + texte.
 function IconeStatut({ statut }: { statut: StatutPhase }) {
   if (statut === 'fait') return <Check aria-hidden="true" size={14} strokeWidth={2.5} className="text-status-success" />;
-  if (statut === 'en_attente') return <Clock aria-hidden="true" size={14} strokeWidth={2} className="text-accent" />;
-  if (statut === 'inconnu') return <HelpCircle aria-hidden="true" size={14} strokeWidth={2} className="text-muted-foreground" />;
-  return <Circle aria-hidden="true" size={14} strokeWidth={2} className="text-muted-foreground" />;
+  if (statut === 'en_attente') return <Clock aria-hidden="true" size={14} strokeWidth={TRAIT_ICONE} className="text-accent" />;
+  if (statut === 'inconnu') return <HelpCircle aria-hidden="true" size={14} strokeWidth={TRAIT_ICONE} className="text-muted-foreground" />;
+  return <Circle aria-hidden="true" size={14} strokeWidth={TRAIT_ICONE} className="text-muted-foreground" />;
 }
 
 // Instrument à tiroir — mince habillage de la primitive `PanneauSuperpose`
@@ -390,12 +391,12 @@ function InstrumentTiroir({
           type="button"
           className="flex min-h-12 w-full items-center gap-2 rounded-[11px] border border-border bg-surface px-3 py-2 text-left text-14 font-medium text-foreground shadow-card hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
         >
-          <Icone aria-hidden="true" size={18} strokeWidth={2} className="shrink-0 text-primary" />
+          <Icone aria-hidden="true" size={18} strokeWidth={TRAIT_ICONE} className="shrink-0 text-primary" />
           <span className="min-w-0 flex-1">
             {libelle}
             {sousLibelle && <span className="block text-xs font-normal text-muted-foreground">{sousLibelle}</span>}
           </span>
-          <ChevronRight aria-hidden="true" size={16} strokeWidth={2} className="shrink-0 text-muted-foreground" />
+          <ChevronRight aria-hidden="true" size={16} strokeWidth={TRAIT_ICONE} className="shrink-0 text-muted-foreground" />
         </button>
       }
     >
@@ -413,6 +414,10 @@ function InstrumentTiroir({
  * requêtes — angle mort perf du contre-audit), puis une seule lecture.
  */
 function TiroirSyntheseInline({ idPatient }: { idPatient: string }) {
+  // [[D-354]] amendement DOC-15 (Q10) : en mode consultation, aucun lien ne
+  // quitte la fiche. Le contexte des chiffres masqués est posé par la fiche
+  // exactement quand le mode est actif.
+  const enConsultation = useChiffresMasques();
   const [etat, setEtat] = useState<'repos' | 'chargement' | 'chargee' | 'erreur'>('repos');
   const [validee, setValidee] = useState<{
     statut: string;
@@ -509,6 +514,7 @@ function TiroirSyntheseInline({ idPatient }: { idPatient: string }) {
             )}
           </div>
         )}
+        {!enConsultation && (
         <div className="flex flex-wrap gap-2">
           <Link
             href={`/dashboard/synthese?idPatient=${encodeURIComponent(idPatient)}`}
@@ -526,6 +532,7 @@ function TiroirSyntheseInline({ idPatient }: { idPatient: string }) {
             Composer un document
           </Link>
         </div>
+        )}
       </div>
     </InstrumentTiroir>
   );
@@ -912,12 +919,44 @@ export function FichePatientPanel({
 
   const chargerFiche = useCallback(() => {
     setLoading(true);
-    fetch(`/api/praticien/equilibre?idPatient=${encodeURIComponent(idPatient)}`)
-      .then(r => r.json())
+    return fetch(`/api/praticien/equilibre?idPatient=${encodeURIComponent(idPatient)}`)
+      .then(async r => {
+        const d = (await r.json()) as EquilibreApiResponse;
+        // Une réponse au contrat (`unavailable`) garde son motif ; une réponse
+        // hors contrat (500 `{error}` d'un autre émetteur, forme inattendue)
+        // tombe dans l'état d'échec de la fiche au lieu de faire tomber la
+        // page sur `data.patient` (PRA-6h2).
+        if (d && typeof d === 'object' && 'unavailable' in d) return d;
+        if (
+          !r.ok
+          || !d
+          || typeof d !== 'object'
+          || !('patient' in d)
+          || !d.patient
+          || typeof d.objetsCliniques !== 'object'
+          || d.objetsCliniques === null
+          || !Array.isArray(d.priorites)
+        ) {
+          throw new Error('Réponse hors contrat');
+        }
+        return d;
+      })
       .then((d: EquilibreApiResponse) => setData(d))
       .catch(() => setData({ unavailable: true, reason: 'exception' }))
       .finally(() => setLoading(false));
   }, [idPatient]);
+  // « Réessayer » de la fiche et du bandeau des corrections : le titre relu
+  // est le nom du patient, en tête de fiche (arbitrage 20261118-2228-d).
+  const relectureFiche = useFocusApresRelecture();
+  const relectureCorrections = useFocusApresRelecture(relectureFiche.titreRef);
+  // Échus (phase Patient) et envois (phase Données) : le titre relu est celui
+  // de la zone focale, qui porte la phase affichée.
+  const titreZoneFocaleRef = useRef<HTMLHeadingElement>(null);
+  const relectureEchues = useFocusApresRelecture(titreZoneFocaleRef);
+  const relecturePassations = useFocusApresRelecture(titreZoneFocaleRef);
+  // Onglet Trajectoire : pas de titre propre, le panneau est nommé par son
+  // onglet et reçoit déjà le focus quand on l'ouvre depuis la Réévaluation.
+  const relectureTrajectoire = useFocusApresRelecture<HTMLDivElement>();
 
   useEffect(() => {
     chargerFiche();
@@ -1309,9 +1348,10 @@ export function FichePatientPanel({
 
   // Un geste qui relit la trajectoire (confirmation d'une ancre) relit aussi
   // les comparaisons, dont le cycle en cours en dépend (D-406 §3).
-  const rechargerTrajectoireEtReponses = useCallback(() => {
-    void chargerTrajectoire();
-    void chargerReponses();
+  // Il rend sa promesse : le « Réessayer » de la Réévaluation, dans le runtime
+  // piloté, attend la relecture avant de rendre le focus (PRA-6h2).
+  const rechargerTrajectoireEtReponses = useCallback(async () => {
+    await Promise.all([chargerTrajectoire(), chargerReponses()]);
   }, [chargerTrajectoire, chargerReponses]);
 
   // Lecture désormais engagée dès l'ouverture de la fiche (SP-CONV LOT-02) :
@@ -1472,8 +1512,9 @@ export function FichePatientPanel({
       <div role="alert" className="flex flex-wrap items-center gap-3 bg-muted border border-border rounded-xl p-4 text-base text-muted-foreground">
         <span className="min-w-0">La fiche patient n’a pas pu être lue.</span>
         <button
+          ref={relectureFiche.boutonRef}
           type="button"
-          onClick={chargerFiche}
+          onClick={() => void relectureFiche.relire(chargerFiche)}
           className="ml-auto min-h-9 shrink-0 rounded-lg border border-accent px-3 py-1 text-xs font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
         >
           Réessayer
@@ -1916,11 +1957,18 @@ export function FichePatientPanel({
                 Dossier effacé définitivement. Il ne subsiste qu’une ligne anonyme.
               </p>
               <p className="mt-2 text-base text-muted-foreground">
-                Cette page ne désigne plus aucun dossier.{' '}
-                <Link href="/dashboard/patients" className="underline">
-                  Revenir à la liste des patients
-                </Link>
-                .
+                Cette page ne désigne plus aucun dossier.
+                {/* [[D-354]] amendement DOC-15 (Q10) : aucun lien ne quitte la
+                    fiche en mode consultation, celui-ci compris. */}
+                {!modeConsultationActif && (
+                  <>
+                    {' '}
+                    <Link href="/dashboard/patients" className="underline">
+                      Revenir à la liste des patients
+                    </Link>
+                    .
+                  </>
+                )}
               </p>
             </div>
           ) : etatDossier === 'erreur' ? (
@@ -1941,7 +1989,7 @@ export function FichePatientPanel({
                 key={dossier.idPatient}
                 patient={dossier}
                 onEnregistre={chargerPassations}
-                niveauTitre="h4"
+                niveauTitre="h3"
               />
               <div className="rounded-xl border border-border bg-surface p-4 flex flex-wrap items-center justify-between gap-3">
                 <div className="flex flex-wrap items-center gap-2">
@@ -2124,8 +2172,9 @@ export function FichePatientPanel({
                 Les questionnaires échus n’ont pas pu être lus. Ce dossier peut en compter un, jamais rempli et bloqué.
               </span>
               <button
+                ref={relectureEchues.boutonRef}
                 type="button"
-                onClick={() => void chargerEchues()}
+                onClick={() => void relectureEchues.relire(chargerEchues)}
                 className="ml-auto min-h-11 shrink-0 rounded-lg border border-accent px-3 py-1 text-sm font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
               >
                 Réessayer la lecture des questionnaires échus
@@ -2182,8 +2231,9 @@ export function FichePatientPanel({
                   : 'Le compte des envois est inconnu : la liste n’a pas pu être obtenue. Inconnu, pas nul.'}
               </span>
               <button
+                ref={relecturePassations.boutonRef}
                 type="button"
-                onClick={() => void chargerPassations()}
+                onClick={() => void relecturePassations.relire(chargerPassations)}
                 className="ml-auto min-h-9 shrink-0 rounded-lg border border-accent px-3 py-1 text-xs font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
               >
                 Réessayer la lecture des envois
@@ -2432,7 +2482,10 @@ export function FichePatientPanel({
           courant ; les bannières critiques, exceptionnelles, peuvent décaler. */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
-          <h2 className="font-display text-xl font-bold tracking-[-0.02em] text-foreground">{nomComplet}</h2>
+          {/* Le nom du dossier est le h1 de la page, comme sur les autres
+              écrans praticien ; toute la cascade de la fiche part de lui
+              (PRA-6e, question 20261117-1423-d). Le style ne change pas. */}
+          <h1 ref={relectureFiche.titreRef} tabIndex={-1} className="font-display text-xl font-bold tracking-[-0.02em] text-foreground">{nomComplet}</h1>
           <p className="break-all text-xs text-muted-foreground">{patient.email}</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -2447,7 +2500,7 @@ export function FichePatientPanel({
               onClick={activerModeConsultation}
               className="flex min-h-11 items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
             >
-              <Stethoscope size={16} strokeWidth={2} />
+              <Stethoscope size={16} strokeWidth={TRAIT_ICONE} />
               Mode consultation
             </button>
           )}
@@ -2456,12 +2509,14 @@ export function FichePatientPanel({
               du rail, inbox du Fil) — la ramener vers la liste héritage
               perdait le praticien. Le paramètre d'entrée est le seul signal
               fiable dont la fiche dispose. */}
-          {ongletInitial === 'trajectoire' ? (
-            <Link href="/dashboard/trajectoires" className="text-sm text-muted-foreground hover:text-foreground hover:underline">
+          {/* [[D-354]] amendement DOC-15 (Q10) : en mode consultation, on ne
+              quitte la fiche que par « Quitter ». */}
+          {modeConsultationActif ? null : ongletInitial === 'trajectoire' ? (
+            <Link href="/dashboard/trajectoires" className="inline-flex min-h-11 items-center text-sm text-muted-foreground hover:text-foreground hover:underline">
               ← Retour aux fiches-trajectoires
             </Link>
           ) : (
-            <Link href="/dashboard/patients" className="text-sm text-muted-foreground hover:text-foreground hover:underline">
+            <Link href="/dashboard/patients" className="inline-flex min-h-11 items-center text-sm text-muted-foreground hover:text-foreground hover:underline">
               ← Retour aux patients
             </Link>
           )}
@@ -2513,13 +2568,14 @@ export function FichePatientPanel({
           role="alert"
           className="flex flex-wrap items-center gap-3 rounded-xl border border-accent bg-status-warning/10 px-4 py-2 text-base text-status-warning"
         >
-          <ShieldAlert aria-hidden="true" size={16} strokeWidth={2} className="shrink-0" />
+          <ShieldAlert aria-hidden="true" size={16} strokeWidth={TRAIT_ICONE} className="shrink-0" />
           <span className="min-w-0">
             Les demandes de correction de questionnaire n’ont pas pu être lues. Ce dossier peut en compter une en attente de déblocage.
           </span>
           <button
+            ref={relectureCorrections.boutonRef}
             type="button"
-            onClick={() => void chargerCorrections()}
+            onClick={() => void relectureCorrections.relire(chargerCorrections)}
             className="ml-auto min-h-9 shrink-0 rounded-lg border border-accent px-3 py-1 text-xs font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
           >
             Réessayer la lecture des corrections de questionnaire
@@ -2538,7 +2594,7 @@ export function FichePatientPanel({
           role="status"
           className="flex flex-wrap items-center gap-3 rounded-xl border border-accent bg-status-warning/10 px-4 py-2 text-base text-status-warning"
         >
-          <Clock aria-hidden="true" size={16} strokeWidth={2} className="shrink-0" />
+          <Clock aria-hidden="true" size={16} strokeWidth={TRAIT_ICONE} className="shrink-0" />
           <span className="min-w-0">
             {assignationsModif.length === 1
               ? '1 demande de correction de questionnaire en attente de déblocage.'
@@ -2597,7 +2653,7 @@ export function FichePatientPanel({
           role="status"
           className="flex flex-wrap items-center gap-3 rounded-xl border border-accent bg-status-warning/10 px-4 py-2 text-base text-status-warning"
         >
-          <Clock aria-hidden="true" size={16} strokeWidth={2} className="shrink-0" />
+          <Clock aria-hidden="true" size={16} strokeWidth={TRAIT_ICONE} className="shrink-0" />
           <span className="min-w-0">
             Votre patient demande une correction de son objectif négocié.
           </span>
@@ -2628,7 +2684,7 @@ export function FichePatientPanel({
           role="alert"
           className="flex flex-wrap items-center gap-3 rounded-xl border border-accent bg-status-warning/10 px-4 py-2 text-base text-status-warning"
         >
-          <ShieldAlert aria-hidden="true" size={16} strokeWidth={2} className="shrink-0" />
+          <ShieldAlert aria-hidden="true" size={16} strokeWidth={TRAIT_ICONE} className="shrink-0" />
           <span className="min-w-0">
             L’état de la phase Compréhension n’a pas pu être lu. Ce dossier peut compter une
             demande de correction de l’objectif en attente.
@@ -2670,7 +2726,7 @@ export function FichePatientPanel({
                 setOngletActif('cockpit');
                 choisirPhase(due);
               }}
-              className="ml-auto min-h-9 shrink-0 rounded-lg border border-border px-3 py-1 text-xs font-medium text-foreground hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+              className="ml-auto min-h-11 shrink-0 rounded-lg border border-border px-3 py-1 text-xs font-medium text-foreground hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
             >
               Y aller
             </button>
@@ -2695,7 +2751,7 @@ export function FichePatientPanel({
           role="status"
           className="flex flex-wrap items-center gap-3 rounded-xl border border-accent bg-status-warning/10 px-4 py-2 text-base text-status-warning"
         >
-          <ShieldAlert aria-hidden="true" size={16} strokeWidth={2} className="shrink-0" />
+          <ShieldAlert aria-hidden="true" size={16} strokeWidth={TRAIT_ICONE} className="shrink-0" />
           <span className="min-w-0">Protocole bloqué — bloqueurs décisionnels à revoir.</span>
           {!(ongletActif === 'cockpit' && phaseActive === 'actions') && (
             <button
@@ -2737,7 +2793,7 @@ export function FichePatientPanel({
           role="status"
           className="flex flex-wrap items-center gap-3 rounded-xl border border-accent bg-status-warning/10 px-4 py-2 text-base text-status-warning"
         >
-          <Clock aria-hidden="true" size={16} strokeWidth={2} className="shrink-0" />
+          <Clock aria-hidden="true" size={16} strokeWidth={TRAIT_ICONE} className="shrink-0" />
           <span className="min-w-0">Priorité non retenue — le protocole reste indisponible.</span>
           {!(ongletActif === 'cockpit' && phaseActive === 'decision') && (
             <button
@@ -2782,7 +2838,7 @@ export function FichePatientPanel({
                 refsReplis.current.afficherPhases = element;
               }}
               onClick={() => replier('afficherPhases')}
-              className={`${classesCommandeAfficherPhases} min-h-11 shrink-0 items-center gap-1.5 rounded-lg border border-control-border bg-surface px-3 py-1.5 text-sm font-medium text-foreground hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring`}
+              className={`${classesCommandeAfficherPhases} min-h-11 print:hidden shrink-0 items-center gap-1.5 rounded-lg border border-control-border bg-surface px-3 py-1.5 text-sm font-medium text-foreground hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring`}
             >
               <PanelLeftOpen aria-hidden="true" size={18} strokeWidth={TRAIT_ICONE} />
               Afficher les phases
@@ -2860,7 +2916,7 @@ export function FichePatientPanel({
                 refsReplis.current.afficherContexte = element;
               }}
               onClick={() => replier('afficherContexte')}
-              className={`${classesCommandeAfficherContexte} min-h-11 shrink-0 items-center gap-1.5 rounded-lg border border-control-border bg-surface px-3 py-1.5 text-sm font-medium text-foreground hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring`}
+              className={`${classesCommandeAfficherContexte} min-h-11 print:hidden shrink-0 items-center gap-1.5 rounded-lg border border-control-border bg-surface px-3 py-1.5 text-sm font-medium text-foreground hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring`}
             >
               <PanelRightOpen aria-hidden="true" size={18} strokeWidth={TRAIT_ICONE} />
               Afficher le contexte
@@ -2902,6 +2958,13 @@ export function FichePatientPanel({
                   : statut === 'en_attente'
                     ? 'bg-accent/10 font-semibold text-foreground shadow-[inset_3px_0_0_var(--color-accent)] hover:bg-accent/[.14]'
                     : 'text-muted-foreground hover:text-foreground';
+                // Statut en encre sur le fond argile de la phase due : le gris
+                // atténué y tombait à 4,5:1 sur la sauge du rail, 4,35:1 au
+                // survol (PRA-6f, axe `color-contrast`) ; l'encre y tient
+                // 8,9:1 et 8,6:1. Ailleurs, le gris atténué reste au-dessus
+                // de 4,5:1 (4,9:1 sur sauge, 5,8:1 sur la carte active).
+                const classesStatut =
+                  !actif && statut === 'en_attente' ? 'text-foreground' : 'text-muted-foreground';
                 return (
                   <button
                     key={phase.id}
@@ -2923,13 +2986,13 @@ export function FichePatientPanel({
                         libellés se lisaient comme des catégories
                         indépendantes, pas comme un cycle à parcourir. */}
                     <span className="min-w-0 flex-1 truncate">{index + 1}. {phase.libelle}</span>
-                    <span className="shrink-0 text-2xs text-muted-foreground">{libelleStatut(phase.id, statut)}</span>
+                    <span className={`shrink-0 text-2xs ${classesStatut}`}>{libelleStatut(phase.id, statut)}</span>
                   </button>
                 );
               })}
             </div>
             {/* Hors du tablist : une commande n'est pas un onglet. */}
-            <div className="hidden border-t border-border p-2 lg:block">
+            <div className="hidden border-t border-border p-2 lg:block print:hidden">
               <button
                 type="button"
                 ref={element => {
@@ -2958,7 +3021,7 @@ export function FichePatientPanel({
                 <p className="text-xs font-semibold uppercase tracking-[.06em] text-solar-ink">
                   {statutPhase(phaseCourante.id) === 'en_attente' ? 'Phase due' : 'Zone focale'}
                 </p>
-                <h3 className="font-display text-xl font-bold text-foreground">{phaseCourante.libelle}</h3>
+                <h2 ref={titreZoneFocaleRef} tabIndex={-1} className="font-display text-xl font-bold text-foreground">{phaseCourante.libelle}</h2>
               </div>
               {/* Contexte fermé : l'information critique reste dans la zone de
                   travail (prototype PRA-3a validé, Q3) — les mêmes instruments
@@ -3021,7 +3084,7 @@ export function FichePatientPanel({
                   refsReplis.current.masquerContexte = element;
                 }}
                 onClick={() => replier('masquerContexte')}
-                className="hidden min-h-11 w-full items-center gap-2 rounded-[10px] px-2 py-2 text-left text-14 font-medium text-muted-foreground hover:bg-surface hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring lg:flex"
+                className="hidden min-h-11 w-full items-center gap-2 rounded-[10px] px-2 py-2 text-left text-14 font-medium text-muted-foreground hover:bg-surface hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring lg:flex print:hidden"
               >
                 <PanelRightClose aria-hidden="true" size={18} strokeWidth={TRAIT_ICONE} className="shrink-0" />
                 Masquer le contexte
@@ -3140,6 +3203,7 @@ export function FichePatientPanel({
           défile pas la page) ; sous lg, le flux normal demeure, comme le
           cockpit. */}
       <div
+        ref={relectureTrajectoire.titreRef}
         role="tabpanel"
         id="panneau-trajectoire"
         aria-labelledby="onglet-trajectoire"
@@ -3169,8 +3233,9 @@ export function FichePatientPanel({
             <div role="alert" className="flex flex-col gap-3 rounded-xl border border-accent bg-status-warning/10 p-4 text-base text-status-warning">
               <span>{erreurTrajectoire}</span>
               <button
+                ref={relectureTrajectoire.boutonRef}
                 type="button"
-                onClick={() => void chargerTrajectoire()}
+                onClick={() => void relectureTrajectoire.relire(chargerTrajectoire)}
                 className="min-h-9 self-start rounded-lg border border-accent px-3 py-1 text-xs font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
               >
                 Réessayer

@@ -86,6 +86,16 @@ describe('table de convergence — alignement sur les règles publiées ([[D-453
     .map(({ condition }) => cleCondition(condition))));
   const rattachees = RATTACHEMENTS_CONVERGENCE_V1.map(r => cleCondition(r.condition));
   const sansCompte = CONDITIONS_SANS_COMPTE_V1.map(c => cleCondition(c.condition));
+  // [[D-543]], réponse A à `20261119-1302-a` : une ligne SUSPENDUE pour relecture
+  // ne fait rien compter (le producteur ne lit que les règles publiées), mais son
+  // rattachement reste dans la table, pour qu'un rétablissement n'ait pas à le
+  // réécrire. Une entrée n'est donc orpheline que si aucune règle publiée OU
+  // suspendue ne la porte ; un brouillon, qui n'a jamais servi, n'en porte aucune.
+  const porteuses = ORIENTATION_RULES_V1.filter(r => r.statut === 'publiee' || r.statut === 'suspendue');
+  const conditionsPortees = new Set(porteuses.flatMap(regle => regle.declencheurs
+    .flatMap(feuillesDuDeclencheur)
+    .flatMap(conditionsDeLaFeuille)
+    .map(({ condition }) => cleCondition(condition))));
 
   it('chaque condition des règles publiées est rattachée OU déclarée sans compte', () => {
     const orphelines = [...conditionsDesRegles].filter(cle => !rattachees.includes(cle) && !sansCompte.includes(cle));
@@ -93,7 +103,7 @@ describe('table de convergence — alignement sur les règles publiées ([[D-453
   });
 
   it('aucune entrée de la table n’est orpheline ni double', () => {
-    expect([...rattachees, ...sansCompte].filter(cle => !conditionsDesRegles.has(cle))).toEqual([]);
+    expect([...rattachees, ...sansCompte].filter(cle => !conditionsPortees.has(cle))).toEqual([]);
     expect(rattachees.filter(cle => sansCompte.includes(cle))).toEqual([]);
     expect(new Set(rattachees).size).toBe(rattachees.length);
     expect(new Set(sansCompte).size).toBe(sansCompte.length);

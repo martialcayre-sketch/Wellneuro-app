@@ -170,7 +170,7 @@ function BoutonRelance({
             ? `Débloquer le questionnaire en retard — ${titre}`
             : `Rappeler au patient le questionnaire en retard — ${titre}`
         }
-        className="inline-flex min-h-9 items-center rounded-lg border border-border bg-surface px-3 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+        className="inline-flex min-h-11 items-center rounded-lg border border-border bg-surface px-3 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
       >
         {aDebloquer ? (enCours ? 'Déblocage…' : 'Débloquer') : enCours ? 'Envoi…' : 'Rappeler'}
       </button>
@@ -268,7 +268,7 @@ function CarteDuFil({
               // UNE ACTION PRINCIPALE PAR CARTE (PRA-2b) : le bouton plein est
               // réservé à la carte « Maintenant » ; ailleurs, un lien pétrole.
               // La cible (`carte.href`) ne change pas.
-              className={`inline-flex min-h-9 items-center rounded-lg text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring ${
+              className={`inline-flex min-h-11 items-center rounded-lg text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring ${
                 imminente
                   ? 'bg-primary px-3 font-medium text-primary-foreground hover:bg-primary/90'
                   : 'px-1 font-semibold text-primary underline underline-offset-[3px] hover:decoration-2'
@@ -417,7 +417,15 @@ export function FilDuJour() {
   const chargerFil = useCallback(async () => {
     try {
       const reponse = await fetch('/api/praticien/fil');
-      setData((await reponse.json()) as FilApiResponse);
+      const json = (await reponse.json()) as FilApiResponse;
+      // Une réponse hors contrat (500 d'un autre émetteur, `{error}`) est un
+      // échec de lecture : le Fil dit son indisponibilité au lieu de faire
+      // tomber la page (PRA-6h).
+      if (!reponse.ok || !Array.isArray(json?.cartes)) {
+        setData({ cartes: [], unavailable: true });
+        return;
+      }
+      setData(json);
     } catch {
       setData({ cartes: [], unavailable: true });
     }

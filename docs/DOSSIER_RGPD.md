@@ -755,7 +755,9 @@ traitement n'existe** : ni code d'extraction, ni table, ni drapeau.
     les traitements et l'état inflammatoire sont des données de santé.
   - **Ce qui ne change pas.** Base légale et finalité : le suivi du patient
     par son praticien. **Aucun destinataire, aucun sous-traitant, aucun flux
-    nouveau** ; rien n'en part à l'IA, et l'export du dossier ne le porte
+    nouveau** à cette déclaration ; rien n'en part à l'IA, sauf, depuis
+    [[D-539]], vers l'appel distinct qui restitue la biologie au praticien
+    (rubrique 2, 2 quater), et l'export du dossier ne le porte
     pas (il porte les résultats de biologie depuis [[D-519]], jamais leur
     contexte). Le laboratoire et
     l'heure du prélèvement restent ceux que l'import lit déjà ; le sexe et le
@@ -881,6 +883,23 @@ dans ce dossier est une condition qu'on manque (§2).
 (rubrique 3) ni le transfert (rubrique 7). Ces deux actes reviennent au
 responsable avec son conseil.
 
+### 2 quater. Biologie restituée au praticien par un appel distinct ([[D-513]], [[D-539]]) — déclarée AVANT ouverture
+
+**Ce qui part.** À la génération d'une synthèse, si le dossier porte au moins un résultat, les résultats de biologie non annulés partent à Anthropic (rubrique 6) dans un **appel distinct** de celui de la synthèse, après sa réussite. Ce message ne porte que ces résultats : ni les réponses aux questionnaires, ni les scores, ni l'anamnèse, ni l'identité du patient. Il comprend, pour chaque analyte, son libellé et ses motifs de non-comparabilité, et, pour chaque résultat :
+- la date du prélèvement et, si l'import l'a lue, son heure ;
+- la valeur et son unité ;
+- l'intervalle imprimé par le laboratoire, ou la raison de son absence ;
+- le nom du laboratoire tel que lu à l'import ;
+- le contexte du prélèvement ([[D-497]]), champ par champ.
+
+Ne partent pas : le marquage et le commentaire du laboratoire, les statuts et les constats du praticien, le compte rendu. L'appel principal de la synthèse ne reçoit aucun résultat.
+
+**Ce qui est conservé.** Le bloc envoyé est conservé dans la trace de la synthèse (`donneesEntree`), avec la version de la consigne, le modèle et l'issue de l'appel, y compris quand l'appel échoue après l'envoi. La restitution du modèle va dans deux champs réservés au praticien, qui n'entrent ni au document du médecin, ni au téléchargement du portail, ni à l'export du dossier, ni à l'appel de priorité. Le narratif du patient peut porter une phrase fixe, posée par le code, qui dit que le praticien a reçu un bilan, à la date de son prélèvement le plus récent : aucune valeur, aucun nom d'analyse. Elle suit le narratif là où il va déjà : portail, document du médecin, proposition de priorité et proposition de « Ce que j'ai compris de vous » (rubrique 7).
+
+**Base légale et finalité.** Inchangées : celles de la synthèse (2 bis).
+
+**Ouverture.** Le flux est gardé par un drapeau propre, créé éteint. Le responsable le pose après trois préalables : ce paragraphe validé ; la version 24 de « Vos données personnelles » et les conditions 7 servies et constatées ; l'évaluation rejouée et conforme aux critères de [[D-539]] §8.
+
 ## 3. Base légale
 
 **Qualifiée par le responsable du traitement le 2026-10-04** ([[D-265]] §3).
@@ -944,6 +963,49 @@ l'avis d'un avocat, consulté le 2026-10-22 ([[D-344]] §5). Cette version
 reprend deux avis préparatoires écrits, qui ne sont pas une consultation
 d'avocat, confrontés au dépôt ([[D-344]] §1 et §6).
 
+**Arbitrages du 2026-11-17 ([[D-537]]), sur l'avis GPT du 2026-11-17 ; ils
+priment sur tout le reste de cette version provisoire, titre et « Statut »
+compris : les règles des 15–17 ans n'attendent plus l'avocat.** L'avis est celui d'un
+assistant d'IA ([[D-536]] §3). Ce n'est ni un avis de juriste ni un avis
+d'avocat. Ses références ont été vérifiées par la session.
+- **Accord d'un seul titulaire** : il suffit seulement si l'acte est usuel,
+  si l'autorité parentale est vérifiée et si aucune opposition n'est connue.
+  Sinon, le dossier s'instruit à la main (§1).
+- **« Aucun secret opposable aux parents »** : la formule est abandonnée.
+  Chaque demande parentale s'examine une à une. Il n'y a aucun accès
+  automatique, et rien n'est promis au jeune, ni confidentialité absolue ni
+  communication intégrale (§2).
+- **Hypothèses** : le consentement autonome du jeune s'applique fonction par
+  fonction, et le contrat se juge à part (H1). Chaque seuil d'âge se motive
+  par fonction et par risque (H2). Chaque droit garde son régime (H3). Aucun
+  nouveau consentement n'est exigé du seul fait de l'âge, mais un
+  consentement initial non valable se régularise (H4) (§3).
+- **Plancher** : 15 ans. Les moins de 15 ans restent en pause (§4). —
+  2026-11-17 : l'analyse de proportionnalité est écrite et arbitrée (voir
+  plus bas, « Analyse de proportionnalité des règles d'âge »). Le plancher,
+  l'accord parental jusqu'à 18 ans et la pause sont justifiés. L'émancipé
+  sera admis comme un majeur, sur justificatif.
+- **Admission d'un premier mineur de 15 à 17 ans** : elle n'attend pas
+  l'avocat. Elle attend J3-mineurs, le texte 2B réécrit, la notice adaptée,
+  l'analyse de proportionnalité et la revue de nécessité de l'AIPD, puis
+  l'AIPD elle-même si cette revue la requiert (§5, §6). Elle attend aussi
+  deux points : la durée, l'engagement et l'arrêt de l'accompagnement,
+  documentés ; l'accord des deux titulaires tant que l'« acte usuel » n'est
+  pas qualifié (§1, §9). — 2026-11-17 : deux de ces conditions sont
+  remplies, le texte 2B réécrit et servi, et l'analyse de proportionnalité,
+  écrite et arbitrée. Restent J3-mineurs, la notice adaptée, la revue de
+  nécessité de l'AIPD, la durée, l'engagement et l'arrêt, ainsi que l'accord
+  des deux titulaires. — 2026-11-18 : la revue de nécessité est faite, et
+  elle requiert une AIPD pour le volet mineurs (rubrique 13). Cette AIPD
+  s'ajoute aux conditions restantes : elle doit être finie et validée avant
+  la première admission.
+- **Texte 2B** : il est réécrit maintenant, en entier. Le responsable le
+  valide mot pour mot, puis un lot de code le sert (§7). — 2026-11-17 :
+  validé mot pour mot (questions `20261117-1346-c` et `-1919-c`) et servi en deux
+  variantes, moins de 15 ans et 15 à 17 ans
+  (`docs/claude/propositions/2026-11-17-texte-2b-neuf/README.md`).
+- **Considérant 38** : écarté. L'accord parental reste requis (§8).
+
 **Périmètre.** Le responsable exerce un accompagnement en neuronutrition qui
 relève du bien-être, sans diagnostic médical. Il n'est pas professionnel de
 santé au sens du Code de la santé publique. Le service traite des données
@@ -1006,6 +1068,140 @@ mineur. Buts envisagés :
 - la sensibilité des données ;
 - la prévention des conflits entre le jeune et ses parents.
 
+**Analyse de proportionnalité des règles d'âge ([[D-537]] §4, H2)** — rédigée
+le 2026-11-17 (lot `proportionnalite-mineurs`). *Les trois conclusions ont
+été arbitrées par le responsable en session le 2026-11-17, chacune sur la
+question de la liste commune citée à sa règle, toutes selon l'option
+recommandée.* Les références sont celles de [[D-537]],
+vérifiées par la session le 2026-11-17. Ce n'est pas un avis de juriste.
+
+Grille appliquée à chaque restriction (loi n° 2008-496, art. 2, 3°) :
+1. le but poursuivi, qui doit être légitime ;
+2. la mesure est-elle *nécessaire* ? Le but ne doit pas pouvoir s'atteindre
+   par un moyen moins restrictif ;
+3. est-elle *adaptée* ? Elle doit servir réellement le but ;
+4. est-elle *proportionnée* ? La gêne imposée au jeune ne doit pas dépasser
+   ce que le but justifie.
+
+Les alternatives sont écrites à côté de chaque mesure, avec le motif qui les
+écarte.
+
+*R1 — Plancher à 15 ans : les moins de 15 ans restent en pause, sans circuit
+d'admission ([[D-537]] §4).*
+- **But.** Avant 15 ans, le consentement en ligne aux traitements visés par
+  l'art. 45 LIL est conjoint : celui du mineur et celui du titulaire de
+  l'autorité parentale. Chaque fonction du portail demanderait donc deux
+  consentements, en plus de l'accord à la prestation. S'y ajoutent la
+  sensibilité des données (questionnaires de santé, lecture des comptes
+  rendus biologiques par l'IA) et une capacité contractuelle plus faible
+  encore qu'à 15 ans.
+- **Nécessaire.** Le moyen moins restrictif serait un second circuit, à
+  consentement conjoint, pour les moins de 15 ans. Ce circuit n'existe pas, et
+  aucun circuit de mineur n'est encore livré (J3-mineurs).
+- **Adaptée.** Le seuil reprend la ligne que la loi trace elle-même (LIL
+  art. 45) : il ne fixe pas un âge arbitraire.
+- **Proportionnée.** Le jeune de moins de 15 ans n'est pas privé de tout :
+  - il reçoit une information adaptée, la variante « moins de 15 ans » du
+    texte 2B ;
+  - il garde l'encart d'urgence (15, 112, 119), le signalement, les
+    demandes de droits et les documents déjà remis.
+
+  La pause n'est pas une exclusion définitive : la règle se réexamine.
+- **Alternatives écartées.**
+  - Pas de plancher, avec un consentement conjoint avant 15 ans (option de
+    la question `20261117-0131-c-7`) : écartée, car elle exige un second
+    circuit, pour le public le plus vulnérable.
+  - Instruction manuelle, au cas par cas, avant 15 ans : écartée. Sans
+    critère écrit, deux jeunes du même âge seraient traités différemment.
+  - Seuil à 16 ans : écarté, car plus restrictif sans appui dans la loi.
+- **Conclusion arbitrée.** Le plancher est justifié pendant la bêta. Il se
+  réexamine à la commercialisation, avec l'avocat (point 7 de [[D-449]] §6).
+  Question `20261117-2200-c`.
+
+*R2 — Accord parental à la prestation, de 15 à 17 ans ([[D-537]] §1, §5 et
+§8).*
+- **But.**
+  - La capacité à contracter : le mineur non émancipé est incapable de
+    contracter (C. civ. art. 1146). Il peut accomplir seul les actes
+    courants conclus à des conditions normales (art. 1148), mais un tel acte
+    reste annulable pour simple lésion (art. 1149).
+  - L'exercice conjoint de l'autorité parentale (art. 371-1).
+  - Le considérant 38 est écarté ([[D-537]] §8) : WellNeuro n'est pas un
+    service de prévention ou de conseil offert directement à l'enfant.
+- **Nécessaire.** Tant que la durée, l'engagement et l'arrêt de
+  l'accompagnement ne sont pas documentés ([[D-537]] §9), rien ne permet de
+  dire que l'accompagnement est un acte courant conclu à des conditions
+  normales. Sans accord, le contrat est exposé à l'annulation, au détriment
+  du jeune comme du praticien.
+- **Adaptée.** L'accord porte sur la prestation seule :
+  - pour les fonctions de l'art. 45, le jeune consent lui-même au traitement
+    de ses données (H1) ;
+  - l'accord n'ouvre aux parents aucun accès au portail ([[D-537]] §2).
+- **Proportionnée.**
+  - C'est un geste unique, à l'entrée.
+  - Le retrait de son consentement par le jeune n'est pas retardé (H3).
+  - Les pouvoirs fondés sur l'autorité parentale prennent fin à 18 ans ou à
+    l'émancipation (H4).
+  - L'accord des deux titulaires, tant que l'« acte usuel » n'est pas
+    qualifié ([[D-537]] §1 et §5), est déjà arbitré. Il tient parce qu'il est
+    transitoire, et parce que la présomption de l'art. 372-2 ne couvre pas
+    un désaccord connu. Il n'est pas reposé ici.
+- **Écart constaté au code (2026-11-17).** La garde d'âge
+  (`web/src/lib/patient/gardeAge.ts`) ne connaît que la date de naissance :
+  un jeune émancipé de 16 ou 17 ans reste en pause comme un mineur. Or
+  l'émancipé est capable comme un majeur (C. civ. art. 413-6). Exiger de lui
+  un accord parental ne sert aucun des buts ci-dessus.
+- **Alternatives écartées.**
+  - Le jeune de 15 ans ou plus contracte seul : écartée par l'art. 1146 du
+    C. civ. et par [[D-537]] §8.
+  - Un accord parental fonction par fonction : écartée. L'accord vise la
+    prestation, qui est une, et le service en ligne en est indissociable
+    (CEPD, lignes directrices 05/2020, §129).
+  - Informer les parents au lieu de leur demander l'accord : écartée, car
+    cela ne lève pas l'incapacité.
+- **Conclusion arbitrée.** L'accord est justifié jusqu'à 18 ans, avec deux
+  ajustements :
+  - l'émancipé est admis comme un majeur, sur justificatif, après une
+    instruction manuelle ; l'exigence est transmise au cadrage de
+    J3-mineurs (file A) ;
+  - la nécessité de l'accord se réexamine une fois la durée, l'engagement
+    et l'arrêt documentés : si l'accompagnement se révèle un acte courant à
+    des conditions normales, elle se pose autrement.
+
+  Question `20261117-2200-c-2`.
+
+*R3 — Pause des questionnaires de santé et de la biologie, pour le mineur non
+admis et pour le dossier sans date de naissance ([[D-284]] §4, lot (h)).*
+- **But.** Ne collecter aucune donnée de santé sans un accord et un
+  consentement valables. La garde est fermée par défaut.
+- **Nécessaire.** Sans circuit, aucun accord ne peut être recueilli : toute
+  collecte se ferait sans base.
+- **Adaptée.** La pause est tenue par les routes, pas par l'écran :
+  - la soumission d'un questionnaire ;
+  - l'anamnèse et le pack de base, à leur validation ;
+  - les agendas du sommeil et alimentaire ;
+  - le dépôt d'un compte rendu biologique ou d'un document ;
+  - la déclaration du sexe, du statut menstruel et des traitements en cours.
+- **Proportionnée.**
+  - Le périmètre est borné aux questionnaires (agendas compris) et à la
+    biologie, comme arbitré le 2026-10-14.
+  - Restent ouverts : l'information, le parcours et les documents remis, le
+    suivi du protocole, l'alliance, le signalement d'un effet indésirable et
+    les demandes de droits.
+  - Pour le dossier sans date, il ne s'agit pas d'une règle d'âge mais d'une
+    incertitude : un seul geste la lève, la date demandée à la connexion.
+  - La pause est transitoire : pour le jeune de 15 à 17 ans, elle prend fin
+    à son admission.
+- **Alternatives écartées.**
+  - Fermer tout le portail : écartée. Le jeune y perdrait l'information,
+    l'urgence et ses droits.
+  - Laisser les questionnaires ouverts et ne bloquer que leur lecture :
+    écartée, car la collecte elle-même se ferait sans base.
+- **Conclusion arbitrée.** La pause est justifiée telle qu'elle est servie.
+  Toute restriction propre à une fonction que J3-mineurs garderait après
+  l'admission doit être motivée ici avant d'être servie (H2). Question
+  `20261117-2200-c-3`.
+
 **Information du jeune.** L'écran de pause du mineur sert le texte 2B depuis
 le 2026-10-21 ([[D-341]]). Le texte est gardé mot pour mot jusqu'à l'avis de
 l'avocat ([[D-344]] §2). La notice d'information (« Vos données
@@ -1013,7 +1209,10 @@ personnelles », « L'IA dans Wellneuro ») lui est accessible, mais elle
 s'adresse à un adulte. Une version adaptée à son âge (RGPD art. 12 §1) est à
 écrire avec J3-mineurs. Elle dira notamment le rôle de l'IA dans la lecture
 des comptes rendus. Le masquage de l'identité est une pseudonymisation, pas
-une anonymisation.
+une anonymisation. — 2026-11-17 ([[D-537]] §7) : le 2B neuf remplace celui du
+2026-10-14. Il a deux variantes selon la tranche d'âge, nomme l'IA, dit que
+masquer ne rend pas anonyme, et ne promet ni secret absolu ni accès intégral
+des parents. La notice adaptée reste à écrire.
 
 **Confidentialité.** Le responsable n'invoque pas le régime dérogatoire de
 l'art. L1111-5 du CSP, qui vise d'autres professionnels. **Suspendu à l'avis
@@ -1065,7 +1264,12 @@ non-discrimination »).
 
 **AIPD.** La conclusion « non requise à ce stade » (rubrique 13) se revoit
 avant l'admission d'un premier mineur : un public mineur est un critère de
-vulnérabilité.
+vulnérabilité. — 2026-11-18 : revue faite ([[D-537]] §6). Une AIPD est
+requise pour le volet mineurs, et elle précède l'admission (rubrique 13).
+— 2026-11-18 : le projet est écrit (`docs/rgpd/AIPD_MINEURS.md`) et les
+risques sont jugés. La validation datée attend le cadrage de J3-mineurs.
+L'AIPD ajoute une condition à l'admission : le jeune donne sa propre
+adresse e-mail.
 
 **État au 2026-10-21.** 31 dossiers ouverts, aucun mineur. Le circuit
 parental en ligne et le texte 2A, au titulaire, ne sont pas servis.
@@ -1081,11 +1285,26 @@ parental en ligne et le texte 2A, au titulaire, ne sont pas servis.
    consentement ?
 6. Les seuils d'âge sont-ils justifiés au sens de la loi de 2008 ?
 
+*2026-11-17 ([[D-536]]).* L'avis de l'avocat est reporté à la
+commercialisation : ces six questions deviennent le point 7 de la liste de
+[[D-449]] §6. Un avis GPT passe d'abord sur elles. Il se cite comme tel,
+jamais comme un avis de juriste. Les arbitrages rendus sur cet avis
+s'écriront dans une D-xxx propre. Ils prennent la place de la réponse de
+l'avocat partout où cette rubrique l'attend : texte 2B, formules suspendues,
+âge plancher, transition, J3-mineurs. D'ici là, cette rubrique reste
+provisoire et rien ne change pour le mineur.
+
 **Références.**
 - RGPD art. 4 point 25, 5 à 9, 12 à 22, 35 ;
 - directive (UE) 2015/1535, art. 1 §1 b) ;
 - loi n° 78-17 du 6 janvier 1978, art. 45, et art. 70 (régime spécial de la
-  recherche en santé, non transposable ici) ;
+  recherche en santé, non transposable ici) ; *corrigé le 2026-11-17
+  ([[D-537]] §2)* : le premier alinéa de l'art. 70 vaut pour toute la
+  section « santé » de la loi, et pas seulement pour la recherche ; l'art.
+  65, 1° (version issue de la loi n° 2026-534 du 25 juin 2026) écarte cette
+  section pour les traitements fondés sur l'art. 9 §2 a) RGPD ;
+- ajoutés le 2026-11-17 ([[D-537]]) : C. civ. art. 413-6 ; RGPD considérant
+  38 ; CEPD, lignes directrices 05/2020, §129, 130 et 147 à 150 ;
 - loi n° 2008-496 du 27 mai 2008, art. 2, 3° ;
 - C. civ. art. 9, 371-1, 372-2, 388, 1102, 1146, 1148, 1149 ;
 - CSP art. L1111-5, L1111-5-1 ;
@@ -1165,7 +1384,7 @@ personnelles se répartissent ainsi :
 | **Santé — documents déposés par le patient (art. 9)** ([[D-330]], J3-collecte, déclaré le 2026-10-18 **avant** la création des tables) | `DocumentDeposePatient` (dossier, **document déposé tel quel**, type, empreinte SHA-256, catégorie proposée, date de dépôt, date et auteur de la première consultation, date, auteur et motif du retrait ; aucun nom de fichier) ; `ClassementDocumentDepose` (dossier, document, catégorie, e-mail du praticien, date). Créées par la migration `documents_deposes_patient_v1`, **appliquée le 2026-10-19** (run `release-db` 39290340495) ; écrites par le dépôt du patient depuis son ouverture le 2026-10-20 (ACT-4, drapeau `WN_PORTAIL_DEPOT_DOCUMENTS`), information du patient publiée le même jour (« Vos données personnelles » v19, conditions d'utilisation v2 et leur e-mail aux patients suivis) | **Document de santé remis par le patient lui-même**, sans IA. Figé, sauf la première consultation et le retrait, par le seul praticien du dossier ; le retrait efface le contenu et garde la ligne. Destinataire : le praticien du dossier seul ; aucun tiers, aucun sous-traitant. Conservées avec le dossier et effacées nommément avec lui (rubrique 8) |
 | **Santé — constat du praticien sur une hypothèse du parcours (art. 9)** ([[D-331]], BP-11, déclaré le 2026-10-19 **avant** la création des tables) | `ConstatPraticien` (dossier, acte `pose` ou `retrait`, hypothèse par son code, verdict — `confirmee`, `non_retenue`, `non_evaluable`, `sans_objet` —, motif pris dans une liste fermée — `pieces_ne_soutiennent_pas`, `autre_hypothese_retenue`, `contexte_explique`, `piece_attendue_manquante`, `contexte_inconnu`, `donnee_a_verifier`, `hors_population`, `question_ne_se_pose_plus`, `autre` —, note libre facultative, date « à revoir le » facultative, constat remplacé, empreinte de la structure signée, e-mail du praticien, date, identifiant technique de la transaction) ; `PieceConstatPraticien` (constat, ligne de résultat de biologie **ou** réponse de questionnaire du même dossier). Migration `20261020100000_constats_praticien_v1` (PR de migration seule), à appliquer par release-db | **Jugement du praticien sur son dossier**, aval de `ResultatBiologique` et de `QuestionnaireReponse`. Aucune valeur, aucun analyte, aucune date de prélèvement recopiés. Une note libre facultative peut porter une donnée de santé ou nommer un tiers. En ajout seul, par le praticien du dossier seul, lu par lui seul. Rien n'en part vers un tiers. Effacées nommément avec le dossier (rubrique 8) |
 | **Santé — données physiologiques déclarées, traitements et compléments en cours (art. 9)** ([[D-335]], BP-13, déclaré le 2026-10-21 **avant** la création des tables) | `DonneePhysiologique` (dossier, acte `pose` ou `retrait`, critère — `sexe_declare`, `statut_menstruel`, `grossesse`, `allaitement`, `poids`, `taille` —, réponse fermée ou mesure, date de la mesure, source « déclaré par le patient » ou « confirmé par le praticien », ligne remplacée, e-mail du praticien s'il la pose, date) ; `TraitementEnCours` (dossier, acte, nature `medicament` ou `complement`, nom, dose, moment de prise, motif ou objectif, début et fin avec leur précision, prescrit par un autre soignant, source, ligne remplacée, e-mail du praticien s'il la pose, date) ; clé `id_traitement` ajoutée à `PieceConstatPraticien`. Migration `20261021100000_donnees_physiologiques_traitements_v1` (PR de migration seule), à appliquer par release-db | **Déclarations du patient et confirmations du praticien**, datées. Nouveau : sexe déclaré et statut menstruel, jamais déduits, « inconnu » possible ; le reste était déjà recueilli en texte libre par la fiche de renseignements. Aucune classe ni code de référentiel, aucun IMC. Textes libres (nom, dose, motif) pouvant nommer un tiers. En ajout seul ; écrit par le patient (ses lignes) et le praticien du dossier ; lu par eux seuls dans l'application ; l'application n'en envoie rien à l'IA (la ligne de vigilance de la synthèse, écrite par le code, lit les traitements en vigueur). Sorties hors de l'application ([[D-391]] §2, §3) : l'export du dossier (traitements en cours et arrêtés compris), dont la version pseudonymisée que le praticien peut soumettre à ChatGPT (rubrique 6), et la ligne de vigilance reprise dans le document destiné au médecin, que le patient télécharge et lui remet ([[D-307]]). Dossier mineur exclu. Effacées nommément avec le dossier (rubrique 8) |
-| **Santé — contexte de prélèvement d'un résultat de biologie (art. 9)** ([[D-497]], BP-05, déclaré le 2026-11-12 **avant** la création de la table) | `ContextePrelevement` (`contextes_prelevement` : dossier, résultat d'origine de la chaîne de correction, à jeun, supplémentation arrêtée, traitement susceptible d'interférer, épisode inflammatoire, grossesse au prélèvement — `oui`, `non` ou `inconnu` —, jour du cycle et délai depuis la dernière prise avec leur état `renseigne` ou `inconnu`, unité du délai `heure` ou `jour`, ligne remplacée, e-mail du praticien, date). Migration `20261112120000_contexte_prelevement_biologique_v1` (PR de migration seule), appliquée et constatée le 2026-11-12 (#2018) | **Circonstances du prélèvement notées par le praticien**, datées. Nouveau : non recueillies jusqu'ici, sinon dans le texte des commentaires du laboratoire. Aucun texte libre, aucune catégorie interprétative ; « inconnu » par défaut. En ajout seul ; écrite et lue par le praticien du dossier seul ; rien n'en part à l'IA ni dans l'export du dossier. Effacée nommément avec le dossier (rubrique 8) |
+| **Santé — contexte de prélèvement d'un résultat de biologie (art. 9)** ([[D-497]], BP-05, déclaré le 2026-11-12 **avant** la création de la table) | `ContextePrelevement` (`contextes_prelevement` : dossier, résultat d'origine de la chaîne de correction, à jeun, supplémentation arrêtée, traitement susceptible d'interférer, épisode inflammatoire, grossesse au prélèvement — `oui`, `non` ou `inconnu` —, jour du cycle et délai depuis la dernière prise avec leur état `renseigne` ou `inconnu`, unité du délai `heure` ou `jour`, ligne remplacée, e-mail du praticien, date). Migration `20261112120000_contexte_prelevement_biologique_v1` (PR de migration seule), appliquée et constatée le 2026-11-12 (#2018) | **Circonstances du prélèvement notées par le praticien**, datées. Nouveau : non recueillies jusqu'ici, sinon dans le texte des commentaires du laboratoire. Aucun texte libre, aucune catégorie interprétative ; « inconnu » par défaut. En ajout seul ; écrite et lue par le praticien du dossier seul ; rien n'en part à l'IA, sauf, depuis [[D-539]], vers l'appel distinct qui restitue la biologie au praticien (rubrique 2, 2 quater), et rien n'en part dans l'export du dossier. Effacée nommément avec le dossier (rubrique 8) |
 | **Santé — décisions de parcours sur une version du protocole (art. 9)** ([[D-343]], BP-15, déclaré le 2026-10-22 **avant** la création de la table) | `DecisionParcours` (dossier, acte `pose` ou `retrait`, version du protocole, action facultative, nature — `preference`, `refus`, `debut`, `interruption`, `reprise`, `arret`, `revision` —, issue d'une révision — `maintenir`, `ajuster`, `arreter` —, motif pris dans une liste fermée, note libre, date de l'événement ou « inconnue », source « rapporté par le patient » ou « constaté par le praticien », version suivante, ligne remplacée, e-mail du praticien, date). Migration `20261022100000_decisions_parcours_v1` (PR de migration seule), à appliquer par release-db | **Faits de mise en œuvre et décision de révision**, consignés par le praticien du dossier seul, datés et motivés. Aucun motif d'efficacité, aucune colonne de score, de résultat ou d'attribution. Un motif ou une note peuvent dire un effet indésirable rapporté ; la note peut nommer un tiers. En ajout seul ; lu par le praticien du dossier seul ; aucune surface patient ; rien ne part à l'IA. Dossier mineur exclu. Effacées nommément avec le dossier (rubrique 8) |
 | **Santé — constat du praticien sur un besoin sans score (art. 9)** ([[D-347]], t40, déclaré le 2026-10-23 **avant** la création des tables) | `ConstatBesoinPraticien` (dossier, acte `pose` ou `retrait`, besoin — 2, 6, 7 ou 11 —, verdict — `a_soutenir`, `non_retenu`, `non_evaluable`, `sans_objet` —, motif pris dans une liste fermée — `non_ressorti_entretien`, `autre_besoin_d_abord`, `deja_accompagne`, `non_aborde`, `piece_attendue_manquante`, `donnee_a_verifier`, `hors_population`, `question_ne_se_pose_plus`, `autre` —, note libre facultative, date « à revoir le » facultative, constat remplacé, e-mail du praticien, date) ; `PieceConstatBesoinPraticien` (constat, ligne de résultat de biologie **ou** réponse de questionnaire du même dossier, facultative). Migration `20261023160000_constats_besoin_praticien_v1` (PR de migration seule), à appliquer par release-db | **Décision du praticien sur son dossier**, aval de `ResultatBiologique` et de `QuestionnaireReponse`. Aucune valeur, aucun analyte, aucun score, aucune date de prélèvement recopiés. Une note libre facultative peut porter une donnée de santé ou nommer un tiers. En ajout seul, par le praticien du dossier seul, lu par lui seul. Rien n'en part vers un tiers. Effacées nommément avec le dossier (rubrique 8) |
 | **Santé — fiches d'assiette remises au patient (art. 9)** (`D-251`) | `FicheAssietteRemise` (dossier, clic « Valider pour diffusion » qui l'a remise, action du protocole, version de la fiche remise et son empreinte, date de remise) | **Catégorie particulière — qualification du responsable de traitement, rendue le 2026-09-28.** La table ne recopie aucun texte, mais la version désigne une assiette, et **le nom d'une assiette révèle une indication** (`D-251` §9). Elle est rangée en art. 9 comme le protocole qui la porte (`ProtocolDraft`). Elle a été créée par la migration M2 (lot 7, appliquée le 2026-09-28). Elle s'alimente au clic « Valider pour diffusion » depuis l'ouverture de `WN_FICHES_ASSIETTE` (2026-09-28) ; la lecture patient est ouverte depuis le 2026-09-29 (`WN_FICHES_ASSIETTE_LECTURE`). Elle était encore vide à cette seconde ouverture (constat par conteneur). Le patient en est averti par un e-mail neutre qui ne nomme ni l'assiette ni la fiche (type `document_remis` du registre des correspondances). Elle est effacée nommément avec le dossier. La lecture de la fiche par le patient s'accuse dans `PortailLecturePatient`, espèce `fiche_assiette`, sans horodatage ; [[D-297]] (déclaré le 2026-10-14, avant sa migration) y ajoute le seul jour de la première ouverture, vu du praticien, vide pour les lectures antérieures : colonne `lu_le` (type date, sans défaut), créée par la migration `20261018150000_portail_lectures_lu_le_v1` (2026-10-18, appliquée le même jour : release-db 39134432362, constat par conteneur), dont deux triggers imposent le jour de l'horloge de la base, refusent toute modification du jour et tout changement du document lu. Elle s'écrit depuis le code de ai (2026-10-18), avec la phrase « Votre lecture est datée » en tête de chaque page qui consigne une lecture — protocole compris — ; seul l'encart praticien « Documents remis » la lit, sans compte ni agrégat. Elle restait vide jusqu'au code de ai, qui l'écrit avec la phrase « Votre lecture est datée » |
@@ -1243,7 +1462,7 @@ les pages du portail — **v5 depuis le 2026-09-07** (`D-141`).
 | Sous-traitant | Rôle tel qu'il est dit au patient |
 |---|---|
 | Scalingo | hébergement de l'application et de la base de données (HDS, France) |
-| Anthropic | assistance d'IA pour la préparation des synthèses, **pour la proposition de formulation de la priorité d'un objectif** (`D-167`), **pour la proposition d'un premier jet de « Ce que j'ai compris de vous »** (`D-168`) **et pour le relevé des valeurs des comptes rendus d'analyses biologiques** (`D-256` A4, déclaré le 2026-10-01 avant activation — §2 ter) |
+| Anthropic | assistance d'IA pour la préparation des synthèses (**et, dans un appel distinct, pour la restitution au praticien des résultats de biologie, des intervalles imprimés, du laboratoire et du contexte du prélèvement, depuis [[D-539]]**, déclaré avant ouverture — rubrique 2), **pour la proposition de formulation de la priorité d'un objectif** (`D-167`), **pour la proposition d'un premier jet de « Ce que j'ai compris de vous »** (`D-168`) **et pour le relevé des valeurs des comptes rendus d'analyses biologiques** (`D-256` A4, déclaré le 2026-10-01 avant activation — §2 ter) |
 | OpenAI | aide à la recherche du praticien dans sa bibliothèque de références scientifiques : reçoit le texte de la recherche saisie et celui des références à indexer ; l'application ne lui envoie ni le dossier, ni les réponses, ni les documents ; tout ce que le praticien saisit ou colle dans sa recherche lui parvient, une donnée de patient comprise (D4, [[D-299]], déclaré le 2026-10-15) |
 | Google Workspace | acheminement des e-mails Wellneuro, **y compris les documents adressés au patient** (bilan, comptes rendus) |
 | Google | connexion du praticien, **et du patient s'il la choisit** (seule l'adresse e-mail est transmise) |
@@ -1742,6 +1961,7 @@ ouverte.
   numéro de dossier) partirait. L'exposition nominative datée est **close au
   déploiement du lot 2** (#1428), et le patient en est informé par les v8 et
   v15 (§2 ter). La TIA reste à rédiger.
+- **Anthropic — cinquième flux, déclaré par [[D-539]] AVANT toute ouverture (2 quater).** La restitution de la biologie au praticien envoie au même destinataire, dans un appel distinct de la synthèse, les résultats de biologie non annulés du dossier, avec leurs intervalles imprimés, le laboratoire et le contexte du prélèvement. Ce sont des données de santé au titre de l'article 9. Aucune identité : ni nom, ni date de naissance, ni réponse aux questionnaires, ni anamnèse. Ce qui s'ajoute : le contexte du prélèvement, saisi par le praticien, et les valeurs saisies à la main, qui ne partaient jamais ; pour un compte rendu relevé par l'IA (quatrième flux), une seconde transmission de ses valeurs. Même canal, même réserve non levée sur la localisation de l'inférence et la rétention des entrées que les quatre flux ci-dessus.
 
 - **Google** — connexion du praticien seul.
 
@@ -2291,20 +2511,43 @@ l'AIPD elle-même.
 directrices du G29 (WP248 rév. 01, reprises par le CEPD), à cocher ou non par
 le responsable, chacun avec son motif :
 
-- [ ] données sensibles ou à caractère hautement personnel —
-- [ ] personnes vulnérables —
-- [ ] traitement à grande échelle —
-- [ ] évaluation ou notation —
-- [ ] décision automatisée avec effet juridique ou similaire —
-- [ ] surveillance systématique —
-- [ ] croisement ou combinaison d'ensembles de données —
-- [ ] usage innovant ou nouvelle solution technologique (modèles d'IA des rubriques 2 bis et 2 ter compris) —
-- [ ] traitement qui empêche d'exercer un droit ou de bénéficier d'un service —
+Cochés par le responsable le 2026-11-18, à la revue de nécessité de
+[[D-537]] §6 (questions `20261118-2120-c` à `-c-3`). Chaque motif est le
+sien, tel qu'il l'a retenu en session :
+
+- [x] données sensibles ou à caractère hautement personnel — données de
+  santé (art. 9), et informations intrusives : une question sur le suicide
+  dans quatre questionnaires et dans l'anamnèse, d'autres sur le tabac,
+  l'alcool et le cancer.
+- [x] personnes vulnérables — **pour les mineurs seuls**, dès la première
+  admission d'un jeune de 15 à 17 ans.
+- [ ] traitement à grande échelle — cabinet unique en bêta (considérant 91),
+  à revoir à la commercialisation ([[D-286]] §2). Le considérant 91 vise le
+  médecin, l'autre professionnel de santé ou l'avocat qui exerce seul. Il ne
+  vaut ici que par analogie, car le responsable n'est pas professionnel de
+  santé (rubrique 4, « Périmètre »).
+- [x] évaluation ou notation — scores, bandes et orientation calculés sur
+  des données de santé, servis au praticien seul.
+- [ ] décision automatisée avec effet juridique ou similaire — le praticien
+  relit chaque document avant qu'il parte au patient ; la garde d'âge
+  applique une règle de protection arbitrée, sans profil.
+- [ ] surveillance systématique — saisie volontaire, sans observation ni
+  capteur ; l'alerte de sécurité au praticien n'en est pas une.
+- [ ] croisement ou combinaison d'ensembles de données — une seule source,
+  la personne, pour une seule finalité.
+- [x] usage innovant ou nouvelle solution technologique (modèles d'IA des rubriques 2 bis, 2 ter et 2 quater compris) —
+  IA générative appliquée à des données de santé (synthèse, relevé en
+  vision des comptes rendus biologiques).
+- [ ] traitement qui empêche d'exercer un droit ou de bénéficier d'un
+  service — la garde d'âge est une règle d'organisation du service, pas un
+  traitement qui évalue la personne pour lui refuser quelque chose.
 
 Conclusion du responsable : **AIPD non requise à ce stade.** Il statuera à
 nouveau quand le produit sera achevé, ce qui est encore loin d'être le cas.
 Déclaration rendue en session le 2026-10-04, consignée par l'assistant. Les
-critères ci-dessus n'ont pas été renseignés un à un.
+critères ci-dessus n'ont pas été renseignés un à un. — 2026-11-18 : cette
+conclusion ne vaut plus que pour les adultes. Pour le volet mineurs, l'AIPD
+est requise (voir plus bas, « Revue de nécessité du 2026-11-18 »).
 
 **Note du 2026-10-05, versée au réexamen ([[D-267]] §8).** Le relevé de la
 rubrique 2 ter conserve désormais aussi l'intervalle de référence et la marque
@@ -2325,7 +2568,53 @@ des cinq événements de [[D-286]] §2, à l'ouverture de l'étage assistant, à
 nouveau destinataire ou nouvelle catégorie de données, et au plus tard le
 2027-06-30. Conclusion du responsable maintenue au 2026-10-15 : **AIPD non
 requise**. Les neuf critères ci-dessus restent à cocher de sa main, chacun avec
-son motif ([[D-283]] §9) ; ce motif porte la conclusion.
+son motif ([[D-283]] §9) ; ce motif porte la conclusion. — 2026-11-18 : les
+neuf critères sont cochés ou laissés vides, chacun avec son motif (revue
+qui suit).
+
+**Revue de nécessité du 2026-11-18 ([[D-537]] §6), avant le premier
+mineur.** Elle pèse le cumul que relève l'avis GPT : données de santé,
+mineurs, IA et informations intrusives. Les neuf critères sont désormais
+cochés de la main du responsable, chacun avec son motif (ci-dessus). Pour
+les adultes, trois critères sont remplis (1, 4, 8), et quatre dès qu'un
+mineur est admis (2 en plus). Selon la CNIL et WP248, un traitement qui
+remplit deux critères appelle en principe une AIPD. Pour l'écarter, il faut
+un motif écrit qui montre l'absence de risque élevé.
+
+Le responsable avait d'abord conclu « non requise, avec motif ». Invité à
+écrire ce motif, il est revenu sur cette conclusion (questions
+`20261118-2120-c-3` et `-c-4`).
+
+Conclusion du responsable au 2026-11-18 (`-c-5`) :
+
+- **AIPD requise pour le volet mineurs**, c'est-à-dire l'admission des
+  jeunes de 15 à 17 ans. Elle est finie et validée avant la première
+  admission d'un mineur ([[D-537]] §5). La pause reste en service d'ici là.
+- **Pour les adultes, la conclusion « non requise » est maintenue en
+  l'état.** Elle repose sur trois critères cochés, sans motif écrit
+  d'absence de risque élevé. Cet écart est porté à la rubrique 14.
+- **Ouverture** : la session prépare un projet suivant la trame B
+  ci-dessous, à partir du dossier et des faits du code, sans conclure sur
+  les risques. Le responsable juge la vraisemblance, la gravité et le
+  risque résiduel, puis valide le projet en le datant. Le projet est suivi
+  au carnet par le lot C `aipd-mineurs`, préalable à l'admission. La pièce
+  va hors dépôt si elle décrit des failles exploitables.
+
+**Projet d'AIPD du volet mineurs, 2026-11-18** (lot `aipd-mineurs`) :
+`docs/rgpd/AIPD_MINEURS.md`. Il reste dans le dépôt, car il ne décrit aucune
+faille exploitable. Jugements du responsable en session (questions
+`20261118-2227-c` à `-c-7`) :
+- accès illégitime : gravité importante, vraisemblance limitée ;
+- modification non désirée : gravité limitée, vraisemblance limitée ;
+- disparition : gravité limitée, vraisemblance négligeable ;
+- une mesure nouvelle est retenue comme condition de l'admission : le jeune
+  donne sa propre adresse e-mail. Trois sont écartées ;
+- risque résiduel acceptable ; l'accès illégitime reste à suivre ;
+- avis des personnes concernées non recueilli, avec motif écrit.
+
+**L'AIPD n'est pas encore validée.** Sa validation datée vient après le
+cadrage de J3-mineurs, quand les passages qui en dépendent sont complétés,
+et avant la première admission.
 
 **B. Si elle est requise : l'AIPD elle-même**, en pièce dédiée.
 
@@ -2349,7 +2638,7 @@ dossier en garde alors la conclusion, la date et l'emplacement.
 | 1 | Responsable | Identité juridique exacte | Responsable | 2027-06-30 (était 2026-10-21) | ici, rubrique 1 |
 | 1 | Responsable | **Clos le 2026-10-13 ([[D-284]] §6) : pas d'obligation de désigner un DPO à cette échelle, selon l'avis reçu ; analyse datée à revoir à chaque changement d'échelle.** *Historique :* aucun DPO désigné, le responsable est le point de contact ([[D-283]] §7). Contradiction DPO (G-TRUST-02 vs D-005) | Responsable | fermé | `docs/DECISIONS.md` |
 | 3 | Base légale | ~~Qualification, non rédigée à ce jour~~ — **qualifiée le 2026-10-04** par déclaration du responsable ([[D-265]] §3) | Responsable | fermé | ici, rubrique 3 |
-| 4 | Personnes | **2026-10-13 ([[D-284]] §3-4) : mineur jusqu'à 18 ans, entrée validée par un titulaire de l'autorité parentale, âge inconnu demandé avant toute fonction de santé ; 2026-10-22 ([[D-344]]) : version provisoire de la rubrique ; « un seul titulaire suffit » et « aucun secret opposable » suspendus ; avocat consulté (six questions : art. 8, consentement du jeune aux données de santé, acte usuel, accès parental, droits du jeune, seuils d'âge).** *Historique :* encadrés, non exclus ([[D-283]] §5). Cas des mineurs | Responsable | 2027-06-30 (était 2026-10-21) | `SOURCES_ET_VALIDATIONS.md` |
+| 4 | Personnes | **2026-10-13 ([[D-284]] §3-4) : mineur jusqu'à 18 ans, entrée validée par un titulaire de l'autorité parentale, âge inconnu demandé avant toute fonction de santé ; 2026-10-22 ([[D-344]]) : version provisoire de la rubrique ; « un seul titulaire suffit » et « aucun secret opposable » suspendus ; avocat consulté (six questions : art. 8, consentement du jeune aux données de santé, acte usuel, accès parental, droits du jeune, seuils d'âge) ; 2026-11-17 ([[D-536]]) : avocat reporté à la commercialisation, point 7 de [[D-449]] §6, avis GPT d'abord ; 2026-11-17 ([[D-537]]) : huit arbitrages sur l'avis GPT — formule (a) sous conditions, (b) abandonnée, H1-H4 réécrites, plancher à 15 ans, admission sans l'avocat, revue de nécessité de l'AIPD, texte 2B à réécrire.** *Historique :* encadrés, non exclus ([[D-283]] §5). Cas des mineurs | Responsable | 2027-06-30 (était 2026-10-21) | `SOURCES_ET_VALIDATIONS.md` |
 | 5 | Catégories | **Soldé le 2026-10-13 ([[D-283]] §3) : les six classées en catégorie particulière, la liste du banc est vide.** *Historique — constat d'origine :* **Six tables filles de `patients` ne sont pas déclarées** — dix-sept au 2026-09-09, mesuré en comparant `schema.prisma` à cette rubrique (38 modèles portaient alors une relation vers `Patient`, 21 y étaient cités ; ils sont 46 et 40 au 2026-09-13). ONZE noms sont sortis de la liste depuis, dont dix le 2026-09-13 : `DecisionPrioritySelection`, déclarée avec `EcartementProposition` sous une même entrée ; et neuf **dettes périmées** — déjà déclarées depuis le rattrapage `D-167`, mais laissées dans la liste, donc DISPENSÉES de vérification alors qu'elles n'en avaient plus besoin. Les qualifier (art. 9 ou non) reste un acte juridique, pas une écriture de code ; la liste vit dans `rubrique5.modeles.test.ts`, qui **rougit sur toute table ajoutée après cette date** et, depuis la purge, sur toute déclaration retirée pour l'une des dix — le passif est ouvert, la récidive est fermée | Responsable + conseil | fermé | ici, rubrique 5 |
 | 5 | Catégories | ~~Catégorie « résultats biologiques » absente~~ — **déclarée le 2026-09-09** (quatre tables du rayon), mais **après** la pose de `WN_CB_RESULTS_ENABLED` que la rubrique 2 posait comme conditionnée à cette déclaration préalable. Écart daté en rubrique 2 ; portée nulle sur les données (0 ligne au constat) | — | fermé | ici, rubriques 2 et 5 |
 | 6 | Sous-traitants | Aucun DPA archivé — forme connue depuis la réponse du 2026-08-11 (DPA + annexe HDS distincte, signature séparée requise) mais ~~**signature et archivage non faits**~~ — **annexe HDS signée le 2026-08-30** (déclaration du responsable, consignée le 2026-08-31, `D-121`) ; **restent dus : l'archivage du document signé, et la signature + archivage du DPA** | Responsable | 2027-06-30 (était : ~~avant bascule Scalingo~~ — ordre suspendu par `D-078` : **dès réception de l'annexe** (demandée 2026-08-12, relancée 2026-08-19 — **canal et dates vérifiés au fil le 2026-08-20**, rubrique 6 ; **signée le 2026-08-30**) ; ~~en tout état de cause **avant tout décommissionnement**~~ — **plus depuis `D-080`** (2026-08-22) ; archivage dû **avant la revue du 2026-10-21**) | `CHECKLIST_FINALISATION.md` §F |
@@ -2369,7 +2658,7 @@ dossier en garde alors la conclusion, la date et l'emplacement.
 | 11 | Information | **Clos le 2026-10-13 ([[D-283]] §8) : l'information orale est consignée comme non datée.** *Historique — constat d'origine :* **Date de délivrance non établie** et **modalité de retrait non consignée** — deux des quatre composantes du trou d'origine ; la période déclarée (« en continu depuis la souscription HDS ») ne fournit pas de point de départ tenu pour établi par le dépôt | Responsable | fermé | ici, rubrique 11 |
 | 11 | Information | **Clos le 2026-10-13 ([[D-283]] §8) : les accusés des versions écrites en tiennent lieu.** *Historique — constat d'origine :* **Aucune trace écrite par participant** de l'information sur l'écart HDS — aucun acquittement individuel ne la porte ; périmètre des personnes couvertes non établi | Responsable | fermé | ici, rubrique 11 |
 | 11 | Information | **2026-10-13 ([[D-283]] §8) : un seul dossier reste à la v8 (agrégats, conteneur) ; le praticien l'informe lui-même, geste daté à consigner.** **Deux patients ont accusé `donnees_confidentialite@v8` sans avoir vu `v9`**, qui corrige la promesse inexacte sur le partage. L'accusé de `v9` étant exigé **au portail**, il ne les atteindra qu'à leur prochaine visite — or la production dit qu'on y entre le jour même ou jamais. Deux personnes, mesurées le 2026-09-19 : ce n'est pas un mécanisme à construire mais un geste à décider. Ce qui part vers un patient reste un geste du responsable | Responsable | 2027-06-30 (était : **à fixer** — au plus tôt, en tout état de cause avant le 2026-10-21) | ici, rubrique 11 |
-| 13 | AIPD | ~~Absente~~ — **non requise à ce stade**, déclaration du responsable du 2026-10-04 ([[D-265]] §3), **critères du seuil non renseignés** ; à réexaminer à l'achèvement du produit ; **maintenue au 2026-10-15, déclencheur remplacé** ([[D-313]]) | Responsable | réexamen au premier événement de [[D-313]] §2, au plus tard 2027-06-30 (était : à l'achèvement du produit ; avant, 2026-10-21) | ici, rubrique 13 |
+| 13 | AIPD | ~~Absente~~ — **non requise à ce stade**, déclaration du responsable du 2026-10-04 ([[D-265]] §3), **critères du seuil non renseignés** ; à réexaminer à l'achèvement du produit ; **maintenue au 2026-10-15, déclencheur remplacé** ([[D-313]]) ; **2026-11-18 ([[D-537]] §6) : critères cochés un à un. AIPD requise pour le volet mineurs, préalable à la première admission (lot `aipd-mineurs`). Pour les adultes, « non requise » est maintenue malgré trois critères cochés (1, 4, 8), sans motif écrit d'absence de risque élevé : écart ouvert.** **2026-11-18 : projet d'AIPD mineurs écrit et risques jugés (`docs/rgpd/AIPD_MINEURS.md`) ; validation après le cadrage de J3-mineurs.** | Responsable | AIPD mineurs : avant la première admission ; adultes : réexamen au premier événement de [[D-313]] §2, au plus tard 2027-06-30 | ici, rubrique 13 |
 
 Le **2026-10-21** était l'échéance par défaut, date de revue de la dérogation.
 La dérogation est reconduite sans terme ([[D-265]] §1) : le responsable a fixé

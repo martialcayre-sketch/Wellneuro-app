@@ -503,3 +503,48 @@ describe('BibliothequePanel — déclaration « question sur le suicide » (NF-7
     });
   });
 });
+
+// P37 (PRA-6h, pra6-constat §3.2) : l'aperçu est `aria-hidden` ; ses champs
+// ne doivent pas rester atteignables au clavier (axe `aria-hidden-focus`).
+// `inert` les retire de l'ordre de tabulation sans changer l'apparence.
+describe('BibliothequePanel — aperçu hors de l’ordre de tabulation (PRA-6h)', () => {
+  it('la zone des champs de l’aperçu porte `inert` et `aria-hidden`', async () => {
+    const ok = (data: unknown) =>
+      Promise.resolve({ ok: true, status: 200, json: async () => data } as Response);
+    vi.stubGlobal('fetch', (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes('/api/praticien/bibliotheque/apercu')) {
+        return ok({
+          apercu: {
+            id: ENTREE_BASE.id,
+            aliasDe: null,
+            titre: ENTREE_BASE.titre,
+            instructions: null,
+            administrationMode: null,
+            nbQuestions: 1,
+            scoreMax: 3,
+            sections: [
+              {
+                id: 'S1',
+                questions: [
+                  { id: 'Q1', texte: 'Je dors mal.', type: 'likert', options: [{ v: 0, l: 'Jamais' }, { v: 1, l: 'Souvent' }] },
+                ],
+              },
+            ],
+          },
+        });
+      }
+      if (url.includes('/api/praticien/file-envoi')) return ok({ brouillons: [] });
+      if (url.includes('/api/praticien/instruments')) return ok({ instruments: [] });
+      if (url.includes('/api/praticien/patients')) return ok({ patients: [] });
+      return ok({});
+    });
+    render(<BibliothequePanel entrees={[ENTREE_BASE]} />);
+
+    const zone = await screen.findByTestId('apercu-questionnaire-champs');
+    expect(zone.hasAttribute('inert')).toBe(true);
+    expect(zone.getAttribute('aria-hidden')).toBe('true');
+    // Les champs sont bien là — l'apparence ne change pas —, mais dans la zone inerte.
+    expect(zone.querySelector('input, select, textarea, button')).not.toBeNull();
+  });
+});

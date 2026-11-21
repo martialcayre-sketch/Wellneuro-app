@@ -1,8 +1,8 @@
 # Registre sanitaire du corpus clinique
 
-`source_registry.json` contient 643 notices normalisées : 391 issues du pack WN
+`source_registry.json` contient 795 notices normalisées : 391 issues du pack WN
 Ultimate v2 (`NNFC1_Annee1`, `NNPP2_Annee2`), 116 instruments du cabinet
-(`INSTRUMENTS_CABINET`), et 136 sources externes (`SOURCES_EXTERNES` — BP-07 :
+(`INSTRUMENTS_CABINET`), et 288 sources externes (`SOURCES_EXTERNES` — BP-07 :
 avis d'agence, recommandation, essai, règlement, `WN-SRC-0508` à `0511`, puis
 pour la position P5 v0.3 une recommandation de l'OMS, `WN-SRC-0555` ; besoin 2 :
 trois avis d'agence, un rapport d'évaluation, une recommandation de pratique,
@@ -22,7 +22,7 @@ résumé des caractéristiques du produit et une fiche du NIH, `WN-SRC-0571` à
 `0521` et `0524` ; porte 4 (D-403) : deux recommandations de pratique sur le
 sommeil, sources de contexte de deux bornes déclarées techniques, et les
 repères de consommation de l'Assurance Maladie, `WN-SRC-0574` à `0576`, sans
-extrait ingéré ; besoin 2, vitamines B9 et B12 : deux fiches du NIH, un avis de
+extrait ingéré (sauf `0575`, versé au besoin 5) ; besoin 2, vitamines B9 et B12 : deux fiches du NIH, un avis de
 l'EFSA, une recommandation de pratique du NICE, une fiche des CDC et un
 document de la HAS, `WN-SRC-0577` à `0582`, les lignes des vitamines B9 et B12
 de la DGCCRF étant lues dans `0521` ; point d'étape (D-407 à D-413, m16) : huit
@@ -38,7 +38,8 @@ ingéré ;
 mesure distincte de la fatigue et du sommeil (D-425, m39) : cinq études de
 validation, deux études de différence minimale et deux pages d'ayants droit,
 `WN-SRC-0606` à `0614`, et une source secondaire sur les droits du MFI-20,
-`WN-SRC-0621`, sans extrait ingéré ;
+`WN-SRC-0621`, sans extrait ingéré (sauf `0607`, versé au besoin 5, et le
+résumé seul de `0609`) ;
 borne des axes prioritaires et `DC-29` (D-426, D/45) : six sources de
 contexte, `WN-SRC-0615` à `0620`, sans extrait ingéré ;
 fenêtres de fraîcheur de l'orientation (D-430, D/46) : trois études de
@@ -69,10 +70,72 @@ publications primaires d'instruments et d'une étude primaire, `WN-SRC-0666` à
 `0668`, puis le guide d'analyse d'un questionnaire d'activité physique de
 l'OMS, `WN-SRC-0669`, et des lignes directrices de l'OMS sur l'activité
 physique et la sédentarité, `WN-SRC-0670`, et l'article de développement d'un
-instrument de santé musculo-squelettique, `WN-SRC-0671`),
-dont seuls des extraits ciblés sont ingérés. Le manuscrit soumis `WN-SRC-0546`
+instrument de santé musculo-squelettique, `WN-SRC-0671`, enfin, fournis par le
+responsable le 2026-11-16, les textes intégraux de `0575`, `0666` et `0667`,
+versés sur leur notice, et deux publications d'instruments, `WN-SRC-0697` et
+`0698`, puis, le 2026-11-17, le texte intégral de `0607`, versé sur sa notice,
+un formulaire d'un tiers, `WN-SRC-0699`, et les pages d'un manuel qui
+reproduisent un instrument du cabinet, `WN-SRC-0700`, puis, le même jour, la
+publication fondatrice de l'inventaire de fatigue, `WN-SRC-0701`, et la
+validation de son adaptation canadienne-française, `WN-SRC-0702` ;
+besoin 9, sensations-émotions fondamentales et gestion du stress : publications
+et traductions des instruments servis, recommandations de méthode sur deux
+biomarqueurs, une monographie communautaire, une revue systématique, une
+méta-analyse, une définition de classification, une recommandation de la HAS et
+des instruments de régulation émotionnelle, `WN-SRC-0672` à `0696`, dont quatre
+notices sans extrait faute de texte obtenu (`0679`, `0681`, `0692`, `0696`) ;
+les textes de `0680`, `0687` et `0693`, et le texte intégral de `0605`, ont été
+fournis par le responsable le 2026-11-16 et versés sur leur notice ;
+besoins 3 et 8, neuf textes intégraux en accès libre, ingérés le 2026-11-19 sur
+accord du responsable : méta-analyses et essais sur le rythme alimentaire et
+les instruments de mesure de l'heure des repas, `WN-SRC-0703` à `0709`, puis une
+méta-analyse sur le savourer et un essai sur l'activation comportementale,
+`WN-SRC-0710` et `0711` ; besoin 10, huit textes libres dont la licence
+n'exclut ni la fouille de textes ni l'IA, ingérés le 2026-11-19 sur accord du
+responsable : un résumé des caractéristiques du produit de l'ANSM, `WN-SRC-0712`,
+une méta-analyse et son corrigendum, `0713` et `0714`, deux études de validation
+d'échelles, `0715` et `0716`, une revue critique d'un biomarqueur, `0717`, une
+revue parapluie, `0718`, et une analyse de la mélatonine, `0719` ; puis, en
+notice seule faute de licence (exclusion de la fouille de textes et de l'IA), un
+essai de 2026 sur l'affect positif, `WN-SRC-0720` ; enfin neuf notices seules
+du besoin 10, `WN-SRC-0721` à `0729`, faute de licence qui admette le texte
+(CC BY-NC-ND, licence non déclarée, conditions d'usage excluant l'IA) ; besoin
+12, neuf textes libres ingérés le 2026-11-20 sur accord du responsable (CC BY,
+CC BY-NC, et une méta-analyse dont la licence CC BY de l'article a été retenue
+contre la réserve générale de fouille de textes du pied de page de l'éditeur) :
+revues et validations d'échelles de solitude et de soutien social, une revue
+parapluie et une méta-analyse d'interventions, une validation d'échelle de
+connexion à la nature, une revue exploratoire sur l'inflammation, un essai de
+prescription sociale, `WN-SRC-0730` à `0738`, puis une étude de trois cohortes
+sur l'isolement social et l'inflammation, `WN-SRC-0739`, ingérée le 2026-11-20
+sur un second accord du responsable (licence CC BY déposée par l'éditeur et
+mention de fouille de textes du dépôt de manuscrits, page de l'éditeur
+illisible) ; six notices seules, `WN-SRC-0740` à `0745`, faute de licence qui
+admette le texte ou de lecture de la politique de fouille de l'éditeur ; besoin
+6, dix textes libres ingérés le 2026-11-20 sur accord du responsable (CC BY, CC
+BY-NC, et un manuscrit d'auteur portant la mention de fouille de textes) :
+revues et essais de respiration consciente, une revue sur le prāṇāyāma, une
+revue de cas d'événements indésirables du yoga, une étude de laboratoire sur
+l'hyperventilation avant apnée, une méta-analyse sur l'oxymétrie de pouls, trois
+validations ou revues d'instruments, des recommandations sur la variabilité de la
+fréquence cardiaque, `WN-SRC-0746` à `0755` ; quatre notices seules,
+`WN-SRC-0756` à `0759`, faute de licence qui admette le texte ou de lecture de la
+licence chez l'éditeur ; vidéos de cours et besoin 7, vingt-trois textes libres
+ingérés le 2026-11-20 sur accord du responsable (CC BY, CC BY-NC, CC BY-NC-SA et
+trois manuscrits d'auteur portant la mention de fouille de textes) : revues,
+essais et recommandations sur la respiration, la variabilité cardiaque, le yoga
+nidra, la pleine conscience, l'EMDR, la lumière, les odeurs, les espaces verts,
+l'audition et des outils de mesure, `WN-SRC-0760` à `0782` ; quarante et une
+notices seules, `WN-SRC-0783` à `0823`, dont trois textes à ingérer après
+fourniture du PDF par le responsable (`WN-SRC-0784`, `0802`, `0804`) et quatre
+documents officiels), dont seuls des extraits ciblés sont ingérés. Les quatorze vidéos de cours du
+praticien, `WN-SRC-0268` à `0281`, sont ingérées depuis le 2026-11-20 comme
+pièces internes (transcription automatique non relue, erreurs d'écoute évidentes
+seules corrigées et listées à la notice, claims en attente de validation ; aucun
+texte au dépôt). Le manuscrit soumis `WN-SRC-0546`
 est `deprecated` : remplacé par sa version publiée `WN-SRC-0564`, ses claims ne
-sont pas retenus. Les plages `0525` à `0539` et `0556` à `0559` sont
+sont pas retenus ; ses claims signés sont exclus de la recherche et ses passages
+inactifs depuis la migration du 2026-11-19 (D-490), rien n'étant supprimé. Les plages `0525` à `0539` et `0556` à `0559` sont
 laissées à une autre session d'ingestion ; `0628` à `0630` sont restés libres,
 marge prise avant l'ingestion de l'iode et du sélénium. Il s'agit d'un inventaire documentaire, pas d'un
 corpus runtime.
@@ -139,7 +202,11 @@ corpus runtime.
   directrices (`0670`, CC BY-NC-SA 3.0 IGO, usage non commercial) restent à
   vérifier ; `0671` est sous licence CC BY 4.0, statut qui vaut pour les
   extraits de l'article, l'usage de l'instrument relevant de la licence de son
-  détenteur. La recommandation de l'OMS
+  détenteur ; au 2026-11-16, pour le besoin 9, `0686` (EMA, reproduction
+  autorisée avec citation de la source), `0688` et `0622` (CC BY 4.0) sont
+  couverts pour les extraits ; les résumés sous droits de l'éditeur, les pages
+  de l'OMS et des auteurs du DASS et la fiche de la HAS restent à vérifier.
+  La recommandation de l'OMS
   (`WN-SRC-0555`, tous droits réservés), dont un extrait court est ingéré pour
   usage interne sur arbitrage du responsable, reste à vérifier.
 - Quarantaine sanitaire (`lifecycleStatus: quarantined`) : relue au registre

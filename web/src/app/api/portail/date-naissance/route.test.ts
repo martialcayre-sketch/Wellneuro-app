@@ -91,7 +91,7 @@ describe('POST /api/portail/date-naissance', () => {
   it('★ écrit la date au dossier DE LA SESSION, seulement si elle manque encore, et rend « majeur »', async () => {
     const res = await POST(requete({ dateNaissance: '1985-03-12', idPatient: 'PAT_AUTRE' }));
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ ok: true, statutAge: 'majeur' });
+    expect(await res.json()).toEqual({ ok: true, statutAge: 'majeur', trancheMineur: null });
     expect(prisma.patient.updateMany).toHaveBeenCalledWith({
       where: { idPatient: 'PAT_SOPHIE', dateNaissance: null },
       data: { dateNaissance: '1985-03-12' },
@@ -102,7 +102,14 @@ describe('POST /api/portail/date-naissance', () => {
     const quinzeAns = new Date(Date.now() - 15 * 366 * 24 * 3600 * 1000).toISOString().slice(0, 10);
     const res = await POST(requete({ dateNaissance: quinzeAns }));
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ ok: true, statutAge: 'mineur' });
+    expect(await res.json()).toEqual({ ok: true, statutAge: 'mineur', trancheMineur: '15_17' });
+  });
+
+  it('une date de moins de 15 ans rend sa tranche : la variante du texte 2B (D-537 §7)', async () => {
+    const douzeAns = new Date(Date.now() - 12 * 366 * 24 * 3600 * 1000).toISOString().slice(0, 10);
+    const res = await POST(requete({ dateNaissance: douzeAns }));
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, statutAge: 'mineur', trancheMineur: 'moins_15' });
   });
 
   it('★ une date lisible déjà au dossier ne s’écrase pas : 409, rien n’est écrit', async () => {

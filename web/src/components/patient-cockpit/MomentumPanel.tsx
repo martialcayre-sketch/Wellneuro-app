@@ -63,7 +63,7 @@ export function MomentumPanel({
       className="rounded-lg border border-border/60 p-3"
     >
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h4 className="text-sm font-semibold text-foreground">Momentum{libelle ? ` — ${libelle}` : ''}</h4>
+        <h3 className="text-sm font-semibold text-foreground">Momentum{libelle ? ` — ${libelle}` : ''}</h3>
         <span className="text-xs text-muted-foreground">
           Δ vs {nomAncre} aux jalons mesurés — jamais une prédiction
         </span>

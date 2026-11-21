@@ -65,7 +65,7 @@ export function QuestionField({ question, value, onChange, displaySelectAsRadioC
           aria-labelledby={legendeId}
           value={value}
           onChange={e => onChange(e.target.value)}
-          className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+          className="w-full h-11 px-3 py-2 border border-border rounded-lg text-sm bg-surface text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
         >
           <option value="">— Choisissez —</option>
           {question.options.map(opt => (

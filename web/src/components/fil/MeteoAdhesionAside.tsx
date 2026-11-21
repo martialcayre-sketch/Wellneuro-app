@@ -17,7 +17,14 @@ export function MeteoAdhesionAside() {
 
   useEffect(() => {
     fetch('/api/praticien/meteo-adhesion')
-      .then(async r => (await r.json()) as MeteoAdhesionApiResponse)
+      .then(async r => {
+        // Une réponse hors contrat (500 d'un autre émetteur, `{error}`) est un
+        // échec de lecture, pas une liste : elle tombe dans l'état indisponible
+        // du panneau au lieu de faire tomber la page (PRA-6h).
+        const json = (await r.json()) as MeteoAdhesionApiResponse;
+        if (!r.ok || !Array.isArray(json?.determinees)) throw new Error('Réponse hors contrat');
+        return json;
+      })
       .then(setData)
       .catch(() => setData({ ok: false, determinees: [], nbIndeterminees: 0, unavailable: true }))
       .finally(() => setLoading(false));
@@ -56,7 +63,7 @@ export function MeteoAdhesionAside() {
             <div key={ligne.idPatient} className="flex items-center justify-between gap-2">
               <Link
                 href={`/dashboard/patients/${ligne.idPatient}`}
-                className="min-w-0 truncate text-sm text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                className="min-h-11 min-w-0 truncate py-3 text-sm text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
               >
                 {ligne.patient}
               </Link>

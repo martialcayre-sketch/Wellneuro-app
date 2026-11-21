@@ -1,6 +1,6 @@
 // Banc de test du garde-fou des commandes Bash.
 //
-//   node --test .claude/hooks/
+//   node --test .claude/hooks/*.test.mjs
 //
 // Pourquoi committé plutôt que rejoué à la main : la première version du
 // masquage des heredocs avait été validée sur dix cas choisis, tous verts — et
@@ -124,6 +124,110 @@ for (const cmd of [
 test("un --check d'une autre commande n'excuse pas prisma format", () => {
   assert.equal(verdict("npx prisma format && npm run lint -- --check"), "refus");
 });
+
+// ── Modificateurs zsh : `$VAR:r…` non accolé (lot autonomie-pieges-restes) ───
+
+for (const cmd of [
+  'git push origin "$NEW:refs/heads/ma-branche"',
+  "git push origin $NEW:refs/heads/ma-branche",
+  'git update-ref refs/heads/x "$SHA" && git push origin "$SHA:refs/heads/x"',
+  "scp fichier $HOTE:tmp/",
+  'git push origin "$1:refs/heads/x"',
+  // P2 de wn-reviewer : `:fe` et `:gh` (branches `feat/…`, `gh-pages`).
+  'git push origin "$SHA:feat/x"',
+  'git push origin "$SHA:gh-pages"',
+  // P2 de wn-reviewer : une apostrophe entre guillemets doubles n'ouvre rien.
+  `git commit -m "l'ajout" && git push origin "$NEW:refs/heads/x" && echo "c'est fait"`,
+  `echo "branche '$NEW:refs'"`,
+  // Un heredoc à délimiteur nu développe.
+  "cat <<FIN\n$NEW:refs/heads/x\nFIN",
+  // P1 de wn-reviewer : une ligne vide ne clôt pas un heredoc cité.
+  "cat > /tmp/f <<'EOF'\na\n\nb c'est\nEOF\ngit push origin \"$NEW:refs/heads/x\"",
+  // Codex : les apostrophes d'un heredoc nu sont du texte, zsh y développe.
+  "cat <<FIN\n'$NEW:refs/heads/x'\nFIN",
+  // Routé de #2184 (PR-Agent) : l'apostrophe du corps nu masquait le push.
+  "git commit -F - <<EOF\nl'ajout\nEOF\ngit push origin \"$NEW:refs/heads/x\"",
+  // Un heredoc nu après un heredoc cité reste lu.
+  "cat <<'A'\nl'ajout\nA\ncat <<B\n$NEW:refs/heads/x\nB",
+  // `\\$` littéral, puis un `$` développé dans le même corps.
+  "cat <<FIN\n\\$NEW:refs\n$NEW:refs/heads/x\nFIN",
+  // P2 de wn-reviewer : deux heredocs sur une ligne, cité puis nu.
+  "cat <<'A' <<B\nx\nA\nl'ajout\n$NEW:refs/heads/x\nB",
+  // P3 de wn-reviewer : `<<<` n'ouvre pas de heredoc.
+  "cat <<<'true'\ngit push origin \"$NEW:refs/heads/x\"\ntrue",
+  // P3 de wn-reviewer : `  EOF` indenté ne clôt pas un `<<EOF`.
+  "cat <<EOF\n  EOF\nl'ajout\n$NEW:refs/heads/x\nEOF",
+  // P1 de wn-reviewer (écart) : un `<<'X'` cité sans terminateur n'est pas un heredoc.
+  "git commit -m \"doc: heredoc <<'FIN' cite\"\ngit push origin \"$NEW:refs/heads/x\"",
+  "git commit -m 'doc: <<\"EOF\" cite'\ngit push origin \"$NEW:refs/heads/x\"",
+  "# voir <<'EOF'\ngit push origin \"$NEW:refs/heads/x\"",
+  // Le délimiteur est un mot entier : `<<"E"OF` termine sur `EOF`.
+  "cat <<\"E\"OF\nx\nEOF\ngit push origin \"$NEW:refs/heads/x\"",
+  "cat <<'E'OF\nx\nEOF\ngit push origin \"$NEW:refs/heads/x\"",
+  // Codex : entre guillemets doubles, `\\\\` se réduit, `<<"E\\\\OF"` termine sur `E\\OF`.
+  "cat <<\"E\\\\OF\"\nl'ajout\nE\\OF\ngit push origin \"$NEW:refs/heads/x\"",
+  // Partie 4, routé de #2192 : un faux `<<'EOF'` (guillemets, `$(…)`, commentaire)
+  // suivi d'une vraie ligne `EOF` ne masque plus ce qui les sépare.
+  "git commit -m \"voir <<'EOF'\" && git push origin \"$NEW:refs/heads/x\"\nEOF",
+  "git commit -m \"voir <<'EOF'\"\ngit push origin \"$NEW:refs/heads/x\"\nEOF",
+  "echo \"$(echo \"<<'EOF'\")\"\ngit push origin \"$NEW:refs/heads/x\"\nEOF",
+  "# exemple <<'EOF'\ngit push origin \"$NEW:refs/heads/x\"\nEOF",
+  "git commit -m 'voir <<EOF'\ngit push origin \"$NEW:refs/heads/x\"\nEOF",
+  // Routé de #2192 : l'apostrophe des guillemets internes, sous `$(…)`, est du texte.
+  "echo \"$(printf \"l'ajout\") $NEW:r\"",
+  "git commit -m \"$(printf \"l'ajout\")\" && git push origin \"$NEW:refs/heads/x\" && echo \"c'est fait\"",
+  // Routé de #2192 : `\\` en fin de ligne d'un corps nu joint la suivante (zsh -f).
+  "cat <<FIN\nx $NEW\\\n:refs/heads/y\nFIN",
+  "cat <<F\nfoo\\\nF\nl'ajout\nF\ngit push origin \"$NEW:refs/heads/x\"",
+  // P2 de wn-reviewer : `#` après `\x` ou après le `)` de `$(…)`/`$((…))` n'ouvre
+  // pas de commentaire ; après le `)` d'un sous-shell, si.
+  "echo $(echo a)#\"\nl'a $NEW:r\"",
+  "echo a\\ #\"\nl'a $NEW:r\"",
+  "echo \\)#\"\nl'a $NEW:r\"",
+  "echo $((1))#\"\nl'a $NEW:r\"",
+  "(echo a)# l'a\necho \"$NEW:r\"",
+  // Codex sur #2202 : parenthèses citées dans une arithmétique ; `#` après une
+  // continuation (`x\` puis `#` : mot `x#`) ; continuation après un blanc.
+  "echo $(( $(printf '%s' '))' >/dev/null; echo 1) ))\necho \"$NEW:r\"",
+  "echo x\\\n#\"\nl'a $NEW:r\"",
+  "echo x \\\n# l'a\necho \"$NEW:r\"",
+]) {
+  test(`un $VAR:x non accolé est refusé : ${cmd}`, () => assert.equal(verdict(cmd), "refus"));
+}
+
+for (const cmd of [
+  'git push origin "${NEW}:refs/heads/ma-branche"',
+  "git push origin HEAD:refs/heads/ma-branche",
+  "echo '$NEW:refs/heads/x est le piège'",
+  'echo "\\$NEW:refs/heads/x"',
+  'echo "${VAR:-defaut}" "$PATH:/usr/bin" "$HOTE:8080"',
+  // `:w` et `:x` ne s'appliquent pas à un paramètre (P3 de wn-reviewer).
+  "rsync -a dist/ $HOTE:www/",
+  'docker run -v $PWD:/app image "code=$?"',
+  'gh pr comment 1 --body "voir \\$NEW:refs/heads/x"',
+  // Codex : un délimiteur cité n'est pas qu'un mot.
+  "cat <<'FIN-PR'\n$NEW:refs/heads/x\nFIN-PR",
+  // P1 de wn-reviewer : corps de plusieurs paragraphes.
+  "gh pr create --body-file - <<'CORPS'\nPremier paragraphe.\n\nNe jamais écrire \"$NEW:refs/heads/x\" en zsh.\nCORPS",
+  "git commit -m \"$(cat <<'EOF'\nfix: titre\n\nCorps qui cite \"$NEW:refs/heads/x\" et l'ajout.\n\nCo-Authored-By: X\nEOF\n)\"",
+  "gh pr create --body-file - <<'CORPS'\nNe jamais écrire \"$NEW:refs/heads/x\" en zsh.\nCORPS",
+  // Routé de #2184 : `\\$` est littéral dans un heredoc nu (constaté par zsh -f).
+  "cat <<FIN\n\\$NEW:refs/heads/x\nFIN",
+  // Routé de #2184 : un heredoc nu cité dans le corps d'un heredoc cité est du texte.
+  "cat > f.md <<'FIN'\nexemple :\ncat <<EOF\n$NEW:refs/heads/x\nEOF\nFIN",
+  // `<<-` admet des tabulations devant le terminateur.
+  "cat <<-'FIN'\n\t$NEW:refs/heads/x\n\tFIN",
+  // Partie 4 : `<<` arithmétique, apostrophe de commentaire, `$'…'`, `\\\\` final.
+  "echo $((1<<2))\necho '$NEW:refs/heads/x'",
+  "# l'ajout\necho '$NEW:refs/heads/x'",
+  "echo $'l\\'ajout $NEW:refs/heads/x'",
+  "cat <<FIN\nfoo\\\\\nFIN\necho '$NEW:refs/heads/x'",
+  // Codex sur #2202 : un délimiteur n'est jamais développé.
+  "cat <<'$NEW:r'\ntexte\n$NEW:r",
+]) {
+  test(`accolé, inerte ou sans modificateur, passe : ${cmd.split("\n")[0]}`, () =>
+    assert.equal(verdict(cmd), "passe"));
+}
 
 // ── Niveau « demande » : inchangé par le masquage des heredocs ───────────────
 
@@ -287,3 +391,71 @@ for (const cmd of [
 ]) {
   test(`lecture ponctuelle permise : ${cmd}`, () => assert.equal(verdict(cmd), "passe"));
 }
+
+// ── Tâche de fond qui finit par `echo … $?` (autonomie-pieges-restes, partie 6)
+// Le code d'une tâche de fond est celui de sa dernière commande : un `echo`
+// final rend 0 et la notification ment (mémoire taches-de-fond-demarrent-a-la-racine).
+
+/** Verdict pour une commande lancée en tâche de fond. */
+function verdictFond(command) {
+  const res = spawnSync("node", [hook], {
+    input: JSON.stringify({ tool_input: { command, run_in_background: true } }),
+    encoding: "utf8",
+  });
+  // Le refus doit venir de CE bloc, pas d'un autre (relecture adverse).
+  if (res.status === 2) return (res.stderr || "").includes("tâche de fond") ? "refus" : "autre refus";
+  return (res.stdout || "").includes('"ask"') ? "demande" : "passe";
+}
+
+for (const cmd of [
+  'node scripts/wn-attendre-ci.mjs 2289 > ci.txt 2>&1; echo "ci=$?" >> ci.txt',
+  'npm run test:worktree; echo "code=$?"',
+  "node x.mjs && echo code=$?",
+  'node x.mjs || printf "%s\\n" "$?"',
+  'node x.mjs\necho "code=$?"\n',
+  // Formes couvertes après la relecture adverse.
+  "node x; echo $?;",
+  "node x; echo $? ; ",
+  'node x; echo "code=$?" >&2',
+  "node x; echo $? 2>&1",
+  "{ node x; echo $?; }",
+  "( node x; echo $? )",
+  'node x; echo "$?" | tee -a f',
+  "node x; echo $?|cat",
+  'node x; echo "code=${?}"',
+  "node x; print $?",
+  "node x; command echo $?",
+  "node x; echo $? &",
+]) {
+  test(`en fond, un echo … $? final est refusé : ${JSON.stringify(cmd)}`, () => assert.equal(verdictFond(cmd), "refus"));
+}
+
+for (const cmd of [
+  'node x.mjs > f 2>&1; c=$?; echo "code=$c" >> f; exit $c',
+  'echo "début"; node scripts/wn-attendre-ci.mjs 2289',
+  "node scripts/wn-attendre-ci.mjs 2289 > ci.txt 2>&1",
+  // Un `echo $?` dans le corps d'un heredoc est du texte.
+  "cat > note.md <<'FIN'\necho $?\nFIN\nnode y.mjs",
+  'node x || { echo "échec $?"; exit 1; }',
+  "node x; exit $?",
+]) {
+  test(`en fond, permis : ${JSON.stringify(cmd)}`, () => assert.equal(verdictFond(cmd), "passe"));
+}
+
+// Trous assumés, épinglés : ils ramènent au comportement d'avant, sans plus.
+for (const cmd of [
+  'node x; echo "a;b $?"',
+  "node x; echo $?; exit",
+  "node x; if true; then echo $?; fi",
+]) {
+  test(`en fond, trou assumé (passe) : ${JSON.stringify(cmd)}`, () => assert.equal(verdictFond(cmd), "passe"));
+}
+
+// Faux positif assumé : un commentaire final est lu comme de la structure.
+test("en fond, un `# ; echo $?` en commentaire final est refusé (faux positif assumé)", () => {
+  assert.equal(verdictFond("node x # ; echo $?"), "refus");
+});
+
+test("au premier plan, un echo … $? final reste permis : la session lit la sortie", () => {
+  assert.equal(verdict('npm run check; echo "code=$?"'), "passe");
+});

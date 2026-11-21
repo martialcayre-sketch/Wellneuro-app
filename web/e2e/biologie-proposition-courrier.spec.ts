@@ -7,7 +7,7 @@
 // un praticien. Ce spec est cette garde.
 //
 // Patient fictif Jennifer Martin (PAT_SEED_02) : un épisode T0 confirmé et une
-// passation `Q_STR_02` en zone danger sont provisionnés en base puis nettoyés.
+// passation `Q_SOM_01` défavorable sont provisionnés en base puis nettoyés.
 // Aucun autre spec ne lit ces données. Le seed n'est PAS touché — le modifier
 // emporterait `visual.spec.ts` (capture pixel), `fiche-detail-reponses` et
 // `seedCertification.guard`.

@@ -12,6 +12,7 @@ import {
   LONGUEUR_MAX_MEDECIN_LIBELLE,
   LONGUEUR_MAX_TEXTE,
 } from '@/lib/praticien/correspondanceMedecin';
+import { useFocusApresRelecture } from '@/components/ui/useFocusApresRelecture';
 
 // Fil de correspondance médecin (C3 LOT-06, V1 = transcription praticien) —
 // surface praticien, onglet « Correspondance » de la fiche patient.
@@ -48,6 +49,9 @@ function formatDate(iso: string): string {
 
 export function CorrespondanceMedecinPanel({ idPatient }: { idPatient: string }) {
   const [etat, setEtat] = useState<EtatFil>('chargement');
+  // Un hook par « Réessayer » : chaque bouton revient à son propre titre.
+  const relecturePatient = useFocusApresRelecture();
+  const relectureMedecin = useFocusApresRelecture();
   const [erreur, setErreur] = useState('');
   const [correspondances, setCorrespondances] = useState<CorrespondanceExposee[]>([]);
   const [correspondancesPatient, setCorrespondancesPatient] = useState<CorrespondancePatientExposee[]>([]);
@@ -161,11 +165,11 @@ export function CorrespondanceMedecinPanel({ idPatient }: { idPatient: string })
   return (
     <div className="flex flex-col gap-4">
     <section aria-labelledby="correspondance-patient" className="rounded-xl border border-border bg-surface p-4">
-      <h3 id="correspondance-patient" className="text-sm font-semibold text-foreground">
+      <h2 ref={relecturePatient.titreRef} tabIndex={-1} id="correspondance-patient" className="text-sm font-semibold text-foreground">
         {/* Le patient n'est plus le seul destinataire : l'alerte de sécurité et le
             signalement vous écrivent au sujet du dossier ([[D-398]] §1, Q4). */}
         E-mails du dossier
-      </h3>
+      </h2>
       <p className="mt-1 text-xs text-muted-foreground">
         Historique des e-mails envoyés par Wellneuro : au patient, et à vous au sujet de ce dossier. Le
         contenu des messages et les adresses ne sont pas recopiés dans ce journal.
@@ -191,8 +195,9 @@ export function CorrespondanceMedecinPanel({ idPatient }: { idPatient: string })
         >
           <span>Les e-mails du dossier n’ont pas pu être lus. Ce n’est pas un dossier sans envoi.</span>
           <button
+            ref={relecturePatient.boutonRef}
             type="button"
-            onClick={() => void chargerFil()}
+            onClick={() => void relecturePatient.relire(chargerFil)}
             className="min-h-11 self-start rounded-lg border border-accent px-3 py-1 text-sm font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
           >
             Réessayer
@@ -236,9 +241,9 @@ export function CorrespondanceMedecinPanel({ idPatient }: { idPatient: string })
     </section>
 
     <section aria-labelledby="correspondance-medecin" className="rounded-xl border border-border bg-surface p-4">
-      <h3 id="correspondance-medecin" className="text-sm font-semibold text-foreground">
+      <h2 ref={relectureMedecin.titreRef} tabIndex={-1} id="correspondance-medecin" className="text-sm font-semibold text-foreground">
         Correspondance avec le médecin traitant
-      </h3>
+      </h2>
       <p className="mt-1 text-xs text-muted-foreground">
         L’application n’envoie rien au médecin et ne lui ouvre aucun accès. Vous consignez ici, en texte
         seul, les échanges faits par vos canaux habituels (courrier, e-mail du cabinet).
@@ -285,8 +290,9 @@ export function CorrespondanceMedecinPanel({ idPatient }: { idPatient: string })
         <div role="alert" className="mt-3 flex flex-col gap-3 rounded-lg border border-accent bg-status-warning/10 p-3 text-base text-status-warning">
           <span>{erreur}</span>
           <button
+            ref={relectureMedecin.boutonRef}
             type="button"
-            onClick={() => void chargerFil()}
+            onClick={() => void relectureMedecin.relire(chargerFil)}
             className="min-h-11 self-start rounded-lg border border-accent px-3 py-1 text-sm font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
           >
             Réessayer
@@ -358,7 +364,7 @@ export function CorrespondanceMedecinPanel({ idPatient }: { idPatient: string })
 
       {etat === 'chargee' && (
         <div className="mt-4 border-t border-border pt-3">
-          <h4 className="text-sm font-semibold text-foreground">Consigner un échange</h4>
+          <h3 className="text-sm font-semibold text-foreground">Consigner un échange</h3>
 
           {!accepteConsignation && (
             <p role="status" className="mt-2 text-base text-muted-foreground">
@@ -512,7 +518,7 @@ export function CorrespondanceMedecinPanel({ idPatient }: { idPatient: string })
                     id="correspondance-synthese"
                     value={idSynthese}
                     onChange={(evenement) => setIdSynthese(evenement.target.value)}
-                    className="mt-1 min-h-11 rounded-lg border border-border bg-surface p-2 text-base text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                    className="mt-1 min-h-11 h-11 rounded-lg border border-border bg-surface p-2 text-base text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                   >
                     <option value="">Aucune</option>
                     {syntheses.map((synthese) => (

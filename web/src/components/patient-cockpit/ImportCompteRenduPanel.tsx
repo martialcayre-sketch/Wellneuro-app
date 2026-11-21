@@ -114,7 +114,7 @@ const LIBELLES_STATUT: Record<string, string> = {
   echec: 'Échec de lecture',
 };
 
-const CHAMP = 'min-h-11 rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground';
+const CHAMP = 'min-h-11 [&:is(select)]:h-11 rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground';
 const BOUTON = 'min-h-11 rounded-lg border border-border px-3 py-2 text-sm text-foreground disabled:opacity-50';
 const BOUTON_PRIMAIRE =
   'min-h-11 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50';
@@ -749,7 +749,7 @@ export function ImportCompteRenduPanel({
 
   return (
     <div ref={racineRef} className="mt-4 rounded-lg border border-border p-3">
-      <h4 className="text-sm font-medium text-foreground">Importer un compte rendu de laboratoire</h4>
+      <h3 className="text-sm font-medium text-foreground">Importer un compte rendu de laboratoire</h3>
       <p className="mt-1 text-xs text-muted-foreground">
         Avant la lecture, vous masquez l’identité du patient sur chaque page : seules les pages masquées sont
         transmises au service de lecture (Anthropic), jamais le document d’origine. Les lignes lues vous sont proposées : rien
@@ -757,7 +757,10 @@ export function ImportCompteRenduPanel({
       </p>
 
       <div className="mt-3 flex flex-wrap items-end gap-2">
-        <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+        {/* `min-w-0` et `max-w-full` (PRA-6g) : à 320 px, le champ fichier
+            imposait sa largeur propre au libellé, et la page défilait en
+            largeur. Au bureau, le libellé tient déjà : rien ne change. */}
+        <label className="flex min-w-0 max-w-full flex-col gap-1 text-xs text-muted-foreground">
           Compte rendu (PDF de 10 Mo, ou photo JPEG, PNG, WebP de 3,75 Mo au plus)
           <input
             key={cleFichier}
@@ -765,7 +768,7 @@ export function ImportCompteRenduPanel({
             accept="application/pdf,image/jpeg,image/png,image/webp"
             disabled={occupe}
             onChange={e => setFichier(e.target.files?.[0] ?? null)}
-            className="text-sm text-foreground"
+            className="min-w-0 max-w-full text-sm text-foreground"
           />
         </label>
         <button type="button" onClick={() => void deposer()} disabled={occupe || !fichier} className={BOUTON}>
@@ -807,11 +810,11 @@ export function ImportCompteRenduPanel({
             </p>
           )}
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h5 className="text-sm font-normal text-foreground">
+            <h4 className="text-sm font-normal text-foreground">
               Compte rendu déposé le {formatDateHeure(detail.deposeLe)}
               {transmisParLePatient && ' — transmis par le patient'}
               {courant?.laboratoireLu && ` — ${courant.laboratoireLu}`}
-            </h5>
+            </h4>
             {/* LE REGARD AVANT LA LECTURE ([[D-269]] §1) : le document s'ouvre
                 dans un onglet, servi par la route du praticien ; rien ne part
                 chez Anthropic. Plus rien à montrer une fois effacé. */}

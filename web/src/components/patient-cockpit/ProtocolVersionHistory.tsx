@@ -29,9 +29,9 @@ export function ProtocolVersionHistory({ versions }: { versions: ProtocolVersion
 
   return (
     <section aria-labelledby="protocol-history-title" className="rounded-xl border border-border bg-surface p-4">
-      <h3 id="protocol-history-title" className="text-sm font-semibold text-foreground">
+      <h2 id="protocol-history-title" className="text-sm font-semibold text-foreground">
         Historique des versions ({versions.length})
-      </h3>
+      </h2>
       <ul className="mt-3 grid gap-2">
         {versions.map((version) => (
           <li

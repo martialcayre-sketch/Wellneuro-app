@@ -36,10 +36,29 @@ Les DÉSIGNATIONS APPROUVÉES servent seulement à nommer (voir plus bas).
   pas sur l'objet de « interpretations » ; un claim qui ne nomme ni un
   résultat possible de l'examen, ni une conséquence qu'un résultat
   autorise, ne porte pas sur celui de « resultats_consequences » ; dans les
-  deux cas, même s'il porte sur le nutriment ou sur l'état recherché.
+  deux cas, même s'il porte sur le nutriment ou sur l'état recherché. Un
+  claim qui nomme un résultat possible de l'analyte de la fiche (une valeur
+  basse, abaissée ou élevée) porte sur l'objet de « resultats_consequences ».
+  Un claim qui énonce une limite de l'examen ou de son marqueur (sa
+  fiabilité, sa validité, ce qu'il ne permet pas de mesurer ou de conclure,
+  un manque de données) porte sur l'objet de « limites ». Une limite de la
+  littérature sur un supplément, une option ou un traitement (son
+  efficacité, son absence d'effet, la qualité de ses études) n'est pas une
+  limite de l'examen ni de son marqueur : elle ne porte pas sur l'objet de
+  « limites ». Un claim porte sur l'objet de « surveillance_arret » quand il
+  dit quoi surveiller, quand ou comment, ou à quel critère arrêter ; un
+  argument de causalité (l'évolution d'un effet après l'arrêt puis la
+  reprise d'un produit) n'en relève pas. Dans « resultats_consequences », un
+  résultat se nomme sans être interprété : dire ce dont il témoigne, ce
+  qu'il reflète ou traduit relève de « interpretations » ; sous le statut
+  « preuves_limitees », une conséquence décisionnelle (orienter vers une
+  complémentation, une prise en charge ou un autre examen) ne s'y écrit pas,
+  sauf une condition de sécurité ou d'admissibilité que le marqueur « oui »
+  impose d'y restituer, comme dit plus bas.
   Avant d'écrire la phrase d'absence, examine chacun des
   claims fournis : elle s'écrit si, et seulement si, aucun ne porte sur
-  l'objet de la rubrique.
+  l'objet de la rubrique. Si l'un y porte, rédige à partir de lui, même
+  s'il n'est pas au centre de la fiche.
 - Chaque phrase reformule un ou plusieurs claims et n'y ajoute rien : ni
   commentaire, ni synthèse, ni conclusion, ni conséquence, ni
   justification, ni qualificatif que le claim ne porte pas. Ne compare pas
@@ -66,13 +85,26 @@ Les DÉSIGNATIONS APPROUVÉES servent seulement à nommer (voir plus bas).
   composition (la quantité d'un nutriment effectivement présente dans un
   aliment, une eau ou un produit) ; un seuil qui borne une observation ou
   un risque (la quantité au-delà de laquelle un effet est observé, une
-  limite supérieure de sécurité). Ne s'écrivent pas, même rapportés par un
+  limite supérieure de sécurité). Un niveau d'apport qu'une source déclare
+  sans problème de sécurité est une limite supérieure de sécurité, même
+  exprimé en quantité consommée par prise ou par jour : écris-le en
+  constat, attribué à sa source, avec sa population, ses exceptions et ses
+  réserves ; jamais comme une quantité à prendre, une recommandation ou une
+  garantie de sécurité générale, détachée de cette population, de ces
+  exceptions ou de ces réserves, et n'en tire ni qu'au-delà l'apport est
+  dangereux, ni qu'en deçà il est conseillé.
+  Ne s'écrivent pas, même rapportés par un
   claim, même attribués à leur source : une quantité à prendre ou à
   consommer (dose, volume, nombre d'unités, apport recommandé ou de
   référence), une fréquence ou un fractionnement des prises, une durée de
-  prise ou de traitement ; chacune est, ci-après, une quantité de prise.
-  Toute autre valeur, ou en cas de doute (par exemple une teneur maximale
-  recommandée pour un produit), ne s'écrit pas.
+  prise ou de traitement, un moment de prise (le soir, au repas, à jeun) ;
+  chacune est, ci-après, une quantité de prise.
+  Une mention de dose ou d'apport sans valeur chiffrée (« à doses élevées »,
+  l'absence d'apport conseillé) n'est pas une quantité de prise : elle se
+  restitue telle que son claim la porte, comme une condition ou une limite
+  de son fait. Toute autre valeur chiffrée, ou en cas de doute sur une
+  valeur chiffrée (par exemple une teneur maximale recommandée pour un
+  produit), ne s'écrit pas.
   Ces règles ne visent pas une valeur ni une unité reprise telle quelle
   d'une désignation approuvée, au sein de cette seule désignation, qui sert
   à nommer et n'établit aucun fait.
@@ -85,7 +117,9 @@ Les DÉSIGNATIONS APPROUVÉES servent seulement à nommer (voir plus bas).
   de sa dose, de son volume, de sa fréquence ou de sa durée de prise) ne
   peut pas s'écrire sans elle. Empêché seulement par un médicament nommé,
   ou par une quantité exclue qui n'est pas une quantité de prise, ce fait ne
-  compte pas parmi ceux qui portent sur l'objet de la rubrique. Empêché par
+  compte pas parmi ceux qui portent sur l'objet de la rubrique ; une
+  conséquence décisionnelle qui ne s'écrit pas dans « resultats_consequences »
+  sous « preuves_limitees » n'y compte pas non plus. Empêché par
   une quantité de prise, même s'il l'est aussi par un médicament nommé ou
   une autre quantité exclue, il y compte : la rubrique ne prend jamais la phrase
   d'absence ; si aucun fait qui porte sur son objet ne peut s'écrire, elle
@@ -128,7 +162,16 @@ telle limite qu'un claim établit lui-même se restitue, comme toute limite.
 
 - STATUT D'USAGE. « etaye_valide » : rien de plus que ce que les claims
   établissent. « preuves_limitees » : aucune formulation ne présente
-  l'usage comme établi, validé, recommandé ou systématique. « non_valide » :
+  l'usage comme établi, validé, recommandé ou systématique. Seule exception :
+  quand un claim recommande lui-même l'usage de l'examen (il le dit
+  recommandé, indispensable, systématique ou à pratiquer), ce fait s'écrit
+  attribué à la source du claim (« Selon <source>, … »), avec toutes ses
+  conditions, et la même phrase se termine par « , mais cet usage n'est pas
+  établi. » Cette forme vaut dans toute rubrique où ce fait s'écrit,
+  « precautions » comprise : un claim qui dit l'examen indispensable ou à
+  pratiquer, avant, pendant ou après une prise, ne s'écrit que sous elle.
+  Hors de cette phrase attribuée et réservée, rien ne présente
+  l'usage comme recommandé. « non_valide » :
   le texte dit que l'usage n'est pas validé ; il ne déclenche ni examen ni
   décision.
 - NATURE DU LIEN. Une « information_contributive » n'est jamais présentée
@@ -226,7 +269,15 @@ point final) qui désigne l'hypothèse ou la population d'usage telle que les
 claims la décrivent. Le libellé d'une hypothèse nomme un état fonctionnel,
 portant sur un seul nutriment, dans le sens bas ; il ne nomme jamais un
 marqueur, le résultat d'un dosage, un seuil, une comparaison à un seuil, ni
-une qualification diagnostique. Réponds par un seul objet JSON, sans texte
-autour :
+une qualification diagnostique. Le libellé d'une hypothèse ne contient aucun
+de ces douze termes : « normal », « anormal », « déficit », « carence »,
+« excès », « diagnos », « hors plage », « élevé », « pathologie »,
+« maladie », « syndrome », « trouble ». Ni la casse, ni les accents, ni un
+tiret à la place d'une espace n'y changent rien, et un mot qui contient l'un
+d'eux tombe sous lui : « déficitaire », « excessif », « élevée », mais aussi
+« relevé ». Ces termes ne s'y écrivent pas, même quand les claims les
+emploient : le libellé se reformule en gardant le nutriment et le sens bas
+que décrivent les claims. Cette liste ne vise pas le libellé d'une
+population. Réponds par un seul objet JSON, sans texte autour :
 
 {"libelle": "<texte>"}

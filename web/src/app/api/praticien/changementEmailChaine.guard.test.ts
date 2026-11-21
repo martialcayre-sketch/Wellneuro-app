@@ -77,6 +77,16 @@ const { getServerSession, prisma, magasin } = vi.hoisted(() => {
         count: vi.fn(),
       },
       syntheseIA: { updateMany: vi.fn(reecrire(magasin.syntheses)) },
+      // `syntheses_ia` se réécrit HORS de Prisma, pour garder `updated_at`,
+      // version optimiste des synthèses (lot synthese-conflit-texte-conserve).
+      // Le magasin applique la seule requête attendue et refuse toute autre.
+      $executeRaw: vi.fn(async (sql: TemplateStringsArray, ...valeurs: unknown[]) => {
+        if (sql.join('?') !== 'UPDATE syntheses_ia SET email_patient = ? WHERE id_patient = ?') {
+          throw new Error(`requête inattendue : ${sql.join('?')}`);
+        }
+        const [emailPatient, idPatient] = valeurs as [string, string];
+        return (await reecrire(magasin.syntheses)({ where: { idPatient }, data: { emailPatient } })).count;
+      }),
       portailMagicLink: { updateMany: vi.fn(async () => ({ count: 0 })) },
       journalAccesDossier: { create: vi.fn(), deleteMany: vi.fn() },
       agendaAlimentaireJour: { findMany: vi.fn() },

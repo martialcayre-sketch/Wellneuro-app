@@ -1,5 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { STATUTS_SYNTHESE_VALIDEE } from '@/lib/synthese/statutsValidee';
+import { motifBlocageContamination } from '@/lib/synthese/gardeContamination';
+import { CHAMPS_APPEL_PRIORITE, projeterSynthese } from '@/lib/synthese/projectionSorties';
 
 // L'ADAPTATEUR BORNÉ DE LA MATIÈRE DE PRIORITÉ — `D-167` §10, sur le patron de
 // `plainteVerifiee.ts` (`D-164`).
@@ -114,12 +116,24 @@ export async function lireSyntheseCitable(idPatient: string): Promise<MatiereSyn
   const ligne = await prisma.syntheseIA.findFirst({
     where: { idPatient, statut: { in: [...STATUTS_SYNTHESE_CITABLES] } },
     orderBy: { dateValidation: 'desc' },
-    select: { idSynthese: true, syntheseJson: true },
+    // `donneesEntree` : lue pour le seul contrôle de contamination ([[D-513]] §5),
+    // jamais transmise.
+    select: { idSynthese: true, statut: true, syntheseJson: true, donneesEntree: true },
   });
   if (ligne === null) return null;
 
-  const resumePraticien = texteDepuisBlob(ligne.syntheseJson, 'resume_praticien');
-  const narratifPatient = texteDepuisBlob(ligne.syntheseJson, 'narratif_patient');
+  // [[D-513]] §7 : la liste des champs autorisés de l'appel de priorité ; une
+  // synthèse suspecte (§5) n'est pas citable.
+  if (motifBlocageContamination({
+    idSynthese: ligne.idSynthese,
+    syntheseJson: ligne.syntheseJson,
+    donneesEntree: ligne.donneesEntree,
+    statut: ligne.statut,
+    sortie: 'priorite_objectif',
+  }) !== null) return null;
+  const blob = projeterSynthese(ligne.syntheseJson, CHAMPS_APPEL_PRIORITE);
+  const resumePraticien = texteDepuisBlob(blob, 'resume_praticien');
+  const narratifPatient = texteDepuisBlob(blob, 'narratif_patient');
 
   // LES DEUX SONT EXIGÉS. Une synthèse validée dont l'un des deux manque n'est
   // pas une demi-matière : elle ne permet ni de citer, ni d'appeler. Rendre un

@@ -3,8 +3,16 @@
 import { useCallback, useRef, useState } from 'react';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
+import { useFocusApresRelecture } from '@/components/ui/useFocusApresRelecture';
 import type { CorpusRayonsApiResponse } from '@/app/api/praticien/corpus/rayons/route';
 import type { ClaimRayon } from '@/lib/supplement-library/rayonCorpus';
+
+// Q5 de D-481 : 44 px et focus visible, comme `ui/Input` ; `ui/Select` sert
+// d'autres écrans et n'est pas changé par ce lot (même choix que la PR 1).
+const CLASSE_SELECT =
+  'min-h-11 h-11 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring';
 
 // Recherche corpus clinique — instrument de consultation simple : un rayon,
 // une requête libre, les claims validés qui en ressortent. Contrairement au
@@ -45,6 +53,8 @@ export function RechercheCorpusRayonPanel() {
   const [resultat, setResultat] = useState<CorpusRayonsApiResponse | null>(null);
   const [enCours, setEnCours] = useState(false);
   const [messageEchec, setMessageEchec] = useState<string | null>(null);
+  // Aucun titre dans ce panneau : seul le bouton reçoit le focus (échec).
+  const { boutonRef, relire } = useFocusApresRelecture();
 
   // Jeton de séquence : seule la dernière requête émise a le droit d'écrire à
   // l'écran (une réponse lente arrivée après une réponse rapide afficherait
@@ -101,22 +111,22 @@ export function RechercheCorpusRayonPanel() {
       <div className="flex flex-wrap items-end gap-2">
         <label className="flex flex-col gap-1 text-xs font-semibold text-foreground">
           Rayon
-          <select
+          <Select
             value={rayon}
             onChange={(e) => changerRayon(e.target.value)}
             aria-label="Rayon de recherche corpus"
-            className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+            className={CLASSE_SELECT}
           >
             {RAYONS_DISPONIBLES.map(({ valeur, libelle }) => (
               <option key={valeur} value={valeur}>
                 {libelle}
               </option>
             ))}
-          </select>
+          </Select>
         </label>
         <label className="flex flex-1 min-w-[16rem] flex-col gap-1 text-xs font-semibold text-foreground">
           Recherche
-          <input
+          <Input
             value={requeteSaisie}
             disabled={enCours}
             onChange={(e) => setRequeteSaisie(e.target.value)}
@@ -128,7 +138,7 @@ export function RechercheCorpusRayonPanel() {
             }}
             placeholder="Ex. mémoire de travail, douleur neuropathique, microbiote"
             aria-label="Recherche dans le rayon"
-            className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+            className="placeholder:text-muted-foreground"
           />
         </label>
         <Button type="button" variant="outline" onClick={() => void rechercher()} disabled={enCours}>
@@ -144,7 +154,7 @@ export function RechercheCorpusRayonPanel() {
         ) : messageEchec ? (
           <div role="alert" className="flex flex-col gap-2 text-sm text-status-danger">
             <p>{messageEchec}</p>
-            <Button type="button" variant="outline" onClick={() => void rechercher()}>
+            <Button ref={boutonRef} type="button" variant="outline" onClick={() => void relire(rechercher)}>
               Réessayer
             </Button>
           </div>

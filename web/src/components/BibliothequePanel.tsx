@@ -44,6 +44,11 @@ type PatientOption = { email: string; prenom: string; nom: string };
 // Ses onglets « Analyses biologiques » et « Fiches conseils » sont devenus
 // des entrées du menu, chacune avec sa page (D-324 §4) : ce panneau ne porte
 // plus que le rayon Questionnaires.
+// Ref de rappel stable : pose `inert` sur l'aperçu dès son montage.
+function rendreInerte(el: HTMLDivElement | null) {
+  el?.setAttribute('inert', '');
+}
+
 export function BibliothequePanel({ entrees }: { entrees: BibliothequeEntree[] }) {
   const [recherche, setRecherche] = useState('');
   const [categorie, setCategorie] = useState<string | null>(null);
@@ -621,7 +626,19 @@ export function BibliothequePanel({ entrees }: { entrees: BibliothequeEntree[] }
                         « {apercu.instructions} »
                       </p>
                     )}
-                    <div className="pointer-events-none flex flex-col gap-4" aria-hidden="true">
+                    {/* Aperçu, pas une saisie : `aria-hidden` le retire de
+                        l'arbre d'accessibilité, `inert` de l'ordre de
+                        tabulation (axe `aria-hidden-focus`, PRA-6h). Posé par
+                        le DOM : `package.json` déclare React 18.3, mais l'App
+                        Router sert le React 19 canary embarqué par Next
+                        (`next/dist/compiled/react`), qui traite l'attribut
+                        autrement — la ref vaut pour les deux. */}
+                    <div
+                      ref={rendreInerte}
+                      className="pointer-events-none flex flex-col gap-4"
+                      aria-hidden="true"
+                      data-testid="apercu-questionnaire-champs"
+                    >
                       {apercu.sections.map(section => (
                         <div key={section.id} className="flex flex-col gap-3">
                           {section.titre && (

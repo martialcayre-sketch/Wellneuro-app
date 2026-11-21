@@ -16,7 +16,9 @@ import { CATALOGUE_DEFINITIONS } from '@/lib/bibliotheque';
 import { MESSAGE_DEJA_ASSIGNE } from '@/lib/assignations/messages';
 import { anciennete } from '@/lib/assignations/peremption';
 import { LIBELLE_EXTINCTION } from '@/lib/clinical/stopRulesLibelles';
+import { LIGNE_LIGNES_SUSPENDUES_RELECTURE } from '@/lib/synthese/blocReglesNonServies';
 import { Badge } from '@/components/ui/Badge';
+import { useFocusApresRelecture } from '@/components/ui/useFocusApresRelecture';
 
 // Orientation NNPP2 — le premier consommateur de `/api/praticien/orientation`
 // (LOT-06). LECTURE SEULE, à une exception près et strictement bornée : le
@@ -109,6 +111,24 @@ export function OrientationPanel({
 
   const [rechargement, setRechargement] = useState(0);
   const relire = useCallback(() => setRechargement(n => n + 1), []);
+
+  // « Réessayer » : la lecture se relance par `rechargement` (effet ci-dessous),
+  // sans promesse à attendre. Elle est donc rendue ici : la promesse se résout
+  // quand `lecture` quitte « chargement », et le focus suit (titre si la lecture
+  // réussit, bouton si elle échoue encore).
+  const { titreRef, boutonRef, relire: relireAvecFocus } = useFocusApresRelecture();
+  const finLecture = useRef<(() => void) | null>(null);
+  const reessayerLecture = useCallback(
+    () =>
+      relireAvecFocus(
+        () =>
+          new Promise<void>(resolve => {
+            finLecture.current = resolve;
+            relire();
+          }),
+      ),
+    [relireAvecFocus, relire],
+  );
 
   /**
    * Relit la file du praticien et n'en garde que le patient affiché.
@@ -222,6 +242,12 @@ export function OrientationPanel({
       annule = true;
     };
   }, [idPatient, rechargement]);
+
+  useEffect(() => {
+    if (lecture === 'chargement') return;
+    finLecture.current?.();
+    finLecture.current = null;
+  }, [lecture]);
 
   const ajouterALaFile = useCallback(
     async (cle: string, qid: string, titre: string) => {
@@ -593,6 +619,23 @@ export function OrientationPanel({
   ) : null;
 
   /**
+   * Les lignes suspendues pour relecture — [[D-543]]. Lues sur les tables, pas
+   * sur le dossier : la note s'affiche dès que la liste n'est pas vide, que la
+   * ligne eût concerné ce patient ou non. Une seule phrase, au texte validé mot
+   * pour mot, la même qu'en synthèse ; ni identifiant ni décompte
+   * (`20261119-1303-a`).
+   */
+  const lignesSuspendues =
+    reponse?.ok && reponse.actif === true && Array.isArray(reponse.lignesSuspendues)
+      ? reponse.lignesSuspendues
+      : [];
+  const blocLignesSuspendues = lignesSuspendues.length > 0 ? (
+    <div role="note" className="mt-3 rounded-lg border border-status-warning/40 bg-status-warning/10 p-2">
+      <p className="text-xs text-foreground">{LIGNE_LIGNES_SUSPENDUES_RELECTURE}</p>
+    </div>
+  ) : null;
+
+  /**
    * Le repli des propositions écartées — [[D-178]], troisième arbitrage.
    *
    * LE GESTE DOIT DÉGAGER L'ÉCRAN, sinon il ne sert qu'à consigner ; mais rien
@@ -679,9 +722,9 @@ export function OrientationPanel({
           table, sans signification pour un praticien (audit 2026-09-02,
           fuite dev). L'identité exacte de la table reste lisible dans le
           repli « Provenance de la table » en pied de section. */}
-      <h3 className="mt-1 font-display text-base font-bold tracking-[-0.02em] text-foreground">
+      <h2 ref={titreRef} tabIndex={-1} className="mt-1 font-display text-base font-bold tracking-[-0.02em] text-foreground">
         Explorations complémentaires proposées
-      </h3>
+      </h2>
 
       {lecture === 'chargement' ? (
         <p role="status" className="mt-2 text-xs text-muted-foreground">
@@ -691,8 +734,9 @@ export function OrientationPanel({
         <div role="alert" className="mt-2 rounded-lg bg-status-warning/10 p-3 text-xs text-status-warning">
           <p>{erreur}</p>
           <button
+            ref={boutonRef}
             type="button"
-            onClick={relire}
+            onClick={() => void reessayerLecture()}
             className="mt-2 min-h-11 rounded-md border border-border px-3 py-1 text-xs font-medium text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
           >
             Réessayer
@@ -721,6 +765,7 @@ export function OrientationPanel({
           )}
           {blocArretsSuspendus}
           {blocNonAppliquees}
+          {blocLignesSuspendues}
           {blocNonEvaluees}
           {blocArretsNonEvalues}
           {blocEcartees}
@@ -941,6 +986,7 @@ export function OrientationPanel({
           )}
           {blocArretsSuspendus}
           {blocNonAppliquees}
+          {blocLignesSuspendues}
           {blocNonEvaluees}
           {blocArretsNonEvalues}
           {blocEcartees}

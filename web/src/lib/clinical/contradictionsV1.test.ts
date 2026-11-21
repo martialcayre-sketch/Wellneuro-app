@@ -19,7 +19,9 @@ import {
 // Ce littéral se met à jour EN MÊME TEMPS qu'une modification volontaire de la
 // table, dans le même diff, sous les yeux du relecteur. C'est tout ce qu'on lui
 // demande : rendre le changement visible.
-const SHA_EPINGLE = 'baf74c9e40c9393407b98e03f07d0c769885f16b27669978b31bd639893f38ea';
+// RE-SIGNÉE LE 2026-11-19 ([[D-543]]) : `C-STR` passe `suspendue`, pour relecture
+// (ancien littéral, signé le 2026-08-15 : `baf74c9e…893f38ea`).
+const SHA_EPINGLE = 'edf74e8436232de5e26ca6109303e1db85b05eafdc252056c5a652f4e2c1e259';
 
 describe('table de contradictions V1 — signature et périmètre', () => {
   it('le SHA de la table est celui épinglé', () => {
@@ -36,6 +38,15 @@ describe('table de contradictions V1 — signature et périmètre', () => {
     expect(SHA_EPINGLE).toMatch(/^[a-f0-9]{64}$/);
   });
 
+  // Contre-épreuve de [[D-543]] §3 : `C-STR` repassée `publiee`, le contenu
+  // hache exactement l'ancienne signature. Seul le statut a bougé.
+  it('hors le statut suspendu, la table est celle signée le 2026-08-15 (D-543)', () => {
+    const retablie = CONTRADICTIONS_RULES_V1.map(regle =>
+      regle.statut === 'suspendue' ? { ...regle, statut: 'publiee' as const } : regle);
+    expect(createHash('sha256').update(JSON.stringify(retablie), 'utf8').digest('hex'))
+      .toBe('baf74c9e40c9393407b98e03f07d0c769885f16b27669978b31bd639893f38ea');
+  });
+
   // [[D-042]] — la V1 porte UNE règle. Le compte est une décision, pas un état
   // de fait : en ajouter une est un arbitrage clinique, pas un geste de passage.
   it('la V1 porte exactement une règle, C-STR', () => {
@@ -47,7 +58,7 @@ describe('table de contradictions V1 — signature et périmètre', () => {
   // Sentinelle inversée plutôt que supprimée.
   it('la table est signée, et sa signature est bien formée', () => {
     expect(CONTRADICTIONS_METADATA.validationExterne).toBe(true);
-    expect(CONTRADICTIONS_METADATA.dateValidation).toBe('2026-08-15T00:00:00.000Z');
+    expect(CONTRADICTIONS_METADATA.dateValidation).toBe('2026-11-19T12:38:04.000Z');
     const d = CONTRADICTIONS_METADATA.dateValidation as string;
     expect(new Date(d).toISOString()).toBe(d);
     // Cinquième terme ([[D-067]]) : concordance du littéral avec le contenu

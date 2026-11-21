@@ -1715,6 +1715,43 @@
       },
       "statutValidation": "sans_claim",
       "motifSansClaim": "Notebook 13 « Instruments du cabinet » — chunks seuls PAR CONCEPTION ; les instruments passent par le banc certify, jamais par la chaîne de claims."
+    },
+    {
+      "axeId": "stress-burnout",
+      "sousAxe": "stress-burnout",
+      "sourceId": "WN-SRC-0691",
+      "notebook": "03 — Stress et burnout",
+      "documentType": "Recommandation de pratique",
+      "titre": "Haute Autorité de Santé (2017, mise à jour octobre 2025). Fiche mémo : Repérage et prise en charge cliniques du syndrome d'épuisement professionnel ou burnout",
+      "tableauClinique": "Repérage et prise en charge cliniques du syndrome d'épuisement professionnel ou burnout (HAS)",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": false,
+      "claims": {
+        "valide": 0,
+        "enAttente": 6,
+        "prescriptifs": 3,
+        "mesureLe": "2026-11-16"
+      },
+      "statutValidation": "aucun"
+    },
+    {
+      "axeId": "douleurs-chroniques",
+      "sousAxe": null,
+      "sourceId": "WN-SRC-0821",
+      "notebook": "06 — Douleurs chroniques",
+      "documentType": "Recommandation de pratique",
+      "titre": "Haute Autorité de santé (2019). Prise en charge du patient présentant une lombalgie commune. Mis en ligne le 4 avril 2019 (validation du 27 mars 2019)",
+      "tableauClinique": "Prise en charge du patient présentant une lombalgie commune (HAS, notice seule)",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": false,
+      "claims": {
+        "valide": 0,
+        "enAttente": 0,
+        "prescriptifs": 0,
+        "mesureLe": "2026-11-20"
+      },
+      "motifSansClaim": "Notice seule par accord du responsable (2026-11-20, Q3 = A) — aucun extrait ingéré, donc aucun claim ; la recommandation HAS reste lue à la source.",
+      "statutValidation": "sans_claim"
     }
   ],
   "ecartees": [

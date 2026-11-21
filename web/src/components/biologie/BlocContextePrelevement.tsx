@@ -283,7 +283,7 @@ export function BlocContextePrelevement({
               value={valeur.delaiDernierePriseUnite}
               onChange={event => modifier('delaiDernierePriseUnite', event.target.value as UniteDelai)}
               disabled={disabled}
-              className="min-h-11 rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+              className="min-h-11 h-11 rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
             >
               <option value="heure">heures</option>
               <option value="jour">jours</option>
@@ -371,9 +371,9 @@ function DeclarationsDuDossier({ idPatient }: { idPatient: string }) {
       aria-labelledby={idTitre}
       data-testid="declarations-dossier-bp13"
     >
-      <h4 id={idTitre}className="text-xs font-medium text-foreground">
+      <h3 id={idTitre}className="text-xs font-medium text-foreground">
         Déclarations du dossier — pas l’état au prélèvement
-      </h4>
+      </h3>
       <p className="text-xs text-muted-foreground">
         Elles datent de leur déclaration et ne remplissent aucun champ du contexte.
       </p>

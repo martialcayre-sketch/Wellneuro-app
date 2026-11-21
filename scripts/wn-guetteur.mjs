@@ -22,7 +22,10 @@
 //   entière, jamais par `tail`. La clé est l'identifiant du COMMENTAIRE
 //   (`c:<id>`), si bien qu'une redéclaration sur le même sha après un renvoi est
 //   neuve. Le motif tolère le markdown en tête de ligne et reste ancré en début
-//   de ligne, pour ne pas prendre une citation pour une déclaration.
+//   de ligne, pour ne pas prendre une citation pour une déclaration. Chaque
+//   ligne finit par l'origine (`D-546` §2) : `provenance=ok`, ou
+//   `CONTROLE-INDETERMINE(<motifs>)` — auteur autre que le propriétaire du
+//   dépôt, ou tête venue d'une fourche : aucun merge.
 // - `merge` (file) : la PR <N> est mergée (commit de merge) ou fermée sans
 //   merge. Une file qui a déclaré « prête » est prévenue de la suite sans
 //   relire le registre en boucle. Le registre (D-503) et le commentaire de PR
@@ -46,6 +49,9 @@ import { readFileSync, appendFileSync, existsSync, realpathSync } from 'node:fs'
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { aplatirPages, cheminPrs, versPrGraphql } from './lib/gh-rest.mjs';
+import { libelleOrigine, motifsOrigine } from './lib/origine-declaration.mjs';
+
 const RACINE = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 export const MOTIF = /^[\s>*_~`#-]*pr[êe]te[\s*_`]*@[\s*_`]*([0-9a-f]{7,40})\b/im;
@@ -61,7 +67,7 @@ export function declaration(corps) {
  * @param {{number:number, headRefOid:string, commentaires:object[]}[]} prs
  * @param {Set<string>} vus clés `c:<id>` déjà traitées
  */
-export function declarationsNeuves(prs, vus) {
+export function declarationsNeuves(prs, vus, proprietaire) {
   const decl = [];
   for (const p of prs) {
     for (const c of p.commentaires) {
@@ -69,7 +75,14 @@ export function declarationsNeuves(prs, vus) {
       const sha = declaration(c.body);
       if (!sha) continue;
       if (vus.has(`c:${c.id}`)) continue;
-      decl.push({ pr: p.number, sha, id: c.id, at: c.created_at, head: p.headRefOid });
+      decl.push({
+        pr: p.number,
+        sha,
+        id: c.id,
+        at: c.created_at,
+        head: p.headRefOid,
+        origine: motifsOrigine(c, p, proprietaire),
+      });
     }
   }
   return decl.sort((a, b) => String(a.at).localeCompare(String(b.at)));
@@ -77,11 +90,13 @@ export function declarationsNeuves(prs, vus) {
 
 export function ligneDeclaration(d) {
   const tete = d.head.startsWith(d.sha) ? 'tête=ok' : `TÊTE-DIFFÉRENTE head=${d.head}`;
-  return `${d.pr}:${d.sha} c:${d.id} at=${d.at} ${tete}`;
+  // Une déclaration sans origine lue n'est jamais « ok » par défaut.
+  return `${d.pr}:${d.sha} c:${d.id} at=${d.at} ${tete} ${libelleOrigine(d.origine ?? ['origine-non-lue'])}`;
 }
 
 /**
- * État d'une PR lu par `gh pr view --json state,mergedAt,mergeCommit,closedAt`.
+ * État d'une PR, aux champs GraphQL `state`, `mergedAt`, `mergeCommit`,
+ * `closedAt` (lue en REST puis convertie par `versPrGraphql`).
  * Rend la ligne d'événement, ou null tant que la PR est ouverte.
  */
 export function evenementMerge(n, pr) {
@@ -129,12 +144,30 @@ export async function guetter(lire, { iter = 45, pas = 60, attendre, journal = (
 const gh = (args) =>
   JSON.parse(execFileSync('gh', args, { cwd: RACINE, encoding: 'utf8', maxBuffer: 64e6, stdio: ['ignore', 'pipe', 'pipe'] }));
 
+// REST, pas `gh pr list` / `gh pr view` : GraphQL est refusé (403) dans une
+// session cloud (`D-540`, constat du 2026-11-20).
 function lirePrsOuvertes() {
-  const prs = gh(['pr', 'list', '--state', 'open', '--json', 'number,headRefOid', '--limit', '200']);
+  const liste = aplatirPages(gh(['api', '--paginate', '--slurp', cheminPrs({ etat: 'open' })]));
+  if (liste === null) throw new Error('liste des PR ouvertes illisible');
+  const prs = liste.map(versPrGraphql);
+  // Une PR sans numéro ferait manquer une déclaration « prête » en silence.
+  if (prs.some((p) => p === null)) throw new Error('PR ouverte illisible dans la liste');
   return prs.map((p) => ({
     ...p,
     commentaires: gh(['api', '--paginate', '--slurp', `repos/{owner}/{repo}/issues/${p.number}/comments`]).flat(),
   }));
+}
+
+// Le propriétaire du dépôt, lu une fois : un échec est une lecture ratée,
+// jamais un propriétaire vide qui marquerait tout « indéterminé » en silence.
+let PROPRIETAIRE = null;
+function lireProprietaire() {
+  if (!PROPRIETAIRE) {
+    const login = gh(['api', 'repos/{owner}/{repo}'])?.owner?.login;
+    if (typeof login !== 'string' || login === '') throw new Error('propriétaire du dépôt illisible');
+    PROPRIETAIRE = login;
+  }
+  return PROPRIETAIRE;
 }
 
 function lireVus(fichier) {
@@ -189,7 +222,7 @@ async function principal(argv) {
     if (o.amorcer) {
       let neuves;
       try {
-        neuves = declarationsNeuves(lirePrsOuvertes(), lireVus(fichier));
+        neuves = declarationsNeuves(lirePrsOuvertes(), lireVus(fichier), lireProprietaire());
       } catch (e) {
         console.log(`LECTURE-IMPOSSIBLE prete --amorcer : ${String(e?.message || e).slice(0, 200)}`);
         return 2;
@@ -209,12 +242,14 @@ async function principal(argv) {
       console.error(`${String(e?.message || e).slice(0, 200)} (créer un fichier vide, puis prete --amorcer)\n${USAGE}`);
       return 4;
     }
-    lire = () => declarationsNeuves(lirePrsOuvertes(), lireVus(fichier)).map(ligneDeclaration);
+    lire = () => declarationsNeuves(lirePrsOuvertes(), lireVus(fichier), lireProprietaire()).map(ligneDeclaration);
   } else if (sonde === 'merge') {
     const [n] = o.reste;
     if (!/^\d+$/.test(n || '') || o.reste.length !== 1) { console.error(USAGE); return 4; }
     lire = () => {
-      const e = evenementMerge(n, gh(['pr', 'view', n, '--json', 'state,mergedAt,mergeCommit,closedAt']));
+      const pr = versPrGraphql(gh(['api', `repos/{owner}/{repo}/pulls/${n}`]));
+      if (!pr) throw new Error(`PR ${n} illisible`);
+      const e = evenementMerge(n, pr);
       return e ? [e] : [];
     };
   } else if (sonde === 'release-db') {

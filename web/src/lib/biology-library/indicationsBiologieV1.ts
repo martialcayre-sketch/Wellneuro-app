@@ -181,7 +181,12 @@ export const INDICATIONS_BIOLOGIE_V1: RegleIndicationPanel[] = [
   // « moyenne ≥ 3,5, présence du burnout » (`WN-CL-0106-027`).
   {
     id: 'BIO-STR-01',
-    statut: 'publiee',
+    // SUSPENDUE POUR RELECTURE ([[D-543]], [[D-541]] §6.1). Ses deux jambes
+    // lisent une bande de la PSS-10 ou du BMS-10, que les positions signées du
+    // besoin 9 ne fondent pas. La ligne reste écrite telle quelle pour être
+    // relue ; elle sera rétablie, corrigée ou retirée par une décision propre.
+    // Rétablir = repasser `publiee` et re-signer la table.
+    statut: 'suspendue',
     panelCode: 'PANEL_STRESS_1',
     mode: 'conditionnel',
     declencheurs: [{
@@ -557,8 +562,15 @@ export const INDICATIONS_BIOLOGIE_METADATA: IndicationsBiologieMetadata = {
   // le sont tous, ne se lise pas plus tard comme une anomalie : ils fournissent
   // la LECTURE d'un seuil, pas une conduite, et la règle s'appuie sur cinq
   // claims prescriptifs par ailleurs.
+  //
+  // RE-SIGNÉE LE 2026-11-19 ([[D-543]]), par le responsable dans la session du
+  // lot (« je signe ») : le statut de `BIO-STR-01` passe de `publiee` à
+  // `suspendue`, pour relecture ([[D-541]] §6.1). Aucune autre règle, aucune
+  // grille, aucun claim ne change ; `claimsSource` garde les claims de la ligne
+  // suspendue, qui reste dans le périmètre relu. Ancienne empreinte, signée le
+  // 2026-11-16 : `33894e9c6afbd6b3f59a8bb33396aefa56890f57a120f255908ebaf942adef19`.
   validationExterne: true,
-  dateValidation: '2026-09-16T00:00:00.000Z',
+  dateValidation: '2026-11-19T12:38:04.000Z',
   // Les 29 claims distincts cités par les quinze règles — dont les deux qui
   // fondent la répétition annuelle (`0312-018`, `0389-004`) : le seul chiffre
   // paramétrique de la table est DANS le périmètre signé (revue D-069). Le
@@ -604,6 +616,10 @@ export const INDICATIONS_BIOLOGIE_METADATA: IndicationsBiologieMetadata = {
   //     (périmètre ÉLARGI AU CALCUL, attesté le soir — [[D-187]])
   //   · 2026-09-15 — `d2499f426e66fecd957d7f0557dfdecc1b2999eedba81200739a0783b4142049`
   //     (AQ et QDRS réalignés — [[D-195]])
+  //   · 2026-09-16 — `33894e9c6afbd6b3f59a8bb33396aefa56890f57a120f255908ebaf942adef19`
+  //     (BDI-13, IRLS et score de Francis réalignés — [[D-199]]) ; même
+  //     chaîne re-signée le 2026-11-16 à 23:25:39 UTC (2026-11-17 à Paris),
+  //     seule la date a changé (F34, étape 3)
   //
   // SECONDE ATTESTATION DU 2026-09-14. C'est sur CETTE table que le défaut a
   // été démontré : `BIO-DIG-01` lit la couleur globale de `Q_GAS_01`, et retirer
@@ -664,7 +680,45 @@ export const INDICATIONS_BIOLOGIE_METADATA: IndicationsBiologieMetadata = {
   // Relue et attestée par le praticien le 2026-09-16, sur la surface de relecture
   // produite AVANT la demande — le réalignement, lui, a été écrit le 2026-09-15 :
   // la date portée ici est celle de la RELECTURE, jamais celle du code.
-  shaPerimetre: '33894e9c6afbd6b3f59a8bb33396aefa56890f57a120f255908ebaf942adef19',
+  //
+  // CINQUIÈME ATTESTATION, LE 2026-11-16 À 23:25:39 UTC (2026-11-17, 00 h 25
+  // à Paris), ET RIEN N'A BOUGÉ : c'est la re-signature que [[D-382]] §6
+  // promettait après la signature des quinze familles du bilan (F34, étape 2,
+  // registre `docs/architecture/bioflow/FAMILLES_BILAN_SIGNATURES.md`). Le
+  // périmètre relu donne la MÊME chaîne qu'au 2026-09-16 : aucune règle, grille
+  // ni cotation n'a changé, et `shaPerimetre` n'a pas été reposé — seule
+  // `dateValidation` l'a été, à l'heure de la déclaration du responsable.
+  //
+  // La surface relue a été corrigée avant la déclaration : une première version
+  // omettait le sous-score que lisent BIO-HUM-01 et BIO-ANX-01 sur `Q_NEU_11`.
+  // La copie amendée porte la représentation JSON intégrale des quinze règles ;
+  // les vingt-neuf claims de `claimsSource` y ont été relus en texte intégral,
+  // en production, le 2026-11-16 (lecture seule) : 29/29 `VALIDE`, actifs,
+  // `v1.0`, aucun remplacé, empreinte stockée concordant avec le texte. Textes
+  // et surface sont tenus hors dépôt ([[D-251]] §4).
+  //
+  // PROVENANCE DÉCLARÉE PAR LE RESPONSABLE (question `20261029-1938-c`) :
+  //   · BIO-MET-01 et BIO-MET-02 — sa validation de la proposition d'août
+  //     ([[D-068]]) et la signature de la table ([[D-069]]), sur son avis
+  //     d'expert ; les claims cités fondent la composition des panels, mais
+  //     aucun claim du corpus ne relie au bilan le tableau métabolique que
+  //     nomme la condition de BIO-MET-01 ; d'autres sources sont à fournir.
+  //   · la ligne B12 du panel mémoire de BIO-MEM-01 — même provenance, et un
+  //     soutien en chaîne du corpus : `WN-CL-0282-018`, cité ici, puis
+  //     `WN-CL-0044-016` et `WN-CL-0125-011`, NON cités par cette table et hors
+  //     du périmètre signé ; les ajouter changerait la règle (F53).
+  // RÉSERVES ÉCRITES : R5 — objections documentaires sur l'emploi en routine
+  // d'analyses du panel métabolique : ADA/AACC 2023 (doi:10.2337/dci23-0036)
+  // et IDF 2006 (doi:10.1111/j.1464-5491.2006.01858.x) ; une troisième,
+  // attribuée à la NSFA, reste signalée SANS référence vérifiée, à joindre.
+  // Les règles sont maintenues ; leur révision relève de F53, et [[D-296]] §4
+  // prévoit de déprécier `PANEL_METABOLIQUE_OPT` sans trancher le devenir de
+  // BIO-MET-02. R2 — la ligne B12 n'est pas l'une des trois résolutions que
+  // nomme [[D-068]].
+  // ANNEXES RELUES, NON TRANCHÉES : la réserve de BIO-FAT-01 ci-dessus, le
+  // conflit déclaré `CS-BIO-01` (`conflitsSourcesV1.ts`) et les lacunes de
+  // composition (apoprotéine, IgA sécrétoires), qui ne sont pas des règles.
+  shaPerimetre: '3449036275ad96a8ffef89dd692a94908a9edc976b40ef5871d5a0630b241519',
 };
 
 /**
@@ -697,6 +751,16 @@ export const GRILLES_INDICATIONS = grillesCitees(INDICATIONS_BIOLOGIE_V1);
 export const INDICATIONS_BIOLOGIE_SHA256 = sha256(
   JSON.stringify({ regles: INDICATIONS_BIOLOGIE_V1, grilles: GRILLES_INDICATIONS }),
 );
+
+/**
+ * Les identifiants des règles suspendues pour relecture ([[D-543]]) — seule
+ * lecture de cette table que le service d'orientation fait, par l'entrée
+ * publiée, pour dire au praticien que des lignes sont suspendues. Une fonction
+ * et non une donnée : elle n'entre pas dans l'empreinte signée.
+ */
+export function reglesIndicationsSuspendues(): string[] {
+  return INDICATIONS_BIOLOGIE_V1.filter(regle => regle.statut === 'suspendue').map(regle => regle.id);
+}
 
 /**
  * La table des indications est-elle RÉELLEMENT signée ? ([[D-063]])

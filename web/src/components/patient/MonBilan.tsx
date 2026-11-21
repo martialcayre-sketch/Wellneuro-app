@@ -107,7 +107,7 @@ export function MonBilan({ token }: { token: string }) {
   if (etat.bilan === null) {
     return (
       <PatientCard>
-        <h1 className="text-2xl font-semibold text-foreground">Mon bilan</h1>
+        <h1 className="font-display text-2xl font-bold leading-tight text-foreground">Mon bilan</h1>
         <p className="mt-3 text-base text-muted-foreground">
           Votre praticien ne vous a pas encore transmis de bilan. Il apparaîtra ici dès qu’il
           l’aura fait.
@@ -128,7 +128,7 @@ export function MonBilan({ token }: { token: string }) {
       <AvisLectureDatee />
       <PatientCard>
         <header className="border-b border-border pb-5">
-          <h1 className="text-2xl font-semibold text-foreground">Bilan neuronutritionnel</h1>
+          <h1 className="font-display text-2xl font-bold leading-tight text-foreground [overflow-wrap:anywhere] max-[319px]:hyphens-auto">Bilan neuronutritionnel</h1>
           {dateTransmission && (
             <p className="mt-1 text-sm text-muted-foreground">
               Transmis par votre praticien le {dateTransmission}

@@ -142,6 +142,14 @@ export const EVENT_CODES = {
   METRICS_UNAUTHORIZED: 'PRATICIEN.METRICS.UNAUTHORIZED',
   METRICS_QUERY_FAILED: 'PRATICIEN.METRICS.QUERY_FAILED',
 
+  // [[D-533]] : une erreur technique du PATCH des instruments du cabinet, qui
+  // reste un 500 « Erreur inattendue. ». La violation du CHECK « valide ⇒
+  // déclaré » ([[D-528]] §3) a son code à elle : aucun écrivain connu ne peut
+  // l'atteindre, c'est un défaut de code, alertable pour lui-même — et le nom
+  // de la contrainte, trop long, serait masqué en `[id]` dans les métadonnées.
+  PRATICIEN_INSTRUMENTS_PATCH_ECHEC: 'PRATICIEN.INSTRUMENTS_CABINET.PATCH_ECHEC',
+  PRATICIEN_INSTRUMENTS_CHECK_VALIDE_DECLARE: 'PRATICIEN.INSTRUMENTS_CABINET.CHECK_VALIDE_DECLARE_VIOLE',
+
   // G-TRUST-04, exigence 5 — journal des accès praticien. Comme
   // PORTAIL_GOOGLE_TRACE_ECHEC : une trace d'accès perdue est un trou de
   // conformité alertable pour lui-même, pas un incident applicatif. Couvre
@@ -188,6 +196,29 @@ export const EVENT_CODES = {
    * technique : ni blocage, ni correction, et jamais le texte lui-même.
    */
   SYNTHESE_NARRATIF_FORME_DE_SCORE: 'SYNTHESE_IA.NARRATIF.FORME_DE_SCORE',
+  /**
+   * H95 part B ([[D-513]] §5) — une synthèse SUSPECTE a été bloquée : une forme
+   * tirée du bloc de biologie transmis (`valeur_unite`, `intervalle`) a été
+   * relevée dans un champ ordinaire, ou une trace porte un bloc sous un schéma
+   * antérieur à v4. Le contexte nomme la synthèse, le champ et le code, jamais
+   * le texte.
+   */
+  SYNTHESE_BIOLOGIE_HORS_CHAMPS: 'SYNTHESE_IA.BIOLOGIE_HORS_CHAMPS',
+  /**
+   * [[D-539]] §2 — échec de CONSTRUCTION du bloc de biologie (lecture des
+   * résultats) : rien n'est parti, aucun second appel, champs vides. La ligne
+   * porte la classe d'erreur, jamais son message.
+   */
+  SYNTHESE_BIOLOGIE_BLOC_INDISPONIBLE: 'SYNTHESE_IA.BIOLOGIE.BLOC_INDISPONIBLE',
+  /**
+   * [[D-539]] §2 — échec du second appel APRÈS l'envoi du bloc (`echec_appel` :
+   * erreur ou délai ; `sortie_rejetee` : rejet après la relance). Les deux
+   * champs restent vides. Ni le bloc, ni la sortie du modèle, ni le message brut
+   * du fournisseur.
+   */
+  SYNTHESE_BIOLOGIE_APPEL_ECHOUE: 'SYNTHESE_IA.BIOLOGIE.APPEL_ECHOUE',
+  /** [[D-539]] §2 — la sortie du second appel a été rejetée, et la relance l'a rendue conforme. */
+  SYNTHESE_BIOLOGIE_SCHEMA_REJETE_RELANCE: 'SYNTHESE_IA.BIOLOGIE.REJETE_RELANCE',
   /**
    * [[D-335]] §8 — les traitements en vigueur (lignes datées) n'ont pas pu
    * être lus : la ligne de vigilance ne porte que ceux de l'anamnèse. Code

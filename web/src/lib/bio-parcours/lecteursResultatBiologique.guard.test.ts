@@ -45,6 +45,10 @@ const ACCES_ADMIS = [
   // et leur ligne lue pour restituer les mesures qui font foi (valeur, unité,
   // date) — aucune écriture, aucune qualification.
   'web/src/lib/export-dossier/assembler.ts',
+  // Le bloc de biologie de la synthèse ([[D-513]] §2) : lit les lignes du
+  // dossier, leur fil, leur ligne lue et la tête du contexte, comme la fiche,
+  // pour les transmettre au modèle sans qualification — aucune écriture.
+  'web/src/lib/clinical/blocBiologieSyntheseService.ts',
   // Seul chemin d'un import vers les résultats : la décision du praticien.
   'web/src/lib/biology-library/import/decisions.ts',
   // L'entrée publiée de BioFlow ([[D-306]] §1) NOMME la table parmi celles
@@ -121,6 +125,11 @@ const FAITS_ADMIS = [
   // laboratoire, avec les silences de §5 ; jamais la marque.
   'web/src/lib/export-dossier/assembler.ts',
   'web/src/lib/export-dossier/biologieExport.ts',
+  // Bloc de biologie de la synthèse ([[D-513]] §2) : l'intervalle lu, encodé
+  // et attribué au laboratoire, sous l'une des cinq formes, avec les silences
+  // de §5 ; jamais la marque.
+  'web/src/lib/clinical/blocBiologieSynthese.ts',
+  'web/src/lib/clinical/blocBiologieSyntheseService.ts',
 ];
 
 const MOTIF_FAITS = /\b(?:(?:intervalle|marquage)(?:Lu|_lu|NonTranscrit|_non_transcrit)|faitsLaboratoire)\b/;

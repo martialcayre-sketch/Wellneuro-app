@@ -41,8 +41,14 @@ function dass(
   };
 }
 
+// C-STR EST SUSPENDUE POUR RELECTURE ([[D-543]]) : la table livrée ne produit
+// plus rien (`suspensionLignesStress.guard.test.ts`). Les bancs de mécanisme
+// éprouvent la règle TELLE QU'ELLE EST ÉCRITE, remise `publiee` dans le seul
+// test : c'est elle qui reviendrait si la relecture la rétablissait.
+const C_STR_PUBLIEE = { ...CONTRADICTIONS_RULES_V1[0], statut: 'publiee' as const };
+
 function evaluer(reponses: ReponseOrientation[], entree: Partial<EntreeContradictions> = {}) {
-  return evaluerContradictions({ reponses, ...entree });
+  return evaluerContradictions({ reponses, regles: [C_STR_PUBLIEE], ...entree });
 }
 
 describe('moteur de contradictions — C-STR se déclenche sur la discordance, et sur elle seule', () => {
@@ -199,7 +205,7 @@ describe('moteur de contradictions — les quatre refus, éprouvés sur des règ
   // « aucune forme autre que DISCORDANCE ne sort » serait une tautologie —
   // exactement le piège que ce lot dénonce ailleurs.
   const declencheursCstr = CONTRADICTIONS_RULES_V1[0].declencheurs;
-  const base = { ...CONTRADICTIONS_RULES_V1[0] };
+  const base = { ...C_STR_PUBLIEE };
   const atteinte = [modeDeVie(6), dass(2, 5)];
 
   it('le témoin : la règle de référence, elle, produit bien un constat', () => {
@@ -409,7 +415,7 @@ describe('moteur de contradictions — l’écart entre passations est porté, j
       {
         regles: [
           {
-            ...CONTRADICTIONS_RULES_V1[0],
+            ...C_STR_PUBLIEE,
             declencheurs: [
               { type: 'comparaison', idQuestionnaire: 'Q_STR_04', sousScore: 'D', operateur: '<=', valeur: 4 },
               { type: 'comparaison', idQuestionnaire: 'Q_STR_04', sousScore: 'S', operateur: '<=', valeur: 7 },
@@ -449,7 +455,7 @@ describe('moteur de contradictions — le constat porte sa justification de reco
   it('une règle sans recoupement ne porte PAS la clé', () => {
     // Une clé vide ne dirait pas « aucun recoupement », elle dirait
     // « recoupement non renseigné » — `DC-24` de nouveau.
-    const sansRecoupement = { ...CONTRADICTIONS_RULES_V1[0] };
+    const sansRecoupement = { ...C_STR_PUBLIEE };
     delete (sansRecoupement as { recoupementJustifie?: string }).recoupementJustifie;
     const constats = evaluer([modeDeVie(6), dass(2, 5)], { regles: [sansRecoupement] });
     expect(constats).toHaveLength(1);

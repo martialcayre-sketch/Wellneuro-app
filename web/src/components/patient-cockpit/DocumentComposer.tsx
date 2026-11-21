@@ -108,7 +108,7 @@ export function DocumentComposer({ modele, blocs, destinataireInitial = 'patient
   return (
     <section aria-label="Composition du document" className="flex flex-col gap-4">
       <header className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="font-display text-lg font-semibold">{modele.titre}</h3>
+        <h2 className="font-display text-lg font-semibold">{modele.titre}</h2>
         <span
           aria-label={`État : ${ETAT_LABELS[document.etat]}`}
           className="inline-flex min-h-[34px] items-center rounded-full border border-border bg-muted px-3 py-1 text-13"
@@ -125,7 +125,7 @@ export function DocumentComposer({ modele, blocs, destinataireInitial = 'patient
             type="button"
             aria-pressed={destinataire === d}
             onClick={() => setDestinataire(d)}
-            className={`min-h-11 rounded-lg px-3 py-2 text-sm ${
+            className={`min-h-11 rounded-lg px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring ${
               destinataire === d
                 ? 'bg-surface font-semibold text-foreground shadow-card'
                 : 'text-muted-foreground hover:text-foreground'
@@ -138,9 +138,9 @@ export function DocumentComposer({ modele, blocs, destinataireInitial = 'patient
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div aria-label="Sources praticien" className="flex flex-col gap-3">
-          <h4 className="text-xs font-semibold uppercase tracking-[.06em] text-muted-foreground">
+          <h3 className="text-xs font-semibold uppercase tracking-[.06em] text-muted-foreground">
             Sources praticien
-          </h4>
+          </h3>
           {document.blocs.map((bloc) => (
             <article key={bloc.id} className="rounded-xl border border-border bg-surface p-3 shadow-card">
               <div className="mb-1 flex flex-wrap items-center gap-2">
@@ -156,9 +156,9 @@ export function DocumentComposer({ modele, blocs, destinataireInitial = 'patient
         </div>
 
         <div aria-label="Aperçu destinataire" className="flex flex-col gap-3">
-          <h4 className="text-xs font-semibold uppercase tracking-[.06em] text-muted-foreground">
+          <h3 className="text-xs font-semibold uppercase tracking-[.06em] text-muted-foreground">
             Aperçu destinataire — {DESTINATAIRE_LABELS[destinataire]}
-          </h4>
+          </h3>
           {blocsVisibles.length === 0 ? (
             <p className="rounded-xl border border-dashed border-border p-3 text-base text-muted-foreground">
               Aucun contenu diffusé à ce destinataire.
@@ -184,7 +184,7 @@ export function DocumentComposer({ modele, blocs, destinataireInitial = 'patient
           <button
             type="button"
             onClick={onAvancer}
-            className="min-h-11 rounded-md bg-status-success px-4 py-2 text-sm font-medium text-white"
+            className="min-h-11 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
           >
             {ACTION_LABELS[prochainEtat]}
           </button>

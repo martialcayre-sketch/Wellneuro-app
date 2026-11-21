@@ -931,3 +931,17 @@ describe('RayonPatientsPanel — « Réessayer » sous l’échec du tableau (T-
     expect(screen.queryByRole('button', { name: 'Réessayer' })).toBeNull();
   });
 });
+
+// PRA-6b (D-488, DOC-17) : la liste de tri n'avait aucun nom accessible
+// (axe `select-name`, critique, constat PRA-6 §3.1).
+describe('RayonPatientsPanel — noms accessibles (PRA-6b)', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('la liste de tri porte T-77, « Trier la liste des patients »', async () => {
+    stubFetch();
+    render(<RayonPatientsPanel />);
+    await screen.findAllByRole('button', { name: /gérer le dossier/i });
+    const tri = screen.getByRole('combobox', { name: 'Trier la liste des patients' });
+    expect((tri as HTMLSelectElement).value).toBe('nom');
+  });
+});

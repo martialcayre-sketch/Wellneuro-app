@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { GesteConfirme } from '@/components/ui/GesteConfirme';
+import { useFocusApresRelecture } from '@/components/ui/useFocusApresRelecture';
 import { Input } from '@/components/ui/Input';
 import type { ClaimEnRevue, ClaimStatut } from '@/lib/rag/claims/revue';
 import type { CorpusClaimsApiResponse } from '@/app/api/praticien/corpus/claims/route';
@@ -12,6 +14,8 @@ import { clesLienDuClaim } from '@/lib/rag/claims/clesLien';
 import { lireIdentifiantRecherche } from '@/lib/rag/claims/rechercheIdentifiant';
 import { nomRubrique } from '@/components/fiches-usage/libelles';
 import { ClesLienChamps, SAISIE_CLES_VIDE, etatSaisieCles, type SaisieClesLien } from './ClesLienChamps';
+import { CLASSE_BARRE_ONGLETS, CLASSE_CHAMP, classeMarque, classeOnglet } from './habillageAtelier';
+import { libelleConfirmerLot, questionSoumissionLot } from './textesRevueLot';
 
 // Atelier corpus v1 — poste de revue des claims (D-004). L'écran matérialise
 // la signature D-003 : chaque claim est lu AVEC ses verbatims cités, puis
@@ -44,6 +48,9 @@ import { ClesLienChamps, SAISIE_CLES_VIDE, etatSaisieCles, type SaisieClesLien }
 //    decision — une décision individuelle journalisée par claim, jamais un
 //    lot transactionnel. Le marquage est le jugement ; seul « Soumettre »
 //    touche le réseau. Aucun « tout marquer » : chaque marque est un clic.
+//    « Soumettre » demande une confirmation (T-71, T-72 ; Q7 de [[D-481]],
+//    complément DOC-13) : elle dit que la soumission n'est pas atomique, et
+//    précède l'acte sans le changer.
 //
 // Deux gardes d'écran contre les courses :
 //  - une seule décision en vol à la fois (verrou global : tout bouton d'action
@@ -84,6 +91,10 @@ type Etat = 'chargement' | 'chargee' | 'erreur';
 
 export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
   const [statut, setStatut] = useState<ClaimStatut>('EN_ATTENTE_VALIDATION');
+  // « Réessayer » (PRA-6h) : le focus revient au bouton si la lecture échoue
+  // encore. Le panneau n'a pas de titre propre (les titres sont par source) :
+  // aucun n'est créé, la réussite ne déplace pas le focus.
+  const { boutonRef: reessayerRef, relire } = useFocusApresRelecture();
   const [offset, setOffset] = useState(0);
   /** Recherche par identifiant appliquée (D/22) — `WN-CL-…` normalisé, ou null. */
   const [recherche, setRecherche] = useState<string | null>(null);
@@ -517,11 +528,19 @@ export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
   const enEnvoiGlobal = envoiId !== null || enCoursLot;
   const idOngletActif = `onglet-claims-${statut}`;
 
-  const marquesArr = [...marques.values()];
+  // Les comptes ne portent que sur les marques des claims AFFICHÉS : ce sont
+  // les seules que `soumettreLot` soumet. Une marque dont le claim a quitté la
+  // file (décidé ailleurs, puis file relue) ne s'annonce pas — T-71 dit ce
+  // qui partira, pas ce qui reste dans la Map (constat wn-reviewer).
+  const marquesArr = claims.flatMap((claim) => {
+    const marque = marques.get(claim.id);
+    return marque ? [marque] : [];
+  });
+  const nbMarques = marquesArr.length;
   const aValider = marquesArr.filter((m) => m.decision === 'VALIDE').length;
   const aRejeter = marquesArr.filter((m) => m.decision === 'REJETE').length;
   const rejetSansMotif = marquesArr.some((m) => m.decision === 'REJETE' && m.motif.trim().length === 0);
-  const nonJuges = Math.max(0, claims.length - marques.size);
+  const nonJuges = Math.max(0, claims.length - nbMarques);
 
   return (
     <div className="flex flex-col gap-5">
@@ -557,15 +576,17 @@ export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
             >
               {compteurs.empreintesDerivees}
             </dd>
-            <p className="mt-1 text-xs text-muted-foreground">
+            {/* Un `<dd>`, pas un `<p>` : un groupe de `<dl>` ne porte que des
+                `<dt>` et des `<dd>` (axe `definition-list`, PRA-6h). */}
+            <dd className="mt-1 text-xs text-muted-foreground">
               {compteurs.sourcesSupersedees} version{compteurs.sourcesSupersedees > 1 ? 's' : ''}{' '}
               supersédée{compteurs.sourcesSupersedees > 1 ? 's' : ''}
-            </p>
+            </dd>
           </div>
         </dl>
       )}
 
-      <div role="tablist" aria-label="Statut des claims" className="flex gap-2">
+      <div role="tablist" aria-label="Statut des claims" className={`self-start ${CLASSE_BARRE_ONGLETS}`}>
         {ONGLETS.map((onglet, index) => {
           const actif = onglet.statut === statut;
           return (
@@ -582,11 +603,7 @@ export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
               tabIndex={actif ? 0 : -1}
               onClick={() => changerOnglet(onglet.statut)}
               onKeyDown={(event) => onClavierOnglets(event, index)}
-              className={`min-h-9 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring ${
-                actif
-                  ? 'bg-primary text-primary-foreground'
-                  : 'border border-border text-muted-foreground hover:bg-muted'
-              }`}
+              className={classeOnglet(actif)}
             >
               {onglet.libelle}
             </button>
@@ -635,7 +652,7 @@ export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
         )}
       </form>
 
-      <label className="flex items-center gap-2 text-sm text-foreground">
+      <label className="flex min-h-11 items-center gap-2 self-start text-sm text-foreground">
         <input
           type="checkbox"
           checked={seulementExclus}
@@ -644,7 +661,7 @@ export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
             setSeulementExclus(event.target.checked);
             setOffset(0);
           }}
-          className="h-4 w-4"
+          className="h-4 w-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
         />
         Exclus de la recherche seulement
       </label>
@@ -678,7 +695,7 @@ export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
         {etat === 'erreur' && (
           <div role="alert" className="flex flex-col gap-3 rounded-xl border border-accent bg-status-warning/10 p-4 text-base text-status-warning">
             <span>{erreur}</span>
-            <Button variant="outline" className="self-start" onClick={() => void charger(statut, offset, recherche, seulementExclus)}>
+            <Button ref={reessayerRef} variant="outline" className="self-start" onClick={() => void relire(() => charger(statut, offset, recherche, seulementExclus))}>
               Réessayer
             </Button>
           </div>
@@ -758,7 +775,7 @@ export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
             </p>
             {[...parSource.entries()].map(([sourceId, claimsSource]) => (
               <section key={sourceId} aria-label={`Source ${sourceId}`} className="flex flex-col gap-3">
-                <h3 className="font-display text-lg font-semibold text-foreground">{sourceId}</h3>
+                <h2 className="font-display text-lg font-semibold text-foreground">{sourceId}</h2>
                 {claimsSource.map((claim) => {
                   const armeeValider = confirmationId === claim.id && confirmationAction === 'VALIDE';
                   const armeeRejeter = confirmationId === claim.id && confirmationAction === 'REJETE';
@@ -795,7 +812,7 @@ export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
                             key={`${source.chunkId}@${source.versionChunk}`}
                             className="rounded-lg border border-border bg-muted/40 px-3 py-2"
                           >
-                            <summary className="cursor-pointer text-sm font-medium text-muted-foreground">
+                            <summary className="min-h-11 cursor-pointer rounded-sm py-2 text-sm font-medium text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring">
                               Verbatim {source.chunkId} · {source.versionChunk} — {source.section}
                               {source.shaDerive && (
                                 <span className="ml-2 inline-flex"><Badge variant="danger">verbatim modifié</Badge></span>
@@ -874,7 +891,7 @@ export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
                                 disabled={enEnvoiGlobal}
                                 onChange={(event) => setMotifRejet(event.target.value)}
                                 placeholder="Motif du rejet (obligatoire)"
-                                className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm"
+                                className={CLASSE_CHAMP}
                               />
                               <Button
                                 variant="danger"
@@ -923,22 +940,24 @@ export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
                       {claim.statut === 'EN_ATTENTE_VALIDATION' && modeLot && (
                         <div className="flex flex-col gap-2">
                           <div className="flex flex-wrap items-center gap-2">
-                            <Button
-                              variant={marque?.decision === 'VALIDE' ? 'primary' : 'outline'}
+                            <button
+                              type="button"
                               aria-pressed={marque?.decision === 'VALIDE'}
                               disabled={enCoursLot}
                               onClick={() => basculerMarque(claim.id, 'VALIDE')}
+                              className={classeMarque(marque?.decision === 'VALIDE', 'favorable')}
                             >
                               À valider
-                            </Button>
-                            <Button
-                              variant={marque?.decision === 'REJETE' ? 'danger' : 'outline'}
+                            </button>
+                            <button
+                              type="button"
                               aria-pressed={marque?.decision === 'REJETE'}
                               disabled={enCoursLot}
                               onClick={() => basculerMarque(claim.id, 'REJETE')}
+                              className={classeMarque(marque?.decision === 'REJETE', 'defavorable')}
                             >
                               À rejeter
-                            </Button>
+                            </button>
                           </div>
                           {marque?.decision === 'REJETE' && (
                             <input
@@ -949,7 +968,7 @@ export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
                               disabled={enCoursLot}
                               onChange={(event) => definirMotifMarque(claim.id, event.target.value)}
                               placeholder="Motif du rejet (obligatoire)"
-                              className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm"
+                              className={CLASSE_CHAMP}
                             />
                           )}
                         </div>
@@ -992,7 +1011,7 @@ export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
                                 disabled={enEnvoiGlobal}
                                 onChange={(event) => setMotifExclusionSaisi(event.target.value)}
                                 placeholder="Motif : dossier et classement (obligatoire)"
-                                className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm"
+                                className={CLASSE_CHAMP}
                               />
                               <Button
                                 disabled={enEnvoiGlobal || motifExclusionSaisi.trim().length === 0}
@@ -1082,12 +1101,18 @@ export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
 
             {modeLot && statut === 'EN_ATTENTE_VALIDATION' && (
               <div className="sticky bottom-0 z-10 flex flex-wrap items-center gap-3 border-t border-border bg-surface/95 py-3 backdrop-blur">
-                <Button
-                  disabled={marques.size === 0 || rejetSansMotif || enCoursLot}
-                  onClick={() => void soumettreLot()}
-                >
-                  {enCoursLot ? 'Envoi en cours…' : `Soumettre les décisions (${marques.size})`}
-                </Button>
+                {/* Toutes les marques retirées pendant que la confirmation est
+                    ouverte : la clé la remonte fermée, plutôt que d'afficher
+                    une question à zéro décision, qui n'est pas T-71. */}
+                <GesteConfirme
+                  key={nbMarques === 0 ? 'sans-marque' : 'avec-marques'}
+                  libelle={enCoursLot ? 'Envoi en cours…' : `Soumettre les décisions (${nbMarques})`}
+                  variante="primary"
+                  question={questionSoumissionLot(aValider, aRejeter)}
+                  libelleConfirmer={libelleConfirmerLot(nbMarques)}
+                  desactive={nbMarques === 0 || rejetSansMotif || enCoursLot}
+                  onConfirmer={() => void soumettreLot()}
+                />
                 {rejetSansMotif && (
                   <span className="text-sm text-status-warning">Un rejet marqué attend son motif.</span>
                 )}

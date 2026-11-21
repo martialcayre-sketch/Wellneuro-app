@@ -677,7 +677,7 @@ export function PatientFoodObservationPanel({ idPatient }: { idPatient: string |
               </select>
             </PatientField>
 
-            <label className="flex items-center gap-2 text-sm text-foreground">
+            <label className="flex min-h-11 items-center gap-2 text-sm text-foreground">
               <input
                 data-testid="ja-patient-rien-de-particulier"
                 type="checkbox"
@@ -704,7 +704,7 @@ export function PatientFoodObservationPanel({ idPatient }: { idPatient: string |
                 <fieldset className="space-y-2">
                   <legend className="text-sm text-muted-foreground">À quels moments ?</legend>
                   {MOMENTS_PRISE.map(moment => (
-                    <label key={moment} className="flex items-center gap-2 text-sm text-foreground">
+                    <label key={moment} className="flex min-h-11 items-center gap-2 text-sm text-foreground">
                       <input
                         data-testid={`ja-patient-moment-${moment}`}
                         type="checkbox"

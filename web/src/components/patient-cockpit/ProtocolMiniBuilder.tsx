@@ -412,9 +412,9 @@ export function ProtocolMiniBuilder({
   if (!decisionCard?.selectedMainPriority || decisionBlocked) {
     return (
       <section aria-labelledby="protocol-builder-title">
-        <h3 id="protocol-builder-title" className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+        <h2 id="protocol-builder-title" className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
           Protocole 21 jours
-        </h3>
+        </h2>
         <div className="rounded-xl border border-border bg-surface p-4">
           {/* SANS CARTE, ON NE SAIT RIEN DE LA PRIORITÉ ([[D-253]]). Le motif
               « priorité non sélectionnée » s'affichait aussi quand aucune carte
@@ -749,7 +749,7 @@ export function ProtocolMiniBuilder({
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h3 id="protocol-builder-title" className="text-sm font-semibold text-foreground">Protocole 21 jours</h3>
+          <h2 id="protocol-builder-title" className="text-sm font-semibold text-foreground">Protocole 21 jours</h2>
           <p className="mt-1 text-xs text-muted-foreground">Brouillon local non enregistré</p>
         </div>
         <span className="rounded-full border border-border px-2 py-1 text-xs text-muted-foreground">
@@ -823,7 +823,7 @@ export function ProtocolMiniBuilder({
 
         <div>
           <div className="flex items-center justify-between gap-3">
-            <h4 id="protocol-builder-actions-title" className="text-sm font-medium text-foreground">Actions ({actions.length}/{MAX_ACTIONS_PROTOCOLE_21J})</h4>
+            <h3 id="protocol-builder-actions-title" className="text-sm font-medium text-foreground">Actions ({actions.length}/{MAX_ACTIONS_PROTOCOLE_21J})</h3>
             <button type="button" onClick={addAction} disabled={actions.length >= MAX_ACTIONS_PROTOCOLE_21J} className={`min-h-11 rounded-lg border border-border px-3 py-1.5 text-sm disabled:opacity-50 ${ANNEAU_FOCUS}`}>Ajouter une action</button>
           </div>
           {/* LE SOMMAIRE D'ANCRES (PRA-3b Q13 a), sous 1 024 px et dès deux
@@ -881,7 +881,7 @@ export function ProtocolMiniBuilder({
                       aria-invalid={erreur !== null && action.type === ''}
                       value={action.type}
                       onChange={event => updateAction(action.actionId, { type: event.target.value as ProtocolActionType | '' })}
-                      className={`mt-1 min-h-11 w-full rounded-lg border border-border bg-background p-2 text-sm aria-[invalid=true]:border-status-danger ${ANNEAU_FOCUS}`}
+                      className={`mt-1 min-h-11 h-11 w-full rounded-lg border border-border bg-background p-2 text-sm aria-[invalid=true]:border-status-danger ${ANNEAU_FOCUS}`}
                     >
                       {/* Option d'absence NON désactivée : elle doit se lire,
                           et rester atteignable si le praticien veut revenir en
@@ -959,7 +959,7 @@ export function ProtocolMiniBuilder({
                           aria-label={`Assiette de l’action ${index + 1}`}
                           value={action.recommendedPlateRef?.plateCode ?? ''}
                           onChange={event => choisirAssiette(action.actionId, event.target.value)}
-                          className={`mt-1 min-h-11 w-full rounded-lg border border-border bg-background p-2 text-sm ${ANNEAU_FOCUS}`}
+                          className={`mt-1 min-h-11 h-11 w-full rounded-lg border border-border bg-background p-2 text-sm ${ANNEAU_FOCUS}`}
                         >
                           <option value="">Aucune assiette — action alimentaire libre</option>
                           {(assiettesIndiquees ?? []).map(assiette => (
@@ -1134,7 +1134,7 @@ export function ProtocolMiniBuilder({
             aria-invalid={erreur !== null && loadLevel === ''}
             value={loadLevel}
             onChange={event => { markDirty(); setLoadLevel(event.target.value as NiveauChargeBrouillon); }}
-            className={`mt-1 min-h-11 w-full rounded-lg border border-border bg-background p-2 font-normal aria-[invalid=true]:border-status-danger ${ANNEAU_FOCUS}`}
+            className={`mt-1 min-h-11 h-11 w-full rounded-lg border border-border bg-background p-2 font-normal aria-[invalid=true]:border-status-danger ${ANNEAU_FOCUS}`}
           >
             <option value="">Choisir la charge…</option>
             {Object.entries(LOAD_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}

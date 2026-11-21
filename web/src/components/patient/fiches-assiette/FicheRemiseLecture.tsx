@@ -64,7 +64,7 @@ export function FicheRemiseLecture({ token, idRemise }: { token: string; idRemis
       {fiche.contenu && <AvisLectureDatee />}
       <PatientCard>
         <header className="border-b border-border pb-5">
-          <h1 className="text-2xl font-semibold text-foreground">{titreDeLaFiche(fiche)}</h1>
+          <h1 className="font-display text-2xl font-bold leading-tight text-foreground">{titreDeLaFiche(fiche)}</h1>
           {date && <p className="mt-1 text-sm text-muted-foreground">{date}</p>}
           {mentions.map(mention => (
             <p key={mention} className="mt-3 text-base text-foreground">{mention}</p>

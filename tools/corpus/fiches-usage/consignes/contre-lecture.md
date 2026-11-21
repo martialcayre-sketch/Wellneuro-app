@@ -58,7 +58,16 @@ que décrivent les claims, dans le sens où ils le décrivent, est FIDÈLE même
 si aucun claim n'emploie le mot « fonctionnel » ni ne qualifie l'état
 ainsi : cette qualification vient du cadre signé. Tout autre élément qu'il
 contient (une cause, un mécanisme, une population, une gravité, une
-conséquence) est un fait, jugé comme tel.
+conséquence) est un fait, jugé comme tel. Le libellé d'une hypothèse ne
+contient aucun de ces douze termes : « normal », « anormal », « déficit »,
+« carence », « excès », « diagnos », « hors plage », « élevé »,
+« pathologie », « maladie », « syndrome », « trouble ». Ni la casse, ni les
+accents, ni un tiret à la place d'une espace n'y changent rien, et un mot qui
+contient l'un d'eux tombe sous lui : « déficitaire », « excessif »,
+« élevée », mais aussi « relevé ». Un libellé qui reformule ainsi le terme
+qu'emploient les claims n'est pas infidèle pour cela, s'il garde le
+nutriment et le sens bas qu'ils décrivent. Cette liste ne vise pas le
+libellé d'une population.
 
 Il est INFIDÈLE s'il contient au moins un des défauts suivants :
 
@@ -91,7 +100,8 @@ Il est INFIDÈLE s'il contient au moins un des défauts suivants :
   elle est nommée en tant que médicament ;
 - une quantité à prendre ou à consommer (dose, volume, nombre d'unités,
   apport recommandé ou de référence), une fréquence ou un fractionnement
-  des prises, une durée de prise ou de traitement, ou toute autre valeur
+  des prises, une durée de prise ou de traitement, un moment de prise (le
+  soir, au repas, à jeun), ou toute autre valeur
   qui n'est ni une teneur ni un seuil (par exemple une teneur maximale
   recommandée pour un produit), même rapportés par un claim, hors une
   valeur reprise d'une désignation approuvée comme dit plus haut ; ne sont pas
@@ -99,13 +109,28 @@ Il est INFIDÈLE s'il contient au moins un des défauts suivants :
   effectivement présente dans un aliment, une eau ou un produit) et un
   seuil qui borne une observation ou un risque (la quantité au-delà de
   laquelle un effet est observé, une limite supérieure de sécurité),
-  restitués avec toutes leurs conditions ;
+  restitués avec toutes leurs conditions ; un niveau d'apport qu'une source
+  déclare sans problème de sécurité est une limite supérieure de sécurité,
+  même exprimé en quantité consommée par prise ou par jour : restitué en
+  constat, attribué à sa source, avec sa population, ses exceptions et ses
+  réserves, il n'est pas un défaut ; présenté comme une quantité à prendre,
+  une recommandation, une garantie de sécurité générale, détachée de sa
+  population, de ses exceptions ou de ses réserves, ou prolongé en danger
+  au-delà ou en conseil en deçà, il en est un ; une
+  mention de dose ou d'apport sans valeur chiffrée (« à doses élevées »,
+  l'absence d'apport conseillé) n'est pas une quantité de prise, et
+  restituée telle que son claim la porte, elle n'est pas un défaut ;
 - une indication de demander le dosage des anticorps anti-LDL oxydées tirée
   d'un claim marqué [SOUS RÉSERVE D'INDICATION] ;
 - pour une rubrique : un texte qui ne traite pas la rubrique nommée ;
 - pour une rubrique : un texte qui dépasse les AXES SIGNÉS DE LA FICHE — un
   usage présenté comme établi, validé, recommandé ou systématique alors que
-  le statut d'usage est « preuves_limitees » ; un usage qui n'est pas dit
+  le statut d'usage est « preuves_limitees », hors la phrase qui restitue
+  un claim recommandant lui-même l'usage, attribuée à la source de ce claim
+  (« Selon <source>, … »), avec toutes ses conditions, et terminée par
+  « , mais cet usage n'est pas établi. » : cette phrase n'est pas un défaut,
+  et sans l'attribution ou sans cette réserve, elle en est un, dans toute
+  rubrique, « precautions » comprise ; un usage qui n'est pas dit
   non validé, ou qui déclenche un examen ou une décision, alors que le
   statut est « non_valide » (une rubrique qui ne présente aucun usage n'a
   pas à le dire) ; une « information_contributive » présentée
@@ -119,7 +144,8 @@ Il est INFIDÈLE s'il contient au moins un des défauts suivants :
 - pour le libellé d'une hypothèse : un nom qui désigne un marqueur, le
   résultat d'un dosage, un seuil, une comparaison à un seuil ou une
   qualification diagnostique, plutôt qu'un état fonctionnel d'un seul
-  nutriment dans le sens bas.
+  nutriment dans le sens bas ; ou un nom qui contient l'un des douze termes
+  écartés, même dérivé ou contenu dans un autre mot.
 
 Un claim porte sur l'objet d'une rubrique quand il en traite le contenu
 même, pas seulement son sujet. Pour « interpretations », il dit ce qu'un
@@ -131,7 +157,25 @@ pas sur l'objet de « interpretations » ; un claim qui ne nomme ni un
 résultat possible de l'examen, ni une conséquence qu'un résultat
 autorise, ne porte pas sur celui de « resultats_consequences » ; dans les
 deux cas, même s'il porte sur le nutriment ou sur l'état recherché, et un
-texte qui l'y restitue ne traite pas la rubrique nommée.
+texte qui l'y restitue ne traite pas la rubrique nommée. Un claim qui
+nomme un résultat possible de l'analyte de la fiche (une valeur basse,
+abaissée ou élevée) porte sur l'objet de « resultats_consequences ». Un
+claim qui énonce une limite de l'examen ou de son marqueur (sa fiabilité,
+sa validité, ce qu'il ne permet pas de mesurer ou de conclure, un manque
+de données) porte sur l'objet de « limites ». Une limite de la littérature
+sur un supplément, une option ou un traitement (son efficacité, son absence
+d'effet, la qualité de ses études) n'est pas une limite de l'examen ni de
+son marqueur : elle ne porte pas sur l'objet de « limites ». Un claim porte
+sur l'objet de « surveillance_arret » quand il dit quoi surveiller, quand
+ou comment, ou à quel critère arrêter ; un argument de causalité
+(l'évolution d'un effet après l'arrêt puis la reprise d'un produit) n'en
+relève pas. Dans ces deux cas, un texte qui l'y restitue ne traite pas la
+rubrique nommée. Dans « resultats_consequences », un résultat interprété
+(ce dont il témoigne, ce qu'il reflète ou traduit) déborde vers
+« interpretations » ; sous le statut « preuves_limitees », une conséquence
+décisionnelle (orienter vers une complémentation, une prise en charge ou
+un autre examen) y est un défaut, sauf une condition de sécurité ou
+d'admissibilité que le marqueur « oui » impose d'y restituer.
 
 La phrase « Les sources retenues ne documentent pas ce point. » est FIDÈLE si
 aucun claim ne porte sur l'objet de la rubrique ; INFIDÈLE si un claim y
@@ -148,7 +192,7 @@ La phrase « Les sources retenues documentent ce point avec une quantité de pri
 la rubrique, qu'aucun des faits qu'ils y apportent ne peut s'écrire, et
 qu'au moins un en est empêché par une quantité de prise (une quantité à
 prendre ou à consommer, une fréquence ou un fractionnement des prises, une
-durée de prise ou de traitement). Elle est INFIDÈLE si un fait qui porte
+durée de prise ou de traitement, un moment de prise). Elle est INFIDÈLE si un fait qui porte
 sur cet objet peut s'écrire, si aucun n'est empêché par une quantité de
 prise, et toujours dans « question » ou « population ».
 
@@ -163,7 +207,9 @@ médicament, il tait une condition de son claim : le texte est INFIDÈLE. Un
 fait auquel son claim attache une quantité de prise ne peut pas s'écrire
 sans elle. Empêché seulement par un médicament nommé, ou par une quantité
 exclue qui n'est pas une quantité de prise, ce fait ne compte pas parmi
-ceux qui portent sur l'objet de la rubrique pour juger la phrase d'absence.
+ceux qui portent sur l'objet de la rubrique pour juger la phrase d'absence ;
+une conséquence décisionnelle qui ne s'écrit pas dans
+« resultats_consequences » sous « preuves_limitees » n'y compte pas non plus.
 Empêché par une quantité de prise, même s'il l'est aussi par un médicament
 nommé ou une autre quantité exclue, il y compte : la phrase d'absence est alors
 INFIDÈLE, et seule la phrase de quantité convient si aucun fait qui porte

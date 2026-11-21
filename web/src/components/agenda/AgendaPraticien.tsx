@@ -141,7 +141,7 @@ export function AgendaPraticien({ patients }: { patients: PatientOption[] }) {
             <select
               value={idPatient}
               onChange={e => setIdPatient(e.target.value)}
-              className="min-h-11 rounded-lg border border-border bg-surface px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+              className="min-h-11 h-11 rounded-lg border border-border bg-surface px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
             >
               <option value="">Choisir un patient…</option>
               {patients.map(p => (

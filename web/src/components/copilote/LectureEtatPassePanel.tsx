@@ -50,12 +50,19 @@ export function LectureEtatPassePanel({
   repereInitial,
   masquerSelecteur = false,
   onRetourPresent,
+  niveauTitre = 3,
 }: {
   idPatient: string;
   repereInitial?: string | null;
   masquerSelecteur?: boolean;
   onRetourPresent?: () => void;
+  /** Fixé par l'appelant ([[D-481]] complément DOC-15, Q1) : le copilote passe
+   * en h2 sous son h1 ; la fiche aussi depuis que le nom du dossier y est le
+   * h1 (PRA-6e, question 20261117-1423-d). Le sous-titre suit, sans saut. */
+  niveauTitre?: 2 | 3;
 }) {
+  const Titre = niveauTitre === 2 ? 'h2' : 'h3';
+  const SousTitre = niveauTitre === 2 ? 'h3' : 'h4';
   const [reperes, setReperes] = useState<Repere[]>([]);
   const [repereActif, setRepereActif] = useState<string | null>(null);
   const [lecture, setLecture] = useState<PropositionDatee | null>(null);
@@ -199,9 +206,9 @@ export function LectureEtatPassePanel({
 
   return (
     <section aria-labelledby="lecture-passee" className="rounded-xl border border-border bg-surface p-4 shadow-card">
-      <h3 id="lecture-passee" className="font-display text-lg font-semibold text-foreground">
+      <Titre id="lecture-passee" className="font-display text-lg font-semibold text-foreground">
         Lire l’état de la fiche à une date passée
-      </h3>
+      </Titre>
       <p className="mt-1 text-xs text-muted-foreground">
         L’état est <strong>recalculé</strong> à partir des données connues à cette date, jamais relu depuis un
         enregistrement. Il ne peut pas être modifié : aucune décision ne se prend depuis cet écran. Vous pouvez y
@@ -278,9 +285,9 @@ export function LectureEtatPassePanel({
 
           {etat === 'chargee' && (
             <div className="mt-4 border-t border-border pt-3">
-              <h4 className="text-sm font-semibold text-foreground">
+              <SousTitre className="text-sm font-semibold text-foreground">
                 Noter ce que vous observez sur cet état
-              </h4>
+              </SousTitre>
               {/* La phrase qui porte tout le gate : deux dates, jamais confondues. */}
               <p className="mt-1 text-xs text-muted-foreground">
                 Votre note porte sur l’état du {formatDate(repereActif)}, mais elle est écrite aujourd’hui : elle sera

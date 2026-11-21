@@ -36,8 +36,8 @@ function stubFetch(implementationFil: () => Promise<unknown>) {
     'fetch',
     vi.fn(async (url: string) =>
       url.includes('meteo-adhesion')
-        ? ({ json: async () => ({ ok: true, determinees: [], nbIndeterminees: 0 }) } as unknown as Response)
-        : ({ json: implementationFil } as unknown as Response),
+        ? ({ ok: true, json: async () => ({ ok: true, determinees: [], nbIndeterminees: 0 }) } as unknown as Response)
+        : ({ ok: true, json: implementationFil } as unknown as Response),
     ),
   );
 }
@@ -122,6 +122,11 @@ describe('FilDuJour — timeline et hiérarchie (maquette Spirale)', () => {
     const liens = screen.getAllByRole('link', { name: /Ouvrir la fiche/ });
     expect(liens[0].className).toContain('bg-primary');
     expect(liens[1].className).not.toContain('bg-primary');
+    // Cible de 44 px pour les deux formes (PRA-6, constat à l'écran : 36 px).
+    for (const lien of liens) {
+      expect(lien.className).toContain('min-h-11');
+      expect(lien.className).not.toContain('min-h-9');
+    }
   });
 
   it('l’heure s’affiche pour un événement du jour, « — » pour une carte sans date', async () => {
@@ -170,7 +175,7 @@ describe('FilDuJour — timeline et hiérarchie (maquette Spirale)', () => {
                 nbIndeterminees: 0,
               }),
             } as unknown as Response)
-          : ({ json: async () => ({ cartes: [carte()] }) } as unknown as Response),
+          : ({ ok: true, json: async () => ({ cartes: [carte()] }) } as unknown as Response),
       ),
     );
     render(<FilDuJour />);
@@ -182,8 +187,8 @@ describe('FilDuJour — timeline et hiérarchie (maquette Spirale)', () => {
       'fetch',
       vi.fn(async (url: string) =>
         url.includes('meteo-adhesion')
-          ? ({ json: async () => ({ ok: false, determinees: [], nbIndeterminees: 0, unavailable: true }) } as unknown as Response)
-          : ({ json: async () => ({ cartes: [carte()] }) } as unknown as Response),
+          ? ({ ok: true, json: async () => ({ ok: false, determinees: [], nbIndeterminees: 0, unavailable: true }) } as unknown as Response)
+          : ({ ok: true, json: async () => ({ cartes: [carte()] }) } as unknown as Response),
       ),
     );
     render(<FilDuJour />);
@@ -405,6 +410,7 @@ describe('FilDuJour — rappeler un questionnaire en retard', () => {
         return { json: relance } as unknown as Response;
       }
       return {
+        ok: true,
         json: async () => ({
           ok: true,
           cartes: [carte({ idAssignation: 'ASG_1' })],
@@ -525,6 +531,7 @@ describe('FilDuJour — débloquer un questionnaire échu', () => {
         return { json: deblocage } as unknown as Response;
       }
       return {
+        ok: true,
         json: async () => ({
           ok: true,
           cartes: [carte({ idAssignation: 'ASG_1', statutReponses })],
@@ -729,8 +736,8 @@ describe('FilDuJour — Météo d’adhésion indisponible (T-18)', () => {
       'fetch',
       vi.fn(async (url: string) =>
         url.includes('meteo-adhesion')
-          ? ({ json: async () => ({ ok: false, determinees: [], nbIndeterminees: 0, unavailable: true }) } as unknown as Response)
-          : ({ json: async () => ({ cartes: [carte()] }) } as unknown as Response),
+          ? ({ ok: true, json: async () => ({ ok: false, determinees: [], nbIndeterminees: 0, unavailable: true }) } as unknown as Response)
+          : ({ ok: true, json: async () => ({ cartes: [carte()] }) } as unknown as Response),
       ),
     );
     render(<FilDuJour />);
@@ -743,7 +750,7 @@ describe('FilDuJour — Météo d’adhésion indisponible (T-18)', () => {
       'fetch',
       vi.fn(async (url: string) => {
         if (url.includes('meteo-adhesion')) throw new Error('réseau');
-        return { json: async () => ({ cartes: [carte()] }) } as unknown as Response;
+        return { ok: true, json: async () => ({ cartes: [carte()] }) } as unknown as Response;
       }),
     );
     render(<FilDuJour />);

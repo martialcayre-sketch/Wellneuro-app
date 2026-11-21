@@ -13,7 +13,7 @@ import { SYSTEM_PROMPT_GOUVERNANCE, VERSION_PROMPT_SYNTHESE } from '@/lib/anthro
 
 const CONSIGNE = SYSTEM_PROMPT_GOUVERNANCE;
 const TITRE_SECTION = '## Besoins mesurés et non mesurés';
-const SECTION_SUIVANTE = '## Consignes de réponse';
+const SECTION_SUIVANTE = '## Résultats de biologie'; // depuis v36 ([[D-513]]), la section suivante
 const DEBUT_PUCE = "- N'écris dans narratif_patient ni score";
 
 const EMPREINTE_SECTION = '7d9da65e883da4b7';

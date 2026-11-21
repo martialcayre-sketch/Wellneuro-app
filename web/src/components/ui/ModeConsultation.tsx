@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { X } from 'lucide-react';
+import { TRAIT_ICONE } from '@/components/ui/icone';
 
 // Enveloppe de bascule de mise en page pour l'entretien clinique. Aucune
 // logique clinique propre : l'état est contrôlé par l'appelant, le contenu
@@ -28,7 +29,7 @@ export function ModeConsultation({
           onClick={onToggle}
           className="flex min-h-11 items-center gap-1 rounded-lg px-2 py-1 font-medium hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
         >
-          <X aria-hidden="true" size={14} strokeWidth={2} />
+          <X aria-hidden="true" size={14} strokeWidth={TRAIT_ICONE} />
           Quitter
         </button>
       </div>

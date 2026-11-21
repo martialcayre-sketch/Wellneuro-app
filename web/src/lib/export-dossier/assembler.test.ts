@@ -857,6 +857,7 @@ describe('assemblerDossierExport — synthèse', () => {
         modele: true,
         syntheseJson: true,
         notesPraticien: true,
+        donneesEntree: true,
       },
     });
     const [synthese] = espionSynthese.mock.calls[0];
@@ -894,14 +895,14 @@ describe('assemblerDossierExport — synthèse', () => {
       orderBy: { dateGeneration: 'desc' },
       select: { statut: true, dateGeneration: true },
     });
-    expect(espionSynthese).toHaveBeenCalledWith(null, BROUILLON);
+    expect(espionSynthese).toHaveBeenCalledWith(null, BROUILLON, undefined, false);
     expect(textes(doc)).toContain("Aucune synthèse n'a encore été validée par le praticien.");
   });
 
   it('aucune synthèse du tout : ni validée ni brouillon', async () => {
     brancherBase({ validee: null, brouillon: null });
     await assembler('complete');
-    expect(espionSynthese).toHaveBeenCalledWith(null, null);
+    expect(espionSynthese).toHaveBeenCalledWith(null, null, undefined, false);
   });
 });
 
@@ -1657,4 +1658,72 @@ describe('assemblerDossierExport — J0 sans consultation ([[D-512]] §3, contre
     await assemblerOuEchouer('ia-externe');
     expect(prisma.syntheseIA.findFirst).not.toHaveBeenCalledWith(expect.objectContaining({ orderBy: { dateGeneration: 'asc' } }));
   });
+});
+
+// [[D-513]] §5, §7 et §11 : la projection de la synthèse à l'export est une
+// liste de champs autorisés, dans les deux versions ; elle précède le masquage
+// de la version « Pour une IA externe » ; une synthèse suspecte n'entre pas.
+describe('assemblerDossierExport — synthèse et biologie restituée (D-513)', () => {
+  const MARQUE = 'RESTITUTION-BIOLOGIQUE-FICTIVE';
+  const AVEC_BIOLOGIE = {
+    ...SYNTHESE_VALIDEE,
+    syntheseJson: {
+      ...SYNTHESE_VALIDEE.syntheseJson,
+      resume_biologie_praticien: MARQUE,
+      points_de_vigilance_biologie: [MARQUE],
+    },
+    donneesEntree: {
+      blocBiologie: {
+        texte: '## Résultats de biologie',
+        formes: { valeursUnites: [{ valeur: '32', unite: 'µg/L' }], intervalles: ['30 - 400'] },
+      },
+      metadonneesPrompt: { versionSchema: 'synthese-json-v4' },
+    },
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    espionDefinition.mockImplementation(async (id: string) => definitionDe(id));
+  });
+
+  for (const version of ['complete', 'ia-externe'] as const) {
+    it(`${version} : ni les deux champs, ni leur contenu, ni la trace`, async () => {
+      brancherBase({ validee: AVEC_BIOLOGIE as typeof SYNTHESE_VALIDEE });
+      await assembler(version);
+      const [synthese] = espionSynthese.mock.calls[0];
+      expect(synthese).not.toBeNull();
+      expect(Object.keys(synthese!.syntheseJson as object)).not.toContain('resume_biologie_praticien');
+      expect(Object.keys(synthese!.syntheseJson as object)).not.toContain('points_de_vigilance_biologie');
+      expect(JSON.stringify(synthese)).not.toContain(MARQUE);
+      expect(synthese).not.toHaveProperty('donneesEntree');
+    });
+  }
+
+  it('ia-externe : l’exclusion précède le masquage, qui ne retire aucune clé', async () => {
+    brancherBase({ validee: AVEC_BIOLOGIE as typeof SYNTHESE_VALIDEE });
+    await assembler('ia-externe');
+    const [synthese] = espionSynthese.mock.calls[0];
+    // Masquée (le nom de la patiente a disparu), et pourtant sans clé biologique :
+    // le masquage seul, qui garde les clés, n'aurait pas suffi.
+    expect(JSON.stringify(synthese)).not.toContain('Sophie Nicola');
+    expect(Object.keys(synthese!.syntheseJson as object).sort()).toEqual(
+      ['axes_prioritaires', 'limites', 'narratif_patient', 'points_de_vigilance', 'questions_entretien', 'resume_praticien'],
+    );
+  });
+
+  for (const version of ['complete', 'ia-externe'] as const) {
+    it(`${version} : une synthèse suspecte n’entre pas, et la section le dit`, async () => {
+      brancherBase({
+        validee: {
+          ...AVEC_BIOLOGIE,
+          syntheseJson: { ...AVEC_BIOLOGIE.syntheseJson, limites: 'Intervalle 30 - 400 à relire.' },
+        } as typeof SYNTHESE_VALIDEE,
+      });
+      const doc = await assemblerOuEchouer(version);
+      expect(espionSynthese.mock.calls[0][0]).toBeNull();
+      expect(espionSynthese.mock.calls[0][3]).toBe(true);
+      expect(textes(doc)).toContain("La dernière synthèse validée n'est pas incluse : un résultat de biologie y a été repris hors des champs qui lui sont réservés. Une nouvelle synthèse doit être générée et validée.");
+      expect(JSON.stringify(doc)).not.toContain('30 - 400');
+    });
+  }
 });

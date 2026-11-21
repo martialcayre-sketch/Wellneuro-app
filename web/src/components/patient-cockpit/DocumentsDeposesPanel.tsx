@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { DocumentsDeposesResponse, GesteDocumentDeposeResponse } from '@/app/api/praticien/documents-deposes/route';
 import type { DocumentDeposeLu } from '@/lib/collecte/documentsDeposesServeur';
+import { useFocusApresRelecture } from '@/components/ui/useFocusApresRelecture';
 import {
   CATEGORIES_DOCUMENT,
   LIBELLES_CATEGORIE_DOCUMENT,
@@ -12,6 +13,7 @@ import {
   type CategorieDocument,
   type MotifRetraitDocument,
 } from '@/lib/collecte/documentsDeposes';
+import { useChiffresMasques } from '@/components/patient-cockpit/ChiffresMasques';
 
 /*
  * « DOCUMENTS DÉPOSÉS PAR LE PATIENT » ([[D-330]], J3-collecte).
@@ -69,6 +71,10 @@ function LigneDocument({
   const [occupe, setOccupe] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
   const retire = document.retireLe !== null;
+  // [[D-354]] amendement DOC-15 (Q10) : en mode consultation (contexte posé par
+  // la fiche), « Ouvrir le document » n'est pas rendu — il quitterait la fiche,
+  // et le document peut porter des valeurs que le §2 masque.
+  const enConsultation = useChiffresMasques();
   const lien = `/api/praticien/documents-deposes/contenu?idPatient=${encodeURIComponent(idPatient)}&idDocument=${encodeURIComponent(document.id)}`;
 
   async function geste(corps: Record<string, string>) {
@@ -123,6 +129,7 @@ function LigneDocument({
 
       {!retire && (
         <div className="flex flex-wrap items-center gap-3">
+          {!enConsultation && (
           <a
             href={lien}
             target="_blank"
@@ -135,6 +142,7 @@ function LigneDocument({
           >
             Ouvrir le document
           </a>
+          )}
 
           <label className="flex items-center gap-2 text-xs text-foreground">
             Catégorie
@@ -142,7 +150,7 @@ function LigneDocument({
               value={categorie}
               disabled={occupe}
               onChange={e => setCategorie(e.target.value as CategorieDocument)}
-              className="min-h-11 rounded-lg border border-border bg-surface px-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+              className="min-h-11 h-11 rounded-lg border border-border bg-surface px-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
             >
               {CATEGORIES_DOCUMENT.map(c => (
                 <option key={c} value={c}>
@@ -209,6 +217,7 @@ export function DocumentsDeposesPanel({ idPatient }: { idPatient: string }) {
   // Plusieurs relectures peuvent se croiser (minuteur de l'ouverture, retrait) :
   // seule la réponse de la DERNIÈRE est retenue, jamais une réponse périmée.
   const generation = useRef(0);
+  const { titreRef, boutonRef, relire } = useFocusApresRelecture();
 
   const charger = useCallback(async () => {
     const mienne = ++generation.current;
@@ -235,14 +244,14 @@ export function DocumentsDeposesPanel({ idPatient }: { idPatient: string }) {
 
   return (
     <section className="rounded-xl border border-border bg-surface p-4">
-      {/* h4 sous la phase « Patient » (h3), PRA-3b Q2 a. */}
-      <h4 className="text-base font-semibold text-foreground">Documents déposés par le patient</h4>
+      {/* h3 sous la phase « Patient » (h2), PRA-3b Q2 a ; PRA-6e. */}
+      <h3 ref={titreRef} tabIndex={-1} className="text-base font-semibold text-foreground">Documents déposés par le patient</h3>
 
       {/* Une lecture en échec ne se rend jamais comme une liste vide. */}
       {etat.statut === 'erreur' && (
         <div role="alert" className="mt-2 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
           <span>Les documents déposés n’ont pas pu être lus.</span>
-          <button type="button" onClick={() => void charger()} className={bouton}>
+          <button ref={boutonRef} type="button" onClick={() => void relire(charger)} className={bouton}>
             Réessayer la lecture des documents déposés
           </button>
         </div>

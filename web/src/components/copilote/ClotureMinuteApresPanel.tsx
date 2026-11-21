@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { useFocusApresRelecture } from '@/components/ui/useFocusApresRelecture';
 import Link from 'next/link';
 import type { Cloture, StatutEtape } from '@/lib/copilote/minuteApres';
 
@@ -24,10 +25,30 @@ function formatDate(iso: string): string {
 
 type Etat = 'chargement' | 'chargee' | 'erreur';
 
-export function ClotureMinuteApresPanel({ idPatient }: { idPatient: string }) {
+/**
+ * Ce que la zone de travail doit garder quand le contexte est replié
+ * ([[D-481]] complément DOC-15, Q2, amendement B) : l'échec de lecture et sa
+ * relance, ou les blocages. Aucune lecture propre : c'est l'état de ce panneau,
+ * remonté tel quel ; `recharger` relance cette lecture-ci, et elle seule.
+ */
+export type EtatCritiqueCloture = {
+  etat: Etat;
+  erreur: string;
+  blocages: string[];
+  recharger: () => Promise<void>;
+};
+
+export function ClotureMinuteApresPanel({
+  idPatient,
+  onEtatCritique,
+}: {
+  idPatient: string;
+  onEtatCritique?: (etat: EtatCritiqueCloture) => void;
+}) {
   const [cloture, setCloture] = useState<Cloture | null>(null);
   const [etat, setEtat] = useState<Etat>('chargement');
   const [erreur, setErreur] = useState<string>('');
+  const { titreRef, boutonRef, relire } = useFocusApresRelecture();
 
   const charger = useCallback(async () => {
     setEtat('chargement');
@@ -50,6 +71,11 @@ export function ClotureMinuteApresPanel({ idPatient }: { idPatient: string }) {
   useEffect(() => {
     void charger();
   }, [charger]);
+
+  const blocages = cloture?.blocages;
+  useEffect(() => {
+    onEtatCritique?.({ etat, erreur, blocages: blocages ?? [], recharger: charger });
+  }, [onEtatCritique, etat, erreur, blocages, charger]);
 
   if (etat === 'chargement') {
     return (
@@ -74,9 +100,10 @@ export function ClotureMinuteApresPanel({ idPatient }: { idPatient: string }) {
       >
         <span>{erreur} Rien ne peut être diffusé tant que cet état n’a pas été relu.</span>
         <button
+          ref={boutonRef}
           type="button"
-          onClick={() => void charger()}
-          className="min-h-9 self-start rounded-lg border border-accent px-3 py-1 text-xs font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+          onClick={() => void relire(charger)}
+          className="min-h-11 self-start rounded-lg border border-accent px-3 py-1 text-sm font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
         >
           Réessayer
         </button>
@@ -98,9 +125,9 @@ export function ClotureMinuteApresPanel({ idPatient }: { idPatient: string }) {
       aria-labelledby="cloture-titre"
       className="rounded-xl border border-border bg-surface p-4 shadow-card"
     >
-      <h3 id="cloture-titre" className="font-display text-lg font-semibold text-foreground">
+      <h2 ref={titreRef} tabIndex={-1} id="cloture-titre" className="font-display text-lg font-semibold text-foreground">
         La minute d’après
-      </h3>
+      </h2>
       <p className="mt-1 text-xs text-muted-foreground">
         Ce qui doit être franchi avant qu’un contenu puisse partir. Cet écran <strong>n’envoie rien</strong> et
         n’enregistre rien : chaque étape se pose depuis la fiche où elle vit.

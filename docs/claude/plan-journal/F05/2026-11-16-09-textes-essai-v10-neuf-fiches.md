@@ -1,0 +1,9 @@
+- **Mise à jour (2026-11-16, textes : essai v10, neuf fiches)** : un essai sous `fiche-usage-v10+45fa4226f80e2f64`, au périmètre arbitré par le responsable (`20261116-2212-b`, « les neuf, une fois »), avec les mêmes désignations et les mêmes claims épinglés. Résultat : **3/9 acceptées** (POLY P3, POLY P4, MG P7), alors qu'aucune de ces neuf fiches n'avait été acceptée sous la v9. Les trois versions sont déposées par la route interne avec `--validate` conforme ; constat par conteneur en lecture seule (one-off-6930) : n° 1 chacune, sous v10, 0 acte. Les textes restent hors du dépôt (D-251 §4) et attendent la validation du responsable.
+  - Effet des règles v10 : la famille des quantités ne refuse plus aucune rubrique (POLY P3, refusée sous v9, est acceptée ; POLY P7 n'est plus refusée sur les quantités). La phrase attribuée et réservée de `2116-b` est employée et acceptée (MG P7, « surveillance_arret »).
+  - Six refus, dix rubriques :
+    - *hors objet* : POLY P2 « interpretations », POLY P6 « surveillance_arret », POLY P7 « limites » (limites de la littérature sur des suppléments, pas de l'examen : le critère v10 tient, mais le rédacteur n'a pas écrit la phrase d'absence), MG P5 « argument_preference » ;
+    - *médicaments nommés* (famille interdite, non retouchée) : POLY P6 « precautions », classes thérapeutiques ;
+    - *réserve du statut* : POLY P8 « precautions » (« indispensable » sans attribution ni réserve, rédacteur hors de la règle `2116-b`), MG P4 « resultats_consequences » (interprétation et conséquence décisionnelle sans réserve) ;
+    - *population élargie* : MG P4 « precautions » ;
+    - *quantité de prise* (fréquence, fractionnement, moment de prise, toujours interdits) : MG P5 « options » et « precautions ».
+  - Aucun rejeu sans arbitrage du responsable.

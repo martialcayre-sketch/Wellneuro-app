@@ -7,8 +7,9 @@
 //
 // AVANT TOUTE ÉCRITURE, le contrôle contre la structure signée (`controle.ts`,
 // partagé avec la décision) : fiche ou terme déclaré, rubriques exactement
-// celles qu'attend la structure, structure du jour. Une seule anomalie refuse
-// le dépôt entier.
+// celles qu'attend la structure, structure du jour ; et, pour un libellé
+// d'hypothèse, aucun terme du registre ([[D-477]] §2). Une seule anomalie
+// refuse le dépôt entier.
 //
 // AUCUN TEXTE NE SORT D'ICI. Ni une rubrique, ni un libellé : le dépôt public
 // ne doit rien en recevoir, pas même par un journal ([[D-251]] §4).
@@ -20,6 +21,7 @@ import type { BrouillonLibelle, BrouillonVersionUsage } from './contrat';
 import {
   CONTEXTE_DU_DEPOT,
   controlerLibelleContreStructure,
+  controlerRegistreLibelle,
   controlerVersionContreStructure,
   type AnomalieStructure,
   type ContexteControle,
@@ -99,7 +101,7 @@ export async function deposerBrouillonLibelle(
   brouillon: BrouillonLibelle,
   contexte: ContexteControle = CONTEXTE_DU_DEPOT,
 ): Promise<IssueDepot> {
-  const anomalies = controlerLibelleContreStructure(brouillon, contexte);
+  const anomalies = [...controlerLibelleContreStructure(brouillon, contexte), ...controlerRegistreLibelle(brouillon)];
   if (anomalies.length > 0) return { issue: 'refusee', anomalies };
 
   // La base tient cette égalité par CHECK ; le serveur la pose, jamais l'appelant.

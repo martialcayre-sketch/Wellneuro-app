@@ -198,7 +198,10 @@ node scripts/wn-etat-reel.mjs      # état réel du dépôt — rapporte, ne ré
   des branches par délégation du responsable. Sous `D-373` (adoptée par
   `D-454`), l'intégrateur merge les PR qu'une file déclare « prête @<sha> » (chemin du
   handoff, exceptions) ; migration, authentification, `.coderabbit.yaml` et
-  `pr_agent.yml` restent à leur file. Pas de merge avant la revue de
+  `pr_agent.yml` restent à leur file. Il merge par
+  `scripts/wn-integrer.mjs` (`D-546`) : dix minutes après « prête » au plus
+  tôt, et toute parole sur la PR depuis la déclaration suspend — la file
+  n'y écrit plus, ou redéclare. Pas de merge avant la revue de
   **PR-Agent** sur le sha de tête, prouvée par
   `node scripts/wn-revue-pr-agent.mjs <N>` → `0` (`D-499`, `D-393` §2) ;
   à défaut, celle de `wn-reviewer` (`D-448`). CodeRabbit et Copilot ne sont
@@ -263,6 +266,10 @@ node scripts/wn-etat-reel.mjs      # état réel du dépôt — rapporte, ne ré
   forment un lot). En l'absence du responsable (rien écrit depuis une
   heure), la session enchaîne le lot suivant après son handoff (`D-510` §7). Pause de plus d'une heure : `/compact` avant de partir
   (cache chaud) ou handoff puis `/clear` — jamais `/compact` au retour.
+- **Session de passe de l'orchestrateur cloud** (`D-540`) : sa consigne
+  `docs/claude/templates/ORCHESTRATEUR_PASSE.md` prime sur ce paragraphe —
+  un lot `cloud` au plus, puis arrêt ; jamais de lot suivant, de merge ni
+  de T2/T3. `gh pr` est refusé en cloud (GraphQL) : lire en `gh api`.
 - Le hook de fraîcheur Git impose une branche contenant `origin/main` au
   démarrage et rejuge à chaque tentative d'édition. Jamais de
   pull/merge/rebase automatique. Sa branche, dans son worktree, sans

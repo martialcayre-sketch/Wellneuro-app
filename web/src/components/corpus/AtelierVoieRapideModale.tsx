@@ -1,8 +1,9 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { PanneauSuperpose } from '@/components/ui/PanneauSuperpose';
 import type { ClaimEnRevue } from '@/lib/rag/claims/revue';
 import type { CorpusClaimsApiResponse } from '@/app/api/praticien/corpus/claims/route';
 import type {
@@ -13,8 +14,9 @@ import type { CorpusLotDecisionApiResponse } from '@/app/api/praticien/corpus/cl
 import type { CorpusQuestionnaireApiResponse } from '@/app/api/praticien/corpus/claims/questionnaire/route';
 import type { CorpusEvaluationApiResponse } from '@/app/api/praticien/corpus/claims/evaluation/route';
 import { readEventStream } from '@/lib/sse/readEventStream';
+import { CLASSE_CHAMP, classeMarque } from './habillageAtelier';
 
-// Atelier corpus v2 — VOIE RAPIDE en MODALE plein écran, une source à la fois.
+// Atelier corpus v2 — VOIE RAPIDE en dialogue (tiroir large), une source à la fois.
 //
 // La modale s'ouvre depuis la vue d'ensemble des sources (jamais de saisie
 // manuelle d'identifiant) et porte tout le déroulé sans faire défiler la page
@@ -23,6 +25,13 @@ import { readEventStream } from '@/lib/sse/readEventStream';
 // lot entier ou bascule motivée — armée puis confirmée. Échap ou « Fermer »
 // interrompt sans conclure : le tirage ouvert se retrouve tel quel à la
 // prochaine ouverture (il ne se re-tire pas).
+//
+// Refonte Lien, PRA-4 (Q11 (a) du complément DOC-13 de [[D-481]]) : la modale
+// passe par `PanneauSuperpose` — focus contenu, Échap, croix nommée. Fermer ne
+// clôt toujours pas le tirage : « Clore le tirage (caduc) » reste un geste
+// distinct. Le parent rend le focus au déclencheur une fois sa table relue.
+// Les verdicts « Conforme » / « Non conforme » sont des boutons pressés bordés
+// (Q6), les champs à 44 px avec focus visible (Q5).
 //
 // Restitution (décision praticien du 2026-07-24) : chaque question générée
 // porte SON chunk et ses claims (couverture 1 question ↔ 1 chunk, revérifiée
@@ -85,18 +94,6 @@ export function AtelierVoieRapideModale({
   const [issueArmee, setIssueArmee] = useState<'valider' | 'basculer' | 'clore_caduc' | null>(null);
   const [motifBascule, setMotifBascule] = useState('');
   const [conclusion, setConclusion] = useState('');
-
-  const fermerRef = useRef(onClose);
-  fermerRef.current = onClose;
-
-  // Échap ferme la modale (sans conclure : le tirage ouvert persiste).
-  useEffect(() => {
-    const surTouche = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') fermerRef.current();
-    };
-    window.addEventListener('keydown', surTouche);
-    return () => window.removeEventListener('keydown', surTouche);
-  }, []);
 
   const claimsParId = useMemo(() => new Map(claimsSource.map((c) => [c.id, c])), [claimsSource]);
   const echantillon = useMemo(
@@ -446,30 +443,29 @@ export function AtelierVoieRapideModale({
     [tirageId, chargement, tires, verdicts, notes, questions, sourceId, motifBascule, onConclu],
   );
 
+  // Échap, la croix ou « Fermer » : la modale se ferme sans conclure, le
+  // tirage ouvert persiste. Le focus revient au déclencheur par le parent.
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label={`Voie rapide — ${sourceId}`}
-      className="fixed inset-0 z-50 flex flex-col bg-background"
+    <PanneauSuperpose
+      open
+      onOpenChange={(ouvert) => {
+        if (!ouvert) onClose();
+      }}
+      onCloseAutoFocus={(evenement) => evenement.preventDefault()}
+      // Le tiroir laisse un voile cliquable que la modale plein écran n'avait
+      // pas : un clic dehors effacerait verdicts, notes et réponses collées.
+      // Échap et la croix ferment toujours (précédent : `PacksPanel`).
+      onInteractOutside={(evenement) => evenement.preventDefault()}
+      variante="tiroir"
+      largeur="ample"
+      surtitre={`Voie rapide · ${sourceId}${taux !== null ? ` · échantillon ${Math.round(taux * 100)} %` : ''}${tirageRepris ? ' · tirage repris' : ''}`}
+      titre={titre}
+      description={`Voie rapide — ${sourceId}`}
+      descriptionMasquee
     >
-      <header className="flex items-center justify-between gap-3 border-b border-border px-5 py-3">
-        <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-[.06em] text-solar-ink">
-            Voie rapide · {sourceId}
-            {taux !== null ? ` · échantillon ${Math.round(taux * 100)} %` : ''}
-            {tirageRepris ? ' · tirage repris' : ''}
-          </p>
-          <h3 className="truncate font-display text-lg font-bold text-foreground">{titre}</h3>
-        </div>
-        <Button variant="outline" onClick={onClose}>
-          Fermer
-        </Button>
-      </header>
-
-      <div className="flex-1 overflow-y-auto px-5 py-4">
+      <div>
         {erreur ? (
-          <p role="alert" className="mb-3 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          <p role="alert" className="mb-3 rounded-lg bg-status-danger/10 px-3 py-2 text-sm text-status-danger">
             {erreur}
           </p>
         ) : null}
@@ -488,9 +484,9 @@ export function AtelierVoieRapideModale({
 
         {phase === 'revue' && tirageCaduc ? (
           <div className="max-w-2xl rounded-xl border border-solar-500/40 bg-solar-500/10 p-4">
-            <h4 className="text-sm font-semibold uppercase tracking-[.05em] text-solar-ink">
+            <h3 className="text-sm font-semibold uppercase tracking-[.05em] text-solar-ink">
               Tirage caduc
-            </h4>
+            </h3>
             <p className="mt-2 text-sm text-foreground">
               Le lot de ce tirage a changé depuis qu’il a été tiré — des claims échantillonnés ont
               été traités en revue individuelle, ou une nouvelle ingestion a modifié la source. Il
@@ -509,9 +505,9 @@ export function AtelierVoieRapideModale({
         {phase === 'revue' && !tirageCaduc ? (
           <div className="grid gap-6 lg:grid-cols-2">
             <section aria-label="Échantillon à confronter au verbatim">
-              <h4 className="text-sm font-semibold uppercase tracking-[.05em] text-solar-ink">
+              <h3 className="text-sm font-semibold uppercase tracking-[.05em] text-solar-ink">
                 1 · Échantillon ({echantillon.length} claims — tirage #{tirageId})
-              </h4>
+              </h3>
               <ul className="mt-3 flex flex-col gap-3">
                 {echantillon.map((claim) => (
                   <li key={claim.id} className="rounded-xl border border-border p-3">
@@ -522,19 +518,23 @@ export function AtelierVoieRapideModale({
                         </p>
                         <p className="mt-1 text-sm text-foreground">{claim.texteNormalise}</p>
                       </div>
-                      <div className="flex shrink-0 gap-1">
-                        <Button
-                          variant={verdicts[claim.id] === 'conforme' ? 'primary' : 'outline'}
+                      <div className="flex shrink-0 flex-wrap gap-2">
+                        <button
+                          type="button"
+                          aria-pressed={verdicts[claim.id] === 'conforme'}
                           onClick={() => setVerdicts((v) => ({ ...v, [claim.id]: 'conforme' }))}
+                          className={classeMarque(verdicts[claim.id] === 'conforme', 'favorable')}
                         >
                           Conforme
-                        </Button>
-                        <Button
-                          variant={verdicts[claim.id] === 'non_conforme' ? 'danger' : 'outline'}
+                        </button>
+                        <button
+                          type="button"
+                          aria-pressed={verdicts[claim.id] === 'non_conforme'}
                           onClick={() => setVerdicts((v) => ({ ...v, [claim.id]: 'non_conforme' }))}
+                          className={classeMarque(verdicts[claim.id] === 'non_conforme', 'defavorable')}
                         >
                           Non conforme
-                        </Button>
+                        </button>
                       </div>
                     </div>
                     {claim.sources.map((s) => (
@@ -551,7 +551,7 @@ export function AtelierVoieRapideModale({
                         value={notes[claim.id] ?? ''}
                         onChange={(e) => setNotes((n) => ({ ...n, [claim.id]: e.target.value }))}
                         placeholder="Note sur le défaut constaté"
-                        className="mt-2 w-full rounded-lg border border-border bg-background px-3 py-1.5 text-xs"
+                        className={`mt-2 w-full ${CLASSE_CHAMP}`}
                       />
                     ) : null}
                   </li>
@@ -561,9 +561,9 @@ export function AtelierVoieRapideModale({
 
             <section aria-label="Questionnaire de restitution">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <h4 className="text-sm font-semibold uppercase tracking-[.05em] text-solar-ink">
+                <h3 className="text-sm font-semibold uppercase tracking-[.05em] text-solar-ink">
                   2 · Restitution — couverture {chunksCouverts.size}/{chunksAtteignables.size} chunks
-                </h4>
+                </h3>
                 <Button variant="outline" onClick={genererQuestionnaire} disabled={generationEnCours}>
                   {generationEnCours ? 'Génération…' : 'Générer le questionnaire'}
                 </Button>
@@ -599,9 +599,9 @@ export function AtelierVoieRapideModale({
                       onChange={(e) => modifierReponse(index, e.target.value)}
                       placeholder="Collez ici la réponse du notebook (NotebookLM)"
                       rows={3}
-                      className="mt-2 w-full rounded-lg border border-border bg-background px-3 py-1.5 text-sm"
+                      className={`mt-2 w-full ${CLASSE_CHAMP}`}
                     />
-                    <div className="mt-2 flex flex-wrap items-center gap-1">
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
                       <Button
                         variant="outline"
                         onClick={() => evaluerQuestion(index)}
@@ -612,18 +612,22 @@ export function AtelierVoieRapideModale({
                       >
                         {q.enEvaluation ? 'Évaluation…' : 'Faire évaluer par l’IA'}
                       </Button>
-                      <Button
-                        variant={q.verdict === 'conforme' ? 'primary' : 'outline'}
+                      <button
+                        type="button"
+                        aria-pressed={q.verdict === 'conforme'}
                         onClick={() => majQuestion(index, { verdict: 'conforme' })}
+                        className={classeMarque(q.verdict === 'conforme', 'favorable')}
                       >
                         Conforme
-                      </Button>
-                      <Button
-                        variant={q.verdict === 'non_conforme' ? 'danger' : 'outline'}
+                      </button>
+                      <button
+                        type="button"
+                        aria-pressed={q.verdict === 'non_conforme'}
                         onClick={() => majQuestion(index, { verdict: 'non_conforme' })}
+                        className={classeMarque(q.verdict === 'non_conforme', 'defavorable')}
                       >
                         Non conforme
-                      </Button>
+                      </button>
                     </div>
                     {q.justificationIA ? (
                       <p className="mt-2 rounded-lg bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
@@ -639,7 +643,7 @@ export function AtelierVoieRapideModale({
                   value={nouvelleQuestion}
                   onChange={(e) => setNouvelleQuestion(e.target.value)}
                   placeholder="Question libre (en plus du généré)"
-                  className="flex-1 rounded-lg border border-border bg-background px-3 py-1.5 text-sm"
+                  className={`min-w-0 flex-1 ${CLASSE_CHAMP}`}
                 />
                 <Button
                   variant="outline"
@@ -666,7 +670,7 @@ export function AtelierVoieRapideModale({
       </div>
 
       {phase === 'revue' ? (
-        <footer className="flex flex-wrap items-center gap-2 border-t border-border px-5 py-3">
+        <footer className="sticky -bottom-5 mt-4 flex flex-wrap items-center gap-2 border-t border-border bg-surface py-3">
           {tirageCaduc ? (
             issueArmee === 'clore_caduc' ? (
               <Button variant="danger" onClick={() => conclure('clore_caduc')} disabled={chargement}>
@@ -727,7 +731,7 @@ export function AtelierVoieRapideModale({
                   value={motifBascule}
                   onChange={(e) => setMotifBascule(e.target.value)}
                   placeholder="Motif de la bascule (obligatoire)"
-                  className="min-w-64 flex-1 rounded-lg border border-border bg-background px-3 py-1.5 text-sm"
+                  className={`min-w-0 flex-1 basis-64 ${CLASSE_CHAMP}`}
                 />
               ) : null}
             </>
@@ -739,6 +743,6 @@ export function AtelierVoieRapideModale({
           ) : null}
         </footer>
       ) : null}
-    </div>
+    </PanneauSuperpose>
   );
 }

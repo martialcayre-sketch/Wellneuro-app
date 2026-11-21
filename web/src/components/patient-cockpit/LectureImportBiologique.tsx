@@ -27,7 +27,7 @@ import {
 const BOUTON = 'min-h-11 rounded-lg border border-border px-3 py-2 text-sm text-foreground disabled:opacity-50';
 const BOUTON_PRIMAIRE =
   'min-h-11 rounded-lg border border-transparent bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50';
-const CHAMP = 'min-h-11 rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground';
+const CHAMP = 'min-h-11 [&:is(select)]:h-11 rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground';
 
 const FORMAT_PARIS = new Intl.DateTimeFormat('fr-FR', {
   timeZone: 'Europe/Paris',
@@ -102,7 +102,7 @@ export function LectureImportBiologique({
 
   return (
     <section className="mt-3 rounded-lg border border-border p-3" aria-label="Lecture clinique du compte rendu">
-      <h5 className="text-sm font-medium text-foreground">Lecture clinique du compte rendu</h5>
+      <h4 className="text-sm font-medium text-foreground">Lecture clinique du compte rendu</h4>
       <p className="mt-1 text-xs text-muted-foreground">
         Valider des lignes n’est pas lire le compte rendu. Consigner votre lecture dit que vous avez lu la restitution
         ci-dessus : lignes lues, intervalles

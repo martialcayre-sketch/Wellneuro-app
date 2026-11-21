@@ -112,7 +112,7 @@ export function PourVotreMedecinLecture({ token }: { token: string }) {
   if (etat.statut === 'chargement') {
     return (
       <PatientCard padding="sm">
-        <h1 className="text-2xl font-semibold text-foreground">{TITRE_DOCUMENT_MEDECIN}</h1>
+        <h1 className="font-display text-2xl font-bold leading-tight text-foreground">{TITRE_DOCUMENT_MEDECIN}</h1>
         <div className="mt-3"><p className="text-sm text-muted-foreground">Chargement…</p></div>
       </PatientCard>
     );
@@ -121,7 +121,7 @@ export function PourVotreMedecinLecture({ token }: { token: string }) {
   if (etat.statut === 'erreur') {
     return (
       <PatientCard padding="sm">
-        <h1 className="text-2xl font-semibold text-foreground">{TITRE_DOCUMENT_MEDECIN}</h1>
+        <h1 className="font-display text-2xl font-bold leading-tight text-foreground">{TITRE_DOCUMENT_MEDECIN}</h1>
         <div className="mt-3"><PatientErrorState message={etat.message} onReessayer={etat.definitif ? undefined : () => void charger()} /></div>
       </PatientCard>
     );
@@ -130,7 +130,7 @@ export function PourVotreMedecinLecture({ token }: { token: string }) {
   if (!etat.document) {
     return (
       <PatientCard padding="sm">
-        <h1 className="text-2xl font-semibold text-foreground">{TITRE_DOCUMENT_MEDECIN}</h1>
+        <h1 className="font-display text-2xl font-bold leading-tight text-foreground">{TITRE_DOCUMENT_MEDECIN}</h1>
         <div className="mt-3"><p className="text-base text-foreground">{AUCUN_DOCUMENT_MEDECIN}</p></div>
       </PatientCard>
     );
@@ -140,7 +140,7 @@ export function PourVotreMedecinLecture({ token }: { token: string }) {
 
   return (
     <PatientCard>
-      <h1 className="text-2xl font-semibold text-foreground">{TITRE_DOCUMENT_MEDECIN}</h1>
+      <h1 className="font-display text-2xl font-bold leading-tight text-foreground">{TITRE_DOCUMENT_MEDECIN}</h1>
       {date && <p className="mt-1 text-sm text-muted-foreground">{date}</p>}
       <p className="mt-3 text-base text-foreground">{PHRASE_DOCUMENT_MEDECIN}</p>
       <button

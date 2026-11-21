@@ -1185,6 +1185,36 @@ describe('FichePatientPanel — poste de pilotage (A6-R1)', () => {
     expect(onglet.textContent).toMatch(/renseignée/i);
   });
 
+  // PRA-6f (axe `color-contrast`) : sur le fond argile de la phase due, posé
+  // sur la sauge du rail, le gris atténué tombait à 4,5:1 (4,35:1 au survol).
+  // Le statut y passe en encre ; ailleurs il garde le gris atténué.
+  it('LE STATUT D’UNE PHASE EN ATTENTE EST EN ENCRE, PAS EN GRIS ATTÉNUÉ', async () => {
+    await rendreFiche({ phase3: 'vide' });
+    // Les statuts arrivent après le nom du patient, et la phase initiale est la
+    // première phase due (D5) : choisir la phase 1 laisse « Compréhension » due
+    // et NON affichée — l'état qui porte le fond argile.
+    await waitFor(() =>
+      expect(screen.getByRole('tab', { name: /Compréhension/i }).textContent).toMatch(/à traiter/i),
+    );
+    fireEvent.click(screen.getAllByRole('tab', { name: /^1\./ })[0]);
+    await waitFor(() =>
+      expect(screen.getByRole('tab', { name: /Compréhension/i }).className).toContain('bg-accent/10'),
+    );
+    const onglets = screen.getAllByRole('tab', { name: /^\d\./ });
+    const statutDe = (onglet: HTMLElement) => onglet.lastElementChild as HTMLElement;
+    const dues = onglets.filter(
+      onglet => onglet.getAttribute('aria-selected') !== 'true' && onglet.className.includes('bg-accent/10'),
+    );
+    expect(dues.length).toBeGreaterThan(0);
+    for (const onglet of dues) {
+      expect(statutDe(onglet).className).toContain('text-foreground');
+      expect(statutDe(onglet).className).not.toContain('text-muted-foreground');
+    }
+    for (const onglet of onglets.filter(o => !dues.includes(o))) {
+      expect(statutDe(onglet).className).toContain('text-muted-foreground');
+    }
+  });
+
   it('UNE LECTURE EN ÉCHEC REND « indéterminée », jamais un état par défaut', async () => {
     // Même discipline que les phases du runtime : un échec de lecture ne vaut
     // pas « rien en attente », et surtout pas « fait ».
@@ -3586,6 +3616,18 @@ describe('FichePatientPanel — replis des phases et du contexte (PRA-3a)', () =
     expect(screen.getByRole('button', { name: 'Afficher les phases' }).className).not.toContain('lg:inline-flex');
   });
 
+  it('les quatre commandes de repli ne s’impriment pas ; les colonnes, contenu, restent (X06, PRA-5)', async () => {
+    await rendreFiche({ runtime: 'ready' });
+    const imprimeCache = /(^|\s)print:hidden(\s|$)/;
+    expect(screen.getByRole('button', { name: 'Afficher les phases' }).className).toMatch(imprimeCache);
+    expect(screen.getByRole('button', { name: 'Afficher le contexte' }).className).toMatch(imprimeCache);
+    expect(screen.getByRole('button', { name: 'Masquer le contexte' }).className).toMatch(imprimeCache);
+    // « Masquer les phases » vit seule dans son pied bordé : c'est le pied qui part.
+    expect(screen.getByRole('button', { name: 'Masquer les phases' }).parentElement?.className).toMatch(imprimeCache);
+    expect(colonnePhases().className).not.toMatch(/print:hidden/);
+    expect(colonneContexte().className).not.toMatch(/print:hidden/);
+  });
+
   it('contexte : escamoté d’office de 1 024 à 1 279 px tant que rien n’est choisi, puis suit la commande', async () => {
     await rendreFiche({ runtime: 'ready' });
     expect(colonneContexte().className).toContain('lg:max-xl:hidden');
@@ -3655,7 +3697,7 @@ describe('FichePatientPanel — replis des phases et du contexte (PRA-3a)', () =
 
   it('le bandeau du poste de pilotage ne répète plus le nom du dossier, porté par l’en-tête de fiche', async () => {
     await rendreFiche({ runtime: 'ready' });
-    expect(screen.getByRole('heading', { level: 2, name: 'Sophie Nicola' })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 1, name: 'Sophie Nicola' })).toBeTruthy();
     const poste = screen.getByRole('region', { name: 'Poste de pilotage clinique' });
     expect(within(poste).queryByText('Sophie Nicola')).toBeNull();
   });
@@ -3703,9 +3745,9 @@ describe('FichePatientPanel — PRA-3b, PR 1 : phase Patient (P05-P07, P31)', ()
     await waitFor(() => expect(document.activeElement?.contains(ligne)).toBe(true));
   });
 
-  it('P05 : la fiche administrative est un h4 sous la phase h3 (Q2 a), ses boutons à 44 px avec focus (Q8 a)', async () => {
+  it('P05 : la fiche administrative est un h3 sous la phase h2 (Q2 a), ses boutons à 44 px avec focus (Q8 a)', async () => {
     await rendreFiche({ phaseDemandee: 'patient' });
-    const titre = await screen.findByRole('heading', { level: 4, name: /Fiche administrative/ });
+    const titre = await screen.findByRole('heading', { level: 3, name: /Fiche administrative/ });
     const fiche = titre.closest('section') as HTMLElement;
     for (const bouton of within(fiche).getAllByRole('button')) {
       expect(bouton.className).toContain('min-h-11');
@@ -3728,5 +3770,136 @@ describe('FichePatientPanel — PRA-3b, PR 1 : phase Patient (P05-P07, P31)', ()
       expect(bouton.className).not.toContain('bg-status-warning');
       expect(bouton.className).toContain('min-h-11');
     }
+  });
+});
+
+// PRA-6h2 : la fiche face à une réponse hors contrat (500 `{error}` d'un autre
+// émetteur), et le focus après ses « Réessayer » (arbitrage 20261118-2228-d) —
+// au bouton si la relecture échoue encore, au titre du panneau relu sinon.
+describe('FichePatientPanel — PRA-6h2 : lecture hors contrat et focus après « Réessayer »', () => {
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  /** Sert `reponse` aux `n` premiers appels qui satisfont `cible`, puis le harnais. */
+  function intercepter(
+    options: Options,
+    cible: (url: string) => boolean,
+    reponse: () => Promise<unknown>,
+    n = 1,
+  ) {
+    const base = stubFetch(options);
+    let restants = n;
+    const fetchMock = vi.fn((input: unknown) => {
+      if (restants > 0 && cible(String(input))) {
+        restants -= 1;
+        return reponse();
+      }
+      return base(input);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    return fetchMock;
+  }
+  const horsContrat = () =>
+    Promise.resolve({ ok: false, status: 500, json: () => Promise.resolve({ error: 'Erreur interne' }) });
+  const coupure = () => Promise.reject(new Error('coupure réseau'));
+  /** Un vrai clic pose le focus sur le bouton ; `fireEvent.click` non. */
+  const cliquer = (bouton: HTMLElement) => {
+    bouton.focus();
+    fireEvent.click(bouton);
+  };
+  const rendre = (props: Partial<Parameters<typeof FichePatientPanel>[0]> = {}) =>
+    render(
+      <C5FeatureProvider enabled={false}>
+        <FichePatientPanel idPatient="PAT001" {...props} />
+      </C5FeatureProvider>,
+    );
+
+  it('un 500 `{error}` hors contrat tombe dans l’état d’échec de la fiche, sans faire tomber la page', async () => {
+    intercepter({}, url => url.includes('/api/praticien/equilibre'), horsContrat);
+    rendre();
+
+    const alerte = await screen.findByRole('alert');
+    expect(alerte.textContent).toContain('La fiche patient n’a pas pu être lue.');
+    expect(document.body.textContent).not.toContain('Erreur interne');
+    expect(within(alerte).getByRole('button', { name: 'Réessayer' })).toBeTruthy();
+  });
+
+  it('une réponse 200 sans la forme promise tombe aussi dans l’état d’échec', async () => {
+    intercepter(
+      {},
+      url => url.includes('/api/praticien/equilibre'),
+      () => Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({ patient: null }) }),
+    );
+    rendre();
+    const alerte = await screen.findByRole('alert');
+    expect(alerte.textContent).toContain('La fiche patient n’a pas pu être lue.');
+  });
+
+  it('fiche : « Réessayer » réussi rend le focus au nom du patient, en tête de fiche', async () => {
+    intercepter({}, url => url.includes('/api/praticien/equilibre'), horsContrat);
+    rendre();
+    const alerte = await screen.findByRole('alert');
+    cliquer(within(alerte).getByRole('button', { name: 'Réessayer' }));
+
+    const titre = await screen.findByRole('heading', { level: 1, name: 'Sophie Nicola' });
+    await waitFor(() => expect(document.activeElement).toBe(titre));
+  });
+
+  it('fiche : « Réessayer » encore en échec rend le focus au bouton', async () => {
+    stubFetch({ equilibreEchecs: 2 });
+    rendre();
+    const alerte = await screen.findByRole('alert');
+    cliquer(within(alerte).getByRole('button', { name: 'Réessayer' }));
+
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Réessayer' })),
+    );
+    expect(screen.getByText('La fiche patient n’a pas pu être lue.')).toBeTruthy();
+  });
+
+  it('corrections : « Réessayer » réussi rend le focus au nom du patient', async () => {
+    intercepter(
+      { assignationsModif: true },
+      url => url.includes('/api/praticien/patients') && url.includes('modification_demandee'),
+      coupure,
+    );
+    rendre();
+    const bouton = await screen.findByRole('button', { name: 'Réessayer la lecture des corrections de questionnaire' });
+    cliquer(bouton);
+
+    await waitFor(() => expect(screen.getByText(/1 demande de correction de questionnaire en attente/i)).toBeTruthy());
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole('heading', { level: 1, name: 'Sophie Nicola' })),
+    );
+  });
+
+  it('envois (phase Données) : « Réessayer » réussi rend le focus au titre de la zone focale', async () => {
+    intercepter(
+      {},
+      url => url.includes('/api/praticien/patients') && url.endsWith('?idPatient=PAT001'),
+      coupure,
+    );
+    rendre({ phaseDemandee: 'donnees' });
+    const bouton = await screen.findByRole('button', { name: 'Réessayer la lecture des envois' });
+    cliquer(bouton);
+
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Réessayer la lecture des envois' })).toBeNull());
+    expect(screen.getByText(/^Envois :/)).toBeTruthy();
+    const zone = document.getElementById('zone-focale') as HTMLElement;
+    await waitFor(() => expect(document.activeElement).toBe(within(zone).getByRole('heading', { level: 2 })));
+  });
+
+  it('onglet Trajectoire : « Réessayer » réussi rend le focus au panneau, nommé par son onglet', async () => {
+    intercepter({}, url => url.includes('/api/praticien/trajectoire'), horsContrat);
+    rendre({ ongletInitial: 'trajectoire' });
+    await waitFor(() => expect(document.getElementById('panneau-trajectoire')).toBeTruthy());
+    const panneau = document.getElementById('panneau-trajectoire') as HTMLElement;
+    const bouton = await within(panneau).findByRole('button', { name: 'Réessayer' });
+    cliquer(bouton);
+
+    await waitFor(() => expect(within(panneau).queryByRole('button', { name: 'Réessayer' })).toBeNull());
+    await waitFor(() => expect(document.activeElement).toBe(panneau));
   });
 });

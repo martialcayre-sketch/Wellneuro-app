@@ -122,8 +122,8 @@ export function FicheAdministrativePanel({
    */
   onFermer?: () => void;
   /**
-   * Niveau du titre (PRA-3b Q2 a) : `h4` dans le cockpit, où la phase
-   * « Patient » porte le `h3` ; `h3` dans le rayon Patients.
+   * Niveau du titre (PRA-3b Q2 a) : `h3` dans la fiche, où la phase
+   * « Patient » porte le `h2` (PRA-6e) ; `h3` dans le rayon Patients.
    */
   niveauTitre?: 'h3' | 'h4';
 }) {

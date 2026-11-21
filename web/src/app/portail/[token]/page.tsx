@@ -32,7 +32,7 @@ import { PatientJourneyProgress, buildJourneySteps } from '@/components/patient/
 import { AvantDeCommencer } from '@/components/patient/trust/AvantDeCommencer';
 import { AccueilConditions } from '@/components/patient/trust/ConditionsUtilisation';
 import { DateNaissanceEcran, EcranCircuitMineur } from '@/components/patient/DateNaissanceEcran';
-import type { StatutAge } from '@/lib/patient/gardeAge';
+import type { StatutAge, TrancheMineur } from '@/lib/patient/gardeAge';
 import { DocumentTrust } from '@/components/patient/trust/DocumentTrust';
 import { getDocumentCourant } from '@/lib/trust/contenus/registre';
 import {
@@ -684,7 +684,7 @@ function DoneScreen({ token, premiereAssignation }: { token: string; premiereAss
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
         </svg>
       </div>
-      <h2 className="font-display text-xl font-bold text-foreground mb-2">Merci !</h2>
+      <h1 className="font-display text-xl font-bold text-foreground mb-2">Merci !</h1>
       <p className="text-muted-foreground text-sm leading-relaxed mb-6">
         Vos renseignements ont bien été transmis à votre praticien.<br />
         {premiereAssignation
@@ -745,6 +745,8 @@ export default function PortailPage() {
   const [consultation, setConsultation] = useState<PortailConsultationState | null>(null);
   const [premiere, setPremiere] = useState<string | null>(null);
   const [statut, setStatut] = useState<StatutAge>('date_manquante');
+  // D-537 §7 : la variante du texte 2B servie à l'étape « mineur ».
+  const [tranche, setTranche] = useState<TrancheMineur | null>(null);
 
   const appliquerSession = useCallback((data: Extract<PortailSessionResponse, { ok: true }>) => {
     setEmail(data.patient.email.toLowerCase());
@@ -754,6 +756,7 @@ export default function PortailPage() {
     // Un dossier clos ne recueille plus rien : aucune date ne lui est demandée.
     const statutAffiche: StatutAge = data.dossierOuvert === false ? 'majeur' : data.statutAge;
     setStatut(statutAffiche);
+    setTranche(data.trancheMineur ?? null);
     // Séquence TRUST « Avant de commencer » : requise tant qu'un des documents
     // exigeant un accusé n'en a pas un sur sa version courante (patients
     // existants inclus, une fois). La règle n'est plus « le cadre » depuis le
@@ -836,8 +839,9 @@ export default function PortailPage() {
     return (
       <div className="w-full max-w-md space-y-4">
         <DateNaissanceEcran
-          onEnregistree={nouveau => {
+          onEnregistree={(nouveau, trancheNouvelle) => {
             setStatut(nouveau);
+            setTranche(trancheNouvelle);
             setStep(prochaineEtape(consultation, premiere, nouveau));
           }}
         />
@@ -848,7 +852,7 @@ export default function PortailPage() {
   if (step.name === 'mineur') {
     return (
       <div className="w-full max-w-md space-y-4">
-        <EcranCircuitMineur lienParcours={`/portail/${token}/questionnaires`} />
+        <EcranCircuitMineur lienParcours={`/portail/${token}/questionnaires`} tranche={tranche} />
       </div>
     );
   }

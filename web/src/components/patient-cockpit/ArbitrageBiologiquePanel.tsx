@@ -204,15 +204,15 @@ export function ArbitrageBiologiquePanel({
       className="rounded-xl border border-border bg-surface p-4"
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
-        {/* Panneau d'une sous-vue de phase : h4 sous le titre de phase (Q2 a). */}
-        <h4
+        {/* Panneau d'une sous-vue de phase : h3 sous le titre de phase (Q2 a ; PRA-6e). */}
+        <h3
           id="arbitrage-biologie-title"
           ref={titreRef}
           tabIndex={-1}
           className="text-sm font-semibold text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
         >
           Biologie — arbitrage au retour du bilan
-        </h4>
+        </h3>
         <span className="rounded-full border border-border px-2 py-1 text-xs text-muted-foreground">
           {/* Le badge est une affirmation sur L'OUTIL, pas sur cette table :
               il suit l'état réel de l'étage 2 (D-122 §2), comme son jumeau du
@@ -261,7 +261,7 @@ export function ArbitrageBiologiquePanel({
             && !soumises.has(intention.actionId);
           return (
             <li key={intention.actionId} className="rounded-lg border border-border p-3">
-              <h5 className="text-sm font-medium text-foreground">{intention.title}</h5>
+              <h4 className="text-sm font-medium text-foreground">{intention.title}</h4>
               {intention.cible && (
                 <p className="text-xs text-muted-foreground">En attente de biologie : {intention.cible}</p>
               )}

@@ -189,7 +189,7 @@ export function TransmissionCompteRendu({ token }: { token: string }) {
   return (
     <div className="space-y-6">
       <PatientCard>
-        <h1 className="text-2xl font-semibold text-foreground">Transmettre un compte rendu d’analyses</h1>
+        <h1 className="font-display text-2xl font-bold leading-tight text-foreground">Transmettre un compte rendu d’analyses</h1>
         <p className="mt-2 text-base text-foreground">
           Vous pouvez déposer ici le compte rendu de vos analyses biologiques, pour votre praticien. Rien n’en est
           relevé à l’envoi : votre praticien vérifie d’abord qu’il s’agit bien de votre compte rendu, puis décide d’en
@@ -228,6 +228,7 @@ export function TransmissionCompteRendu({ token }: { token: string }) {
                 onClick={() => void accuser(documentAccuse)}
                 loading={occupe}
                 loadingLabel="Enregistrement…"
+                className="[overflow-wrap:anywhere] max-[319px]:hyphens-auto"
               >
                 J’en ai pris connaissance
               </PatientButton>
