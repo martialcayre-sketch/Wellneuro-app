@@ -41,7 +41,7 @@ export function ProtocolCheckinTrend({ points }: { points: PointEtat[] }) {
         {renseignes.map((point) => {
           const reponses = point.reponses as CheckinReponses;
           return (
-            <li key={point.pointEtape} className="rounded-xl border border-border bg-surface px-4 py-3">
+            <li key={point.pointEtape} className="rounded border border-border bg-surface px-4 py-3">
               <p className="text-sm font-medium text-foreground">{LABEL_POINT[point.pointEtape]}</p>
               <p className="text-sm text-muted-foreground mt-1">{phraseAdhesion(reponses.adhesion)}</p>
               <p className="text-xs text-muted-foreground mt-1">

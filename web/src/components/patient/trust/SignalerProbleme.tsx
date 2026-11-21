@@ -406,7 +406,7 @@ function FormulaireSignalement({
           <PatientButton type="submit" variant="primary" loading={envoi} loadingLabel="Envoi…">
             Envoyer le signalement
           </PatientButton>
-          <PatientButton variant="ghost" onClick={annuler}>Annuler</PatientButton>
+          <PatientButton variant="link" onClick={annuler}>Annuler</PatientButton>
         </div>
         {refusDossier && <RefusAutreDossier />}
       </form>
@@ -450,7 +450,7 @@ function FormulaireSignalement({
           <PatientButton type="submit" variant="primary" loading={envoi} loadingLabel="Envoi…">
             Signaler
           </PatientButton>
-          <PatientButton variant="ghost" onClick={annuler}>Annuler</PatientButton>
+          <PatientButton variant="link" onClick={annuler}>Annuler</PatientButton>
         </div>
         {refusDossier && <RefusAutreDossier />}
       </form>
@@ -491,7 +491,7 @@ function FormulaireSignalement({
         <PatientButton type="submit" variant="primary" loading={envoi} loadingLabel="Envoi…">
           Envoyer la demande
         </PatientButton>
-        <PatientButton variant="ghost" onClick={annuler}>Annuler</PatientButton>
+        <PatientButton variant="link" onClick={annuler}>Annuler</PatientButton>
       </div>
       {refusDossier && <RefusAutreDossier />}
     </form>

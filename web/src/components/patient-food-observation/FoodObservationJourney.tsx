@@ -272,7 +272,7 @@ export function FoodObservationJourney({
             </p>
           )}
         </div>
-        <dl className="grid gap-3 rounded-xl bg-muted p-4 sm:grid-cols-2">
+        <dl className="grid gap-3 rounded bg-muted p-4 sm:grid-cols-2">
           <div>
             <dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Action essayée</dt>
             <dd className="mt-1 text-sm font-medium">{action.labelPatient}</dd>

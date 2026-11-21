@@ -413,7 +413,7 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
                       intitulé lisible et un fond par voix, que le texte double
                       toujours. À l'impression, les fonds tombent et les
                       intitulés restent. */}
-                  <div className="space-y-1 rounded-xl bg-voice-patient p-4 print:bg-transparent print:p-0">
+                  <div className="space-y-1 rounded bg-voice-patient p-4 print:bg-transparent print:p-0">
                     {/* SA PAROLE LUI EST RENDUE COMME SIENNE (`D-167`,
                         appliqué au patient le 2026-09-11). Quand l'énoncé est
                         son dépôt « ce qui compte pour moi » cité MOT POUR MOT,
@@ -448,7 +448,7 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
                   </div>
 
                   {objectif.reformulationPraticien && (
-                    <div className="space-y-1 rounded-xl border border-border bg-voice-practitioner p-4 print:border-0 print:bg-transparent print:p-0">
+                    <div className="space-y-1 rounded border border-border bg-voice-practitioner p-4 print:border-0 print:bg-transparent print:p-0">
                       <p className="text-sm font-semibold text-foreground">
                         Ce que votre praticien en a compris
                       </p>
@@ -1136,7 +1136,7 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
               têtes d'objectif concurrentes : la rendre sous chacune la ferait
               dire qu'elle répond à chacune. */}
           {objectifs.length > 0 && comprehension?.synthese && (
-            <div className="space-y-1 rounded-xl border border-border bg-voice-practitioner p-4 print:border-0 print:bg-transparent print:p-0">
+            <div className="space-y-1 rounded border border-border bg-voice-practitioner p-4 print:border-0 print:bg-transparent print:p-0">
               <p className="text-sm font-semibold text-foreground">
                 Ce que votre praticien a compris de vous
                 {dateLisible(
@@ -1172,7 +1172,7 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
               {ceQuiCompte.map((entree) => (
                 <li
                   key={entree.id}
-                  className="space-y-1 rounded-xl bg-voice-patient p-4 print:bg-transparent print:p-0"
+                  className="space-y-1 rounded bg-voice-patient p-4 print:bg-transparent print:p-0"
                 >
                   {/* JAMAIS `saisiLe ?? creeLe`. Les deux dates ne disent pas
                       la même chose : `saisiLe` est ce que le patient a DÉCLARÉ

@@ -136,7 +136,7 @@ export function MonEquilibreAccueil({
         )}
 
         {momentum && (
-          <p className="text-base text-primary bg-primary/10 rounded-xl px-4 py-2 text-center mb-4">
+          <p className="text-base text-primary bg-primary/10 rounded px-4 py-2 text-center mb-4">
             {TENDANCE_INDICE_GLOBAL_PATIENT[momentum.tendance]}
           </p>
         )}
@@ -161,7 +161,7 @@ export function MonEquilibreAccueil({
               {/* Item priorité maquette : `text-sm` (15px, la maquette disait 15,5),
                   icône 19px encre cuivre. */}
               {priorites.map(p => (
-                <li key={p.id} className="flex items-center gap-3 text-sm text-foreground bg-muted rounded-xl px-[15px] py-[13px]">
+                <li key={p.id} className="flex items-center gap-3 text-sm text-foreground bg-muted rounded px-[15px] py-[13px]">
                   <Sprout aria-hidden="true" size={19} strokeWidth={2} className="shrink-0 text-copper-ink" />
                   {p.libellePatient}
                 </li>
@@ -173,14 +173,14 @@ export function MonEquilibreAccueil({
         <button
           type="button"
           onClick={onVoirDetail}
-          className="w-full min-h-12 py-3 px-[22px] bg-primary text-primary-foreground rounded-xl font-semibold text-base hover:opacity-90 transition-opacity mb-3"
+          className="w-full min-h-12 py-3 px-[22px] bg-primary text-primary-foreground rounded-lg font-semibold text-base hover:opacity-90 transition-opacity mb-3"
         >
           Voir le détail de mes 12 besoins
         </button>
         <button
           type="button"
           onClick={onRetour}
-          className="w-full min-h-12 py-3 px-[22px] border border-primary/30 text-primary rounded-xl font-semibold text-base hover:bg-primary/10 transition-colors"
+          className="w-full min-h-12 py-3 px-[22px] bg-surface border border-control-border text-primary rounded-lg font-semibold text-base hover:bg-primary/10 hover:text-foreground transition-colors"
         >
           ← Retour
         </button>
