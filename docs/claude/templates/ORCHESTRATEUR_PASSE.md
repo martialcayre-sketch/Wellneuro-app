@@ -1,4 +1,4 @@
-# Consigne de la passe de l'orchestrateur cloud (`D-540`, amendée le 2026-11-20)
+# Consigne de la passe de l'orchestrateur cloud (`D-540`, amendée le 2026-11-20 et le 2026-11-21)
 
 Cette consigne est versée au dépôt ; la consigne de la routine, hors dépôt,
 porte l'adresse de la page de suivi de la file D, l'ordre de suivre ce
