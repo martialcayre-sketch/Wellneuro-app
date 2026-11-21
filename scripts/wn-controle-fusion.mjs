@@ -41,6 +41,8 @@
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import {
+  constants as constantesFs,
+  cpSync,
   existsSync,
   lstatSync,
   mkdirSync,
@@ -329,10 +331,20 @@ export function materialiser({ racine, arbre, dossier, source }) {
   for (const lien of ['web/node_modules', 'web/src/generated/prisma']) {
     if (existsSync(join(dossier, lien))) throw new Error(`${lien} est suivi dans l'arbre : rien n'y sera relié`);
   }
-  // Reliés APRÈS l'index : ni l'un ni l'autre n'entre dans `git ls-files`.
+  // Posés APRÈS l'index : ni l'un ni l'autre n'entre dans `git ls-files`.
   symlinkSync(join(source, 'web/node_modules'), join(dossier, 'web/node_modules'));
   mkdirSync(join(dossier, 'web/src/generated'), { recursive: true });
-  symlinkSync(join(source, 'web/src/generated/prisma'), join(dossier, 'web/src/generated/prisma'));
+  // Le client généré est COPIÉ, pas relié (clone APFS ou reflink quand le
+  // système le permet). Un banc qui suit les liens symboliques, comme le fait
+  // le bundler (`importeurs.guard`, D-480 §8), voyait le client relié hors de
+  // l'arbre et ne le balayait pas : il rougissait ici et non sur un vrai
+  // checkout, et ce rouge préexistant masquait sur `main` le test même qui
+  // refuse un nouveau lecteur de la bibliothèque. `node_modules` reste relié :
+  // aucun banc n'y suit d'import.
+  cpSync(join(source, 'web/src/generated/prisma'), join(dossier, 'web/src/generated/prisma'), {
+    recursive: true,
+    mode: constantesFs.COPYFILE_FICLONE,
+  });
 }
 
 /** Retire les dossiers temporaires d'un contrôle interrompu (signal, arrêt). */
