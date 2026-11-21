@@ -1,5 +1,5 @@
 // Phase 2b — Ingestion HTTP des claims rédigés (draft-*.json) vers la route
-// /api/internal/rag/claims/ingest (par lots ≤ 64). Pendant claims du
+// /api/internal/rag/claims/ingest (par lots ≤ RAG_MAX_CLAIMS_BATCH_SIZE, soit 10). Pendant claims du
 // tools/corpus/ingest/ingest.mjs (chunks) : même contrat d'appel, même auth.
 //
 // Les chunks sources doivent déjà être ingérés sur la cible (FK version-épinglée :
@@ -15,18 +15,18 @@
 //
 //   node --import ./tools/corpus/lib/register-alias.mjs \
 //     tools/corpus/claims/ingest.mjs \
-//     --draft ~/.wellneuro/corpus/claims/draft-LOT_001_2026-07-22.json [--validate] [--lot 16]
+//     --draft ~/.wellneuro/corpus/claims/draft-LOT_001_2026-07-22.json [--validate] [--lot 5]
 //
 // Requiert (mode POST) : RAG_INTERNAL_SECRET. Jamais loggé, jamais écrit.
 
 import fs from 'node:fs/promises';
 
-const { parseRagClaimsIngestPayload } = await import('@/lib/rag/claims/validation');
+const { parseRagClaimsIngestPayload, RAG_MAX_CLAIMS_BATCH_SIZE } = await import('@/lib/rag/claims/validation');
 
-// Plafond du contrat serveur. En pratique un lot de 64 dépasse le timeout de
-// transaction Prisma (5 s) contre la base de production : --lot permet de
-// descendre (16 tient large), le serveur restant l'arbitre du plafond.
-const RAG_MAX_BATCH = 64;
+// Plafond du contrat serveur, lu chez lui : un lot plus gros expire la
+// transaction Prisma de 5 s contre la base de production (500, rien d'écrit).
+// --lot permet de descendre, jamais de monter ; le serveur reste l'arbitre.
+const RAG_MAX_BATCH = RAG_MAX_CLAIMS_BATCH_SIZE;
 
 function parseArgs() {
   const a = process.argv.slice(2);

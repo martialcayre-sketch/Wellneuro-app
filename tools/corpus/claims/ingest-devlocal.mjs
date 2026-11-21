@@ -15,11 +15,11 @@
 import fs from 'node:fs/promises';
 import pg from 'pg';
 
-const { parseRagClaimsIngestPayload } = await import('@/lib/rag/claims/validation');
+const { parseRagClaimsIngestPayload, RAG_MAX_CLAIMS_BATCH_SIZE } = await import('@/lib/rag/claims/validation');
 
 const EMBEDDING_DIMENSIONS = 1536;
 const CLAIM_INGEST_STATUT = 'EN_ATTENTE_VALIDATION';
-const RAG_MAX_BATCH = 64;
+const RAG_MAX_BATCH = RAG_MAX_CLAIMS_BATCH_SIZE;
 
 function parseArgs() {
   const a = process.argv.slice(2);
@@ -111,7 +111,7 @@ async function main() {
   const claimsBruts = doc.claims || [];
   console.log(`Draft : ${claimsBruts.length} claims — base ${o.pgurl}\n`);
 
-  // Conformité au VRAI contrat, par lots ≤ 64 (comme la route).
+  // Conformité au VRAI contrat, par lots ≤ RAG_MAX_CLAIMS_BATCH_SIZE (comme la route).
   const lots = [];
   for (let i = 0; i < claimsBruts.length; i += RAG_MAX_BATCH) {
     lots.push(parseRagClaimsIngestPayload({ claims: claimsBruts.slice(i, i + RAG_MAX_BATCH) }).claims);

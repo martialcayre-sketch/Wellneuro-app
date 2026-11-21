@@ -58,4 +58,5 @@ Sortie : `~/.wellneuro/corpus/claims/draft-LOT_<batch>_<date>.json` (+
   premier envoi ; ne jamais compter sur une ré-ingestion pour requalifier.
 - Sorties **hors dépôt** (`~/.wellneuro/corpus/`), aucune écriture base depuis
   `draft.mjs` ; l'ingestion passe par la route interne authentifiée
-  (`RAG_INTERNAL_SECRET`), plafond 64 claims par requête.
+  (`RAG_INTERNAL_SECRET`), plafond 10 claims par requête
+  (`RAG_MAX_CLAIMS_BATCH_SIZE` : au-delà, la transaction de 5 s expirait en production).

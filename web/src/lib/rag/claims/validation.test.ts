@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import { RAG_MAX_BATCH_SIZE } from '@/lib/rag/config';
 import { normalizeWellneuroText, sha256WellneuroText } from '@/lib/rag/validation';
 import {
+  RAG_MAX_CLAIMS_BATCH_SIZE,
   embeddingTextForClaim,
   parseRagClaimsIngestPayload,
 } from '@/lib/rag/claims/validation';
@@ -132,5 +136,47 @@ describe('validation ingestion des claims RAG', () => {
     expect(embeddingTextForClaim(claim.texteNormalise)).toBe(
       'Les oméga-3 EPA/DHA soutiennent la fonction cognitive.\n',
     );
+  });
+});
+
+// Piège « lot d'ingestion de plus de 10 claims » : la route écrit tout le lot
+// dans une transaction Prisma de 5 s ; 50 claims l'ont fait expirer contre la
+// base de production (500, rien d'écrit), 10 passaient. Le plafond se juge
+// donc au contrat, et les outils du dépôt le lisent au lieu de le recopier.
+describe('plafond d’un lot de claims', () => {
+  const lotDe = (n: number) =>
+    Array.from({ length: n }, (_, i) => ({
+      ...validClaim(),
+      claimId: `WN-CL-0056-${String(i + 1).padStart(3, '0')}`,
+    }));
+
+  it('vaut 10, sous le plafond des chunks', () => {
+    expect(RAG_MAX_CLAIMS_BATCH_SIZE).toBe(10);
+    expect(RAG_MAX_CLAIMS_BATCH_SIZE).toBeLessThan(RAG_MAX_BATCH_SIZE);
+  });
+
+  it('accepte un lot au plafond', () => {
+    expect(parseRagClaimsIngestPayload({ claims: lotDe(10) }).claims).toHaveLength(10);
+  });
+
+  it('refuse un lot au-delà, en disant la taille reçue et la consigne', () => {
+    expect(() => parseRagClaimsIngestPayload({ claims: lotDe(11) })).toThrow(
+      /ne peut pas dépasser 10 claims \(reçu 11\) : envoyer par paquets de 10 au plus/,
+    );
+  });
+
+  it('les outils du dépôt qui découpent un lot lisent le plafond du contrat', () => {
+    const racine = path.resolve(__dirname, '../../../../..');
+    for (const outil of ['ingest.mjs', 'ingest-devlocal.mjs', 'draft.mjs']) {
+      const texte = readFileSync(path.join(racine, 'tools/corpus/claims', outil), 'utf8');
+      expect(texte, outil).toMatch(
+        /\{[^}]*\bRAG_MAX_CLAIMS_BATCH_SIZE\b[^}]*\}\s*=\s*await import\('@\/lib\/rag\/claims\/validation'\)/,
+      );
+      // Aucune taille de lot écrite en chiffres : ni constante, ni pas de boucle, ni tranche.
+      expect(texte, outil).not.toMatch(/RAG_MAX_BATCH\s*=\s*\d/);
+      expect(texte, outil).not.toMatch(/\blot:\s*\d/);
+      expect(texte, outil).not.toMatch(/\+=\s*\d{2,}\s*\)/);
+      expect(texte, outil).not.toMatch(/slice\(\s*\w+\s*,\s*\w+\s*\+\s*\d+\s*\)/);
+    }
   });
 });
