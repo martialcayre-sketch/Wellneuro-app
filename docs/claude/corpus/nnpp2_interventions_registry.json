@@ -1752,6 +1752,25 @@
       },
       "motifSansClaim": "Notice seule par accord du responsable (2026-11-20, Q3 = A) — aucun extrait ingéré, donc aucun claim ; la recommandation HAS reste lue à la source.",
       "statutValidation": "sans_claim"
+    },
+    {
+      "axeId": "humeur",
+      "sousAxe": null,
+      "sourceId": "WN-SRC-0847",
+      "notebook": "04 — Humeur",
+      "documentType": "Recommandation de pratique",
+      "titre": "Haute Autorité de santé (2017). Épisode dépressif caractérisé de l'adulte : prise en charge en soins de premier recours. Recommandations, décision n° 2017.0131/DC/SBPP du 4 octobre 2017, mises en ligne le 8 novembre 2017",
+      "tableauClinique": "Épisode dépressif caractérisé de l'adulte : prise en charge en soins de premier recours (HAS, notice seule)",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": false,
+      "claims": {
+        "valide": 0,
+        "enAttente": 0,
+        "prescriptifs": 0,
+        "mesureLe": "2026-11-21"
+      },
+      "motifSansClaim": "Notice seule par accord du responsable (2026-11-21, besoin 11) — aucun extrait ingéré, donc aucun claim ; la recommandation HAS reste lue à la source.",
+      "statutValidation": "sans_claim"
     }
   ],
   "ecartees": [
