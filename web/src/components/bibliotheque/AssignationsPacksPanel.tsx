@@ -19,7 +19,7 @@ import { PacksPanel } from '@/components/PacksPanel';
 // Q5 de D-481 : 44 px et focus visible, comme `ui/Input` ; `ui/Select` sert
 // d'autres écrans et n'est pas changé par ce lot.
 const CLASSE_SELECT =
-  'min-h-11 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring';
+  'min-h-11 h-11 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring';
 
 // Clé d'un bloc empilé au téléphone (Q8) : l'en-tête de colonne, masqué au
 // bureau où le tableau le porte.
