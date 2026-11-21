@@ -901,7 +901,7 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
           Issue observée
           <select
             data-testid="ja-praticien-issue"
-            className="w-full mt-1 px-3 py-2 border border-border rounded-lg bg-surface text-foreground"
+            className="w-full mt-1 h-11 px-3 py-2 border border-border rounded-lg bg-surface text-foreground"
             value={issue}
             onChange={(e) => setIssue(e.target.value as TraceIssue)}
           >
@@ -916,7 +916,7 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
             Friction principale
             <select
               data-testid="ja-praticien-friction"
-              className="w-full mt-1 px-3 py-2 border border-border rounded-lg bg-surface text-foreground"
+              className="w-full mt-1 h-11 px-3 py-2 border border-border rounded-lg bg-surface text-foreground"
               value={frictionCode}
               onChange={(e) => setFrictionCode(e.target.value)}
             >
@@ -1021,7 +1021,7 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
           Action liée à une assiette recommandée
           <select
             data-testid="ja-praticien-assiette"
-            className="w-full mt-1 px-3 py-2 border border-border rounded-lg bg-surface text-foreground"
+            className="w-full mt-1 h-11 px-3 py-2 border border-border rounded-lg bg-surface text-foreground"
             value={assietteCode}
             onChange={(e) => onAssietteChange(e.target.value)}
           >
@@ -1105,7 +1105,7 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
             Jalon de phase
             <select
               data-testid="ja-praticien-activation-milestone"
-              className="w-full mt-1 px-3 py-2 border border-border rounded-lg bg-surface text-foreground"
+              className="w-full mt-1 h-11 px-3 py-2 border border-border rounded-lg bg-surface text-foreground"
               value={milestone}
               onChange={(e) => setMilestone(e.target.value as JaMilestone)}
             >
@@ -1131,7 +1131,7 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
               Charge perçue
               <select
                 data-testid="ja-praticien-charge-percue"
-                className="w-full mt-1 px-3 py-2 border border-border rounded-lg bg-surface text-foreground"
+                className="w-full mt-1 h-11 px-3 py-2 border border-border rounded-lg bg-surface text-foreground"
                 value={chargePercue}
                 onChange={(e) => setChargePercue(e.target.value as JaChargePercue)}
               >
