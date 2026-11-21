@@ -251,15 +251,22 @@ describe('orientationRulesV1 — verrou v1', () => {
 
   // Contre-épreuve de [[D-543]] §3 : les lignes suspendues repassées
   // `publiee`, le contenu hache exactement l'ancienne signature ([[D-470]]).
-  // Seul le statut a bougé.
-  it('hors le statut suspendu, la table est celle signée le 2026-11-09 (D-543)', () => {
+  // Seul le statut a bougé — et, depuis [[D-555]], l'exclusion `Q_ALI_01` du
+  // besoin 1 de la table de convergence, retirée ici de la même façon : la
+  // seconde retouche postérieure à cette signature, prouvée à part par
+  // `exclusionQAli01Besoin1.guard.test.ts`.
+  it('hors le statut suspendu et l’exclusion du besoin 1, la table est celle signée le 2026-11-09 (D-543)', () => {
     const retablie = ORIENTATION_RULES_V1.map(regle =>
       regle.statut === 'suspendue' ? { ...regle, statut: 'publiee' as const } : regle);
+    const convergence = {
+      ...TABLE_CONVERGENCE_V1,
+      exclusions: TABLE_CONVERGENCE_V1.exclusions.filter(e => !(e.idQuestionnaire === 'Q_ALI_01' && e.besoin === 1)),
+    };
     expect(sha256(JSON.stringify({
       regles: retablie,
       grilles: GRILLES_ORIENTATION,
       fenetres: FENETRES_FRAICHEUR_ORIENTATION,
-      convergence: TABLE_CONVERGENCE_V1,
+      convergence,
     }))).toBe('a9aaaf32c7e8ab5903f8faa2b7b6982c0d79c1f64ac097f140f2a3d83351d914');
   });
 

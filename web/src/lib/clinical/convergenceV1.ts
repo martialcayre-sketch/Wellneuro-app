@@ -8,7 +8,7 @@ import type { GraduationConvergence, ImportanceContradiction } from './contradic
 // nommées et motivées, ce que trois décisions ont dicté :
 // - [[D-443]] : la graduation par FAMILLES DE MESURE concordantes, ses quatre
 //   bornes, le registre des familles, l'exclusion de `Q_ALI_01` du compte
-//   digestif ;
+//   digestif, puis celle du besoin 1 ([[D-555]]) ;
 // - [[D-450]] : `ANAMNÈSE` distincte de `AUTO` ; une condition atteinte compte
 //   sur un axe où une règle a déclenché ; l'injection en synthèse ;
 // - [[D-453]] : le rattachement de chaque condition déclencheuse de
@@ -197,17 +197,38 @@ export const CONDITIONS_SANS_COMPTE_V1: readonly ConditionSansCompte[] = [
 ];
 
 /**
- * `Q_ALI_01` NE COMPTE JAMAIS AU BESOIN DIGESTIF — [[D-443]] §5, précisée par
- * [[D-453]] §5 : l'exclusion reste limitée au besoin 4 ; le questionnaire
- * alimentaire compte au besoin 1. La table de rattachement ne le place pas au
- * besoin 4 ; cette liste le dit en clair, et le moteur la relit pour qu'une
- * ligne ajoutée par erreur ne puisse pas l'y faire compter.
+ * `Q_ALI_01` NE COMPTE PAS À LA CONVERGENCE — deux exclusions, deux motifs.
+ *
+ * Besoin 4 (digestif) : [[D-443]] §5, précisée par [[D-453]] §5. La table de
+ * rattachement ne le place pas au besoin 4 ; cette liste le dit en clair, et le
+ * moteur la relit pour qu'une ligne ajoutée par erreur ne puisse pas l'y faire
+ * compter.
+ *
+ * Besoin 1 : [[D-555]] (réponse du responsable `20261122-0003-b`). La condition
+ * lisait une zone du TOTAL de l'enquête ; la source SIGNÉE du besoin 1 est la
+ * mesure dérivée ([[D-516]]), que la vague 1 de [[D-548]] (§2.2) applique au
+ * mapping du score — avant elle, `BESOIN_SOURCES[1]` lit encore le total.
+ * `R2-ALI-01` reste
+ * `publiee` et sa suggestion reste servie ; seule la CONDITION cesse d'ouvrir
+ * et de compter au besoin 1. Le rattachement reste dans la table. C'est le
+ * mécanisme existant le plus étroit : une exclusion est relue par le moteur à
+ * l'ouverture comme au compte (`exclue`), sans toucher ni la règle ni le statut.
+ * L'exclusion vaut pour l'instrument ENTIER (le moteur ignore `sousScore`) : une
+ * condition neuve de `Q_ALI_01` rattachée au besoin 1 serait exclue elle aussi ;
+ * le lot de réécriture lève la ligne ou affine le moteur ([[D-555]] §5).
+ * À revoir à la fin des douze besoins, à l'allumage de `WN_CONSTAT_BESOIN`
+ * ([[D-555]] §2) ; la retirer de cette liste rétablit le compte.
  */
 export const EXCLUSIONS_CONVERGENCE_V1: readonly { idQuestionnaire: string; besoin: number; motif: string }[] = [
   {
     idQuestionnaire: 'Q_ALI_01',
     besoin: 4,
     motif: 'l’enquête alimentaire mesure l’équilibre de l’alimentation, non un symptôme digestif',
+  },
+  {
+    idQuestionnaire: 'Q_ALI_01',
+    besoin: 1,
+    motif: 'la zone du total de l’enquête ne fonde plus le besoin 1, dont la source signée est la mesure dérivée ; réécriture à venir (D-555)',
   },
 ];
 
