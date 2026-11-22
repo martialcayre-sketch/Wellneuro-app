@@ -41,6 +41,8 @@
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import {
+  constants as constantesFs,
+  cpSync,
   existsSync,
   lstatSync,
   mkdirSync,
@@ -307,7 +309,10 @@ export function juger({ conflits = [], fusionne = new Map(), principal = new Map
 
 // ── Collecte ────────────────────────────────────────────────────────────────
 
-/** Extrait `arbre` dans `dossier` (archive, sans checkout), l'indexe, et y relie les dépendances de `source`. */
+/**
+ * Extrait `arbre` dans `dossier` (archive, sans checkout), l'indexe, y relie
+ * `node_modules` de `source` et y copie son client Prisma généré.
+ */
 export function materialiser({ racine, arbre, dossier, source }) {
   const extraire = spawnSync('bash', ['-o', 'pipefail', '-c', 'git -C "$1" archive --format=tar "$2" | tar -x -C "$3"', '_', racine, arbre, dossier], {
     stdio: ['ignore', 'ignore', 'pipe'],
@@ -324,15 +329,35 @@ export function materialiser({ racine, arbre, dossier, source }) {
   // hors du dossier temporaire.
   for (const parent of ['web', 'web/src', 'web/src/generated']) {
     const chemin = join(dossier, parent);
-    if (existsSync(chemin) && !lstatSync(chemin).isDirectory()) throw new Error(`${parent} n'est pas un dossier dans l'arbre extrait`);
+    const entree = lstatSync(chemin, { throwIfNoEntry: false });
+    if (entree && !entree.isDirectory()) throw new Error(`${parent} n'est pas un dossier dans l'arbre extrait`);
   }
+  // `lstatSync`, pas `existsSync` : un lien cassé suivi à cet endroit est une
+  // entrée, que `existsSync` (qui suit le lien) ne voit pas (`wn-reviewer`
+  // sur #2305).
   for (const lien of ['web/node_modules', 'web/src/generated/prisma']) {
-    if (existsSync(join(dossier, lien))) throw new Error(`${lien} est suivi dans l'arbre : rien n'y sera relié`);
+    if (lstatSync(join(dossier, lien), { throwIfNoEntry: false })) throw new Error(`${lien} est suivi dans l'arbre : rien n'y sera posé`);
   }
-  // Reliés APRÈS l'index : ni l'un ni l'autre n'entre dans `git ls-files`.
+  // Posés APRÈS l'index : ni l'un ni l'autre n'entre dans `git ls-files`.
   symlinkSync(join(source, 'web/node_modules'), join(dossier, 'web/node_modules'));
   mkdirSync(join(dossier, 'web/src/generated'), { recursive: true });
-  symlinkSync(join(source, 'web/src/generated/prisma'), join(dossier, 'web/src/generated/prisma'));
+  // Le client généré est COPIÉ, pas relié (clone APFS ou reflink quand le
+  // système le permet). Un banc qui suit les liens symboliques, comme le fait
+  // le bundler (`importeurs.guard`, D-480 §8), voyait le client relié hors de
+  // l'arbre et ne le balayait pas : il rougissait ici et non sur un vrai
+  // checkout, et ce rouge préexistant masquait sur `main` le test même qui
+  // refuse un nouveau lecteur de la bibliothèque. `node_modules` reste relié :
+  // aucun banc n'y balaie de source. `dereference` : un client de la source
+  // lui-même relié serait sinon recopié en lien, et le défaut reviendrait
+  // (`wn-reviewer` sur #2305) ; la vérification qui suit le refuse en clair.
+  const client = join(dossier, 'web/src/generated/prisma');
+  cpSync(join(source, 'web/src/generated/prisma'), client, {
+    recursive: true,
+    dereference: true,
+    mode: constantesFs.COPYFILE_FICLONE,
+  });
+  const copie = lstatSync(client);
+  if (copie.isSymbolicLink() || !copie.isDirectory()) throw new Error('web/src/generated/prisma : la copie du client n’est pas un dossier dans l’arbre extrait');
 }
 
 /** Retire les dossiers temporaires d'un contrôle interrompu (signal, arrêt). */
