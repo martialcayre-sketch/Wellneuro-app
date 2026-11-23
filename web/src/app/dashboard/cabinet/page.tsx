@@ -9,7 +9,7 @@ export default function DashboardCabinetPage() {
     <div className="flex flex-col gap-6">
       <div>
         {/* Titre de page en h1 (PRA-2b, Q2). */}
-        <h1 className="font-display text-3xl font-bold tracking-[-0.02em] text-foreground">Comptes du cabinet</h1>
+        <h1 className="font-display text-3xl font-bold tracking-[-0.02em] text-foreground [overflow-wrap:anywhere] max-[319px]:hyphens-auto">Comptes du cabinet</h1>
         <p className="mt-1 text-base text-muted-foreground">
           Combien de dossiers à chaque étape, et où en est leur protocole. La page compte, elle ne nomme aucun dossier.
         </p>

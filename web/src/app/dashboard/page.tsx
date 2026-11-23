@@ -53,7 +53,7 @@ export default function DashboardPage() {
           {dateDuJour} · Interface ambiante
         </p>
         {/* Titre de page en h1, titres de zone en h2 (PRA-2b, Q2). */}
-        <h1 className="font-display text-3xl font-bold tracking-[-0.02em] text-foreground">
+        <h1 className="font-display text-3xl font-bold tracking-[-0.02em] text-foreground [overflow-wrap:anywhere] max-[319px]:hyphens-auto">
           Le Fil du jour
         </h1>
         <p className="mt-0.5 max-w-2xl text-sm text-muted-foreground">

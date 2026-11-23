@@ -28,7 +28,7 @@ export default function CorrespondancePage() {
           Réseau de soin · campagne C3
         </p>
         {/* Titre de page en h1, titres de zone en h2 (PRA-2b, Q2). */}
-        <h1 className="font-display text-3xl font-bold tracking-[-0.02em] text-foreground">
+        <h1 className="font-display text-3xl font-bold tracking-[-0.02em] text-foreground [overflow-wrap:anywhere] max-[319px]:hyphens-auto">
           Correspondance
         </h1>
         <p className="text-base text-muted-foreground mt-1">
@@ -38,12 +38,12 @@ export default function CorrespondancePage() {
       </div>
 
       {/* Côte à côte au bureau, empilées ailleurs (prototype PRA-2). */}
-      <div className="grid items-start gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
       <div className="rounded-xl border border-border bg-surface p-5 shadow-card">
         <h2 className="font-display text-lg font-semibold text-foreground">
           Le geste se fait sur le dossier
         </h2>
-        <p className="mt-2 text-base text-muted-foreground">
+        <p className="mt-2 text-base text-muted-foreground max-[319px]:hyphens-auto max-[319px]:[overflow-wrap:anywhere]">
           L&apos;application n&apos;envoie rien au médecin et ne lui ouvre aucun accès. Vous
           consignez, en texte seul, les échanges faits par vos canaux habituels — courrier,
           e-mail du cabinet — depuis l&apos;onglet «&nbsp;Correspondance&nbsp;» de la fiche

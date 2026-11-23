@@ -49,9 +49,16 @@ const TYPE_CARTE: Record<TypeCarteFil, { libelle: string; icon: LucideIcon }> = 
 const REPONSES_DEVERROUILLEES = 'deverrouille';
 
 /** Grille timeline de la maquette : heure | pastille | carte. Partagée entre
- * carte active et carte écartée pour que l'axe vertical ne « saute » pas. */
+ * carte active et carte écartée pour que l'axe vertical ne « saute » pas.
+ *
+ * Sous 320 px (PRA-6m, zoom 200 % sur un téléphone de 390 px), les deux
+ * colonnes fixes ne laissaient qu'une cinquantaine de pixels à la carte, qui
+ * débordait de l'écran : la carte passe alors sous l'heure et la pastille, sur
+ * toute la largeur (`CARTE_TIMELINE`), et l'axe vertical, qui la traverserait,
+ * s'efface. */
 const GRILLE_TIMELINE =
-  'grid grid-cols-[44px,26px,minmax(0,1fr)] items-start gap-x-3 sm:grid-cols-[56px,26px,minmax(0,1fr)]';
+  'grid grid-cols-[44px,26px,minmax(0,1fr)] items-start gap-x-3 max-[319px]:gap-y-1 sm:grid-cols-[56px,26px,minmax(0,1fr)]';
+const CARTE_TIMELINE = 'max-[319px]:col-span-full';
 
 /**
  * RAPPELER AU PATIENT UN QUESTIONNAIRE EN RETARD — depuis la carte qui
@@ -225,7 +232,7 @@ function CarteDuFil({
       {/* flex-wrap : à 390px les actions passent sous le texte au lieu de
           l'écraser dans une colonne de 50px (audit visuel 2026-07-22). */}
       <div
-        className={`flex flex-wrap items-start gap-3 rounded-xl border bg-surface p-4 text-surface-foreground shadow-card ${
+        className={`${CARTE_TIMELINE} flex flex-wrap items-start gap-3 rounded-xl border bg-surface p-4 text-surface-foreground shadow-card ${
           imminente ? 'border-accent/60' : 'border-border'
         }`}
       >
@@ -337,7 +344,7 @@ function CarteEcartee({
     <article className={GRILLE_TIMELINE}>
       <span className="pt-2.5 text-right font-mono text-xs font-semibold text-muted-foreground/60">{heure}</span>
       <span className="relative mt-1.5 flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full border border-dashed border-border bg-background" />
-      <div className="flex items-center justify-between gap-3 rounded-xl border border-dashed border-border bg-muted/40 px-4 py-3">
+      <div className={`${CARTE_TIMELINE} flex items-center justify-between gap-3 rounded-xl border border-dashed border-border bg-muted/40 px-4 py-3`}>
         <p className="min-w-0 truncate text-base text-muted-foreground">
           Carte écartée — {carte.titre}, {carte.patient}
         </p>
@@ -377,7 +384,7 @@ function CarteLue({
     <article className={GRILLE_TIMELINE}>
       <span className="pt-2.5 text-right font-mono text-xs font-semibold text-muted-foreground/60">{heure}</span>
       <span className="relative mt-1.5 flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full border border-dashed border-border bg-background" />
-      <div className="flex items-center justify-between gap-3 rounded-xl border border-dashed border-border bg-muted/40 px-4 py-3">
+      <div className={`${CARTE_TIMELINE} flex items-center justify-between gap-3 rounded-xl border border-dashed border-border bg-muted/40 px-4 py-3`}>
         <p className="min-w-0 truncate text-base text-muted-foreground">
           Lu sur la fiche — {libelle}, {groupe.patient}
         </p>
@@ -572,7 +579,7 @@ export function FilDuJour() {
     // Panneau « Aujourd'hui » de la maquette : en-tête display + résumé
     // qualitatif mono, timeline de cartes à l'intérieur.
     <section data-testid="fil-du-jour" className="rounded-lg border border-border bg-surface p-4 shadow-card">
-      <div className="mb-3 flex items-baseline justify-between gap-3 px-1">
+      <div className="mb-3 flex items-baseline justify-between gap-3 px-1 max-[319px]:flex-wrap max-[319px]:gap-y-0">
         <h2 className="font-display text-lg font-semibold text-foreground">Aujourd&apos;hui</h2>
         <span className="font-mono text-13 text-muted-foreground">{resumeFil(data.cartes)}</span>
       </div>
@@ -581,7 +588,7 @@ export function FilDuJour() {
             (44px + 12px de gouttière + 13px ; 56px en ≥sm). */}
         <span
           aria-hidden="true"
-          className="pointer-events-none absolute bottom-4 left-[69px] top-4 w-px bg-border sm:left-[81px]"
+          className="pointer-events-none absolute bottom-4 left-[69px] top-4 w-px bg-border max-[319px]:hidden sm:left-[81px]"
         />
         {alertesCalcul}
         {erreurRefus && (

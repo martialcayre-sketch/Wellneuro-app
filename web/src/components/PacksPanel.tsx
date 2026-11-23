@@ -475,7 +475,7 @@ export function PacksPanel({
         ) : (
           <ul className="flex flex-col gap-2">
             {packs.map(p => (
-              <li key={p.idPack} className="flex items-start justify-between gap-3 border border-border rounded-lg px-3 py-2">
+              <li key={p.idPack} className="flex items-start justify-between gap-3 border border-border rounded-lg px-3 py-2 max-[319px]:flex-wrap">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-base font-medium text-foreground">{p.nom}</span>
@@ -502,7 +502,7 @@ export function PacksPanel({
                     </p>
                   )}
                 </div>
-                <div className="flex flex-wrap items-center justify-end gap-2 shrink-0">
+                <div className="flex flex-wrap items-center justify-end gap-2 shrink-0 max-[319px]:basis-full">
                   <Button
                     type="button"
                     variant="outline"

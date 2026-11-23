@@ -169,7 +169,7 @@ export function SaisieBilan({
               <div className="flex flex-wrap items-end gap-2">
                 {/* Largeur minimale : sur mobile, la valeur passe à la ligne plutôt
                     que d'écraser le sélecteur — les libellés d'analyte sont longs. */}
-                <div className="min-w-48 flex-1">
+                <div className="min-w-48 flex-1 max-[319px]:min-w-0 max-[319px]:basis-full">
                   <label className="block text-xs text-muted-foreground" htmlFor={`bilan-analyte-${ligne.id}`}>
                     Analyte (unité du catalogue)<span className="sr-only">, ligne {numero}</span>
                   </label>

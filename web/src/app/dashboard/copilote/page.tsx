@@ -38,7 +38,7 @@ export default async function CopilotePage({
     return (
       <div className="flex flex-col gap-6">
         <div>
-          <h1 className="font-display text-3xl font-bold tracking-[-0.02em] text-foreground">Consultation copilote</h1>
+          <h1 className="font-display text-3xl font-bold tracking-[-0.02em] text-foreground [overflow-wrap:anywhere] max-[319px]:hyphens-auto">Consultation copilote</h1>
           <p className="mt-1 text-base text-muted-foreground">
             {patient
               ? `Pré-vol — ${patient.prenom} ${patient.nom}. Lecture seule : rien n’est enregistré ni envoyé depuis cet écran.`
@@ -68,7 +68,7 @@ export default async function CopilotePage({
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="font-display text-3xl font-bold tracking-[-0.02em] text-foreground">Consultation copilote</h1>
+        <h1 className="font-display text-3xl font-bold tracking-[-0.02em] text-foreground [overflow-wrap:anywhere] max-[319px]:hyphens-auto">Consultation copilote</h1>
         <p className="mt-1 text-base text-muted-foreground">
           Dix minutes avant la consultation : ce qui a changé depuis la précédente, et les questions que cela ouvre.
           Choisissez le patient à préparer.

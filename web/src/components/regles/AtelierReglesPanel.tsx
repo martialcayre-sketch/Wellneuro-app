@@ -310,7 +310,7 @@ function EncartPrevisualisation({ desactive }: { desactive: boolean }) {
           disabled={desactive || etat === 'envoi'}
           onChange={(event) => setCodes(event.target.value)}
           placeholder="codes d’intention, séparés par des virgules"
-          className={`${classeChamp()} min-w-64 flex-1`}
+          className={`${classeChamp()} min-w-64 flex-1 max-[319px]:min-w-0 max-[319px]:basis-full`}
         />
         <Button
           variant="outline"
@@ -509,7 +509,7 @@ function FormulaireCreation({
           obligatoires : une règle ne peut reposer que sur un claim validé du
           corpus.
         </p>
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <select
             aria-label="Intention clinique"
             value={intentTagId}
@@ -842,7 +842,7 @@ function FormulaireRevision({
         Révision — une nouvelle version (v{regle.versionRegle + 1}) naîtra en brouillon ;
         la v{regle.versionRegle} reste servie jusqu&apos;à validation de la nouvelle.
       </p>
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <select
           aria-label="Grade de preuve scientifique de la révision"
           value={grade}
@@ -1065,7 +1065,7 @@ function FormulaireVocabulaire({
           un critère ne demande aucun déploiement. Une condition de règle ne peut
           citer qu&apos;un critère de ce vocabulaire.
         </p>
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <select
             aria-label="Type d’entrée de vocabulaire"
             value={type}
@@ -1341,7 +1341,7 @@ function EncartCatalogueC4({ desactive }: { desactive: boolean }) {
               ))}
             </ul>
           )}
-          <div className="grid gap-2 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <input
               type="text"
               aria-label="Code de la catégorie fonctionnelle"
@@ -1394,7 +1394,7 @@ function EncartCatalogueC4({ desactive }: { desactive: boolean }) {
               ))}
             </ul>
           )}
-          <div className="grid gap-2 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <input
               type="text"
               aria-label="Code de l’alerte de sécurité"
@@ -1648,7 +1648,7 @@ export function AtelierReglesPanel() {
   return (
     <div className="flex flex-col gap-5">
       {compteurs && (
-        <dl className="grid grid-cols-3 gap-3">
+        <dl className="grid grid-cols-3 gap-3 max-[319px]:grid-cols-1">
           <div className="rounded-xl border border-border bg-surface p-4 shadow-card">
             <dt className="text-xs font-medium text-muted-foreground">Brouillons</dt>
             <dd className="mt-1 font-display text-2xl font-bold text-foreground">{compteurs.brouillons}</dd>

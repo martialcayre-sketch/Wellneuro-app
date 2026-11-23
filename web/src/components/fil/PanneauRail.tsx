@@ -62,7 +62,7 @@ export function PanneauRail({
               couper en deux au milieu. */}
           <summary className="-my-2.5 flex min-h-11 cursor-pointer list-none flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring">
             <h2 className="font-display text-sm font-semibold text-foreground">{titre}</h2>
-            <span className="flex items-center gap-1.5 whitespace-nowrap text-xs text-muted-foreground">
+            <span className="flex items-center gap-1.5 whitespace-nowrap text-xs text-muted-foreground max-[319px]:whitespace-normal">
               {resumeVide}
               <ChevronDown
                 aria-hidden="true"
@@ -84,7 +84,7 @@ export function PanneauRail({
       aria-label={ariaLabel}
       className="rounded-lg border border-border bg-surface p-5 shadow-card"
     >
-      <div className="flex items-baseline justify-between gap-3">
+      <div className="flex items-baseline justify-between gap-3 max-[319px]:flex-wrap max-[319px]:gap-y-0">
         <h2 className="font-display text-lg font-semibold text-foreground">{titre}</h2>
         {complement}
       </div>

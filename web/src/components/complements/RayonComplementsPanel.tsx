@@ -284,7 +284,7 @@ export function RayonComplementsPanel() {
 
         {/* Recherche par nom ou marque */}
         <div className="mt-3 flex flex-wrap items-end gap-2">
-          <label className="flex flex-col gap-1 text-xs font-semibold text-foreground">
+          <label className="flex max-w-full flex-col gap-1 text-xs font-semibold text-foreground">
             Nom ou marque
             <Input
               value={rechercheSaisie}
@@ -322,7 +322,7 @@ export function RayonComplementsPanel() {
 
         {/* Entrée par intention clinique */}
         <div className="mt-3 flex flex-wrap items-end gap-2">
-          <label className="flex flex-col gap-1 text-xs font-semibold text-foreground">
+          <label className="flex max-w-full flex-col gap-1 text-xs font-semibold text-foreground">
             Intention clinique
             <Input
               value={intentionSaisie}
@@ -382,7 +382,7 @@ export function RayonComplementsPanel() {
 
         {/* Tri mono-dimension */}
         <div className="mt-3 flex flex-wrap items-center gap-2">
-          <label className="text-xs font-semibold text-foreground">
+          <label className="max-w-full text-xs font-semibold text-foreground">
             Tri
             <Select
               value={tri}
@@ -394,7 +394,7 @@ export function RayonComplementsPanel() {
                 setTri(e.target.value);
               }}
               aria-label="Clé de tri (mono-dimension)"
-              className={`ml-2 ${CLASSE_SELECT}`}
+              className={`ml-2 max-[319px]:ml-0 ${CLASSE_SELECT}`}
             >
               {Object.entries(LABEL_TRI).map(([cle, libelle]) => (
                 <option key={cle} value={cle}>

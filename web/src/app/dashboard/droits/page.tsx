@@ -12,7 +12,7 @@ export default function DroitsPage() {
     <div className="flex flex-col gap-8">
       <div>
         {/* Titre de page en h1, titres de zone en h2 (PRA-2b, Q2). */}
-        <h1 className="font-display text-3xl font-bold tracking-[-0.02em] text-foreground">Confiance &amp; droits</h1>
+        <h1 className="font-display text-3xl font-bold tracking-[-0.02em] text-foreground [overflow-wrap:anywhere] max-[319px]:hyphens-auto">Confiance &amp; droits</h1>
         <p className="text-base text-muted-foreground mt-1">
           Signalements d’effets indésirables, incidents de confidentialité et demandes de droits
           déposés par vos patients. Rien ne se supprime : les statuts évoluent.

@@ -131,11 +131,14 @@ export function AgendaPraticien({ patients }: { patients: PatientOption[] }) {
   return (
     // Bureau : formulaire et liste côte à côte. Tablette : empilés, formulaire
     // d'abord. Téléphone : la liste passe avant le formulaire (PRA-2a, Q5 a).
-    <div className="grid gap-6 lg:grid-cols-[380px_minmax(0,1fr)] lg:items-start">
+    // `grid-cols-1` (minmax(0, 1fr)) : sans lui, la piste implicite prenait la
+    // largeur native des champs date et heure, et la page débordait à 195 px
+    // (PRA-6m). Même correctif, plus bas, pour la grille des champs.
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[380px_minmax(0,1fr)] lg:items-start">
       {/* Formulaire de planification */}
       <form onSubmit={planifier} className="order-2 rounded-xl border border-border bg-surface p-5 shadow-card md:order-1">
         <h2 className="font-display text-lg font-semibold text-foreground">Planifier un rendez-vous</h2>
-        <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1">
           <label className="flex flex-col gap-1 text-sm">
             <span className="font-medium text-foreground">Patient</span>
             <select

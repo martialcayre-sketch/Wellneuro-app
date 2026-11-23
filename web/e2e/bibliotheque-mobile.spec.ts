@@ -52,7 +52,32 @@ async function debordantsDeLaPage(page: Page): Promise<string[]> {
         textes.push(`texte dans ${nom(n.parentElement)}`);
       }
     }
-    return [...elements, ...textes].slice(0, 8);
+    if (elements.length > 0 || textes.length > 0) return [...elements, ...textes].slice(0, 8);
+    // Rien ne dépasse, et la page défile pourtant : un débordement interne à
+    // un élément qui, lui, tient dans l'écran (le contenu d'une liste
+    // `<select>` sous WebKit, PRA-6m). Le coupable est nommé par retrait : le
+    // plus profond élément dont le retrait (`display: none`, rétabli aussitôt)
+    // ramène la page à sa largeur.
+    const chaine: string[] = [];
+    let courant: Element = document.body;
+    for (let profondeur = 0; profondeur < 40; profondeur++) {
+      const coupable = [...courant.children].find(enfant => {
+        const style = (enfant as HTMLElement).style;
+        const avant = style.display;
+        style.display = 'none';
+        const tient = document.documentElement.scrollWidth <= largeur;
+        style.display = avant;
+        return tient;
+      });
+      if (!coupable) break;
+      chaine.push(nom(coupable).slice(0, 60));
+      courant = coupable;
+    }
+    const mesure = (e: Element) => {
+      const style = getComputedStyle(e);
+      return `largeur ${Math.round(e.getBoundingClientRect().width)}, scrollWidth ${e.scrollWidth}, overflow ${style.overflowX}, appearance ${style.appearance}`;
+    };
+    return [`par retrait : ${chaine.slice(-3).join(' > ') || 'aucun'} (${courant === document.body ? '' : mesure(courant)}) ; parent : ${courant.parentElement ? mesure(courant.parentElement) : ''}`];
   });
 }
 
@@ -110,4 +135,78 @@ test.describe('Reflow à 320 px (WCAG 1.4.10) — PRA-6g', () => {
 
     await attendreAucunDebordement(page);
   });
+});
+
+// PRA-6m — la convention du dépôt, plus stricte que WCAG : 195 px CSS, soit
+// le zoom 200 % d'un téléphone de 390 px (D-506, la même que le portail
+// patient depuis PAT-7e et PAT-7f). Le constat PRA-6 (§3.7) y voyait seize
+// écrans praticien déborder. Chaque écran tenu ici est un écran corrigé par
+// PRA-6m ou déjà tenu. Comme à 320 px, la largeur est posée par le test, et les deux moteurs
+// le jouent. Le titre de page suffit comme signal de rendu : les écrans dont
+// le débordement venait d'un contenu chargé après lui l'attendent en plus.
+const ECRANS_195: Array<{ id: string; url: string; titre: string; attendre?: (page: Page) => Promise<void> }> = [
+  { id: 'P01 Fil du jour', url: '/dashboard', titre: 'Le Fil du jour',
+    // Les cartes du Fil se chargent après le titre : c'est elles qui débordaient.
+    attendre: async page => {
+      await expect(page.getByTestId('fil-du-jour').getByRole('heading', { name: "Aujourd'hui" })).toBeVisible({ timeout: 10000 });
+    } },
+  { id: 'P25 Biologie du dossier', url: '/dashboard/patients/PAT_SEED_01?onglet=biologie', titre: 'Importer un compte rendu de laboratoire' },
+  { id: 'P33 Agenda', url: '/dashboard/agenda', titre: 'Agenda & consultations' },
+  { id: 'P34 Copilote', url: '/dashboard/copilote', titre: 'Consultation copilote' },
+  { id: 'P35 Trajectoires', url: '/dashboard/trajectoires', titre: 'Fiche-trajectoire' },
+  { id: 'P36 Cabinet', url: '/dashboard/cabinet', titre: 'Comptes du cabinet' },
+  // La liste des packs se charge après le titre : sa rangée d'actions débordait.
+  // Le pack de base du seed (`PACK_SEED_BASE`, « Base de consultation ») la
+  // rend : le test attend le bouton « Modifier » de SA rangée, sans quoi il
+  // passerait sur une liste vide (le catalogue, au-dessus, porte aussi des
+  // boutons « Modifier »).
+  { id: 'P37 Questionnaires', url: '/dashboard/bibliotheque/questionnaires', titre: 'Questionnaires',
+    attendre: async page => {
+      await expect(page.getByRole('heading', { name: 'Nouveau pack de questionnaires' })).toBeVisible({ timeout: 10000 });
+      await expect(page.getByText('Chargement des packs...')).toHaveCount(0, { timeout: 10000 });
+      await expect(
+        page.getByRole('listitem').filter({ hasText: 'Base de consultation' }).getByRole('button', { name: 'Modifier', exact: true }),
+      ).toBeVisible({ timeout: 10000 });
+    } },
+  { id: 'P40 Analyses biologiques', url: '/dashboard/bibliotheque/biologie', titre: 'Analyses biologiques' },
+  // Même limite que P49 : sans `WN_C4_ENABLED`, le rayon n'affiche que son
+  // message de fermeture ; les libellés et le tri corrigés par PRA-6m ne sont
+  // mesurés que sur un poste qui pose le drapeau.
+  { id: 'P44 Compléments', url: '/dashboard/bibliotheque/complements', titre: 'Compléments alimentaires' },
+  // Comme à 320 px : le message d'indisponibilité au banc (sans
+  // `WN_RECHERCHE_CORPUS_ENABLED`), le formulaire de recherche sur un poste
+  // qui le pose. Le test attend l'un ou l'autre.
+  { id: 'P46 Connaissances', url: '/dashboard/bibliotheque/connaissances', titre: 'Connaissances',
+    attendre: async page => {
+      await expect(
+        page.getByRole('status').filter({ hasText: 'La recherche corpus clinique' }).or(page.getByRole('button', { name: 'Rechercher' })),
+      ).toBeVisible({ timeout: 10000 });
+    } },
+  { id: 'P47 Corpus', url: '/dashboard/corpus', titre: 'Atelier corpus' },
+  // Sans `WN_C4_ENABLED`, que le banc ne pose pas, l'atelier n'affiche que son
+  // message de fermeture : ses grilles et compteurs, corrigés par PRA-6m, ne
+  // sont mesurés que sur un poste qui pose le drapeau.
+  { id: 'P49 Règles', url: '/dashboard/regles', titre: 'Atelier de règles cliniques' },
+  { id: 'P51 Synthèses', url: '/dashboard/synthese', titre: 'Synthèse IA & Booklet' },
+  { id: 'P52 Documents', url: '/dashboard/documents', titre: 'Documents contextuels' },
+  { id: 'P53 Correspondance', url: '/dashboard/correspondance', titre: 'Correspondance' },
+  { id: 'P57 Paramètres', url: '/dashboard/parametres', titre: 'Paramètres' },
+];
+
+test.describe('Reflow à 195 px (zoom 200 % sur 390 px) — PRA-6m', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.setViewportSize({ width: 195, height: 332 });
+    await page.context().addCookies([await praticienSessionCookie(PRATICIEN_EMAIL)]);
+  });
+
+  for (const ecran of ECRANS_195) {
+    test(`${ecran.id} tient à 195 px`, async ({ page }) => {
+      await page.goto(ecran.url);
+      await expect(page.getByRole('heading', { name: ecran.titre, exact: true })).toBeVisible({ timeout: 15000 });
+      if (ecran.attendre) await ecran.attendre(page);
+      await page.waitForLoadState('networkidle');
+
+      await attendreAucunDebordement(page);
+    });
+  }
 });
