@@ -21883,7 +21883,7 @@
     "lifecycleStatus": "raw",
     "vigilance": "Élevée",
     "requiredAction": "Texte en accès libre (CC BY 4.0, licence déclarée sur la page, sans exclusion de la fouille de textes ni de l'IA ; accord du responsable du 2026-11-23) ; extraits ciblés ingérés (BP-27 zinc, lot LOT_164_2026-11-23) ; claims en attente de signature",
-    "comment": "Source externe, ouvrage de référence en évaluation nutritionnelle : intérêt et limites de la zincémie (population, individu), facteurs qui la modifient (âge, sexe, heure, jeûne, hémolyse, conservation, garrot, inflammation, arrêt d'un supplément, grossesse, albumine, hormones, perte de poids, malabsorption, fer), critères d'interprétation et conditions de mesure. Cibles R5 et R6 du rattachement BP-27 (R6 couverte en partie : retour rapide, sans délai). Texte lu sur la page LibreTexts. Extraits mot pour mot, usage interne ; aucune valeur, borne ni seuil versé au dépôt.",
+    "comment": "Source externe, ouvrage de référence en évaluation nutritionnelle : intérêt et limites de la zincémie (population, individu), facteurs qui la modifient (âge, sexe, heure, jeûne, hémolyse, conservation, garrot, inflammation, arrêt d'un supplément, grossesse, albumine, hormones, perte de poids, malabsorption, fer), critères d'interprétation et conditions de mesure. Cibles R5 et R6 du rattachement BP-27 (R6 couverte en partie seulement). Texte lu sur la page LibreTexts. Extraits mot pour mot, usage interne ; aucune valeur, borne ni seuil versé au dépôt.",
     "auditDate": "2026-11-23"
   },
   {
@@ -21909,7 +21909,7 @@
     "lifecycleStatus": "raw",
     "vigilance": "Modérée",
     "requiredAction": "Texte en accès libre (CC BY 4.0), licence relue dans le fichier, sans exclusion de la fouille de textes ni de l'IA (accord du responsable du 2026-11-23) ; extraits ciblés ingérés (BP-27 zinc, lot LOT_165_2026-11-23) ; claims en attente de signature",
-    "comment": "Source externe, relation entre zincémie et inflammation (CRP, AGP) dans 13 enquêtes nationales : incohérente chez les femmes en âge de procréer, ajustement non justifié dans ce groupe ; discordance possible avec le claim du NIH sur les infections, à signaler (DC-30). Données de population, transversales. Texte intégral lu (Europe PMC, PMC7138668). Extraits mot pour mot, usage interne ; aucune valeur, borne ni seuil versé au dépôt.",
+    "comment": "Source externe, relation entre zincémie et inflammation (CRP, AGP) dans 13 enquêtes nationales, chez l'enfant d'âge préscolaire et la femme en âge de procréer, et méthodes d'ajustement ; discordance possible avec une autre source du corpus, à signaler (DC-30). Données de population, transversales. Texte intégral lu (Europe PMC, PMC7138668). Extraits mot pour mot, usage interne ; aucune valeur, borne ni seuil versé au dépôt.",
     "auditDate": "2026-11-23"
   },
   {

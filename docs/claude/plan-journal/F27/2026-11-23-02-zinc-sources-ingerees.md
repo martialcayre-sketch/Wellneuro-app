@@ -11,6 +11,6 @@
   - **Notices seules** : `WN-SRC-0856` à `0859`. `0856` est sous licence CC BY, mais son texte ne s'obtient pas sans le PDF, à fournir par le responsable. Les trois autres n'ont pas de licence qui admette le texte.
   - **Effet sur les manques du zinc** :
     - R5, le moment de prélèvement de référence, a désormais des claims en attente de signature ;
-    - R6, le délai après l'arrêt d'une supplémentation, n'est couvert qu'en partie : le retour au niveau de base est rapide, mais aucun délai n'est sourcé ;
-    - une discordance possible sur l'effet de l'inflammation chez la femme adulte est à signaler, sans la résoudre (DC-30).
+    - R6, le délai après l'arrêt d'une supplémentation, n'est couvert qu'en partie : aucun délai n'est sourcé ;
+    - une discordance possible entre sources du corpus est à signaler, sans la résoudre (DC-30) ; le détail est au dossier privé.
   - **Suite** : signature des 23 claims par le responsable, puis leur étiquetage (`D-325`), puis la décision du marqueur zinc.
