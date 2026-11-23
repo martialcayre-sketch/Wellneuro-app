@@ -610,7 +610,7 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
                             value={texteDemande}
                             onChange={(evenement) => setTexteDemande(evenement.target.value)}
                             rows={4}
-                            className="w-full rounded-lg border border-border bg-surface p-3 text-base leading-relaxed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                            className="w-full rounded border border-control-border bg-surface p-3 text-base leading-relaxed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                           />
                           {/* MÊME PATRON DE COMPTEUR que le troisième verbe :
                               aucune troncature par `maxLength`, le jugement
@@ -715,7 +715,7 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
                             value={texteAmendement}
                             onChange={(evenement) => setTexteAmendement(evenement.target.value)}
                             rows={5}
-                            className="w-full rounded-lg border border-border bg-surface p-3 text-base leading-relaxed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                            className="w-full rounded border border-control-border bg-surface p-3 text-base leading-relaxed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                           />
                           {/* LA BORNE EST DITE AVANT D'ÊTRE ATTEINTE, et le
                               champ n'est PAS tronqué par `maxLength` : couper
@@ -844,7 +844,7 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
                           value={texteJalon}
                           onChange={(evenement) => setTexteJalon(evenement.target.value)}
                           rows={5}
-                          className="w-full rounded-lg border border-border bg-surface p-3 text-base leading-relaxed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                          className="w-full rounded border border-control-border bg-surface p-3 text-base leading-relaxed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                         />
                         {/* Même règle qu'à l'amendement : la borne est DITE,
                             le champ n'est pas tronqué, et le jugement porte sur

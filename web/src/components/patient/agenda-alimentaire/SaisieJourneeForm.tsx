@@ -282,11 +282,11 @@ export function SaisieJourneeForm({
         </div>
       )}
 
-      {erreur !== '' && (
-        <div ref={refConsigne}>
-          <PatientInlineMessage tone="error">{erreur}</PatientInlineMessage>
-        </div>
-      )}
+      {/* Consigne, pas erreur (F3 a, planche PAT-4) : annoncée poliment par une
+          région `role="status"` toujours rendue, masquée tant qu'elle est vide. */}
+      <div ref={refConsigne} role="status" className={erreur === '' ? 'sr-only' : undefined}>
+        {erreur !== '' && <PatientInlineMessage tone="consigne">{erreur}</PatientInlineMessage>}
+      </div>
 
       <PatientButton
         variant="primary"

@@ -1,9 +1,13 @@
 import { Children, cloneElement, isValidElement, useId, type ReactElement, type ReactNode } from 'react';
 
-// PAT-7a : 44 px de haut. WebKit ignore `min-height` sur un `<select>` natif
-// (24 px mesurés au téléphone) mais respecte `height` : une liste reçoit `h-11`.
+// Saisie de la planche validée (PAT-7j, arbitrage F4 a du 2026-11-21, liste
+// commune 20261121-1633-d) : 48 px de haut, texte 16 px (sous 16 px, Safari
+// iOS agrandit la page à la saisie), bord de contrôle `control-border`
+// (3,35:1 ; `border` à 1,37:1 ne délimite jamais un contrôle, WCAG 1.4.11),
+// rayon 14 px. WebKit ignore `min-height` sur un `<select>` natif (24 px
+// mesurés au téléphone, PAT-7a) mais respecte `height` : une liste reçoit `h-12`.
 export const patientInputClassName =
-  'w-full min-h-11 [&:is(select)]:h-11 px-4 py-2.5 border border-border rounded-lg text-sm bg-surface text-foreground focus:outline-none focus:ring-2 focus:ring-primary';
+  'w-full min-h-12 [&:is(select)]:h-12 px-3.5 py-2.5 border border-control-border rounded text-base bg-surface text-foreground focus:outline-none focus:ring-2 focus:ring-primary';
 
 type ProprietesChamp = {
   id?: string;
@@ -57,7 +61,8 @@ export function PatientField({
       {suffixe && <span className="text-muted-foreground/70 font-normal"> ({suffixe})</span>}
     </>
   );
-  const classeLibelle = 'block text-sm font-medium text-muted-foreground mb-1';
+  // Libellé de la planche : 15 px, graisse 500, couleur du texte.
+  const classeLibelle = 'block text-sm font-medium text-foreground mb-1.5';
   const messageErreur = erreur ? (
     <p id={idErreur} className="mt-1 text-xs text-status-danger">{erreur}</p>
   ) : null;

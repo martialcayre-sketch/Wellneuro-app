@@ -9,14 +9,19 @@ import { PatientButton } from '@/components/patient/ui/PatientButton';
 // FORME ENCADRÉE (refonte Lien, PAT-3, prototype validé le 2026-11-11) :
 // l'état de données de l'Empreinte — un cadre, le message en titre, l'action
 // locale et l'aide dessous. « erreur » pour une lecture qui peut réussir en
-// réessayant (filet et titre danger) ; « constat » pour un refus qui ne le
-// peut pas (filet neutre, sans « Réessayer », [[D-488]] §7). Opt-in : les
-// écrans des autres lots gardent la forme simple jusqu'à leur propre lot.
-export type FormeEtat = 'simple' | 'erreur' | 'constat';
+// réessayant (filet de 2 px et titre danger) ; « constat » pour un refus qui
+// ne le peut pas (filet neutre, sans « Réessayer », [[D-488]] §7).
+//
+// PARTOUT depuis PAT-7j (arbitrage F3 a du 2026-11-21, liste commune
+// 20261121-1633-d) : la forme simple, sans cadre, est retirée. Sans `forme`
+// explicite, un état qui propose « Réessayer » est une erreur, un état qui ne
+// le propose pas est un constat — la règle que suivaient déjà les appelants
+// (`onReessayer` absent quand l'échec est définitif).
+export type FormeEtat = 'erreur' | 'constat';
 
-const CADRE: Record<Exclude<FormeEtat, 'simple'>, { cadre: string; titre: string }> = {
-  erreur: { cadre: 'border-status-danger', titre: 'text-status-danger' },
-  constat: { cadre: 'border-border', titre: 'text-foreground' },
+const CADRE: Record<FormeEtat, { cadre: string; titre: string }> = {
+  erreur: { cadre: 'border-2 border-status-danger', titre: 'text-status-danger' },
+  constat: { cadre: 'border border-border', titre: 'text-foreground' },
 };
 
 export function PatientErrorState({
@@ -24,7 +29,7 @@ export function PatientErrorState({
   conserveLocalement,
   onReessayer,
   aide = 'Si le problème persiste, contactez votre praticien.',
-  forme = 'simple',
+  forme,
   children,
 }: {
   message: string;
@@ -34,10 +39,10 @@ export function PatientErrorState({
   forme?: FormeEtat;
   children?: ReactNode;
 }) {
-  const encadre = forme === 'simple' ? null : CADRE[forme];
+  const encadre = CADRE[forme ?? (onReessayer ? 'erreur' : 'constat')];
   return (
-    <div className={encadre ? `space-y-3 rounded-lg border bg-surface p-4 ${encadre.cadre}` : 'space-y-3'}>
-      <p className={encadre ? `text-base font-semibold ${encadre.titre}` : 'text-sm text-foreground'}>{message}</p>
+    <div className={`space-y-3 rounded bg-surface px-4 py-3.5 ${encadre.cadre}`}>
+      <p className={`text-base font-semibold ${encadre.titre}`}>{message}</p>
       {conserveLocalement && (
         <p className="text-xs text-muted-foreground">Vos réponses restent conservées sur cet appareil.</p>
       )}
@@ -48,7 +53,7 @@ export function PatientErrorState({
             Réessayer
           </PatientButton>
         )}
-        <p className={encadre ? 'text-sm text-muted-foreground' : 'text-xs text-muted-foreground'}>{aide}</p>
+        <p className="text-sm text-muted-foreground">{aide}</p>
       </div>
     </div>
   );

@@ -149,7 +149,7 @@ export function AgendaSommeilJournal({ idAssignation, onRetourHub }: Props) {
   if (etat === 'erreur' || !data) {
     return (
       <PatientCard className="text-center">
-        <PatientErrorState message={erreur || 'Agenda indisponible.'} aide="Réessayez plus tard." />
+        <PatientErrorState forme="erreur" message={erreur || 'Agenda indisponible.'} aide="Réessayez plus tard." />
         <div className="mt-4">
           <PatientButton variant="neutral" onClick={onRetourHub}>
             Retour à mon parcours

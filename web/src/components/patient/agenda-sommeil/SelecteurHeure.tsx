@@ -66,7 +66,7 @@ export function SelecteurHeure({
           if (e.target.value !== '') onChange(e.target.value);
         }}
         className={`min-h-12 w-40 max-w-full rounded border bg-surface px-3 text-base tabular-nums ${
-          valeur === undefined ? 'border-border text-muted-foreground' : 'border-primary text-foreground'
+          valeur === undefined ? 'border-control-border text-muted-foreground' : 'border-primary text-foreground'
         }`}
       >
         {/* SÉLECTIONNABLE, et non `disabled` : sur iPhone, une roue ouverte sur
