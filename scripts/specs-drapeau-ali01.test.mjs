@@ -89,6 +89,20 @@ const MARQUEURS = [
 // pas accumuler de sédiments.
 const ALLOWLIST = new Map([
   [
+    'src/lib/clinical/exclusionQAli01Besoin1.guard.test.ts',
+    'nomme Q_ALI_01 comme IDENTIFIANT de condition de convergence et de règle d’orientation, avec des '
+      + 'libellés d’interprétation posés à la main : il ne lit ni le catalogue, ni une bande, ni un '
+      + 'nombre d’items ; l’empreinte de la table est indépendante du drapeau (banc de '
+      + 'orientationRulesV1) — verdict identique sous les deux formes servies, joué sous les deux '
+      + 'positions (D-555)',
+  ],
+  [
+    'src/lib/clinical-engine/tableOrientationHorsEmpreinteCartes.guard.test.ts',
+    'ne nomme Q_ALI_01 que pour retirer la ligne d’exclusion du besoin 1 de la table de convergence '
+      + 'avant de comparer trois empreintes de cartes : il ne lit ni score, ni forme servie — verdict '
+      + 'identique sous les deux positions du drapeau (D-555)',
+  ],
+  [
     'src/lib/clinical/convergenceEngine.test.ts',
     'nomme Q_ALI_01 comme IDENTIFIANT de condition rattachée (D-453 §3, §5) et lui donne un score '
       + 'de fixture dont le libellé d’interprétation est posé à la main : le banc ne lit ni le '

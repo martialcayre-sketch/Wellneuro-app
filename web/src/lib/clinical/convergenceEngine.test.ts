@@ -6,6 +6,7 @@ import {
   BORNES_GRADUATION_CONVERGENCE,
   CONDITIONS_SANS_COMPTE_V1,
   EXCLUSIONS_CONVERGENCE_V1,
+  LIMITATIONS_PAR_BESOIN,
   RATTACHEMENTS_CONVERGENCE_V1,
 } from './convergenceV1';
 import { cleCondition, conditionsDeLaFeuille, evaluerConvergences } from './convergenceEngine';
@@ -114,11 +115,13 @@ describe('table de convergence — alignement sur les règles publiées ([[D-453
     expect(CONDITIONS_SANS_COMPTE_V1).toHaveLength(4);
   });
 
-  it('Q_ALI_01 n’est rattaché qu’au besoin 1, et l’exclusion du besoin 4 est écrite', () => {
+  it('Q_ALI_01 n’est rattaché qu’au besoin 1, et les exclusions des besoins 4 et 1 sont écrites', () => {
     const ali = RATTACHEMENTS_CONVERGENCE_V1.filter(r =>
       r.condition.type === 'instrument' && r.condition.idQuestionnaire === 'Q_ALI_01');
     expect(ali.map(r => r.besoins)).toEqual([[1]]);
     expect(EXCLUSIONS_CONVERGENCE_V1).toContainEqual(expect.objectContaining({ idQuestionnaire: 'Q_ALI_01', besoin: 4 }));
+    // [[D-555]] : le rattachement reste, la condition ne compte plus au besoin 1.
+    expect(EXCLUSIONS_CONVERGENCE_V1).toContainEqual(expect.objectContaining({ idQuestionnaire: 'Q_ALI_01', besoin: 1 }));
   });
 
   it('une règle ajoutée sans rattachement rougit le banc', () => {
@@ -156,13 +159,14 @@ describe('scénarios présentés au responsable ([[D-453]] §8)', () => {
     expect(Object.keys(constats)).toEqual(['CONV-B5']);
   });
 
-  it('questionnaire alimentaire défavorable : SIGNAL au besoin 1, aucun signal digestif', () => {
-    const constats = parId(convergences([passation('Q_ALI_01', global({ label: ALI_DEFAVORABLE, color: 'danger' }))]));
-    expect(Object.keys(constats)).toEqual(['CONV-B1']);
-    expect(constats['CONV-B1']).toMatchObject({ graduation: 'SIGNAL' });
-    expect(constats['CONV-B1'].justificationClaims).toEqual([{ claimId: 'WN-CL-0287-009', versionClaim: 'v1.0' }]);
-    // Limite propre du besoin 1 ([[D-453]] §5, arbitrage du 2026-11-07).
-    expect(constats['CONV-B1'].limitations).toContain(
+  it('questionnaire alimentaire défavorable : aucun constat, ni au besoin 1 ([[D-555]]) ni au besoin 4', () => {
+    // Avant [[D-555]] : SIGNAL au besoin 1. La condition ne compte plus ; le
+    // rattachement reste, et la règle reste publiée (banc
+    // `exclusionQAli01Besoin1.guard.test.ts`, avec sa contre-épreuve).
+    expect(convergences([passation('Q_ALI_01', global({ label: ALI_DEFAVORABLE, color: 'danger' }))])).toEqual([]);
+    // La limite propre du besoin 1 ([[D-453]] §5) reste écrite pour le jour où
+    // l'exclusion serait levée.
+    expect(LIMITATIONS_PAR_BESOIN[1]).toContain(
       'Le questionnaire alimentaire décrit un profil alimentaire déclaré défavorable ; il n’établit ni carence nutritionnelle ni statut biologique.',
     );
   });

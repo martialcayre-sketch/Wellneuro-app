@@ -1826,7 +1826,17 @@ export const ORIENTATION_METADATA: OrientationMetadata = {
   // statut de `R-STR-01` et de `R-STR-02` passe de `publiee` à `suspendue`,
   // pour relecture ([[D-541]] §6.1). Aucun déclencheur, aucune grille, aucune
   // fenêtre, aucune ligne de convergence, aucun claim ne change.
-  dateValidation: '2026-11-19T12:38:04.000Z',
+  //
+  // RE-SIGNÉE LE 2026-11-22 ([[D-555]], lot J3-12f « lot 2 bis »), PAR LE
+  // RESPONSABLE EN SÉANCE (liste commune, `20261122-0004-b`). Seul changement :
+  // une ligne d'exclusion `Q_ALI_01` / besoin 1 dans la table de convergence, qui
+  // fait cesser de compter la condition de convergence de l'enquête alimentaire
+  // au besoin 1 ; `R2-ALI-01` reste `publiee`, avec sa suggestion, et le
+  // rattachement reste. Relu avant la recopie : la contre-preuve que la table
+  // sans cette ligne hache encore exactement l'empreinte précédente
+  // (`6088b3c6…`, banc `exclusionQAli01Besoin1.guard.test.ts`). Aucun claim
+  // ajouté ni retiré. L'heure n'a pas été relevée : le jour est le jour attesté.
+  dateValidation: '2026-11-22T00:00:00.000Z',
   // Posé le 2026-08-16 ([[D-067]]), repris le 2026-09-13 : la chaîne hex
   // qu'`ORIENTATION_RULES_SHA256` valait à la relecture, recopiée telle quelle —
   // JAMAIS la constante (déclarée après cet objet ; et la comparaison serait
@@ -1851,6 +1861,8 @@ export const ORIENTATION_METADATA: OrientationMetadata = {
   //     limites communes de convergence)
   //   · 2026-11-09 — `a9aaaf32c7e8ab5903f8faa2b7b6982c0d79c1f64ac097f140f2a3d83351d914`
   //     (D-470, lot t67 : quatrième limite commune de convergence)
+  //   · 2026-11-19 — `6088b3c6d450057e7ebbc2d7d9c2b3041a18dca51ffc1caaacfbf6cb9e696891`
+  //     (D-543 : `R-STR-01` et `R-STR-02` suspendues)
   //
   // SECONDE ATTESTATION DU 2026-09-14, ET C'EST LA PREMIÈRE FOIS QUE LE
   // PÉRIMÈTRE COUVRE LE CALCUL. Un contre-audit a démontré le même jour que le
@@ -1866,7 +1878,7 @@ export const ORIENTATION_METADATA: OrientationMetadata = {
   // dérivation ne rendait rien —, puis le delta de périmètre sur les dix-huit
   // blocs de scoring. Les claims n'ont pas bougé : leur relecture du matin
   // couvre celle-ci.
-  shaPerimetre: '6088b3c6d450057e7ebbc2d7d9c2b3041a18dca51ffc1caaacfbf6cb9e696891',
+  shaPerimetre: 'a28e99e636bc28df98c7dab06080eb69d7e85160640a52e1069b3187059c7fc0',
   claimsSource: [
     { claimId: 'WN-CL-0047-008', versionClaim: 'v1.0' },
     { claimId: 'WN-CL-0105-001', versionClaim: 'v1.0' },

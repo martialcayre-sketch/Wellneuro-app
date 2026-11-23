@@ -54,7 +54,7 @@ describe('orientationRulesV1 — verrou v1', () => {
     // convergence de `DC-29` ; aucun claim ajouté ni retiré.
     // RE-SIGNÉE le 2026-11-09 ([[D-470]], t67) : quatrième limite commune de
     // convergence ; aucun claim ajouté ni retiré.
-    expect(ORIENTATION_METADATA.dateValidation).toBe('2026-11-19T12:38:04.000Z');
+    expect(ORIENTATION_METADATA.dateValidation).toBe('2026-11-22T00:00:00.000Z');
     const date = ORIENTATION_METADATA.dateValidation as string;
     expect(new Date(date).toISOString()).toBe(date);
     expect(ORIENTATION_METADATA.claimsSource.length).toBeGreaterThan(0);
@@ -226,7 +226,11 @@ describe('orientationRulesV1 — verrou v1', () => {
   // quatrième limite commune de convergence — `a9aaaf32…3351d914`.
   // RE-SIGNÉE LE 2026-11-19 ([[D-543]]) par le responsable : `R-STR-01` et
   // `R-STR-02` passent `suspendue`, pour relecture ; rien d'autre ne bouge.
-  const SHA_SIGNE_2026_11_19 = '6088b3c6d450057e7ebbc2d7d9c2b3041a18dca51ffc1caaacfbf6cb9e696891';
+  // RE-SIGNÉE LE 2026-11-22 ([[D-555]]) par le responsable : une ligne
+  // d'exclusion `Q_ALI_01` / besoin 1 dans la table de convergence ; la
+  // contre-preuve vit dans `exclusionQAli01Besoin1.guard.test.ts` (la table sans
+  // cette ligne hache `6088b3c6…`, la signature du 2026-11-19).
+  const SHA_SIGNE_2026_11_22 = 'a28e99e636bc28df98c7dab06080eb69d7e85160640a52e1069b3187059c7fc0';
 
   // LE PÉRIMÈTRE A GRANDI le 2026-09-13 (second lot du jour) : les grilles
   // d'interprétation y sont entrées. Les zones de cette table citent des
@@ -251,15 +255,22 @@ describe('orientationRulesV1 — verrou v1', () => {
 
   // Contre-épreuve de [[D-543]] §3 : les lignes suspendues repassées
   // `publiee`, le contenu hache exactement l'ancienne signature ([[D-470]]).
-  // Seul le statut a bougé.
-  it('hors le statut suspendu, la table est celle signée le 2026-11-09 (D-543)', () => {
+  // Seul le statut a bougé — et, depuis [[D-555]], l'exclusion `Q_ALI_01` du
+  // besoin 1 de la table de convergence, retirée ici de la même façon : la
+  // seconde retouche postérieure à cette signature, prouvée à part par
+  // `exclusionQAli01Besoin1.guard.test.ts`.
+  it('hors le statut suspendu et l’exclusion du besoin 1, la table est celle signée le 2026-11-09 (D-543)', () => {
     const retablie = ORIENTATION_RULES_V1.map(regle =>
       regle.statut === 'suspendue' ? { ...regle, statut: 'publiee' as const } : regle);
+    const convergence = {
+      ...TABLE_CONVERGENCE_V1,
+      exclusions: TABLE_CONVERGENCE_V1.exclusions.filter(e => !(e.idQuestionnaire === 'Q_ALI_01' && e.besoin === 1)),
+    };
     expect(sha256(JSON.stringify({
       regles: retablie,
       grilles: GRILLES_ORIENTATION,
       fenetres: FENETRES_FRAICHEUR_ORIENTATION,
-      convergence: TABLE_CONVERGENCE_V1,
+      convergence,
     }))).toBe('a9aaaf32c7e8ab5903f8faa2b7b6982c0d79c1f64ac097f140f2a3d83351d914');
   });
 
@@ -370,7 +381,7 @@ describe('orientationRulesV1 — verrou v1', () => {
 
   it('le contenu de la table est EXACTEMENT celui qui a été signé', () => {
     expect(ORIENTATION_RULES_V1.length).toBe(20);
-    expect(ORIENTATION_RULES_SHA256).toBe(SHA_SIGNE_2026_11_19);
+    expect(ORIENTATION_RULES_SHA256).toBe(SHA_SIGNE_2026_11_22);
   });
 
   // ── DEUX BANCS DE RÉSOLUBILITÉ, ET LE SECOND EST LE SEUL QUI ATTRAPE LE NO-OP
