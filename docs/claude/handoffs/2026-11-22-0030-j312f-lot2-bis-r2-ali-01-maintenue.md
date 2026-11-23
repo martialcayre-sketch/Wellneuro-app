@@ -1,8 +1,8 @@
-# Handoff — 2026-11-22 — J3-12f, lot 2 bis : R2-ALI-01 maintenue, condition de convergence du besoin 1 exclue (D-555), table à re-signer
+# Handoff — 2026-11-22 — J3-12f, lot 2 bis : R2-ALI-01 maintenue, condition de convergence du besoin 1 exclue (D-555 acceptée), table signée
 
 ## Branche et état Git
 
-- Branche `docs/j312f-lot2-bis-r2-ali-01-maintenue`, créée directement sur `origin/main` (tête `9f77744be`) ; un commit local de documentation (`781d8148d`), le reste en cours d'indexation. **Rien n'est poussé.** Le travail du lot 2 d'origine (suspension) est gardé en commit local `2885634e8` sur `fix/j312f-lot2-suspension-r2-ali-01`, sans push ni PR : il resservira si la recherche du déclencheur ne trouve aucune source certifiée.
+- Branche `docs/j312f-lot2-bis-r2-ali-01-maintenue`, créée directement sur `origin/main` (tête `9f77744be`), commits locaux propres. **Rien n'est poussé** : `origin/main` a avancé (#2305) et l'avance `--ff-only` est impossible (branche avec commits propres, `D-518`) — arbitrage attendu. Le travail du lot 2 d'origine (suspension) est gardé en commit local `2885634e8` sur `fix/j312f-lot2-suspension-r2-ali-01`, sans push ni PR : il resservira si la recherche du déclencheur ne trouve aucune source certifiée.
 - Session concurrente (file B), mission « 12 besoins, séquentiel ». `git` et `gh` en direct. Aucune PR avant la signature.
 
 ## Objectif
@@ -11,7 +11,7 @@ Appliquer la réponse du responsable du 2026-11-22 (`20261122-0003-b`, option in
 
 ## Décisions prises
 
-- `D-555` (numéro réservé à la rédaction), **proposée** : amende `D-549` en entier, précise `D-548` §5.5. L'écart avec `D-516` est dit **indirect** ; la tension avec `D-516` §5.5 (aucune tranche sur la mesure dérivée sans provenance) est écrite, aucun seuil proposé.
+- `D-555` (numéro réservé à la rédaction), **acceptée** le 2026-11-22 (`20261122-0003-b`, `0004-b`) : amende `D-549` en entier, précise `D-548` §5.5. L'écart avec `D-516` est dit **indirect** ; la tension avec `D-516` §5.5 (aucune tranche sur la mesure dérivée sans provenance) est écrite, aucun seuil proposé.
 - Mécanisme retenu : une ligne dans `EXCLUSIONS_CONVERGENCE_V1` (`Q_ALI_01` / besoin 1), mécanisme existant relu par le moteur à l'ouverture et au compte. Écartés : la liste « sans compte », un champ neuf du moteur, le statut de la règle.
 - Provenance du rattachement non corrigée dans ce lot (une seule différence dans la signature) : elle part avec le lot de réécriture.
 
@@ -29,6 +29,8 @@ Appliquer la réponse du responsable du 2026-11-22 (`20261122-0003-b`, option in
 - Chemin P0, un passage chacun : contre-revue Codex (`--mode revue`) : deux P2, corrigés (garde d'imports qui tolère un commentaire dans `import(…)` ; contre-épreuve étendue aux claims et à la limite du besoin 1). `wn-reviewer` : aucun P1 ; P2 corrigés (motif de l'exclusion qui affirmait au présent que la source du besoin 1 était déjà la mesure dérivée, avant la vague 1 ; limite du banc comportemental dite, avec un banc ajouté sur le service des contradictions) ; question au responsable sur le silence du constat retiré (D-555 §7, point 3) ; P3 pris (exclusion par instrument entier, synthèses déjà générées, renvoi §7, coquille d'empreinte).
 
 ## Problèmes ouverts et prochaine action
+
+- **La signature est posée** (`dateValidation` 2026-11-22, `shaPerimetre` `a28e99e6…`, constante du banc, `FEATURE_FLAGS.md`) ; `check:rapide` vert, suite clinique verte. **Bloqué avant T3 et la PR** : avance de la branche sur `origin/main` impossible en `--ff-only`.
 
 - **La signature de la table d'orientation reste au responsable** : poser `dateValidation` et `shaPerimetre` à l'empreinte ci-dessus, et la constante du banc. Les deux bancs rouges le disent.
 - Après la signature seulement : T3, sonde `wn-sonde-release-db` (le chemin clinique déclenche release-db), PR avec `--body-file`, CI, revue PR-Agent, déclaration « prête @sha ».
