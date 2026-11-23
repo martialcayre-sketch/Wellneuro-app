@@ -150,6 +150,33 @@ laissées à une autre session d'ingestion ; `0628` à `0630` sont restés libre
 marge prise avant l'ingestion de l'iode et du sélénium. Il s'agit d'un inventaire documentaire, pas d'un
 corpus runtime.
 
+## Numéro d'une source neuve
+
+Le numéro `WN-SRC-NNNN` d'une source neuve **se réserve à la rédaction de sa
+notice, et toujours avant d'ingérer en base** sous ce numéro :
+
+```bash
+node scripts/wn-reserver-source.mjs              # un numéro
+node scripts/wn-reserver-source.mjs --nombre 6   # six numéros
+```
+
+Le script crée par l'API GitHub `refs/tags/reserve/WN-SRC-NNNN`, premier
+numéro libre au-dessus du registre de `main` et des réservations existantes ;
+la référence ne porte que le numéro, et reste après le merge. Le numéro
+réservé se garde jusqu'au merge. Avant ce script, deux sessions ont pris
+`WN-SRC-0577` à `0582` le même jour, l'une au registre, l'autre en base
+(#1808, #1810) : c'est la plage sans extrait en base qui a dû céder, la base
+étant la partie irréversible.
+
+`npm run sources-check` (dans `npm run check` et au CI,
+`scripts/lib/sources-numerotation.mjs`) refuse un `sourceId` en double ou
+hors forme. Au CI d'une PR seulement, il signale en avertissement une source
+ajoutée qu'aucune réservation ne couvre ; au poste, le même jugement se
+demande par `node scripts/lib/sources-numerotation.mjs --pr` (base : l'ancêtre
+commun avec `origin/main`). Une réservation n'a pas de titulaire : le garde
+constate qu'elle existe, pas qu'elle est la vôtre. Seule la réservation faite
+avant l'ingestion protège la base.
+
 ## Politique de publication
 
 - Les `sourceId` sont les seules références de localisation versionnées.
