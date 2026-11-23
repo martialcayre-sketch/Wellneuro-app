@@ -1,8 +1,8 @@
 # Registre sanitaire du corpus clinique
 
-`source_registry.json` contient 825 notices normalisées : 391 issues du pack WN
+`source_registry.json` contient 831 notices normalisées : 391 issues du pack WN
 Ultimate v2 (`NNFC1_Annee1`, `NNPP2_Annee2`), 116 instruments du cabinet
-(`INSTRUMENTS_CABINET`), et 318 sources externes (`SOURCES_EXTERNES` — BP-07 :
+(`INSTRUMENTS_CABINET`), et 324 sources externes (`SOURCES_EXTERNES` — BP-07 :
 avis d'agence, recommandation, essai, règlement, `WN-SRC-0508` à `0511`, puis
 pour la position P5 v0.3 une recommandation de l'OMS, `WN-SRC-0555` ; besoin 2 :
 trois avis d'agence, un rapport d'évaluation, une recommandation de pratique,
@@ -137,7 +137,13 @@ sens de la vie, `WN-SRC-0826`, `0829`, `0832` à `0837`, `0840`, `0841`, `0843` 
 `0845` ; dix-huit notices seules, `WN-SRC-0824`, `0825`, `0827`, `0828`, `0830`,
 `0831`, `0838`, `0839`, `0842`, `0844` et `0846` à `0853`, dont cinq textes à
 ingérer après fourniture du PDF par le responsable (`WN-SRC-0825`, `0827`, `0838`,
-`0842`, `0844`), quatre documents officiels et quatre fiches de registre d'essais),
+`0842`, `0844`), quatre documents officiels et quatre fiches de registre d'essais ;
+BP-27, zinc (évaluateur signé), deux textes libres ingérés le 2026-11-23 sur
+accord du responsable (CC BY) : un chapitre d'ouvrage de référence sur la
+zincémie et une analyse d'enquêtes sur la zincémie et l'inflammation,
+`WN-SRC-0854` et `0855` ; quatre notices seules, `WN-SRC-0856` à `0859`, dont un
+texte à ingérer après fourniture du PDF par le responsable (`WN-SRC-0856`) et
+trois textes faute de licence qui admette le texte),
 dont seuls des extraits ciblés sont ingérés. Les quatorze vidéos de cours du
 praticien, `WN-SRC-0268` à `0281`, sont ingérées depuis le 2026-11-20 comme
 pièces internes (transcription automatique non relue, erreurs d'écoute évidentes
