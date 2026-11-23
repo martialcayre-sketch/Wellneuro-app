@@ -156,15 +156,22 @@ const ECRANS_195: Array<{ id: string; url: string; titre: string; attendre?: (pa
   { id: 'P35 Trajectoires', url: '/dashboard/trajectoires', titre: 'Fiche-trajectoire' },
   { id: 'P36 Cabinet', url: '/dashboard/cabinet', titre: 'Comptes du cabinet' },
   // La liste des packs se charge après le titre : sa rangée d'actions débordait.
-  // Le pack de base du seed (`PACK_SEED_BASE`) la rend : le test attend son
-  // bouton « Modifier », sans quoi il passerait sur une liste vide.
+  // Le pack de base du seed (`PACK_SEED_BASE`, « Base de consultation ») la
+  // rend : le test attend le bouton « Modifier » de SA rangée, sans quoi il
+  // passerait sur une liste vide (le catalogue, au-dessus, porte aussi des
+  // boutons « Modifier »).
   { id: 'P37 Questionnaires', url: '/dashboard/bibliotheque/questionnaires', titre: 'Questionnaires',
     attendre: async page => {
       await expect(page.getByRole('heading', { name: 'Nouveau pack de questionnaires' })).toBeVisible({ timeout: 10000 });
       await expect(page.getByText('Chargement des packs...')).toHaveCount(0, { timeout: 10000 });
-      await expect(page.getByRole('button', { name: 'Modifier', exact: true }).first()).toBeVisible({ timeout: 10000 });
+      await expect(
+        page.getByRole('listitem').filter({ hasText: 'Base de consultation' }).getByRole('button', { name: 'Modifier', exact: true }),
+      ).toBeVisible({ timeout: 10000 });
     } },
   { id: 'P40 Analyses biologiques', url: '/dashboard/bibliotheque/biologie', titre: 'Analyses biologiques' },
+  // Même limite que P49 : sans `WN_C4_ENABLED`, le rayon n'affiche que son
+  // message de fermeture ; les libellés et le tri corrigés par PRA-6m ne sont
+  // mesurés que sur un poste qui pose le drapeau.
   { id: 'P44 Compléments', url: '/dashboard/bibliotheque/complements', titre: 'Compléments alimentaires' },
   // Comme à 320 px : le message d'indisponibilité au banc (sans
   // `WN_RECHERCHE_CORPUS_ENABLED`), le formulaire de recherche sur un poste
