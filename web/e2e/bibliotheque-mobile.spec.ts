@@ -156,15 +156,29 @@ const ECRANS_195: Array<{ id: string; url: string; titre: string; attendre?: (pa
   { id: 'P35 Trajectoires', url: '/dashboard/trajectoires', titre: 'Fiche-trajectoire' },
   { id: 'P36 Cabinet', url: '/dashboard/cabinet', titre: 'Comptes du cabinet' },
   // La liste des packs se charge après le titre : sa rangée d'actions débordait.
+  // Le pack de base du seed (`PACK_SEED_BASE`) la rend : le test attend son
+  // bouton « Modifier », sans quoi il passerait sur une liste vide.
   { id: 'P37 Questionnaires', url: '/dashboard/bibliotheque/questionnaires', titre: 'Questionnaires',
     attendre: async page => {
       await expect(page.getByRole('heading', { name: 'Nouveau pack de questionnaires' })).toBeVisible({ timeout: 10000 });
       await expect(page.getByText('Chargement des packs...')).toHaveCount(0, { timeout: 10000 });
+      await expect(page.getByRole('button', { name: 'Modifier', exact: true }).first()).toBeVisible({ timeout: 10000 });
     } },
   { id: 'P40 Analyses biologiques', url: '/dashboard/bibliotheque/biologie', titre: 'Analyses biologiques' },
   { id: 'P44 Compléments', url: '/dashboard/bibliotheque/complements', titre: 'Compléments alimentaires' },
-  { id: 'P46 Connaissances', url: '/dashboard/bibliotheque/connaissances', titre: 'Connaissances' },
+  // Comme à 320 px : le message d'indisponibilité au banc (sans
+  // `WN_RECHERCHE_CORPUS_ENABLED`), le formulaire de recherche sur un poste
+  // qui le pose. Le test attend l'un ou l'autre.
+  { id: 'P46 Connaissances', url: '/dashboard/bibliotheque/connaissances', titre: 'Connaissances',
+    attendre: async page => {
+      await expect(
+        page.getByRole('status').filter({ hasText: 'La recherche corpus clinique' }).or(page.getByRole('button', { name: 'Rechercher' })),
+      ).toBeVisible({ timeout: 10000 });
+    } },
   { id: 'P47 Corpus', url: '/dashboard/corpus', titre: 'Atelier corpus' },
+  // Sans `WN_C4_ENABLED`, que le banc ne pose pas, l'atelier n'affiche que son
+  // message de fermeture : ses grilles et compteurs, corrigés par PRA-6m, ne
+  // sont mesurés que sur un poste qui pose le drapeau.
   { id: 'P49 Règles', url: '/dashboard/regles', titre: 'Atelier de règles cliniques' },
   { id: 'P51 Synthèses', url: '/dashboard/synthese', titre: 'Synthèse IA & Booklet' },
   { id: 'P52 Documents', url: '/dashboard/documents', titre: 'Documents contextuels' },

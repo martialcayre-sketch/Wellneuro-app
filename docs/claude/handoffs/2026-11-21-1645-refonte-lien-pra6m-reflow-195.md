@@ -2,7 +2,7 @@
 
 ## Branche et état du dépôt
 
-- Branche `claude/refonte-lien-pra6m-reflow-195-dca29c`, worktree `.claude/worktrees/refonte-lien-pra6m-reflow-195-dca29c`, créée sur `origin/main` `288e1b24`, avancée par `--ff-only` à `e2033a9f` (#2296), puis à `27ed4100` (#2297, documentation seule) avant le premier commit. Après le merge de PRA-6k (#2298) et PRA-6l (#2299), `origin/main` fusionnée dans la branche (`f2e617db`, sans conflit, aucun fichier commun) sur l'accord direct du responsable (D-518, question `20261121-1812-pra6m`).
+- Branche `claude/refonte-lien-pra6m-reflow-195-dca29c`, worktree `.claude/worktrees/refonte-lien-pra6m-reflow-195-dca29c`, créée sur `origin/main` `288e1b24`, avancée par `--ff-only` à `e2033a9f` (#2296), puis à `27ed4100` (#2297, documentation seule) avant le premier commit. Après le merge de PRA-6k (#2298) et PRA-6l (#2299), `origin/main` fusionnée dans la branche (`f2e617db`, sans conflit, aucun fichier commun) sur l'accord direct du responsable (D-518, question `20261121-1812-pra6m`). Après la revue de `wn-reviewer`, `origin/main` (`e6e4ebcf`, #2301 à #2305, aucun fichier commun) fusionnée de nouveau (`aee5c6e1`), sur un second accord direct (question `20261121-1922-pra6m`), pour lever ses deux réserves.
 - Code d'interface seul : des classes CSS, une règle de `globals.css`, un banc E2E, un fragment de changelog et ce handoff. Ni route, ni garde, ni drapeau, ni schéma, ni texte.
 - La session ne merge pas : l'intégrateur merge sur « prête @<sha> » (D-373, D-454, D-546).
 
@@ -29,7 +29,7 @@ Le lot « 195 px » du praticien, ouvert par le responsable le 2026-11-21 : supp
 - `web/src/app/globals.css` (règle commune des champs, sous 320 px).
 - Titres : `web/src/app/dashboard/bibliotheque/EnTeteRayon.tsx` et `web/src/app/dashboard/{page,agenda,cabinet,copilote,correspondance,documents,droits,parametres,patients,synthese,trajectoires}/page.tsx`.
 - `web/src/components/fil/FilDuJour.tsx`, `web/src/components/fil/PanneauRail.tsx`, `web/src/components/BibliothequePanel.tsx`, `web/src/components/agenda/AgendaPraticien.tsx`, `web/src/components/biologie/RayonBiologiePanel.tsx`, `web/src/components/cabinet/ComptesCabinetPanel.tsx`, `web/src/components/complements/RayonComplementsPanel.tsx`, `web/src/components/corpus/AtelierCorpus.tsx`, `web/src/components/fiches-usage/RayonFichesUsagePanel.tsx`, `web/src/components/patient-cockpit/SaisieBilan.tsx`, `web/src/components/regles/AtelierReglesPanel.tsx` (classes seules ; aucune logique de règle touchée).
-- `web/src/components/PacksPanel.tsx` (après le merge de PRA-6l).
+- `web/src/components/PacksPanel.tsx` (après le merge de PRA-6l) : deux lignes. Le fichier est versé en CRLF sur `main` ; une première écriture l'avait converti en LF (736 lignes au diff, réserve de `wn-reviewer`), reprise depuis la version de `main` : ses fins de ligne sont intactes.
 - `web/e2e/bibliotheque-mobile.spec.ts`, `changelog.d/2026-11-21-refonte-lien-pra6m-reflow-195.md`, ce handoff.
 
 ## Validations exécutées
@@ -40,14 +40,15 @@ Le lot « 195 px » du praticien, ouvert par le responsable le 2026-11-21 : supp
 - **Banc** `bibliotheque-mobile.spec.ts` contre `next dev`, base locale : 36 verts sur 36 (Chromium et WebKit), tests existants de PRA-6g compris ; après la fusion de `main`, `contain: paint` et P37 : 38 verts sur 38. Pas de passe rouge sans correctif : le détecteur est celui de PRA-6g, et la mesure « avant » ci-dessus, faite avec la même logique, voyait chacun des quinze écrans déborder.
 - `npm run check:rapide` : 0. `npm run check` (T1 complet, `TMPDIR` isolé, cf. PRA-6g) : 0.
 - Après la fusion de `main`, `contain: paint` et P37 : `npm run check` 0 ; T2 `--fast` 0 (séquence verte en 10 min 7 s, E2E 471 verts dont les 32 tests à 195 px sur le build de production).
+- Après la seconde fusion (`aee5c6e1`), CRLF rétablis et banc précisé (P37, P46, P49) : `npm run check` 0 ; T2 `--fast` 0 (E2E 471 verts, 37 sautés, dont les 32 tests à 195 px sur le build de production).
 - T2 `--fast` (`TMPDIR` isolé, joué seul sur le Mac après attente du calme, sur `e2033a9f` + le diff) : 0, séquence verte en 10 min 37 s ; E2E 463 verts, 37 sautés, dont les 30 tests à 195 px sur le build de production. #2297, arrivée ensuite, ne touche que de la documentation.
 
 ## Problèmes ouverts
 
-- **P37 (Questionnaires)** : d'abord laissé en reste (sa rangée « Modifier / Désactiver » vit dans `PacksPanel.tsx`, alors tenu par PRA-6l). Après le merge de PRA-6l et la fusion de `main`, remesuré à 73 px sur l'arbre fusionné, puis corrigé dans ce lot (`li` en `flex-wrap`, rangée d'actions en `basis-full`, sous 320 px) et ajouté au banc. Sans pack dans la base du banc, ce test passe sans rangée à mesurer ; la base locale en avait un.
+- **P37 (Questionnaires)** : d'abord laissé en reste (sa rangée « Modifier / Désactiver » vit dans `PacksPanel.tsx`, alors tenu par PRA-6l). Après le merge de PRA-6l et la fusion de `main`, remesuré à 73 px sur l'arbre fusionné, puis corrigé dans ce lot (`li` en `flex-wrap`, rangée d'actions en `basis-full`, sous 320 px) et ajouté au banc. Le seed pose un pack (`PACK_SEED_BASE`) : le test attend son bouton « Modifier », et mesure donc la rangée corrigée (la réserve de `wn-reviewer`, « aucun pack au banc », ne tenait pas, mais le test ne le prouvait pas).
 - **Inbox du Fil (P01), observé en capture à 195 px, sans débordement** : dans « Questionnaires à consulter », le nom du patient est tronqué jusqu'à sa première lettre (« M… », « J. ») à côté de la date. Ce n'est pas un défilement, mais l'information se perd. `fil/InboxQuestionnaires.tsx`, que tenait PRA-6l, n'est pas touché par ce lot : à reprendre dans un lot à part, si le responsable le veut.
 - **P51** : tenu par la règle commune ; `SynthesePanel.tsx` n'est pas touché. Le banc tourne sur l'arbre fusionné, PRA-6k comprise.
-- **Couverture du banc** : sans `WN_C4_ENABLED` au banc, P49 n'y montre que le message d'atelier fermé ; les grilles corrigées de `AtelierReglesPanel` ne sont mesurées que sur le poste (drapeau du `.env.local`). Même chose pour la recherche ouverte de P46.
+- **Couverture du banc** : sans `WN_C4_ENABLED` au banc, P49 n'y montre que le message d'atelier fermé ; les grilles corrigées de `AtelierReglesPanel` ne sont mesurées que sur le poste (drapeau du `.env.local`). Même chose pour la recherche ouverte de P46, dont le test attend désormais l'un des deux états (message ou bouton « Rechercher »), comme à 320 px. Les deux limites sont écrites dans le banc.
 - Hors périmètre, non traités : la liste « Intention clinique » rognée à 320 px sur P49 (§3.7) ; les écrans praticien que le constat n'a pas mesurés à 195 px.
 
 ## Prochaine action exacte
