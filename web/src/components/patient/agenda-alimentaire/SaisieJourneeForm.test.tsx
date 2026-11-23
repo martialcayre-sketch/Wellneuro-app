@@ -50,6 +50,16 @@ describe('rien n’est pré-coché', () => {
     expect(screen.getByText(MESSAGE_MANQUE_PRISES)).toBeTruthy();
   });
 
+  it('F3 a (PAT-7j) : la consigne est annoncée poliment, dans une région présente avant elle, jamais en alerte', () => {
+    rendre();
+    const region = screen.getByRole('status');
+    expect(region.textContent).toBe('');
+    fireEvent.click(cta());
+    expect(screen.getByRole('status').textContent).toBe(MESSAGE_MANQUE_PRISES);
+    expect(screen.getByRole('status')).toBe(region);
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
   it('Q12a : poser une prise efface la consigne devenue caduque', () => {
     rendre();
     fireEvent.click(cta());

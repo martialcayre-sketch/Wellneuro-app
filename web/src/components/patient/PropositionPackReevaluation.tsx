@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { PatientButton } from '@/components/patient/ui/PatientButton';
 import { PatientCard } from '@/components/patient/ui/PatientCard';
+import { PatientInlineMessage } from '@/components/patient/ui/PatientInlineMessage';
 import { enTeteDossierPage, estRefusAutreDossier, MESSAGE_AUTRE_DOSSIER } from '@/lib/portail/dossierPage';
 import { useSegmentPage } from '@/lib/portail/useSegmentPage';
 import type { PackReevaluationResponse, PropositionPack } from '@/app/api/portail/pack-reevaluation/route';
@@ -115,10 +116,10 @@ export function PropositionPackReevaluation() {
         <p className="text-base text-foreground">{proposition.corps}</p>
 
         {etat.phase === 'erreur' && (
-          <p role="alert" className="text-base text-status-warning">
+          <PatientInlineMessage tone="error">
             {etat.message
               ?? 'Votre réponse n’a pas pu être enregistrée. Réessayez, ou parlez-en à votre praticien.'}
-          </p>
+          </PatientInlineMessage>
         )}
 
         {/* Les deux réponses ont le même poids : refuser n'est pas une action

@@ -118,7 +118,7 @@ export function ConsultationScreen({ idAssignation, statutReponses, onVoirEquili
                 rows={3}
                 maxLength={1000}
                 placeholder="Ex. je me suis trompé·e à la question sur le sommeil…"
-                className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full min-h-12 px-3.5 py-2.5 border border-control-border rounded text-base bg-surface text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
               />
               <PatientButton variant="ghost" onClick={handleDemande} loading={demandeLoading} loadingLabel="Envoi…" className="w-full">
                 Demander une correction
