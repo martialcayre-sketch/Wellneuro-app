@@ -2,7 +2,7 @@
 
 ## Branche et état Git
 
-- Branche `docs/j312f-lot2-bis-r2-ali-01-maintenue`, créée directement sur `origin/main` (tête `9f77744be`), commits locaux propres. **Rien n'est poussé** : `origin/main` a avancé (#2305) et l'avance `--ff-only` est impossible (branche avec commits propres, `D-518`) — arbitrage attendu. Le travail du lot 2 d'origine (suspension) est gardé en commit local `2885634e8` sur `fix/j312f-lot2-suspension-r2-ali-01`, sans push ni PR : il resservira si la recherche du déclencheur ne trouve aucune source certifiée.
+- Branche `docs/j312f-lot2-bis-r2-ali-01-maintenue`, créée directement sur `origin/main` (tête `9f77744be`), commits locaux propres. Rebasée sur `origin/main` (#2305) sur arbitrage du responsable (`D-518`, commits jamais poussés), puis poussée. Le travail du lot 2 d'origine (suspension) est gardé en commit local `2885634e8` sur `fix/j312f-lot2-suspension-r2-ali-01`, sans push ni PR : il resservira si la recherche du déclencheur ne trouve aucune source certifiée.
 - Session concurrente (file B), mission « 12 besoins, séquentiel ». `git` et `gh` en direct. Aucune PR avant la signature.
 
 ## Objectif
@@ -30,7 +30,7 @@ Appliquer la réponse du responsable du 2026-11-22 (`20261122-0003-b`, option in
 
 ## Problèmes ouverts et prochaine action
 
-- **La signature est posée** (`dateValidation` 2026-11-22, `shaPerimetre` `a28e99e6…`, constante du banc, `FEATURE_FLAGS.md`) ; `check:rapide` vert, suite clinique verte. **Bloqué avant T3 et la PR** : avance de la branche sur `origin/main` impossible en `--ff-only`.
+- **La signature est posée** (`dateValidation` 2026-11-22, jour seul gardé, `shaPerimetre` `a28e99e6…`, constante du banc, `FEATURE_FLAGS.md`) ; `check:rapide` vert après rebase ; **T3 complet vert** (séquence CI en 10 min 52 s) après le triage des deux bancs neufs dans l'allowlist de `specs-drapeau-ali01.test.mjs` (joués sous les deux positions du drapeau de forme ; un premier T3 avait rougi là-dessus).
 
 - **La signature de la table d'orientation reste au responsable** : poser `dateValidation` et `shaPerimetre` à l'empreinte ci-dessus, et la constante du banc. Les deux bancs rouges le disent.
 - Après la signature seulement : T3, sonde `wn-sonde-release-db` (le chemin clinique déclenche release-db), PR avec `--body-file`, CI, revue PR-Agent, déclaration « prête @sha ».
