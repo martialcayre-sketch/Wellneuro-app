@@ -1,0 +1,7 @@
+- **Mise à jour (2026-11-23, part B, D-556 acceptée — suite du rejeu non conforme)**. [[D-556]] amende [[D-539]] §8, [[D-545]] §6 et §7.
+  - Trois lectures de la grille arbitrées : `20261120-1855-b-h95` (A, ligne 7), `1856-b-h95` (A, ligne 10), `1857-b-h95` (B : un diagnostic déclaré repris comme antécédent n'est pas une violation). Après elles, générations en violation sur 72 : second appel 2, appel principal et narratif 16.
+  - Ordre de la suite (`20261121-1622-b-h95`) : le second appel en pause, puis le périmètre, puis la correction et le rejeu. Avis Codex et Fable 5.2 ; ordre de Fable retenu.
+  - Le drapeau s'ouvre sur une évaluation conforme du second appel seul (`20261123-1152-b-h95`) ; une modification de consigne fait rejouer l'appel qu'elle touche, seul (`1153-b-h95`).
+  - Porte propre de l'appel principal (`1154-b-h95`, `1205-b-h95`) : retouche de la ligne 10, évaluée sur l'appel principal seul et mergée après un verdict conforme ; ensuite, chaque nouvelle version rejoue après son merge, à la charge de la file B.
+  - Fait relevé par conteneur : aucune synthèse générée en production depuis le 2026-10-28.
+  - **Suite** : décision qui propose les textes de la retouche de la ligne 10, puis le lot de code et l'évaluation de l'appel principal seul. Le drapeau reste éteint.
