@@ -125,6 +125,68 @@ test("un --check d'une autre commande n'excuse pas prisma format", () => {
   assert.equal(verdict("npx prisma format && npm run lint -- --check"), "refus");
 });
 
+// ── One-off Scalingo recyclé (lot autonomie-pieges-restes, partie 12) ────────
+// La sortie d'un one-off se lit par scripts/wn-one-off-logs.mjs, qui écarte un
+// ancien porteur du numéro et les voisins de préfixe.
+
+for (const cmd of [
+  "scalingo --app wellneuro --region osc-fr1 logs --filter one-off-6758 -n 100",
+  "scalingo --app wellneuro logs -F one-off-6758",
+  "scalingo -a wellneuro logs --filter=one-off-1 --lines 300",
+  "scalingo --app wellneuro logs -n 3000 --filter one-off-635 | grep '^2026-11-23'",
+  'scalingo --app wellneuro logs --filter "$ONEOFF" -n 100',
+  "scalingo --app wellneuro logs --filter $ONEOFF",
+  "scalingo --app wellneuro logs --filter 'one-off-12'",
+  "scalingo --app wellneuro logs -F 'web|one-off-3'",
+  "scalingo --app wellneuro logs -f -F one-off-3",
+  "/opt/homebrew/bin/scalingo --app wellneuro logs -F one-off-3",
+  "sleep 5; scalingo --app wellneuro logs --filter one-off-3",
+  "X=$(scalingo --app wellneuro logs --filter one-off-3)",
+  // Revue wn-reviewer : citation accolée par `=`, préfixes de commande, et
+  // valeurs qui, comme expression régulière, attrapent `one-off-N`.
+  'scalingo --app wellneuro logs --filter="one-off-3"',
+  "scalingo --app wellneuro logs --filter='web'",
+  'scalingo --app wellneuro logs -F="$N"',
+  "timeout 60 scalingo --app wellneuro logs -F one-off-3",
+  "env X=1 scalingo --app wellneuro logs -F one-off-3",
+  "time scalingo --app wellneuro logs -F one-off-3",
+  "command scalingo --app wellneuro logs -F one-off-3",
+  "if true; then scalingo --app wellneuro logs -F one-off-3; fi",
+  "{ scalingo --app wellneuro logs -F one-off-3; }",
+  "scalingo --app wellneuro logs -F off-3",
+  "scalingo --app wellneuro logs -F 3",
+  "scalingo --app wellneuro logs -F one",
+]) {
+  test(`lecture d'un one-off par logs --filter refusée : ${cmd}`, () => assert.equal(verdict(cmd), "refus"));
+}
+
+for (const cmd of [
+  "node scripts/wn-one-off-logs.mjs one-off-6758 --depuis 2026-11-23T07:39:42Z --commande 'npx prisma migrate status'",
+  "scalingo --app wellneuro --region osc-fr1 run --detached 'npx prisma migrate status'",
+  "scalingo --app wellneuro logs -n 200",
+  "scalingo --app wellneuro logs -F web",
+  "scalingo --app wellneuro logs -f",
+  "scalingo --app wellneuro logs -F web-1 -n 50",
+  "scalingo --app wellneuro logs -F postdeploy",
+  "scalingo --app wellneuro logs --filter=web",
+  "scalingo --app wellneuro one-off-stop one-off-6758",
+  'gh pr comment 12 --body "ne plus lire scalingo logs --filter one-off-N"',
+  "git log --oneline --filter one-off-3",
+]) {
+  test(`hors lecture d'un one-off par logs --filter, passe : ${cmd}`, () => assert.equal(verdict(cmd), "passe"));
+}
+
+// Trous assumés, épinglés : le filtre caché dans une chaîne exécutée, ou une
+// option groupée, échappe à la lecture du segment.
+for (const cmd of [
+  "bash -c 'scalingo --app wellneuro logs --filter one-off-3'",
+  "scalingo --app wellneuro logs -nF 100 one-off-3",
+  // Revue de l'écart : le masque des guillemets doubles avale la substitution.
+  'LOGS="$(scalingo --app wellneuro logs -F one-off-3)"',
+]) {
+  test(`trou assumé (passe) : ${cmd}`, () => assert.equal(verdict(cmd), "passe"));
+}
+
 // ── Modificateurs zsh : `$VAR:r…` non accolé (lot autonomie-pieges-restes) ───
 
 for (const cmd of [
