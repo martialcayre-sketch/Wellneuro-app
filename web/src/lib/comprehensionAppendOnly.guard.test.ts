@@ -133,6 +133,13 @@ describe('G2 — un désaccord ne se compte pas, ne se note pas, ne se moyenne p
     'moyenne',
     'pourcentage',
     'taux',
+    // ANGLAIS — le commentaire le promettait, la liste ne le tenait pas : même
+    // défaut que la garde jumelle du panneau d'objectif (LOT-03 d'Alliance
+    // 6.0-B). Le socle commun est tenu par `racinesInterditesJumelles.guard`.
+    'rank',
+    'confidence',
+    'threshold',
+    'weight',
   ];
 
   it.each([MODULE, ROUTE_PRATICIEN, ROUTE_PORTAIL, ROUTE_DOSSIER])(

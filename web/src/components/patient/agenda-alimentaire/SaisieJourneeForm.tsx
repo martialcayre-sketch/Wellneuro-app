@@ -82,7 +82,7 @@ function ChoixTriEtat({
               aria-pressed={actif}
               aria-label={`${label} ${opt.libelle}`}
               onClick={() => onChange(opt.valeur)}
-              className={`min-h-11 rounded-xl border px-4 py-2 text-sm transition-colors ${
+              className={`min-h-11 rounded border px-4 py-2 text-sm transition-colors ${
                 actif
                   ? 'border-primary bg-primary text-primary-foreground'
                   : 'border-border bg-transparent text-foreground hover:bg-muted'
@@ -129,7 +129,7 @@ function ChoixOuiNon({
               aria-pressed={actif}
               aria-label={`${label} ${opt.libelle}`}
               onClick={() => onChange(opt.valeur)}
-              className={`min-h-11 rounded-xl border px-4 py-2 text-sm transition-colors ${
+              className={`min-h-11 rounded border px-4 py-2 text-sm transition-colors ${
                 actif
                   ? 'border-primary bg-primary text-primary-foreground'
                   : 'border-border bg-transparent text-foreground hover:bg-muted'
@@ -237,7 +237,7 @@ export function SaisieJourneeForm({
         desactive={aucunePrise}
       />
 
-      <div className="rounded-xl border border-border p-3">
+      <div className="rounded border border-border p-3">
         <label className="flex min-h-11 items-center gap-3 text-sm text-foreground">
           <input
             type="checkbox"

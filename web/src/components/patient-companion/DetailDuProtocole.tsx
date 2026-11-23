@@ -84,14 +84,14 @@ export function DetailDuProtocole({
             {vue.actions.length > 1 ? 'Vos actions' : 'Votre action'}
           </p>
           {complementsEnPause && (
-            <p role="status" className="rounded-xl border border-border bg-surface px-4 py-3 text-sm text-foreground">
+            <p role="status" className="rounded border border-border bg-surface px-4 py-3 text-sm text-foreground">
               {TEXTE_PAUSE_COMPLEMENTS}
             </p>
           )}
           {vue.actions.map((action) => (
             <div
               key={action.actionId}
-              className="rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 break-inside-avoid"
+              className="rounded border border-primary/30 bg-primary/5 px-4 py-3 break-inside-avoid"
             >
               <p className="text-base font-medium text-foreground">{action.title}</p>
               {pauseDe.has(action.actionId) && (
@@ -128,7 +128,7 @@ export function DetailDuProtocole({
           regarderont ensemble : le lui cacher faisait du point d'étape une
           évaluation dont lui seul ignorait la règle. */}
       {vue.followUpCriterion && (
-        <div data-detail-protocole="critere" className="rounded-xl border border-border px-4 py-3 break-inside-avoid">
+        <div data-detail-protocole="critere" className="rounded border border-border px-4 py-3 break-inside-avoid">
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Ce qu’on regardera ensemble à trois semaines
           </p>
@@ -145,7 +145,7 @@ export function DetailDuProtocole({
  */
 export function EncartConduite() {
   return (
-    <section aria-labelledby="encart-conduite-titre" className="rounded-xl border border-border px-4 py-3 space-y-2 break-inside-avoid">
+    <section aria-labelledby="encart-conduite-titre" className="rounded border border-border px-4 py-3 space-y-2 break-inside-avoid">
       <h3 id="encart-conduite-titre" className="text-sm font-semibold text-foreground">
         {TITRE_ENCART_CONDUITE}
       </h3>

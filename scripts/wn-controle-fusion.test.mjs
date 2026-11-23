@@ -8,7 +8,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, utimesSync, writeFileSync } from 'node:fs';
+import { existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -419,6 +419,87 @@ test('collecte : l’arbre extrait est l’arbre fusionné, indexé à l’ident
   for (const f of ['web/src/de-la-pr.ts', 'web/src/de-main.ts', 'config.exemple']) assert.ok(suivis.includes(f), f);
   assert.ok(!suivis.some((f) => f.startsWith('web/node_modules') || f.startsWith('web/src/generated')));
 });
+
+// `importeurs.guard` (D-480 §8) suit les liens comme le bundler : relié, le
+// client généré se résolvait hors de l'arbre, n'était pas balayé, et la garde
+// rougissait sur l'arbre extrait seul — à l'identique sur `main`, donc
+// « préexistant », ce qui masquait le test qui refuse un nouveau lecteur.
+test('collecte : le client Prisma généré est copié dans l’arbre extrait, node_modules relié', (t) => {
+  const d = depot();
+  t.after(() => rmSync(d.tmp, { recursive: true, force: true }));
+  writeFileSync(join(d.source, 'web/src/generated/prisma/index.js'), 'module.exports = "client";\n');
+  const futur = new Date(Date.now() + 60_000);
+  utimesSync(join(d.source, 'web/src/generated/prisma/index.js'), futur, futur);
+  const vus = [];
+  const r = jouer(d, {
+    regle: (dossier) => {
+      const client = join(dossier, 'web/src/generated/prisma');
+      vus.push({
+        lien: lstatSync(client).isSymbolicLink(),
+        dossier: lstatSync(client).isDirectory(),
+        dedans: realpathSync(join(client, 'index.js')).startsWith(`${realpathSync(dossier)}/`),
+        contenu: readFileSync(join(client, 'index.js'), 'utf8'),
+        modules: lstatSync(join(dossier, 'web/node_modules')).isSymbolicLink(),
+      });
+      return tousVerts();
+    },
+  });
+  assert.equal(r.code, SORTIE_SAIN, r.lignes.join('\n'));
+  assert.ok(vus.length > 0);
+  for (const v of vus) {
+    assert.deepEqual(v, { lien: false, dossier: true, dedans: true, contenu: 'module.exports = "client";\n', modules: true });
+  }
+  // La source n'est pas touchée.
+  assert.equal(readFileSync(join(d.source, 'web/src/generated/prisma/index.js'), 'utf8'), 'module.exports = "client";\n');
+});
+
+// Un client de la source lui-même relié serait recopié en lien sans
+// `dereference`, et le défaut reviendrait (`wn-reviewer` sur #2305).
+test('collecte : un client de la source relié est copié en vrai dossier', (t) => {
+  const d = depot();
+  t.after(() => rmSync(d.tmp, { recursive: true, force: true }));
+  const reel = join(d.tmp, 'client-reel');
+  mkdirSync(reel);
+  writeFileSync(join(reel, 'index.js'), 'module.exports = "relie";\n');
+  const futur = new Date(Date.now() + 60_000);
+  utimesSync(join(reel, 'index.js'), futur, futur);
+  rmSync(join(d.source, 'web/src/generated/prisma'), { recursive: true, force: true });
+  symlinkSync(reel, join(d.source, 'web/src/generated/prisma'));
+  const vus = [];
+  const r = jouer(d, {
+    regle: (dossier) => {
+      const client = join(dossier, 'web/src/generated/prisma');
+      vus.push({ lien: lstatSync(client).isSymbolicLink(), contenu: readFileSync(join(client, 'index.js'), 'utf8') });
+      return tousVerts();
+    },
+  });
+  assert.equal(r.code, SORTIE_SAIN, r.lignes.join('\n'));
+  assert.ok(vus.length > 0);
+  for (const v of vus) assert.deepEqual(v, { lien: false, contenu: 'module.exports = "relie";\n' });
+});
+
+// Un lien CASSÉ suivi par la PR échappe à `existsSync`, qui suit le lien :
+// `cpSync` sur un tel chemin abattait le processus au niveau natif, sans
+// verdict ni nettoyage (`wn-reviewer` sur #2305). Indéterminé, en clair.
+for (const [chemin, motif] of [
+  ['web/src/generated/prisma', /web\/src\/generated\/prisma est suivi dans l'arbre/],
+  ['web/src/generated', /web\/src\/generated n'est pas un dossier/],
+]) {
+  test(`collecte : un lien cassé suivi à ${chemin} — indéterminé, sans plantage`, (t) => {
+    const d = depot();
+    t.after(() => rmSync(d.tmp, { recursive: true, force: true }));
+    const auteur = join(d.tmp, 'auteur');
+    mkdirSync(join(auteur, chemin, '..'), { recursive: true });
+    symlinkSync(join(d.tmp, 'absent'), join(auteur, chemin));
+    g(auteur, 'add', '-A');
+    g(auteur, 'commit', '--quiet', '-m', 'lien cassé');
+    g(auteur, 'push', '--quiet', '--force', 'origin', `HEAD:refs/pull/${PR}/head`);
+    const r = jouer(d, { teteApi: g(auteur, 'rev-parse', 'HEAD') });
+    assert.equal(r.code, SORTIE_INDETERMINE, r.lignes.join('\n'));
+    assert.match(r.lignes[0], motif);
+    assert.ok(!existsSync(join(d.tmp, 'absent')));
+  });
+}
 
 test('collecte : un conflit est un défaut, mis en cache, sans garde joué', (t) => {
   const d = depot({ pr: { 'docs/texte.md': 'pr\n' }, main: { 'docs/texte.md': 'main\n' } });
