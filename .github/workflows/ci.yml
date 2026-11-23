@@ -317,6 +317,28 @@ jobs:
       - name: Réservation d'un numéro de décision (banc du script)
         run: node --test scripts/wn-reserver-decision.test.mjs
 
+      # Numérotation du registre des sources du corpus (`WN-SRC-NNNN`),
+      # piège « réservation WN-SRC » : le 2026-11-01, deux sessions ont pris
+      # `WN-SRC-0577` à `0582` le même jour, l'une au registre, l'autre en base
+      # (#1808, #1810). Le numéro se réserve avant d'ingérer
+      # (`scripts/wn-reserver-source.mjs`). BLOQUANT : un `sourceId` en double
+      # ou hors forme. AVERTISSEMENT seul, sur une PR : une source ajoutée
+      # qu'aucune réservation `refs/tags/reserve/WN-SRC-NNNN` ne couvre — les
+      # réservations ne se lisent, en lecture seule (d'où le jeton), que s'il
+      # y a une source ajoutée. Sans filtre `docs_only` : le registre est un
+      # `.json` sous `docs/`, une PR qui ajoute des sources est documentaire.
+      # La commande reste celle de `npm run check` (parité).
+      - name: Numérotation du registre des sources (blocking)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/lib/sources-numerotation.mjs
+
+      # Bancs du garde ci-dessus et de `scripts/wn-reserver-source.mjs`, sur
+      # registres fabriqués et faux `gh` : aucune référence réelle créée, ni
+      # jeton ni réseau.
+      - name: Numérotation du registre des sources (bancs du garde et de la réservation)
+        run: node --test scripts/lib/sources-numerotation.test.mjs scripts/wn-reserver-source.test.mjs
+
       # Journal du plan en fragments (D-371, fiche H90). Le garde AVERTIT d'un
       # fragment de `docs/claude/plan-journal/` modifié, renommé ou supprimé —
       # jamais bloquant, une donnée sensible doit pouvoir être retirée

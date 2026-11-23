@@ -107,10 +107,13 @@ export function apiGitHub(gh = ghParDefaut) {
 }
 
 /**
- * @param {{nombre?: number, api: ReturnType<typeof apiGitHub>}} options
+ * `reference` nomme la référence d'un numéro : celle d'une décision par
+ * défaut ; `scripts/wn-reserver-source.mjs` passe celle d'une source, avec
+ * une `api` qui lit le registre des sources.
+ * @param {{nombre?: number, api: ReturnType<typeof apiGitHub>, reference?: (n: number) => string}} options
  * @returns {{statut: "ok" | "inconnu" | "epuise" | "illisible", reserves: number[], inconnu?: number, detail?: string, sautes: number[]}}
  */
-export function reserver({ nombre = 1, api }) {
+export function reserver({ nombre = 1, api, reference = referenceReservation }) {
   let sha;
   let maxMain;
   let reservations;
@@ -137,7 +140,7 @@ export function reserver({ nombre = 1, api }) {
       return { statut: "epuise", reserves, sautes, detail: `${ESSAIS_MAX} créations refusées « déjà existante » d'affilée` };
     }
     essais += 1;
-    const r = api.creer(referenceReservation(candidat), sha);
+    const r = api.creer(reference(candidat), sha);
     if (r.issue === "creee") {
       reserves.push(candidat);
       essais = 0;
