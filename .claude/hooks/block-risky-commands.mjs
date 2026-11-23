@@ -213,6 +213,49 @@ for (const { motif, raison } of refusStructure) {
   }
 }
 
+// ONE-OFF SCALINGO RECYCLÉ (lot `autonomie-pieges-restes`, partie 12).
+// Scalingo recycle les numéros de one-off : `logs --filter one-off-N` a rendu,
+// le 2026-11-09, une release-db du 2026-10-03 au même numéro (constat de
+// #1947). Et le filtre est une expression régulière : `one-off-635` attrape
+// `[one-off-6351]`. La lecture passe par `scripts/wn-one-off-logs.mjs`, qui ne
+// rend que le conteneur démarré après l'heure lue avant le lancement.
+// Lu sur la commande masquée, mais SANS mise en minuscules : `-F` (filtre) et
+// `-f` (suivi) ne se distinguent que par la casse. Un filtre entre guillemets
+// (masqué) ou porté par une variable ne se lit pas : refusé comme un one-off.
+// Le filtre est une expression régulière cherchée dans le nom : une valeur est
+// refusée dès qu'elle peut attraper `one-off-N` — métacaractère, citation ou
+// variable, ou sous-chaîne de `one-off-<chiffres>` (`off-3`, `-3`, `one`).
+// `web`, `web-1`, `postdeploy` passent (revue wn-reviewer).
+const masqueeCasse = original
+  .replace(/<<-?\s*'?"?(\w+)'?"?[\s\S]*?^\s*\1\s*$/gm, " <<contenu-masqué> ")
+  .replace(/'[^']*'/g, " '' ")
+  .replace(/"[^"]*"/g, ' "" ');
+const LOGS_SCALINGO =
+  /^\s*(?:(?:\w+=\S*|env|time|command|exec|nohup|then|do|else|\{|!|timeout(?:\s+-\S+)*\s+\S+)\s+)*(?:\S*\/)?scalingo\s(?:.*\s)?logs(?:\s|$)/;
+const FILTRE_LOGS = /(?:^|\s)(?:--filter|-F)(?:=\s*|\s+)(\S+)/g;
+const PREFIXE_ONE_OFF = "one-off-";
+function filtreAttrapeUnOneOff(valeur) {
+  const v = valeur.toLowerCase();
+  if (/[^a-z0-9_-]/.test(v)) return true;
+  const [, lettres, chiffres] = /^([a-z_-]*)(\d*)$/.exec(v) ?? [null, null, null];
+  if (lettres === null) return false;
+  return chiffres ? PREFIXE_ONE_OFF.endsWith(lettres) : PREFIXE_ONE_OFF.includes(lettres);
+}
+for (const segment of masqueeCasse.split(/[;&|\n()`]/)) {
+  if (!LOGS_SCALINGO.test(segment)) continue;
+  const filtres = [...segment.matchAll(FILTRE_LOGS)].map((m) => m[1]);
+  if (filtres.some(filtreAttrapeUnOneOff)) {
+    console.error(
+      "Commande bloquée par WellNeuro : Scalingo recycle les numéros de one-off, et `logs --filter one-off-N` " +
+      "peut rendre la sortie d'un ancien conteneur au même numéro (ou d'un `one-off-N5…`). " +
+      "Lire par `node scripts/wn-one-off-logs.mjs one-off-N --depuis <heure lue AVANT le lancement, " +
+      "date -u +%FT%TZ> --commande '<commande lancée>'` (codes : 0 arrêté, 1 en cours, 2 introuvable, 4 ambigu). " +
+      "Un filtre qui n'est pas un one-off s'écrit sans guillemets (`-F web`)."
+    );
+    process.exit(2);
+  }
+}
+
 // MODIFICATEURS ZSH (lot `autonomie-pieges-restes`, partie 2). Le shell de ces
 // sessions est zsh : dans `$VAR:r…`, `:r` est un modificateur (« retire
 // l'extension »), comme `:h`, `:t`, `:e`, `:a`, `:l`, `:u`, `:q`… `git push

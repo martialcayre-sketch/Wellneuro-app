@@ -44,6 +44,22 @@ Trois verdicts, rendus par les hooks PreToolUse de `.claude/settings.json` :
   - un `echo` final dans `if`, `for` ou `while`.
 
   **Faux positif assumé** : un commentaire final qui cite `echo $?`.
+  Depuis le 2026-11-23 (même lot, partie 12), `scalingo … logs` dont le
+  filtre (`--filter`, `-F`, `=` compris) peut attraper un one-off est
+  refusé. Scalingo recycle les numéros, et le filtre est une expression
+  régulière : la sortie lue peut être celle d'un ancien conteneur ou d'un
+  voisin `one-off-N5…`. Est refusée une valeur qui porte un métacaractère,
+  une variable ou une chaîne entre guillemets (illisible une fois masquée),
+  ou qui est une sous-chaîne de `one-off-<chiffres>` (`one-off-3`, `off-3`,
+  `3`, `one`). La lecture passe par `node scripts/wn-one-off-logs.mjs
+  one-off-N --depuis <heure lue avant le lancement> --commande '<cmd>'`. Lu
+  par segment sur la commande masquée **sans** mise en minuscules (`-F`
+  filtre, `-f` suit), préfixes `env`, `time`, `command`, `timeout N`,
+  `then`, `{`… compris. `logs` sans filtre, `-F web`, `-F web-1` et une
+  prose citée passent. **Trous assumés** : une chaîne exécutée
+  (`bash -c '…'`), une substitution entre guillemets doubles
+  (`X="$(scalingo … logs -F one-off-3)"`, avalée par le masque) et une
+  option groupée (`-nF`).
 - **demande** — migration **destructive** sous `prisma/migrations/` ou
   `supabase/migrations/` (DROP, TRUNCATE, DELETE ou UPDATE sans WHERE,
   RENAME, ALTER … TYPE, MERGE, `EXECUTE` dynamique, DISABLE TRIGGER,

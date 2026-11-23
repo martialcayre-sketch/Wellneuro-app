@@ -13,8 +13,10 @@ paths:
 **La production est sur Scalingo depuis le cutover du 2026-08-22** (`osc-fr1`,
 `--hds-resource`). Elle se lit depuis un conteneur one-off :
 `scalingo run -d "npx prisma migrate status"` (ou `db execute --file …`),
-sortie relue par `scalingo logs --filter one-off-N` — le mode détaché lève
-l'exigence de TTY. La base Supabase gelée au cutover et son outil MCP
+sortie relue par `node scripts/wn-one-off-logs.mjs one-off-N --depuis <heure
+lue avant le lancement> --commande '<commande>'` — le mode détaché lève
+l'exigence de TTY. Scalingo recycle les numéros : `logs --filter one-off-N` nu
+peut rendre un ancien conteneur, et le crochet des commandes le refuse. La base Supabase gelée au cutover et son outil MCP
 `execute_sql` **n'existent plus** : décommissionnement `D-080` exécuté le
 2026-09-01 (`D-120`, preuve au registre RGPD, rubrique 12). Le connecteur MCP
 Supabase est débranché de claude.ai (constaté le 2026-10-21, plan `D/5`) : les

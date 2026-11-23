@@ -28,12 +28,15 @@ Le motif de référence pour toute commande contre la production (éprouvé le
 2026-08-22 ; la base n'étant pas exposée, c'est **le** chemin d'exécution) :
 
 ```bash
+# Noter l'heure AVANT le lancement
+date -u +%FT%TZ
 # Lancer détaché (pas de TTY requis — le TTY n'est nécessaire qu'en interactif)
 scalingo --app wellneuro --region osc-fr1 run --detached "npx prisma migrate status"
 # → « To follow this execution, run: … logs --filter one-off-NNNN »
 
-# Lire la sortie (relancer jusqu'à fin d'exécution)
-scalingo --app wellneuro --region osc-fr1 logs --filter one-off-NNNN -n 100
+# Lire la sortie de CE conteneur seul (--attendre : relit jusqu'à son arrêt)
+node scripts/wn-one-off-logs.mjs one-off-NNNN --depuis <heure notée> \
+  --commande 'npx prisma migrate status' --attendre 300
 
 # Arrêter un one-off qui n'aurait pas dû partir
 scalingo --app wellneuro --region osc-fr1 one-off-stop one-off-NNNN
@@ -41,8 +44,14 @@ scalingo --app wellneuro --region osc-fr1 one-off-stop one-off-NNNN
 
 - Le one-off tourne **dans l'image du dernier déploiement réussi**, répertoire
   `web/` (Procfile) : `scripts/…` et `prisma/…` s'y résolvent directement.
-- `logs --filter` filtre par **motif**, pas par égalité : toujours vérifier
-  que les lignes lues portent bien le bon numéro de conteneur.
+- **Les numéros de one-off sont recyclés** : `logs --filter one-off-NNNN` a
+  rendu, le 2026-11-09, la sortie d'un conteneur du 2026-10-03 au même numéro.
+  Et le filtre est une expression régulière, pas une égalité :
+  `one-off-635` attrape `one-off-6351`. `wn-one-off-logs.mjs` ne garde que le
+  conteneur démarré après `--depuis` (identifiant de la ligne `[manager]`),
+  jusqu'au prochain démarrage du même numéro. Codes : 0 arrêté depuis plus de
+  10 s, 1 en cours ou arrêt trop récent, 2 introuvable, 4 ambigu. Depuis une session,
+  le crochet des commandes refuse `logs --filter one-off-…`.
 - Variables : `scalingo env-get <VAR>` pour lire UNE variable (jamais
   `scalingo env`, qui déverse toute la configuration, secrets compris) ;
   `scalingo env-set VAR=valeur` pour poser.
@@ -310,7 +319,8 @@ figure pas, d'où sa durée de vie limitée à l'essai.
 
 1. La base n'est **pas joignable depuis Internet** : diagnostiquer par
    one-off — `scalingo run --detached "npx prisma migrate status"` puis
-   `logs --filter one-off-NNNN`
+   `node scripts/wn-one-off-logs.mjs one-off-NNNN --depuis <heure> --commande
+   'npx prisma migrate status'` (voir plus haut)
 2. Erreurs `PrismaClientInitializationError` dans `scalingo logs` :
    vérifier `SCALINGO_POSTGRESQL_URL` **présente** (`env-get … | wc -c`,
    jamais la valeur) et l'état de l'add-on dans le dashboard

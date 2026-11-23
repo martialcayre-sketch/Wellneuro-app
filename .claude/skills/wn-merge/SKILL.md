@@ -64,7 +64,8 @@ dernière session.
      exige.
    - **Après le merge, dû** : vérifier la base de production **par conteneur** —
      `scalingo --app wellneuro run -d "npx prisma migrate status"`, sortie relue
-     par `scalingo logs --filter one-off-N`. (L'`execute_sql` MCP Supabase que
+     par `node scripts/wn-one-off-logs.mjs one-off-N --depuis <heure lue avant
+     le lancement> --commande 'npx prisma migrate status'` (numéros recyclés). (L'`execute_sql` MCP Supabase que
      ce skill nommait jusqu'au 2026-09-16 vise une base **décommissionnée** le
      2026-09-01, `D-120`.) Sur une migration, ce constat ne peut pas aboutir
      avant que `release-db` ait conclu (sans approbation humaine depuis `D-520`) et la sentinelle
