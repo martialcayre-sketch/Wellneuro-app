@@ -368,7 +368,7 @@ export default function QuestionnairesHubPage() {
   // hub s'atteint par son adresse sans passer par l'accueil.
   if (statut === 'date_manquante') {
     return (
-      <div className="w-full max-w-md space-y-4">
+      <div className="w-full max-w-[35rem] space-y-4">
         <DateNaissanceEcran onEnregistree={() => void charger()} />
       </div>
     );

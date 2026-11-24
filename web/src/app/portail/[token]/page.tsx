@@ -679,7 +679,7 @@ function AnamneseForm({ token, idPatient, email, motifInitial, onDone }: {
 // ─── étape : terminé / accès questionnaires ─────────────────────────────────
 function DoneScreen({ token, premiereAssignation }: { token: string; premiereAssignation: string | null }) {
   return (
-    <PatientCard maxWidth="md" className="text-center">
+    <PatientCard className="text-center">
       {/* Pastille sable, coche pétrole (prototype PAT-2, U09). */}
       <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-lien-sand mb-4">
         <svg className="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -839,7 +839,7 @@ export default function PortailPage() {
 
   if (step.name === 'date') {
     return (
-      <div className="w-full max-w-md space-y-4">
+      <div className="w-full max-w-[35rem] space-y-4">
         <DateNaissanceEcran
           onEnregistree={(nouveau, trancheNouvelle) => {
             setStatut(nouveau);
@@ -853,7 +853,7 @@ export default function PortailPage() {
 
   if (step.name === 'mineur') {
     return (
-      <div className="w-full max-w-md space-y-4">
+      <div className="w-full max-w-[35rem] space-y-4">
         <EcranCircuitMineur lienParcours={`/portail/${token}/questionnaires`} tranche={tranche} />
       </div>
     );
@@ -910,7 +910,7 @@ export default function PortailPage() {
   }
 
   return (
-    <div className="w-full max-w-md space-y-4">
+    <div className="w-full max-w-2xl space-y-4">
       <PatientJourneyProgress steps={buildJourneySteps(4)} />
       <DoneScreen token={token} premiereAssignation={step.premiereAssignation} />
     </div>

@@ -29,7 +29,7 @@ export default function LienIndisponiblePage() {
   if (!isG4LienMagiqueEnabled()) notFound();
 
   return (
-    <div className="w-full max-w-md space-y-4">
+    <div className="w-full max-w-[35rem] space-y-4">
       <PatientCard className="space-y-4">
         <PatientPageHeader
           center
