@@ -11,7 +11,23 @@ export const VERSION_SCHEMA_CLINICAL_SNAPSHOT = 'c1-clinical-snapshot-v1' as con
 // côté score. Coût mesuré avant bump : `protocol_drafts`,
 // `protocol_diffusion_approvals` et `assessment_episodes` sont VIDES en
 // production, aucun hash persisté ne bouge.
-export const VERSION_MAPPING_BESOINS = 'besoins-v2' as const;
+// v2 → v3 (2026-11-24, [[D-548]], J3-12f lot 3 vague 1) : la source du besoin 1
+// devient la mesure dérivée de l'enquête alimentaire (forme complète, sans les
+// items du rythme), celle du besoin 9 la seule PSS-10, et le total de
+// l'équilibre la moyenne directe des besoins mesurés. Même raison que pour
+// v1 → v2 : la laisser à v2 ferait porter deux mappings par une même étiquette.
+//
+// COÛT MESURÉ avant bump, en lecture seule sur la production, en agrégats
+// (2026-11-24, aucun dossier désigné) : `assessment_episodes` porte 16 lignes,
+// toutes en `objets-cliniques-v2` ; `protocol_drafts.contract_version` porte la
+// version du brouillon (`c1-protocol-draft-v4`, `ja-food-observation-v1`) et
+// jamais cette constante ; 9 approbations de diffusion. Les lignes déjà écrites
+// ne sont pas réécrites : leur empreinte se recalcule depuis le payload stocké.
+// Ce que le bump éteint, c'est ce que `VERSION_SCORE_EQUILIBRE` éteint déjà dans
+// le même lot — 2 protocoles diffusés, comptés dans l'impact du lot — sans
+// extinction supplémentaire ([[D-548]] §4 : une seule extinction, étiquettes
+// comprises). Aucune de ces étiquettes n'entre dans un périmètre signé.
+export const VERSION_MAPPING_BESOINS = 'besoins-v3' as const;
 // v1 → v2 (2026-08-12, [[D-052]]) : `ConfirmedAssessmentEpisode` gagne
 // `preconditionOverrides`, la trace des conditions souples contournées.
 //
@@ -31,7 +47,11 @@ export const VERSION_MAPPING_BESOINS = 'besoins-v2' as const;
 // déploiement compterait comme changement clinique sans changement clinique
 // (`clinicalContentHash` inclut `decisionCardInputHash`). Zéro fil concerné
 // aujourd'hui — dit ici parce que ce serait invisible autrement.
-export const VERSION_OBJETS_CLINIQUES = 'objets-cliniques-v2' as const;
+// v2 → v3 (2026-11-24, [[D-548]]) : monte avec `VERSION_MAPPING_BESOINS`, pour
+// le même motif et au même coût (voir ci-dessus : 16 lignes d'épisodes en v2,
+// une seule extinction pour tout le lot). Entre dans `versions.clinicalObjects`
+// du snapshot, donc dans `snapshot.inputHash`.
+export const VERSION_OBJETS_CLINIQUES = 'objets-cliniques-v3' as const;
 export const VERSION_CLINICAL_REVIEW = 'c1-clinical-review-v1' as const;
 export const VERSION_DECISION_CARD = 'c1-decision-card-v1' as const;
 export const VERSION_PROTOCOL_DRAFT = 'c1-protocol-draft-v1' as const;

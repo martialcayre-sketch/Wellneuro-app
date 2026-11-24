@@ -52,8 +52,8 @@ export const MENTION_NATURE_INDICE_GLOBAL = 'Repère de suivi, pas un score clin
  * un effet du plafonnement. La mention le dit au praticien, avec le compte
  * (« Calculé sur n besoins mesurés sur 12 ») qui le précède.
  *
- * TEXTE À VALIDER MOT POUR MOT PAR LE RESPONSABLE avant le merge ([[D-548]],
- * « Arbitrages rendus » point 2). Servi au praticien seulement, là où le chiffre
+ * TEXTE VALIDÉ MOT POUR MOT PAR LE RESPONSABLE ([[D-548]], « Arbitrages rendus »
+ * point 2 ; liste commune `20261123-1200-b`). Servi au praticien seulement, là où le chiffre
  * s'affiche ; le portail ne montre aucun chiffre.
  */
 export const MENTION_MOYENNE_BESOINS_MESURES = 'Moyenne des besoins mesurés, égale par besoin';

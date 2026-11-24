@@ -17,7 +17,7 @@
  *
  * AUCUN TEXTE DE CLAIM ([[D-251]] §4) : des nombres, des identifiants et des
  * renvois à des décisions. Les phrases servies sont des textes de l'application,
- * À VALIDER PAR LE RESPONSABLE AU LOT ([[D-516]] §5.2).
+ * VALIDÉES PAR LE RESPONSABLE ([[D-516]] §5.2 ; liste commune `20261124-0805-b`).
  *
  * MODULE-FEUILLE : il n'importe rien.
  */

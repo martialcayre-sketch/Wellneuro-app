@@ -4,8 +4,8 @@ import { POPULATION_BESOIN_1 } from '@/lib/equilibre/constatsBiomarqueursBesoin1
 // LES DEUX CONSTATS BIOLOGIQUES DU BESOIN 1 ([[D-548]] §2.2, [[D-516]] §5.2) : au
 // cockpit seulement, à part de l'enquête, hors couverture. Le panneau rapporte la
 // valeur, sa date et sa source ; il ne pose aucun diagnostic et ne combine pas les
-// deux constats. Les phrases viennent du module de lecture, à valider par le
-// responsable au lot.
+// deux constats. Les phrases viennent du module de lecture, validées par le
+// responsable (liste commune 20261124-0805-b).
 
 const jour = (iso: string) =>
   new Date(iso).toLocaleDateString('fr-FR', { timeZone: 'Europe/Paris', day: '2-digit', month: '2-digit', year: 'numeric' });

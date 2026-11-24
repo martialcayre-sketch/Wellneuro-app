@@ -73,10 +73,16 @@ const NON = { ...POSITIF_HORS_EPISODE, idReponse: 'REP_BDI_NON', scoresJson: { r
 // J3-12f) : la version passe de v16/v17 à v18/v19 (moyenne directe, besoin 1 sur
 // la mesure dérivée, PSS-10 seule au besoin 9, table des niveaux de preuve). Même
 // dérive VOULUE, même conséquence : chaque carte diffusée dérive.
+//
+// Relevées une quatrième fois le 2026-11-24 ([[D-548]], même lot) : les étiquettes
+// `VERSION_MAPPING_BESOINS` et `VERSION_OBJETS_CLINIQUES` montent en v3 (sources
+// des besoins 1 et 9, définition du total). Elles entrent dans l'empreinte ; même
+// dérive VOULUE, la même extinction que la version du score — aucune extinction
+// supplémentaire ([[D-548]] §4).
 const EMPREINTE_REFERENCE =
   process.env.WN_ALI_01_SIIN57 === 'true'
-    ? 'f6081c1ce12c4f15da75d5f9a178f163750b43162519fcdbf9706036483201fe'
-    : 'b786170d57c004364087c40aa94955f7aa4954847597d0fc8fb37f6067f4b47d';
+    ? '59e3aeea95e85bf7fb120cff7d4a73f5d01bc909d60d681c411553d4c55c79e8'
+    : '8d960b46e30098e59785691ccb5cde21b02836d7e2378160845b3ce967875030';
 
 beforeEach(() => {
   signerTablePriorites();

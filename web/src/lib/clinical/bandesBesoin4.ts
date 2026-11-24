@@ -16,9 +16,11 @@
  * Aucune borne n'est inventée : un nombre écrit ici est un nombre de claim, ou
  * une valeur frontière que ce claim laisse sans bande.
  *
- * AUCUN TEXTE DE CLAIM : seuls les identifiants et les nombres ([[D-251]] §4).
- * Les libellés A, B, C sont ceux que le catalogue servait déjà, et que le claim
- * `WN-CL-0464-007` nomme ; ils ne changent pas.
+ * AUCUN TEXTE DE CLAIM AU-DELÀ DES LIBELLÉS DE BANDE : les identifiants et les
+ * nombres ([[D-251]] §4), et les libellés des cinq bandes de l'hyperexcitabilité,
+ * transcrits mot pour mot comme [[D-526]] §3.1 l'ordonne (pratique du catalogue,
+ * comme pour le TFD et la PSS). Les libellés A, B, C sont ceux que le catalogue
+ * servait déjà, et que le claim `WN-CL-0464-007` nomme ; ils ne changent pas.
  */
 
 /**

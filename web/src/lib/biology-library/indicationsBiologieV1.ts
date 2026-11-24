@@ -573,9 +573,12 @@ export const INDICATIONS_BIOLOGIE_METADATA: IndicationsBiologieMetadata = {
   //
   // RE-SIGNÉE LE 2026-11-24 ([[D-526]] §5.2, appliquée par [[D-548]] §2.3, J3-12f
   // lot 3, vague 1), PAR LE RESPONSABLE EN SÉANCE (liste commune,
-  // `20261124-0806-b`). Seul changement du périmètre : la valeur 13 du digestif
+  // `20261124-0806-b`). Changements du périmètre : la valeur 13 du digestif
   // supérieur du TFD (`Q_GAS_01`, axe C1) passe de la bande B à la bande C, par la
-  // convention des valeurs frontières de [[D-526]] §6.2 ; `BIO-DIG-01` lit la couleur
+  // convention des valeurs frontières de [[D-526]] §6.2 (la `note` du bloc `scoring`
+  // de `Q_GAS_01`, texte seul, sans effet de calcul, change avec elle : elle dit
+  // désormais cette convention ; elle est dans le bloc haché, et c'est avec cette
+  // note que l'empreinte signée a été calculée) ; `BIO-DIG-01` lit la couleur
   // globale de `Q_GAS_01`, dont les trois bandes ne bougent pas. Aucune règle,
   // aucun claim ne change. Même lot, HORS du périmètre haché (le moteur de cotation
   // n'y est pas, classe de [[D-180]]) : la meilleure cote de l'efficacité du PSQI

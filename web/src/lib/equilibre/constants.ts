@@ -189,7 +189,9 @@ import { Q_ALI_01 } from '../questionnaires/alimentaire';
 //     mesuré le sort de cette liste : le plafond se lève et le score global
 //     REMONTE. Le seuil de 28 vaut **quand `Q_STR_01` est la seule source
 //     répondue du besoin 9** : `Q_STR_02` et `Q_STR_03` l'alimentent aussi, et
-//     la moyenne déplace alors le point de bascule.
+//     la moyenne déplace alors le point de bascule. (État du 2026-08-13 :
+//     depuis [[D-548]] §2.5, le besoin 9 ne lit que la PSS-10 — `Q_STR_02` —
+//     et `Q_STR_01` comme `Q_STR_03` ne l'alimentent plus.)
 //
 // Relevé en revue `wn-reviewer` du 2026-08-13 (B1) : une première rédaction du
 // lot ne décrivait que la première branche et ne bumpait pas. Mesuré avant de
