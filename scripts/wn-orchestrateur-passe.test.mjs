@@ -14,7 +14,6 @@ import {
   decider,
   lireExport,
   principal,
-  PLAFOND_JOUR,
   SORTIE_ARRET,
   SORTIE_PRENDRE,
   SORTIE_RIEN,
@@ -168,13 +167,15 @@ test('lancement sans prise qui expire, prise tardive : trois dans la journée ar
   assert.equal(d(etat({ arret: { arret: true } })).arretASignaler, false, 'interrupteur fermé : aucune ligne');
 });
 
-test('plafond quotidien : quatre prises dans la journée de Paris', () => {
+test('aucun plafond quotidien : vingt prises du jour n’empêchent pas la suivante (D-540, 2026-11-24)', () => {
   const lots = [lot('lot-e', { ordre: 50 })];
   const prises = (n, iso) => Array.from({ length: n }, (_, k) => ({ id: `lot-p${k}--v1`, lot: `lot-p${k}`, etat: 'prise', cree_le: iso }));
-  assert.equal(d(etat({ lots, intentions: prises(PLAFOND_JOUR, ilYa(60)) })).code, 'plafond');
-  assert.equal(d(etat({ lots, intentions: prises(PLAFOND_JOUR - 1, ilYa(60)) })).lot, 'lot-e');
-  // 23:30 UTC le 19 = 00:30 à Paris le 20 ; 22:30 UTC le 19 = 23:30 à Paris le 19.
-  assert.equal(d(etat({ lots, intentions: prises(PLAFOND_JOUR, '2026-11-19T22:30:00Z') })).lot, 'lot-e', 'la veille à Paris ne compte pas');
+  const r = d(etat({ lots, intentions: prises(20, ilYa(60)) }));
+  assert.equal(r.sortie, SORTIE_PRENDRE);
+  assert.equal(r.lot, 'lot-e');
+  assert.equal(r.compteurs.prises_du_jour, 20, 'les prises du jour restent comptées');
+  // 22:30 UTC le 19 = 23:30 à Paris le 19 : la veille ne compte pas.
+  assert.equal(d(etat({ lots, intentions: prises(20, '2026-11-19T22:30:00Z') })).compteurs.prises_du_jour, 0);
 });
 
 test('plage horaire : de 7 h à 23 h 59, heure de Paris', () => {

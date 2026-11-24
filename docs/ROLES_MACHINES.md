@@ -549,9 +549,10 @@ Elle est elle-même la session du lot ; elle ne lance aucune autre session
 - **Sa décision** se lit dans `node scripts/wn-orchestrateur-passe.mjs`,
   sur un export des registres et son manifeste. Ce script applique la
   garde « aucun lot `cloud` pris sans PR, aucune intention en vol », la
-  plage horaire (prise refusée avant 7 h et après 23 h 59), le plafond
-  de 4 lots par jour, l'interrupteur `orchestrateur/arret` (seul `false`
-  ouvre) et les champs de la voie cloud du carnet.
+  plage horaire (prise refusée avant 7 h et après 23 h 59), l'interrupteur
+  `orchestrateur/arret` (seul `false` ouvre) et les champs de la voie cloud
+  du carnet. Il n'applique aucun plafond quotidien de lots (`D-540`,
+  amendement du 2026-11-24).
 - **Un lot, puis l'arrêt.** La passe prend au plus un lot (`pris_par:
   orchestrateur (passe cloud)`) et le mène jusqu'à « prête » ou `bloque`.
   Elle s'arrête ensuite, sans prendre de lot suivant : sa consigne prime
