@@ -48,7 +48,7 @@ files déclarent prêtes ; les files travaillent chacune dans leur worktree.
   relecture du registre, chevauchement, `main` inchangé (7 bis), puis la
   sonde release-db, dernier geste avant le merge (7 ter). Le détail vit dans le skill et dans `docs/claude/REGLES_PR_MERGE.md`.
 - **L'intégrateur merge par `scripts/wn-integrer.mjs`** (`D-546`), qui
-  enchaîne ces étapes et quatre gardes :
+  enchaîne ces étapes et cinq gardes :
   - **l'origine** : la déclaration vient du propriétaire du dépôt, et la
     tête du dépôt lui-même ;
   - **le délai de repentir** : dix minutes après la déclaration. Toute
@@ -63,7 +63,11 @@ files déclarent prêtes ; les files travaillent chacune dans leur worktree.
     repart ;
   - **le bail unique** : `bail prendre`, et `bail rendre` avant un `/clear`.
     `bail prendre --reprendre` sert à succéder à un intégrateur disparu ;
-  - **le journal des merges** : `journal`, refus compris.
+  - **le journal des merges** : `journal`, refus compris ;
+  - **les focus areas de PR-Agent** (lot `autonomie-pieges-restes`,
+    partie 14) : chaque titre du commentaire persistant, têtes précédentes
+    comprises, est cité par un commentaire du propriétaire au plus tard
+    avec la déclaration, sinon refus (26).
 - **Il prend en charge une PR** par un commentaire marqué
   `<!-- wn-integrateur -->` (`D-454` §2), qui ne suspend pas son propre
   merge.

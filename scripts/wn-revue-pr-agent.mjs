@@ -51,6 +51,8 @@ import { realpathSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { titresFocus } from './lib/focus-areas-pr-agent.mjs';
+
 const RACINE = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 export const SORTIE_PREUVE = 0;
@@ -282,6 +284,25 @@ export function juger({ pr, depot, tete, run, journal, commentaires, revuesPr = 
   return { code: conditions.every((c) => c.ok) ? SORTIE_PREUVE : SORTIE_DEFAUT, conditions };
 }
 
+/**
+ * Les focus areas du commentaire persistant, dites à la session avant
+ * « prête » (partie 14 d'`autonomie-pieges-restes`). Information seule : le
+ * code de sortie ne change pas — il dit si la revue porte sur la tête, pas si
+ * ses constats ont reçu leur verdict. `wn-integrer.mjs` refuse (26) un titre
+ * qu'aucun commentaire du propriétaire ne cite jusqu'à la déclaration.
+ */
+export function lignesFocus(commentaires) {
+  const revues = commentaires.filter((c) => c?.user?.login === AUTEUR_PR_AGENT && String(c?.body ?? '').includes(MARQUEUR_REVUE));
+  if (revues.length === 0) return [];
+  const revue = revues.reduce((a, b) => (String(b.updated_at ?? b.created_at ?? '') > String(a.updated_at ?? a.created_at ?? '') ? b : a));
+  const titres = titresFocus(revue.body);
+  if (titres === null) return ['· focus areas : section présente, titres illisibles (gabarit inconnu) — lire le commentaire en entier ; wn-integrer.mjs refusera (26).'];
+  if (titres.length === 0) return [];
+  return [
+    `· focus areas, têtes précédentes comprises (${titres.length}) : ${titres.map((t) => `« ${t} »`).join(' · ')} — un verdict chacune, le titre cité tel quel dans un commentaire, au plus tard avec « prête » (wn-integrer.mjs : 26 sinon).`,
+  ];
+}
+
 export function analyserArguments(argv) {
   if (argv.length === 1 && /^[1-9]\d*$/.test(argv[0])) return { pr: Number(argv[0]) };
   return { erreur: 'usage : node scripts/wn-revue-pr-agent.mjs <numéro de PR>' };
@@ -338,6 +359,12 @@ export function lire({ pr, lireJson, lireJournal }) {
       }
     }
     verdict = juger({ pr, depot, tete, run, journal, commentaires, revuesPr, enLigne, runsCommentaire });
+    // Information seule : son échec ne fait jamais passer la sortie à 2.
+    try {
+      avertissements.push(...lignesFocus(commentaires));
+    } catch {
+      avertissements.push('· focus areas : lecture en échec — lire le commentaire persistant en entier.');
+    }
   } catch (err) {
     lignes.push(`❌ Lecture impossible — la preuve n'est pas établie : ${String(err?.message ?? err).split('\n')[0]}`);
     lignes.push(`REVUE pr-agent code=${SORTIE_ILLISIBLE} pr=${pr}`);

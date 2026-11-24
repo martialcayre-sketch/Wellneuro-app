@@ -304,8 +304,14 @@ coûte une seconde PR (`.claude/rules/docs-changelog.md`).
   publie pas de remarque en ligne. Ses remarques sont dans le commentaire
   persistant, réécrit à chaque revue ; celles des têtes précédentes restent
   dans le champ `findings` du bloc d'état. Leurs verdicts vont dans un
-  commentaire de PR distinct, qui cite chacune. Une remarque que PR-Agent
-  marque lui-même « résolue » n'a pas reçu de verdict. Une PR qui modifie
+  commentaire de PR distinct, qui cite chacune **par son titre, tel que
+  PR-Agent l'écrit** (« Possible Issue » compris ; un titre d'un ou deux
+  mots en gras ou entre chevrons). Une remarque que PR-Agent
+  marque lui-même « résolue » n'a pas reçu de verdict.
+  `wn-revue-pr-agent.mjs` liste les titres attendus ; `wn-integrer.mjs`
+  refuse (26) un titre qu'aucun commentaire du propriétaire ne cite
+  jusqu'à la déclaration. Il ne juge ni le verdict ni que le commentaire
+  soit distinct : citer un titre sans verdict reste une faute. Une PR qui modifie
   `.github/workflows/pr_agent.yml` est P1, comme `.coderabbit.yaml` :
   `wn-reviewer` passe avant le merge, mission « la PR affaiblit-elle la
   revue ? ». La revue de PR-Agent n'y compte pas pour cette question.

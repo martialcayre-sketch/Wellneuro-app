@@ -17,6 +17,7 @@ import {
   MARQUE_INTEGRATEUR,
   declarationServie,
   etatBail,
+  focusSansVerdict,
   integrer,
   operationBail,
   parolesApres,
@@ -150,6 +151,115 @@ for (const [libelle, e, code] of [
     assert.equal(verdictGardes({ ...base, ...e }).code, code);
   });
 }
+
+// ── Focus areas de PR-Agent (partie 14) ─────────────────────────────────────
+
+for (const [libelle, e, code] of [
+  ['focus areas toutes citées', { focus: { titres: ['A'], manquants: [] } }, CODES.ok],
+  ['une focus area sans verdict', { focus: { titres: ['A', 'B'], manquants: ['B'] } }, CODES.focus],
+  ['focus areas illisibles', { focus: { titres: null, manquants: [] } }, CODES.focus],
+  ['sans-merge : une focus area sans verdict refuse aussi', { mode: 'sans-merge', bail: null, focus: { titres: ['A'], manquants: ['A'] } }, CODES.focus],
+  ['filet : une focus area sans verdict refuse aussi', { mode: 'filet', bail: null, maintenantMs: plus(DELAI_FILET_S), focus: { titres: ['A'], manquants: ['A'] } }, CODES.focus],
+  ['aucune déclaration passe avant les focus areas', { decl: null, focus: { titres: null, manquants: [] } }, CODES.declaration],
+]) {
+  test(`gardes : ${libelle} → ${code}`, () => {
+    assert.equal(verdictGardes({ ...base, ...e }).code, code);
+  });
+}
+
+test('gardes : le motif nomme chaque titre sans verdict', () => {
+  const v = verdictGardes({ ...base, focus: { titres: ['Garde affaiblie', 'Tri incomplet'], manquants: ['Tri incomplet'] } });
+  assert.match(v.motif, /^1 focus area\(s\) de PR-Agent sans verdict cité jusqu'à la déclaration : « Tri incomplet » — /);
+});
+
+const BOT_ACTIONS = { type: 'Bot', login: 'github-actions[bot]' };
+const zoneFocus = (titre) => `<details><summary><a href='https://x/pull/42/files#diff-1'><strong>${titre}</strong></a>\n\nExplication.\n</summary>\n</details>`;
+const revuePrAgent = (titres, at = '2026-11-20T09:40:00Z') => ({
+  id: 900,
+  user: BOT_ACTIONS,
+  created_at: '2026-11-20T09:00:00Z',
+  updated_at: at,
+  body: `## PR Reviewer Guide 🔍\n\n<!-- pr-agent:review:full -->\n\n<table>\n<tr><td>⚡&nbsp;<strong>${titres.length ? 'Recommended focus areas for review' : 'No major issues detected'}</strong><br><br>\n\n${titres.map(zoneFocus).join('\n\n')}\n</td></tr>\n</table>`,
+});
+
+test('focus : sans commentaire persistant, rien à exiger', () => {
+  assert.deepEqual(focusSansVerdict(decl, { commentaires: [decl], proprietaire: 'proprio' }), { titres: [], manquants: [] });
+});
+
+test('focus : revue sans focus area, rien à exiger', () => {
+  assert.deepEqual(focusSansVerdict(decl, { commentaires: [revuePrAgent([]), decl], proprietaire: 'proprio' }).manquants, []);
+});
+
+test('focus : cité dans un commentaire de verdict antérieur, ou dans la déclaration elle-même', () => {
+  const verdicts = commentaire(3, '- **Garde affaiblie** : écartée, avec motif.', '2026-11-20T09:50:00Z');
+  const declCitante = commentaire(4, `Verdict : « Tri incomplet », corrigé.\nprête @${SHA}`, T0);
+  const r = focusSansVerdict(declCitante, { commentaires: [revuePrAgent(['Garde affaiblie', 'Tri incomplet']), verdicts, declCitante], proprietaire: 'proprio' });
+  assert.deepEqual(r, { titres: ['Garde affaiblie', 'Tri incomplet'], manquants: [] });
+});
+
+test('focus : la déclaration seule, sans citation (#2274, #2278) → manquants', () => {
+  const r = focusSansVerdict(decl, { commentaires: [revuePrAgent(['Décision D-xxx absente', 'Licence CC BY-NC']), decl], proprietaire: 'proprio' });
+  assert.deepEqual(r.manquants, ['Décision D-xxx absente', 'Licence CC BY-NC']);
+});
+
+test('focus : une citation postérieure à la déclaration ne compte pas (la parole suspend, la file redéclare)', () => {
+  const tard = commentaire(6, '**Garde affaiblie** : routée.', '2026-11-20T10:01:00Z');
+  assert.deepEqual(focusSansVerdict(decl, { commentaires: [revuePrAgent(['Garde affaiblie']), decl, tard], proprietaire: 'proprio' }).manquants, ['Garde affaiblie']);
+});
+
+test('focus : une citation antérieure modifiée après la déclaration ne compte pas', () => {
+  const edite = { ...commentaire(6, '**Garde affaiblie** : routée.', '2026-11-20T09:50:00Z'), updated_at: '2026-11-20T10:01:00Z' };
+  assert.deepEqual(focusSansVerdict(decl, { commentaires: [revuePrAgent(['Garde affaiblie']), edite, decl], proprietaire: 'proprio' }).manquants, ['Garde affaiblie']);
+});
+
+test('focus : la citation d\'un tiers, d\'un robot ou d\'un non-OWNER ne compte pas', () => {
+  const revue = revuePrAgent(['Garde affaiblie']);
+  for (const auteur of [
+    commentaire(7, '**Garde affaiblie** : écartée.', '2026-11-20T09:50:00Z', { type: 'User', login: 'tiers' }, 'CONTRIBUTOR'),
+    commentaire(7, '**Garde affaiblie** : écartée.', '2026-11-20T09:50:00Z', { type: 'Bot', login: 'proprio' }),
+    commentaire(7, '**Garde affaiblie** : écartée.', '2026-11-20T09:50:00Z', PROPRIO, 'MEMBER'),
+  ]) {
+    assert.deepEqual(focusSansVerdict(decl, { commentaires: [revue, auteur, decl], proprietaire: 'proprio' }).manquants, ['Garde affaiblie']);
+  }
+  // Propriétaire inconnu : personne ne cite.
+  const cite = commentaire(7, '**Garde affaiblie** : écartée.', '2026-11-20T09:50:00Z');
+  assert.deepEqual(focusSansVerdict(decl, { commentaires: [revue, cite, decl], proprietaire: '' }).manquants, ['Garde affaiblie']);
+});
+
+test('focus : la marque recopiée par un humain n\'est pas la revue de PR-Agent', () => {
+  const leurre = { ...revuePrAgent(['Leurre']), user: PROPRIO, author_association: 'OWNER' };
+  assert.deepEqual(focusSansVerdict(decl, { commentaires: [leurre, decl], proprietaire: 'proprio' }), { titres: [], manquants: [] });
+});
+
+test('focus : de deux commentaires persistants, le dernier écrit fait foi', () => {
+  const ancien = { ...revuePrAgent(['Ancien'], '2026-11-20T09:10:00Z'), id: 901 };
+  const recent = revuePrAgent(['Récent'], '2026-11-20T09:40:00Z');
+  assert.deepEqual(focusSansVerdict(decl, { commentaires: [recent, ancien, decl], proprietaire: 'proprio' }).titres, ['Récent']);
+});
+
+test('focus : le commentaire marqué de l\'intégrateur qui reprend un refus ne cite pas pour la file', () => {
+  const refus = commentaire(3, `${MARQUE_INTEGRATEUR}\nREFUS code=26 : 1 focus area(s) … « Garde affaiblie » — la file redéclare`, '2026-11-20T09:50:00Z');
+  assert.deepEqual(focusSansVerdict(decl, { commentaires: [revuePrAgent(['Garde affaiblie']), refus, decl], proprietaire: 'proprio' }).manquants, ['Garde affaiblie']);
+});
+
+test('focus : manquant et parole après la déclaration → 26 l\'emporte (même geste : redéclarer)', () => {
+  const v = verdictGardes({ ...base, paroles: [parole()], focus: { titres: ['A'], manquants: ['A'] } });
+  assert.equal(v.code, CODES.focus);
+});
+
+test('focus : une remarque d\'une tête précédente, « résolue » au bloc, attend encore son verdict', () => {
+  const etat = { findings: [{ body: '**Incohérence documentaire**\n\nExplication.', state: 'RESOLVED', last_seen_head_sha: AUTRE_SHA }], last_run: { head_sha: SHA, excluded_files: [] } };
+  const r = revuePrAgent([]);
+  r.body += `\n\n<!-- pr-agent-review-state:v1\n${JSON.stringify(etat)}\n-->`;
+  assert.deepEqual(focusSansVerdict(decl, { commentaires: [r, decl], proprietaire: 'proprio' }).manquants, ['Incohérence documentaire']);
+  const cite = commentaire(3, '« Incohérence documentaire » (tête précédente) : corrigée en 1234567.', '2026-11-20T09:50:00Z');
+  assert.deepEqual(focusSansVerdict(decl, { commentaires: [r, cite, decl], proprietaire: 'proprio' }).manquants, []);
+});
+
+test('focus : section présente, gabarit inconnu → titres null', () => {
+  const r = { ...revuePrAgent([]), body: '<!-- pr-agent:review:full -->\nRecommended focus areas for review\n- Garde affaiblie' };
+  assert.equal(focusSansVerdict(decl, { commentaires: [r, decl], proprietaire: 'proprio' }).titres, null);
+});
 
 test('gardes : en sans-merge, le délai restant est dit dans les notes', () => {
   const v = verdictGardes({ ...base, mode: 'sans-merge', maintenantMs: plus(60), bail: null });
@@ -303,6 +413,26 @@ for (const [libelle, opts, code] of [
     } finally { s.nettoyer(); }
   });
 }
+
+test('passage : focus area sans verdict → 26, avant tout contrôle coûteux, aucun merge', async () => {
+  const s = simulation({ lectures: [lecture({ commentaires: [revuePrAgent(['Garde affaiblie']), decl] })] });
+  try {
+    assert.equal(await integrer(42, SHA, 'merge', s.deps), CODES.focus);
+    assert.equal(s.appels.filter((a) => a.startsWith('node ')).length, 0);
+    assert.equal(merges(s.appels).length, 0);
+    assert.match(s.journal()[0].motif, /« Garde affaiblie »/);
+  } finally { s.nettoyer(); }
+});
+
+test('passage : focus area citée avant la déclaration → merge', async () => {
+  const verdict = commentaire(3, 'PR-Agent, « Garde affaiblie » : routée au carnet.', '2026-11-20T09:50:00Z');
+  const commentaires = [revuePrAgent(['Garde affaiblie']), verdict, decl];
+  const s = simulation({ lectures: [lecture({ commentaires }), lecture({ commentaires }), lecture({ commentaires, state: 'MERGED', merge: { oid: 'c'.repeat(40) } })] });
+  try {
+    assert.equal(await integrer(42, SHA, 'merge', s.deps), CODES.ok);
+    assert.equal(merges(s.appels).length, 1);
+  } finally { s.nettoyer(); }
+});
 
 test('passage : main avancé puis rattrapé par un autre fetch du clone → 15, aucun merge', async () => {
   // `origin/main` local reste `m…` dans la simulation, le distant est `n…` :

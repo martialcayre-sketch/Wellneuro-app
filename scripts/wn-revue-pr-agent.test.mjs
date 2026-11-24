@@ -22,6 +22,7 @@ import {
   estCommande,
   gabarit,
   juger,
+  lignesFocus,
   lire,
   lireBloc,
 } from './wn-revue-pr-agent.mjs';
@@ -382,6 +383,37 @@ test('collecte : la preuve tenue sort en 0, avec la ligne REVUE et la tête enti
   assert.ok(appels.some((c) => c.includes(`head_sha=${TETE}`) && c.includes('event=pull_request')));
   // Les commentaires se lisent paginés, à plat : la seconde page porte l'avis.
   assert.match(r.lignes.find((l) => l.startsWith('✓ (d)')), /avis/);
+});
+
+// ── Focus areas dites à la session (partie 14) ──────────────────────────────
+
+const ZONES = '⚡&nbsp;<strong>Recommended focus areas for review</strong><br><br>\n\n' +
+  "<details><summary><a href='https://x/files#diff-1'><strong>Garde affaiblie</strong></a>\n\nExplication.\n</summary>\n</details>\n\n" +
+  '<details><summary><strong>Tri incomplet</strong>\n\nExplication.\n</summary>\n</details>\n\n';
+
+test('focus : les titres sont dits, le code de sortie ne change pas', () => {
+  const { lireJson } = api({ [`/issues/${PR_N}/comments`]: [[revue({ updated_at: PENDANT }, corpsRevue(ZONES + bloc()))], [commentaire(avis())]] });
+  const r = lire({ pr: PR_N, lireJson, lireJournal: journaux().lireJournal });
+  assert.equal(r.code, SORTIE_PREUVE, r.lignes.join('\n'));
+  assert.equal(r.lignes.at(-1), `REVUE pr-agent code=0 pr=${PR_N} tete=${TETE} run=100`);
+  assert.match(r.lignes.at(-2), /^· focus areas, têtes précédentes comprises \(2\) : « Garde affaiblie » · « Tri incomplet » — un verdict chacune/);
+});
+
+test('focus : section illisible — dite, et la sortie reste 0', () => {
+  const corps = corpsRevue('⚡&nbsp;<strong>Recommended focus areas for review</strong>\n- Garde affaiblie\n\n' + bloc());
+  const { lireJson } = api({ [`/issues/${PR_N}/comments`]: [[revue({ updated_at: PENDANT }, corps)], [commentaire(avis())]] });
+  const r = lire({ pr: PR_N, lireJson, lireJournal: journaux().lireJournal });
+  assert.equal(r.code, SORTIE_PREUVE, r.lignes.join('\n'));
+  assert.match(r.lignes.at(-2), /titres illisibles/);
+});
+
+test('focus : sans focus area, aucune ligne ; section illisible, dite', () => {
+  assert.deepEqual(lignesFocus([revue()]), []);
+  assert.deepEqual(lignesFocus([]), []);
+  const illisible = revue({}, corpsRevue('Recommended focus areas for review\n- Garde affaiblie'));
+  assert.match(lignesFocus([illisible])[0], /titres illisibles/);
+  // La marque recopiée par un humain n'est pas la revue.
+  assert.deepEqual(lignesFocus([{ ...revue({}, corpsRevue(ZONES)), user: { login: 'proprio', type: 'User' } }]), []);
 });
 
 test('collecte : les runs se lisent sur toutes les pages', () => {
