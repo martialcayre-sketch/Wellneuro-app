@@ -132,6 +132,7 @@ export function extraireDecisionsRecentes(racine, limite = 5) {
  *                                               `fichiers` : les seuls fichiers CRÉÉS par la PR
  *                                               (`fichiersCreesDeLaPr`).
  * @param {boolean} faits.ghDisponible
+ * @param {boolean} [faits.brancheInterrogeable] `false` : nom hors alphabet sûr, GitHub non interrogé.
  * @param {{fetchOk: boolean|null, ahead: number|null, behind: number|null}|null} [faits.sync]
  * @returns {{phase: string, cloture: {handoff: boolean},
  *           fenetreRatee: boolean, suivant: string[], sortie: number,
@@ -560,16 +561,23 @@ function collecterFaits(options = {}) {
   // sortie illisible) est « gh indisponible », jamais un faux « aucune PR ».
   // En mode --local, aucun appel gh : l'état PR est NON VÉRIFIÉ (le rendu le
   // dit tel quel), ce qui n'est ni « aucune PR » ni « gh indisponible ».
+  // Un nom de branche hors alphabet sûr n'est jamais envoyé à GitHub : la
+  // lecture n'a pas lieu, ce qui n'est pas « gh indisponible » (P3 de la
+  // revue de #2287, même libellé que `nettoyage-branches.sh`).
   let ghDisponible = true;
+  let brancheInterrogeable = true;
   let prOuverte = null;
   let prMergee = null;
   if (!local && branche && branche !== defaut) {
-    const ouvertes = prsDeLaBranche('open', branche);
-    if (!Array.isArray(ouvertes)) {
-      ghDisponible = false;
-    } else {
-      if (ouvertes.length > 0) prOuverte = { numero: ouvertes[0].number };
-      if (!prOuverte && tip) prMergee = chercherPrMergee(branche, tip);
+    brancheInterrogeable = brancheSure(branche);
+    if (brancheInterrogeable) {
+      const ouvertes = prsDeLaBranche('open', branche);
+      if (!Array.isArray(ouvertes)) {
+        ghDisponible = false;
+      } else {
+        if (ouvertes.length > 0) prOuverte = { numero: ouvertes[0].number };
+        if (!prOuverte && tip) prMergee = chercherPrMergee(branche, tip);
+      }
     }
   }
 
@@ -585,6 +593,7 @@ function collecterFaits(options = {}) {
     prOuverte,
     prMergee,
     ghDisponible,
+    brancheInterrogeable,
     modeLocal: local,
     sync,
   };
@@ -681,9 +690,11 @@ export function rendre(faits, verdict) {
         ? `#${faits.prOuverte.numero} ouverte`
         : faits.prMergee
           ? `#${faits.prMergee.numero} mergée`
-          : faits.ghDisponible
-            ? 'aucune'
-            : 'inconnue (gh indisponible — verdict partiel)';
+          : faits.brancheInterrogeable === false
+            ? 'inconnue (nom de branche non interrogeable — verdict partiel)'
+            : faits.ghDisponible
+              ? 'aucune'
+              : 'inconnue (gh indisponible — verdict partiel)';
   out.push(`PR       ${pr}`);
 
   if (verdict.sync) {

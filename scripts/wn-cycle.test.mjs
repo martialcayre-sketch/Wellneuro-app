@@ -451,6 +451,21 @@ test('mode local sur la branche par défaut : gh n’est jamais interrogé, le r
   assert.ok(lignePr.includes('aucune'), lignePr);
 });
 
+// P3 de la revue de #2287 : un nom hors alphabet sûr n'est jamais envoyé à
+// GitHub. Rien n'a été lu : ni « aucune », ni « gh indisponible ».
+test('nom de branche non interrogeable : la ligne PR le dit, jamais « gh indisponible »', () => {
+  const f = faits({ branche: 'wn/lot-é', brancheInterrogeable: false });
+  const v = diagnostiquer(f);
+  assert.equal(v.phase, 'travail');
+  assert.equal(v.sortie, SORTIE_OK);
+  const lignePr = rendre(f, v)
+    .split('\n')
+    .find((l) => l.startsWith('PR '));
+  assert.ok(lignePr.includes('nom de branche non interrogeable'), lignePr);
+  assert.ok(!lignePr.includes('gh indisponible'), lignePr);
+  assert.ok(!lignePr.includes('aucune'), lignePr);
+});
+
 test('fetchOk null (non tenté) : ni « origin rafraîchi », ni l’avertissement hors-ligne', () => {
   const f = faits({ modeLocal: true, sync: { fetchOk: null, ahead: null, behind: null } });
   const v = diagnostiquer(f);
