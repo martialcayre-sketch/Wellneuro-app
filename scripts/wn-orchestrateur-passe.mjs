@@ -23,8 +23,9 @@
 //
 // Codes de sortie :
 //   0  un lot à prendre (champ `lot`)
-//   1  rien à prendre : passe normale sans lot (plafond, file occupée, hors
-//      plage, carnet sans lot lançable)
+//   1  rien à prendre : passe normale sans lot (file occupée, hors plage,
+//      carnet sans lot lançable). Aucun plafond quotidien (`D-540`,
+//      amendement du 2026-11-24).
 //   2  arrêt : interrupteur non ouvert, lecture douteuse, ou arrêt de soi
 //      (trois lancements sans prise dans la journée, deux sessions sur un lot)
 //   3  usage invalide ou export illisible
@@ -41,10 +42,11 @@ export const SORTIE_RIEN = 1;
 export const SORTIE_ARRET = 2;
 export const SORTIE_USAGE = 3;
 
-/** Valeurs de départ du pilote, réponse `20261118-2312-d` (« Prudent »). */
+/** Plage du pilote, réponse `20261118-2312-d` (« Prudent »). Le plafond quotidien
+ * de 4 lots est retiré sur la parole du responsable (`D-540`, amendement du
+ * 2026-11-24) : les prises du jour restent comptées, jamais bornées. */
 export const HEURE_DEBUT = 7;
 export const HEURE_FIN = 23;
-export const PLAFOND_JOUR = 4;
 /** Arrêt de soi : lancements sans prise dans la journée de Paris (`D-540` §8). */
 export const SANS_PRISE_MAX = 3;
 /** Une intention non suivie de prise expire (`D-540` §5). */
@@ -174,9 +176,8 @@ export function decider(etat, maintenant, { files = ['D'], controles = {} } = {}
   if (cloudPris.length > 0) return fin(SORTIE_RIEN, cloudPris.some((l) => res.orphelins.includes(l.id)) ? 'orphelin' : 'file_occupee');
   const enVol = intentions.some((i) => i.etat === 'intention' && maintenant - instant(i.cree_le) <= ECHEANCE_INTENTION_MS);
   if (enVol) return fin(SORTIE_RIEN, 'file_occupee');
-  // 6. Plage horaire et plafond quotidien (réponse `20261118-2312-d`).
+  // 6. Plage horaire (réponse `20261118-2312-d`). Aucun plafond quotidien.
   if (paris.heure < HEURE_DEBUT || paris.heure > HEURE_FIN) return fin(SORTIE_RIEN, 'hors_plage');
-  if (prises.length >= PLAFOND_JOUR) return fin(SORTIE_RIEN, 'plafond');
 
   // 7. Le lot : le premier `pret` lançable, dans l'ordre du carnet.
   for (const file of files) {
