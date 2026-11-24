@@ -54,7 +54,9 @@ describe('orientationRulesV1 — verrou v1', () => {
     // convergence de `DC-29` ; aucun claim ajouté ni retiré.
     // RE-SIGNÉE le 2026-11-09 ([[D-470]], t67) : quatrième limite commune de
     // convergence ; aucun claim ajouté ni retiré.
-    expect(ORIENTATION_METADATA.dateValidation).toBe('2026-11-22T00:00:00.000Z');
+    // RE-SIGNÉE le 2026-11-24 ([[D-526]] §5.2, [[D-548]] §2.3) : la valeur 13 du digestif
+    // supérieur du TFD passe de B à C ; aucun claim ajouté ni retiré.
+    expect(ORIENTATION_METADATA.dateValidation).toBe('2026-11-24T00:00:00.000Z');
     const date = ORIENTATION_METADATA.dateValidation as string;
     expect(new Date(date).toISOString()).toBe(date);
     expect(ORIENTATION_METADATA.claimsSource.length).toBeGreaterThan(0);
@@ -230,7 +232,11 @@ describe('orientationRulesV1 — verrou v1', () => {
   // d'exclusion `Q_ALI_01` / besoin 1 dans la table de convergence ; la
   // contre-preuve vit dans `exclusionQAli01Besoin1.guard.test.ts` (la table sans
   // cette ligne hache `6088b3c6…`, la signature du 2026-11-19).
-  const SHA_SIGNE_2026_11_22 = 'a28e99e636bc28df98c7dab06080eb69d7e85160640a52e1069b3187059c7fc0';
+  // RE-SIGNÉE LE 2026-11-24 ([[D-526]] §5.2, [[D-548]] §2.3) par le responsable :
+  // la valeur 13 du digestif supérieur du TFD (`Q_GAS_01`) passe de B à C, dans
+  // le bloc `scoring` que la table hache ; la signature du 2026-11-22 était
+  // `a28e99e6…059c7fc0`.
+  const SHA_SIGNE_2026_11_24 = '950b842468cf040070df858b5ae5c01db19e708543076740b49206998a83dde5';
 
   // LE PÉRIMÈTRE A GRANDI le 2026-09-13 (second lot du jour) : les grilles
   // d'interprétation y sont entrées. Les zones de cette table citent des
@@ -271,7 +277,9 @@ describe('orientationRulesV1 — verrou v1', () => {
       grilles: GRILLES_ORIENTATION,
       fenetres: FENETRES_FRAICHEUR_ORIENTATION,
       convergence,
-    }))).toBe('a9aaaf32c7e8ab5903f8faa2b7b6982c0d79c1f64ac097f140f2a3d83351d914');
+    // Le contenu signé le 2026-11-09 haché SOUS LES GRILLES DU 2026-11-24 : avec les
+    // grilles d'avant la valeur 13 du TFD, il hachait `a9aaaf32…3351d914`.
+    }))).toBe('7f0f4862d357113e61c5f44a16f93b910ae2240763de382ce33e51255a78e5b4');
   });
 
   it('le sha reste identique avec `WN_ALI_01_SIIN57` éteint ou allumé', async () => {
@@ -381,7 +389,7 @@ describe('orientationRulesV1 — verrou v1', () => {
 
   it('le contenu de la table est EXACTEMENT celui qui a été signé', () => {
     expect(ORIENTATION_RULES_V1.length).toBe(20);
-    expect(ORIENTATION_RULES_SHA256).toBe(SHA_SIGNE_2026_11_22);
+    expect(ORIENTATION_RULES_SHA256).toBe(SHA_SIGNE_2026_11_24);
   });
 
   // ── DEUX BANCS DE RÉSOLUBILITÉ, ET LE SECOND EST LE SEUL QUI ATTRAPE LE NO-OP

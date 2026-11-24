@@ -68,10 +68,15 @@ const NON = { ...POSITIF_HORS_EPISODE, idReponse: 'REP_BDI_NON', scoresJson: { r
 // version du score passe de v14/v15 à v16/v17, et elle entre dans l'empreinte.
 // Dérive VOULUE, décidée par D-438 §5 : chaque carte diffusée dérive, et son
 // écran protocole s'éteint jusqu'à réapprobation par le praticien.
+//
+// Relevées une troisième fois le 2026-11-23 ([[D-548]], première vague de
+// J3-12f) : la version passe de v16/v17 à v18/v19 (moyenne directe, besoin 1 sur
+// la mesure dérivée, PSS-10 seule au besoin 9, table des niveaux de preuve). Même
+// dérive VOULUE, même conséquence : chaque carte diffusée dérive.
 const EMPREINTE_REFERENCE =
   process.env.WN_ALI_01_SIIN57 === 'true'
-    ? 'c5b806ab5b64917ae2eefa109677ce815331725eb8f3f74bdfee7408cd83fab7'
-    : 'f2e808ade7a5fa8998fa7edf53d7a727175d94918dcf6deb32065b8c5dc4c6a0';
+    ? 'f6081c1ce12c4f15da75d5f9a178f163750b43162519fcdbf9706036483201fe'
+    : 'b786170d57c004364087c40aa94955f7aa4954847597d0fc8fb37f6067f4b47d';
 
 beforeEach(() => {
   signerTablePriorites();

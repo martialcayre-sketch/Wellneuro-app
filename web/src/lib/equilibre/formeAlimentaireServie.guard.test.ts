@@ -1,10 +1,14 @@
+import { readFileSync, readdirSync, statSync } from 'node:fs';
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { calculateScore } from '@/lib/questions';
+import { calculerCouvertureSource } from './score';
 import { Q_ALI_01, Q_ALI_01_SIIN_57, Q_ALI_01_COURT_14 } from '@/lib/questionnaires/alimentaire';
+import * as constantes from './constants';
 import {
   BESOIN_SOURCES,
-  BESOINS_FONDATIONS_CRITIQUES,
+  MAX_MESURE_DERIVEE_ALIMENTAIRE,
   MAX_RYTHME_CHRONO,
-  SEUIL_EFFONDREMENT,
   VERSION_SCORE_EQUILIBRE,
 } from './constants';
 
@@ -14,11 +18,15 @@ import {
 // définition servie, le `max` du besoin 1, et l'étiquette de version du score.
 // Si l'une reste en arrière, le défaut est silencieux et grave :
 //
-//   — `max` resté à 42 sur un total /90  → couverture saturée à 1,0 ;
-//   — `max` passé à 90 sur un total /42  → couverture écrasée, et le besoin 1
-//     étant une FONDATION CRITIQUE, le score global est plafonné à 50 ;
+//   — `max` resté sur l'ancien barème → couverture saturée à 1,0 ;
+//   — `max` d'un barème plus grand que le total → couverture écrasée, et le
+//     besoin 1 pèse un douzième de la moyenne directe à tort ;
 //   — étiquette figée              → des épisodes annoncés sous un barème qui
 //     n'a pas été appliqué, et `resoudreComparaison` bloqué sans raison.
+//
+// Depuis v18/v19 ([[D-548]]), le besoin 1 lit la MESURE DÉRIVÉE : le total de la
+// forme servie moins le sous-score du rythme. Son `max` est dérivé de ces deux
+// barèmes, jamais littéral, et vaut 0 sous la forme courte (besoin non évalué).
 //
 // Le test lit le drapeau plutôt que de présumer son état : il vaut dans les
 // deux positions, et c'est ce qui le rend utile au moment de l'allumage.
@@ -38,37 +46,45 @@ describe('forme alimentaire servie', () => {
   it('le `max` du besoin 1 suit le barème réellement servi', () => {
     const source = BESOIN_SOURCES[1].find(s => s.idQuestionnaire === 'Q_ALI_01');
     expect(source, 'Q_ALI_01 n’est plus source du besoin 1').toBeDefined();
-    expect(source!.max).toBe(Q_ALI_01.scoring.maxTotal);
-    expect(source!.max).toBe(SIIN57_ACTIF ? 90 : 42);
+    // Dérivé : le total servi moins le sous-score du rythme (90 − 7 = 83), et 0
+    // sous la forme courte, qui ne déclare pas ce sous-score ([[D-516]] §6.2).
+    expect(source!.max).toBe(MAX_MESURE_DERIVEE_ALIMENTAIRE);
+    expect(source!.max).toBe(SIIN57_ACTIF ? Q_ALI_01.scoring.maxTotal - MAX_RYTHME_CHRONO : 0);
+    expect(source!.max).toBe(SIIN57_ACTIF ? 83 : 0);
   });
 
   it('l’étiquette de version suit le barème réellement servi', () => {
     // v14 / v15 depuis les comptes de recueil de `group_majority` (2026-08-13,
-    // D-055 / LOT-08) : la disponibilité de `Q_STR_01` comme source du besoin 9
-    // change à son tour — troisième occurrence de la même classe, après
-    // v10 / v11 (PSQI, besoin 5) et v12 / v13 (TFD, besoin 4), toutes deux du
-    // 2026-08-04. Chaque branche avance d'un cran, comme à chaque fois. Voir la
-    // note de `constants.ts` pour la DIRECTION de l'effet, qui est rassurante
-    // et non protectrice — c'est elle qui rend le bump obligatoire, sur
-    // `Q_STR_01` comme sur `Q_GAS_01` et `Q_SOM_01` : trois sources
-    // `inverser: true`, où retirer une mesure basse REMONTE la couverture.
-    //
-    // v16 / v17 ([[D-438]], appliquée par [[D-474]], 2026-11-10) : l'Epworth et
-    // la fatigue générale du MFI-20 entrent au repos du besoin 5. Chaque branche
-    // avance encore d'un cran.
-    expect(VERSION_SCORE_EQUILIBRE).toBe(SIIN57_ACTIF ? 'v17' : 'v16');
+    // D-055 / LOT-08), v16 / v17 ([[D-438]], appliquée par [[D-474]], 2026-11-10),
+    // puis v18 / v19 ([[D-548]], première vague de J3-12f : la moyenne directe, le
+    // besoin 1 sur la mesure dérivée, la PSS-10 seule au besoin 9). Chaque branche
+    // avance d'un cran, comme à chaque fois.
+    expect(VERSION_SCORE_EQUILIBRE).toBe(SIIN57_ACTIF ? 'v19' : 'v18');
   });
 
-  it('le besoin 1 reste une fondation critique — d’où l’exigence ci-dessus', () => {
-    // Ce n'est pas décoratif : c'est ce qui transforme un `max` faux en
-    // plafonnement du score global, et non en simple imprécision.
-    expect([...BESOINS_FONDATIONS_CRITIQUES]).toContain(1);
+  it('le plafonnement n’existe plus : ni constante, ni liste de fondations ([[D-547]])', () => {
+    // Le besoin 1 n'est plus une fondation critique, et aucun besoin ne l'est :
+    // un `max` faux ne plafonne plus le total, il fausse seulement la moyenne.
+    const noms = Object.keys(constantes);
+    expect(noms).not.toContain('BESOINS_FONDATIONS_CRITIQUES');
+    expect(noms).not.toContain('SEUIL_EFFONDREMENT');
+    expect(noms).not.toContain('PLAFOND_FONDATION_CRITIQUE');
+    expect(noms).not.toContain('POIDS_STRATE');
   });
 
   it('aucune autre source du besoin 1 n’a été ajoutée en passant', () => {
     // Le lot ne change pas le mapping des besoins : il change la forme d'un
     // instrument. Le branchement des sous-catégories est un lot distinct.
     expect(BESOIN_SOURCES[1].map(s => s.idQuestionnaire)).toEqual(['Q_ALI_01']);
+  });
+
+  it('le besoin 1 lit la mesure dérivée, sans le sous-score du rythme, sans autre arithmétique', () => {
+    // Le sous-score retiré est celui que sert le besoin 3 : les mêmes quatre
+    // items ne comptent plus deux fois ([[D-516]] §2.1).
+    const source = BESOIN_SOURCES[1][0];
+    expect(source.sansSousScore).toBe('RYTHME_CHRONO');
+    expect(source.sansSousScore).toBe(BESOIN_SOURCES[3][0].sousScore);
+    expect(source.sousScore).toBeUndefined();
   });
 
   it('le besoin 2 n’a toujours aucune source, et ne peut PAS en avoir', () => {
@@ -114,33 +130,59 @@ describe('forme alimentaire servie', () => {
   });
 });
 
-// ── Le seuil d'effondrement change de portée sans changer de valeur ──────────
-//
-// `SEUIL_EFFONDREMENT` vaut 0,34 et reste global aux cinq fondations critiques.
-// Mais l'échelle du besoin 1 passe de /42 à /90, donc le total qui déclenche le
-// plafonnement de « Mon équilibre » à 50 passe de ≤ 14 à ≤ 30.
-//
-// Sur /42, 14 était exactement le haut de la bande la plus basse du dépistage.
-// Sur /90, 30 dépasse le haut de la bande source « très déséquilibrée » (25) et
-// mord sur « déséquilibrée » (26-50). Arbitrage praticien du 2026-07-28 :
-// GARDER 0,34 et le documenter — le seuil étant partagé, le recalibrer
-// déplacerait aussi le sommeil, le digestif, le stress et les micronutriments.
-//
-// Ce test ne juge pas la valeur : il rend le déclencheur EXPLICITE, pour qu'un
-// changement d'échelle futur ne le déplace plus en silence.
-describe('seuil d’effondrement — portée sur l’échelle servie', () => {
-  it('nomme le total à partir duquel le plafonnement se déclenche', () => {
-    const maxServi = Q_ALI_01.scoring.maxTotal;
-    const totalDeclencheur = Math.floor(SEUIL_EFFONDREMENT * maxServi);
-    expect({ maxServi, totalDeclencheur }).toEqual(
-      SIIN57_ACTIF ? { maxServi: 90, totalDeclencheur: 30 } : { maxServi: 42, totalDeclencheur: 14 },
-    );
+// ── La mesure dérivée n'est lue que par « Mon équilibre » ([[D-516]] §5.5) ──
+describe('mesure dérivée du besoin 1 — périmètre de lecture', () => {
+  it('aucune source ne porte à la fois `sousScore` et `sansSousScore` (exclusifs)', () => {
+    for (const sources of Object.values(BESOIN_SOURCES)) {
+      for (const source of sources) {
+        expect(source.sousScore !== undefined && source.sansSousScore !== undefined).toBe(false);
+      }
+    }
   });
 
-  it('le seuil reste global — aucune fondation critique n’a le sien', () => {
-    // Si un seuil par besoin est introduit un jour, ce test doit tomber : la
-    // décision de 2026-07-28 repose précisément sur le caractère partagé.
-    expect(typeof SEUIL_EFFONDREMENT).toBe('number');
-    expect(SEUIL_EFFONDREMENT).toBe(0.34);
+  it('aucune règle, aucune tranche, aucune table clinique ne lit la mesure dérivée', () => {
+    // Le mécanisme (`sansSousScore`, `MAX_MESURE_DERIVEE_ALIMENTAIRE`) n'existe que
+    // dans le moteur de « Mon équilibre » : un lecteur de plus dans `clinical/`,
+    // `scoring/` ou le catalogue de questionnaires lirait une mesure que la table
+    // d'orientation ne signe pas.
+    const racine = path.resolve(__dirname, '..');
+    const interdits = ['clinical', 'scoring', 'questionnaires'];
+    const fichiers: string[] = [];
+    const parcourir = (dossier: string): void => {
+      for (const nom of readdirSync(dossier)) {
+        const complet = path.join(dossier, nom);
+        if (statSync(complet).isDirectory()) parcourir(complet);
+        else if (/\.tsx?$/.test(nom) && !/\.test\.tsx?$/.test(nom)) fichiers.push(complet);
+      }
+    };
+    for (const d of interdits) parcourir(path.join(racine, d));
+    expect(fichiers.length).toBeGreaterThan(20);
+    for (const f of fichiers) {
+      const texte = readFileSync(f, 'utf8');
+      expect(texte, f).not.toMatch(/sansSousScore|MAX_MESURE_DERIVEE_ALIMENTAIRE/);
+    }
+  });
+
+  it('la couverture dérivée vaut (total − rythme) / maximum dérivé, sur une passation choisie', () => {
+    if (!SIIN57_ACTIF) return;
+    const reponses: Record<string, number> = Object.fromEntries(
+      Q_ALI_01_SIIN_57.sections.flatMap(sec => sec.questions).map(qu => [qu.id, Number((qu.options ?? [])[0]?.v)]),
+    );
+    const total = calculerCouvertureSource({ idQuestionnaire: 'Q_ALI_01', max: 90, inverser: false }, { Q_ALI_01: reponses });
+    const rythme = calculerCouvertureSource({ idQuestionnaire: 'Q_ALI_01', sousScore: 'RYTHME_CHRONO', max: 7, inverser: false }, { Q_ALI_01: reponses });
+    const derivee = calculerCouvertureSource(BESOIN_SOURCES[1][0], { Q_ALI_01: reponses });
+    expect(total).not.toBeNull();
+    expect(rythme).not.toBeNull();
+    expect(derivee).toBeCloseTo(((total as number) * 90 - (rythme as number) * 7) / 83, 9);
+  });
+});
+
+// ── Aucun total stocké n'est réécrit ([[D-552]] §4) ─────────────────────────
+describe('PSS-10 — la borne basse ne change aucun total', () => {
+  it('le total servi et son maximum restent ceux du barème : seule la lecture de la couverture change', () => {
+    const reponses = Object.fromEntries(['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8', 'P9', 'P10'].map(id => [id, 3]));
+    const resultat: any = calculateScore('Q_STR_02', reponses);
+    expect(resultat.total).toBe(30);
+    expect(resultat.maxTotal).toBe(50);
   });
 });

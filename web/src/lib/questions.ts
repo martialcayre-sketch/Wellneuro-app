@@ -5,6 +5,7 @@ import type { Question, QuestionOption } from './questionnaire-types';
 // signature, et c'est par là que deux tables signées ont changé de comportement
 // sans qu'un sha bouge ([[D-180]]). Les bornes sont inchangées.
 import { BANDES_PSQI } from './clinical/bandesPsqi';
+import { bandesTfd, bandesHyperexcitabilite, CONVENTION_FRONTIERE_BESOIN_4 } from './clinical/bandesBesoin4';
 import { TEXTE_ENQUETE_ALIMENTAIRE_INCOMPLETE } from './scoring/enqueteAlimentaireIncomplete';
 import { Q_ALI_01, Q_ALI_02, Q_ALI_03, Q_ALI_09, Q_CAN_01, Q_CAN_02, Q_CAR_01, Q_GAS_03, Q_GEO_03, Q_GEO_04, Q_GEO_05, Q_GEO_06, Q_MOD_01, Q_MOD_02, Q_MOD_03, Q_NEU_01, Q_NEU_02, Q_NEU_03, Q_NEU_04, Q_NEU_05, Q_NEU_06, Q_NEU_07, Q_NEU_09, Q_NEU_10, Q_NEU_11, Q_NEU_12, Q_PED_02, Q_PED_03, Q_SOM_01, Q_SOM_03, Q_SOM_04, Q_SOM_07, Q_SOM_09, Q_STR_02, Q_STR_06, Q_STR_08, Q_TAB_03, Q_TAB_04 } from './questionnaires/index';
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -338,12 +339,10 @@ Q_INF_01: {
     type:'sum', severiteCroissante:true,
     maxTotal:96,
     certification:{source:'drive',status:'certifie'},
-    interpretation:[
-      {min:0,max:24,label:'Hyperexcitabilité absente ou légère',color:'success'},
-      {min:25,max:48,label:'Hyperexcitabilité modérée',color:'warning'},
-      {min:49,max:72,label:'Hyperexcitabilité importante',color:'danger'},
-      {min:73,max:96,label:'Hyperexcitabilité sévère',color:'dark'},
-    ]
+    // Cinq bandes de la pièce pro, bornes en constantes nommées avec leur claim
+    // ([[D-526]] §5.2) ; la valeur frontière 81 suit la convention du §6.2.
+    interpretation:bandesHyperexcitabilite(),
+    note:`Bandes de la pièce pro, sans évaluation publiée de l'instrument (${CONVENTION_FRONTIERE_BESOIN_4.decision}).`
   }
 },
 
@@ -598,22 +597,18 @@ Q_GAS_01: {
     certification:{source:'drive',status:'certifie'},
     subScores:[
       {id:'C1',label:'Digestif supérieur',items:['C1_1','C1_2','C1_3','C1_4','C1_5','C1_6','C1_7','C1_8'],max:24,
-        ranges:[{min:0,max:7,label:'A — Absence de troubles fonctionnels',color:'success'},{min:8,max:13,label:'B — Troubles fonctionnels modérés à importants',color:'warning'},{min:14,max:24,label:'C — Prédominance de troubles fonctionnels majeurs',color:'danger'}]},
+        ranges:bandesTfd('C1')},
       {id:'C2',label:'Moyen-grêle',items:['C2_1','C2_2','C2_3','C2_4','C2_5','C2_6','C2_7'],max:21,
-        ranges:[{min:0,max:7,label:'A — Absence de troubles fonctionnels',color:'success'},{min:8,max:10,label:'B — Troubles fonctionnels modérés à importants',color:'warning'},{min:11,max:21,label:'C — Prédominance de troubles fonctionnels majeurs',color:'danger'}]},
+        ranges:bandesTfd('C2')},
       {id:'C3',label:'Transit',items:['C3_1','C3_2','C3_3','C3_4','C3_5'],max:15,
-        ranges:[{min:0,max:3,label:'A — Absence de troubles fonctionnels',color:'success'},{min:4,max:6,label:'B — Troubles fonctionnels modérés à importants',color:'warning'},{min:7,max:15,label:'C — Prédominance de troubles fonctionnels majeurs',color:'danger'}]},
+        ranges:bandesTfd('C3')},
       {id:'C4',label:'Selles',items:['C4_1','C4_2','C4_3','C4_4','C4_5','C4_6'],max:18,
-        ranges:[{min:0,max:4,label:'A — Absence de troubles fonctionnels',color:'success'},{min:5,max:9,label:'B — Troubles fonctionnels modérés à importants',color:'warning'},{min:10,max:18,label:'C — Prédominance de troubles fonctionnels majeurs',color:'danger'}]},
+        ranges:bandesTfd('C4')},
       {id:'C5',label:'Douleurs intestinales',items:['C5_1','C5_2','C5_3','C5_4','C5_5'],max:15,
-        ranges:[{min:0,max:3,label:'A — Absence de troubles fonctionnels',color:'success'},{min:4,max:6,label:'B — Troubles fonctionnels modérés à importants',color:'warning'},{min:7,max:15,label:'C — Prédominance de troubles fonctionnels majeurs',color:'danger'}]},
+        ranges:bandesTfd('C5')},
     ],
-    globalInterpretation:[
-      {min:0,max:23,label:'A — Absence de troubles fonctionnels',color:'success'},
-      {min:24,max:49,label:'B — Troubles fonctionnels modérés à importants',color:'warning'},
-      {min:50,max:93,label:'C — Prédominance de troubles fonctionnels majeurs',color:'danger'},
-    ],
-    note:'Drive signale des valeurs frontières non explicitement couvertes dans les seuils source.'
+    globalInterpretation:bandesTfd('GLOBAL'),
+    note:`Valeurs frontières que la source ne couvre pas : rangées par convention, arbitrage du praticien (${CONVENTION_FRONTIERE_BESOIN_4.decision} ${CONVENTION_FRONTIERE_BESOIN_4.section}) — la valeur basse à la bande inférieure, la valeur haute à la bande supérieure.`
   }
 },
 
@@ -1144,7 +1139,10 @@ Q_SOM_05: {
           [{v:6,l:'Nettement parmi les gens du matin'},{v:4,l:'Plutôt parmi les gens du matin que parmi les gens du soir'},{v:2,l:'Plutôt parmi les gens du soir que parmi les gens du matin'},{v:0,l:'Nettement parmi les gens du soir'}]),
       ]},
   ],
-  scoring:{type:'horne', maxTotal:86, certification:{source:'drive',status:'certifie'}}
+  // Note fixe au praticien : le texte signé par le responsable le 2026-11-17 (question
+  // `20261117-1313-b`, variante C, mot pour mot), appliqué par [[D-538]] §5.3.
+  scoring:{type:'horne', maxTotal:86, certification:{source:'drive',status:'certifie'},
+    note:"Classement selon la grille d'origine (Horne et Östberg, 1976). Une validation française (Taillard et al., J Biol Rhythms, 2004) a porté sur 566 travailleurs français non postés de 44 à 58 ans, bons dormeurs : avec cette grille, presque aucun n'y était classé du soir, et les auteurs proposent, pour cette population seulement, trois classes à d'autres bornes. Ces bornes n'ont été validées ni par un marqueur physiologique ni chez les retraités ; elles ne remplacent pas la grille affichée. L'application ne tient pas compte de l'âge."}
 },
 
 // Q_SOM_08 IDTAS-AE — SUPPRIMÉ : absent des PDF SIIN (certification 22/06/2026)
@@ -2975,8 +2973,12 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
     const latSum = lat + q5a;
     const C2 = aUneMesure(ITEMS_C2) ? (latSum === 0 ? 0 : latSum <= 2 ? 1 : latSum <= 4 ? 2 : 3) : null;
     const C3 = aUneMesure(ITEMS_C3) ? (hDormies > 7 ? 0 : hDormies >= 6 ? 1 : hDormies >= 5 ? 2 : 3) : null;
+    // MEILLEURE COTE = VALEURS STRICTEMENT AU-DESSUS DE LA BORNE PUBLIÉE (« > 85 % »,
+    // `WN-CL-0666-015`) : une efficacité de 85 % reçoit la cote 1, pas 0 ([[D-538]]
+    // §2 et §5.2, question `20261117-0141-b`, option B). Le banc fige la cote de la
+    // valeur égale à la borne ; aucun arrondi avant cotation.
     const C4 = efficiency === null ? null
-             : efficiency >= 85 ? 0 : efficiency >= 75 ? 1 : efficiency >= 65 ? 2 : 3;
+             : efficiency > 85 ? 0 : efficiency >= 75 ? 1 : efficiency >= 65 ? 2 : 3;
     const c5Sum = c5Items.reduce((s, id) => s + (getVal(id) ?? 0), 0);
     const C5 = aUneMesure(c5Items) ? (c5Sum === 0 ? 0 : c5Sum <= 9 ? 1 : c5Sum <= 18 ? 2 : 3) : null;
     const C6 = aUneMesure(ITEMS_C6) ? (getVal('Q7') ?? 0) : null;
@@ -3673,8 +3675,12 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
     const hoItems = ['HO1','HO2','HO3','HO4','HO5','HO6','HO7','HO8',
                      'HO9','HO10','HO11','HO12','HO13','HO14','HO15','HO16','HO17','HO18','HO19'];
     const {total} = sumItems(hoItems, []);
+    // 30 : la grille publiée (`WN-CL-0697-003`) met 16–30 en « nettement du soir » ;
+    // le moteur classait 30 en « modérément du soir » (« < 30 »). Le total passe
+    // dans la catégorie de la table publiée ([[D-538]] §4.1 et §5.1, question
+    // `20261117-0140-b`, option A) ; le trou symétrique à 70 était déjà réglé.
     const interp =
-      total < 30 ? {label:'Tout à fait du soir', color:'danger'}
+      total <= 30 ? {label:'Tout à fait du soir', color:'danger'}
     : total <= 41 ? {label:'Modérément du soir', color:'warning'}
     : total <= 58 ? {label:'Neutre', color:'success'}
     // 70 : la source porte un TROU (« modérément 59–69 », « tout à fait > 70 »).
@@ -3685,7 +3691,7 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
     // seul « > 70 » : cela contredisait le « <= 69 » de la même source.
     : total <= 69 ? {label:'Modérément du matin', color:'info'}
     :              {label:'Tout à fait du matin', color:'primary'};
-    return {type:'horne', total, maxTotal: sc.maxTotal || 86, interpretation: interp, certification: sc.certification || null};
+    return {type:'horne', total, maxTotal: sc.maxTotal || 86, interpretation: interp, note: sc.note || null, certification: sc.certification || null};
   }
 
   // ── QIF — Questionnaire d'Impact de la Fibromyalgie ──

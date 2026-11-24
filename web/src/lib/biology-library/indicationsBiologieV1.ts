@@ -570,7 +570,20 @@ export const INDICATIONS_BIOLOGIE_METADATA: IndicationsBiologieMetadata = {
   // suspendue, qui reste dans le périmètre relu. Ancienne empreinte, signée le
   // 2026-11-16 : `33894e9c6afbd6b3f59a8bb33396aefa56890f57a120f255908ebaf942adef19`.
   validationExterne: true,
-  dateValidation: '2026-11-19T12:38:04.000Z',
+  //
+  // RE-SIGNÉE LE 2026-11-24 ([[D-526]] §5.2, appliquée par [[D-548]] §2.3, J3-12f
+  // lot 3, vague 1), PAR LE RESPONSABLE EN SÉANCE (liste commune,
+  // `20261124-0806-b`). Seul changement du périmètre : la valeur 13 du digestif
+  // supérieur du TFD (`Q_GAS_01`, axe C1) passe de la bande B à la bande C, par la
+  // convention des valeurs frontières de [[D-526]] §6.2 ; `BIO-DIG-01` lit la couleur
+  // globale de `Q_GAS_01`, dont les trois bandes ne bougent pas. Aucune règle,
+  // aucun claim ne change. Même lot, HORS du périmètre haché (le moteur de cotation
+  // n'y est pas, classe de [[D-180]]) : la meilleure cote de l'efficacité du PSQI
+  // ne va plus qu'aux valeurs strictement au-dessus de 85 % ([[D-538]] §2), ce qui
+  // modifie ce que lit `BIO-SOM-01` (comme `R-SOM-01`) sans qu'aucun sha ne bouge ;
+  // 0 passation de production concernée. L'heure n'a pas été relevée : le jour est
+  // le jour attesté.
+  dateValidation: '2026-11-24T00:00:00.000Z',
   // Les 29 claims distincts cités par les quinze règles — dont les deux qui
   // fondent la répétition annuelle (`0312-018`, `0389-004`) : le seul chiffre
   // paramétrique de la table est DANS le périmètre signé (revue D-069). Le
@@ -620,6 +633,8 @@ export const INDICATIONS_BIOLOGIE_METADATA: IndicationsBiologieMetadata = {
   //     (BDI-13, IRLS et score de Francis réalignés — [[D-199]]) ; même
   //     chaîne re-signée le 2026-11-16 à 23:25:39 UTC (2026-11-17 à Paris),
   //     seule la date a changé (F34, étape 3)
+  //   · 2026-11-19 — `3449036275ad96a8ffef89dd692a94908a9edc976b40ef5871d5a0630b241519`
+  //     (D-543 : `BIO-STR-01` suspendue)
   //
   // SECONDE ATTESTATION DU 2026-09-14. C'est sur CETTE table que le défaut a
   // été démontré : `BIO-DIG-01` lit la couleur globale de `Q_GAS_01`, et retirer
@@ -718,7 +733,7 @@ export const INDICATIONS_BIOLOGIE_METADATA: IndicationsBiologieMetadata = {
   // ANNEXES RELUES, NON TRANCHÉES : la réserve de BIO-FAT-01 ci-dessus, le
   // conflit déclaré `CS-BIO-01` (`conflitsSourcesV1.ts`) et les lacunes de
   // composition (apoprotéine, IgA sécrétoires), qui ne sont pas des règles.
-  shaPerimetre: '3449036275ad96a8ffef89dd692a94908a9edc976b40ef5871d5a0630b241519',
+  shaPerimetre: 'b15333391215f30e9c47415d453c76fdfb0f5d7594e32f1e875f9a9dbbc64914',
 };
 
 /**

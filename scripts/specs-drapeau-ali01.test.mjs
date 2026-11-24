@@ -23,7 +23,7 @@
 // Les marqueurs, et pourquoi CES formes-là :
 //   1. le drapeau lui-même (`WN_ALI_01_SIIN57`) ;
 //   2. les symboles dont la VALEUR dépend de la forme servie (`BESOIN_SOURCES`,
-//      `VERSION_SCORE_EQUILIBRE`, `MAX_RYTHME_CHRONO`) ;
+//      `VERSION_SCORE_EQUILIBRE`, `MAX_RYTHME_CHRONO`, `MAX_MESURE_DERIVEE_ALIMENTAIRE`) ;
 //   3. le BALAYAGE du catalogue — sous son nom (`QUESTIONNAIRE_CATALOGUE`) ou
 //      sous son alias public `CATALOGUE_DEFINITIONS` (bibliotheque.ts, le MÊME
 //      objet : un banc qui n'en connaîtrait qu'un nom serait aveugle à l'autre).
@@ -66,7 +66,7 @@ const WEB = path.join(RACINE, 'web');
 // concaténées reconnaissait `SOURCES` comme « déjà nommé » parce que
 // `BESOIN_SOURCES` le contient, et laissait donc passer l'export qu'il devait
 // attraper.
-const SYMBOLES_DERIVES = ['BESOIN_SOURCES', 'VERSION_SCORE_EQUILIBRE', 'MAX_RYTHME_CHRONO'];
+const SYMBOLES_DERIVES = ['BESOIN_SOURCES', 'VERSION_SCORE_EQUILIBRE', 'MAX_RYTHME_CHRONO', 'MAX_MESURE_DERIVEE_ALIMENTAIRE'];
 
 const MARQUEURS = [
   { nom: 'drapeau WN_ALI_01_SIIN57', regex: /WN_ALI_01_SIIN57/ },

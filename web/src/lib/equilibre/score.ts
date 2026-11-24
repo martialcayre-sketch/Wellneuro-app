@@ -1,17 +1,8 @@
 import { calculateScore } from '../questions';
 import { IDS_SUSPENDUS } from '../questionnaires-catalog';
-import {
-  BESOINS,
-  BESOINS_FONDATIONS_CRITIQUES,
-  BESOIN_SOURCES,
-  PLAFOND_FONDATION_CRITIQUE,
-  POIDS_STRATE,
-  SEUIL_EFFONDREMENT,
-  VERSION_SCORE_EQUILIBRE,
-} from './constants';
+import { BESOINS, BESOIN_SOURCES, VERSION_SCORE_EQUILIBRE } from './constants';
 import type {
   CouverturesParBesoin,
-  FondationCritiqueDeclenchee,
   ReponsesParQuestionnaire,
   ResultatEquilibre,
   ResultatStrate,
@@ -51,8 +42,27 @@ function sousScoreComplet(sub: Record<string, unknown>): boolean {
 // resultat = retour hétérogène de calculateScore (30 formats de scoring
 // différents dans questions.ts) — on ne lit que .total ou .subScores[].total,
 // communs à tous les formats utilisés par BESOIN_SOURCES.
-function extraireValeurBrute(resultat: Record<string, unknown>, sousScore?: string): LectureBrute {
+function extraireValeurBrute(
+  resultat: Record<string, unknown>,
+  sousScore?: string,
+  sansSousScore?: string,
+): LectureBrute {
   if (!resultat || resultat.error) return { motif: 'calcul_en_erreur' };
+  // MESURE DÉRIVÉE — le total de l'instrument moins le total d'un sous-score
+  // servi ([[D-516]] §2.1 : l'enquête alimentaire sans les items du rythme, qui
+  // restent au besoin 3). Les deux lectures passent par les chemins ci-dessous,
+  // avec LEURS gardes : le total refuse un recueil partiel (`missing`), le
+  // sous-score refuse un axe incomplet ou ambigu. L'une ou l'autre refusée, la
+  // mesure dérivée l'est : jamais une différence calculée sur une moitié de
+  // recueil (`null`, pas 0, `DC-24`). Aucune autre arithmétique : la mesure est
+  // la somme des points des items qui ne sont pas ceux du rythme.
+  if (sansSousScore) {
+    const total = extraireValeurBrute(resultat);
+    if ('motif' in total) return total;
+    const ecarte = extraireValeurBrute(resultat, sansSousScore);
+    if ('motif' in ecarte) return ecarte;
+    return { valeur: total.valeur - ecarte.valeur };
+  }
   if (sousScore) {
     // Deux porteurs possibles. `subScores` est la forme historique. Un moteur
     // qui déclare des `dimensions` ne PEUT PAS émettre de `subScores` — la
@@ -135,8 +145,8 @@ function extraireValeurBrute(resultat: Record<string, unknown>, sousScore?: stri
   // `null`, jamais 0 : « non mesuré » est la doctrine du dépôt, et c'est déjà ce
   // que cette fonction rend pour une source absente ou suspendue. Un besoin dont
   // TOUTES les sources sont partielles ressort donc non mesuré, pas nul — un 0
-  // le ferait passer sous le seuil d'effondrement et plafonnerait « Mon
-  // équilibre » sur une mesure qui n'existe pas.
+  // tirerait la moyenne directe du total sur une mesure qui n'existe pas (avant
+  // v18/v19, il aurait aussi déclenché le plafonnement, retiré par [[D-547]]).
   //
   // PORTÉE — la branche à sous-score n'est délibérément PAS concernée. Le
   // `missing` de la racine décrit l'instrument ENTIER : l'appliquer à un
@@ -190,7 +200,7 @@ export function evaluerCouvertureSource(
   const answers = reponses[source.idQuestionnaire];
   if (!answers) return { motif: 'aucune_passation' };
   const resultat = calculateScore(source.idQuestionnaire, answers);
-  const lecture = extraireValeurBrute(resultat, source.sousScore);
+  const lecture = extraireValeurBrute(resultat, source.sousScore, source.sansSousScore);
   if ('motif' in lecture) return lecture;
   const ratio = (lecture.valeur - min) / (source.max - min);
   return { couverture: clamp01(source.inverser ? 1 - ratio : ratio) };
@@ -249,29 +259,17 @@ export function calculerCouverturesTousLesBesoins(
  * Fonction pure — ne dépend d'aucun questionnaire réel, testable avec des
  * couvertures synthétiques.
  *
- * ── L'ÉGALITÉ ENTRE BESOINS D'UNE MÊME STRATE EST DÉLIBÉRÉE ────────────────
- * [[D-106]], arbitrage praticien du 2026-08-24 (LOT-07, « Doctrine
- * exécutable »). La moyenne ci-dessous est SIMPLE : au sein d'une strate, les
- * besoins pèsent égal.
+ * ── LES STRATES NE PORTENT PLUS LE TOTAL ───────────────────────────────────
+ * Depuis v18/v19 ([[D-547]], [[D-548]]), le total n'est plus pondéré par strate :
+ * il est la moyenne directe des besoins mesurés (`agregerEquilibre`). Les strates
+ * restent des REGROUPEMENTS pour la lecture (le radar, [[D-550]]) ; leur
+ * couverture est la moyenne simple de leurs besoins mesurés, rien de plus.
  *
- * `DC-21` pose qu'« un poids égal entre axes n'est pas neutre : c'est déjà une
- * décision de modèle ». Cette platitude était donc une pondération TACITE — les
- * deux autres étages sont motivés sur place (entre sources d'un besoin, le
- * rapport 2:1 du repos dans `constants.ts` ; entre strates, le 60/20/20 de
- * `POIDS_STRATE`), celui-ci ne l'était par aucune ligne. Le LOT-07 l'a mesuré et
- * l'a fait arbitrer.
- *
- * LA MOTIVATION, telle que le praticien l'a rendue : la hiérarchie clinique
- * entre besoins n'est PAS portée par des poids, elle est portée par le
- * MÉCANISME DES FONDATIONS CRITIQUES — cinq besoins (`BESOINS_FONDATIONS_
- * CRITIQUES`) dont l'effondrement plafonne le total quoi qu'il arrive ailleurs.
- * Hiérarchiser une seconde fois par des poids superposerait deux mécanismes de
- * priorité sur le même objet, et un besoin sous-pondéré ET fondation critique
- * deviendrait illisible : son poids l'efface dans la moyenne pendant que son
- * plafond commande le total.
- *
- * Autrement dit, l'égalité ici n'est pas un défaut d'arbitrage — elle est la
- * condition pour que le plafonnement reste le SEUL énoncé de priorité.
+ * L'ÉGALITÉ ENTRE BESOINS est une CONVENTION DE MODÈLE déclarée ([[D-547]] §2,
+ * `DC-21` : un poids égal entre axes est déjà une décision de modèle) : aucune
+ * règle du cabinet, aucune source ne fonde une hiérarchie entre les douze
+ * besoins. [[D-106]] décision 4 la motivait par le plafonnement, qui disparaît ;
+ * ce motif est amendé.
  */
 export function agregerBesoinsEnStrates(
   couverturesParBesoin: CouverturesParBesoin
@@ -297,59 +295,26 @@ export function agregerBesoinsEnStrates(
 }
 
 /**
- * Agrège des couvertures par besoin en résultat "Mon équilibre" complet :
- * strates pondérées (60/20/20, renormalisées si une strate est
- * indisponible) puis plafonnement anti-moyenne par fondations critiques.
- * Fonction pure — c'est le mécanisme le plus sensible du blueprint, à tester
- * indépendamment de tout questionnaire réel (cf. score.check.ts).
+ * Agrège des couvertures par besoin en résultat « Mon équilibre » : le total est
+ * la MOYENNE DIRECTE, à parts égales, des couvertures des besoins MESURÉS
+ * ([[D-547]], [[D-548]] §2.1). Un besoin non mesuré n'entre pas, et n'est jamais
+ * un zéro (`DC-24`) ; aucun minimum de besoins mesurés ([[D-548]] §2.8, M3 A) —
+ * le compte (« n besoins mesurés sur 12 », `compterBesoinsMesures`) dit sur quoi
+ * le total est établi. Plus de pondération entre strates, plus de plafonnement.
+ * Fonction pure, testable avec des couvertures synthétiques.
  */
 export function agregerEquilibre(couverturesParBesoin: CouverturesParBesoin): ResultatEquilibre {
   const strates = agregerBesoinsEnStrates(couverturesParBesoin);
-  const stratesDisponibles = strates.filter(
-    (s): s is { strate: StrateCode; couverture: number; besoins: ResultatStrate['besoins'] } =>
-      s.couverture !== null
-  );
-  const poidsTotalDisponible = stratesDisponibles.reduce(
-    (s, r) => s + POIDS_STRATE[r.strate],
-    0
-  );
-
-  const scoreGlobalAvantPlafond =
-    poidsTotalDisponible > 0
-      ? Math.round(
-          (stratesDisponibles.reduce((s, r) => s + r.couverture * POIDS_STRATE[r.strate], 0) /
-            poidsTotalDisponible) *
-            100
-        )
-      : null;
-
-  const fondationsCritiquesDeclenchees: FondationCritiqueDeclenchee[] = BESOINS_FONDATIONS_CRITIQUES.map(
-    (besoinId): FondationCritiqueDeclenchee | null => {
-      const couverture = couverturesParBesoin[besoinId] ?? null;
-      return couverture !== null && couverture < SEUIL_EFFONDREMENT ? { besoin: besoinId, couverture } : null;
-    }
-  ).filter((f): f is FondationCritiqueDeclenchee => f !== null);
-
-  const plafondApplique =
-    fondationsCritiquesDeclenchees.length > 0 &&
-    scoreGlobalAvantPlafond !== null &&
-    scoreGlobalAvantPlafond > PLAFOND_FONDATION_CRITIQUE;
+  const mesurees = BESOINS
+    .map(besoin => couverturesParBesoin[besoin.id] ?? null)
+    .filter((couverture): couverture is number => couverture !== null);
 
   const scoreGlobal =
-    scoreGlobalAvantPlafond === null
-      ? null
-      : plafondApplique
-        ? PLAFOND_FONDATION_CRITIQUE
-        : scoreGlobalAvantPlafond;
+    mesurees.length > 0
+      ? Math.round((mesurees.reduce((somme, couverture) => somme + couverture, 0) / mesurees.length) * 100)
+      : null;
 
-  return {
-    scoreGlobal,
-    scoreGlobalAvantPlafond,
-    plafondApplique,
-    fondationsCritiquesDeclenchees,
-    strates,
-    versionScore: VERSION_SCORE_EQUILIBRE,
-  };
+  return { scoreGlobal, strates, versionScore: VERSION_SCORE_EQUILIBRE };
 }
 
 /**

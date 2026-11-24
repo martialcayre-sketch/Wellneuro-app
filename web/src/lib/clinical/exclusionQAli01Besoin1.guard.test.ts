@@ -33,7 +33,9 @@ import {
 const ID = 'R2-ALI-01';
 const ALI_TRES_DEFAVORABLE = 'Alimentation très déséquilibrée et défavorable';
 const ALI_DEFAVORABLE = 'Alimentation déséquilibrée, ne contribuant pas au maintien du capital santé';
-const SHA_SIGNE_2026_11_19 = '6088b3c6d450057e7ebbc2d7d9c2b3041a18dca51ffc1caaacfbf6cb9e696891';
+// Le contenu signé le 2026-11-19 haché SOUS LES GRILLES DU 2026-11-24 ([[D-526]] §5.2) :
+// avec les grilles d'avant la valeur 13 du TFD, il hachait `6088b3c6…e696891`.
+const SHA_SIGNE_2026_11_19 = 'abd6364697e845185b8271b1654450b0e3c1dea33cf43901f1613efc89237ec0';
 
 const anamneseVide: DrapeauxAnamnese = {
   signauxAlerte: [], antecedentsDomaines: [], facteursDeclenchants: [],

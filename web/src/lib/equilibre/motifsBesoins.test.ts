@@ -12,13 +12,11 @@ import type { ReponsesParQuestionnaire } from './types';
 
 const SANS_CONTEXTE: ContexteMotifs = { ecartes: new Set(), datesRetenues: {} };
 
-const ITEMS_STR_01 = [
-  'A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7',
-  'B8', 'B9', 'B10', 'B11', 'B12', 'B13', 'B14',
-  'C15', 'C16', 'C17', 'C18', 'C19', 'C20', 'C21',
-];
-const STR_01_COMPLET = Object.fromEntries(ITEMS_STR_01.map(id => [id, 0]));
-const { C21: _manquant, ...STR_01_PARTIEL } = STR_01_COMPLET;
+// Depuis v18/v19 ([[D-548]]), le besoin 9 ne lit que la PSS-10 (`Q_STR_02`) : le
+// SIIN stress (`Q_STR_01`) et le Cungi (`Q_STR_03`) n'y sont plus des sources.
+const ITEMS_STR_02 = ['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8', 'P9', 'P10'];
+const STR_02_COMPLET = Object.fromEntries(ITEMS_STR_02.map(id => [id, 1]));
+const { P10: _manquant, ...STR_02_PARTIEL } = STR_02_COMPLET;
 const ITEMS_HAD_D = ['D2', 'D4', 'D6', 'D8', 'D10', 'D12', 'D14'];
 const HAD_D_COMPLET = Object.fromEntries(ITEMS_HAD_D.map(id => [id, '0']));
 
@@ -39,7 +37,7 @@ describe('motifsNonMesureBesoin — un motif par étage, jamais pour un besoin m
 
   it('aucune passation : une seule ligne, les questionnaires dans l’ordre du mapping, sans doublon', () => {
     expect(motifsNonMesureBesoin(9, {}, SANS_CONTEXTE)).toEqual([
-      { motif: 'aucune_passation', idsQuestionnaire: ['Q_STR_01', 'Q_STR_02', 'Q_STR_03'], dateDernierePassation: null },
+      { motif: 'aucune_passation', idsQuestionnaire: ['Q_STR_02'], dateDernierePassation: null },
     ]);
     // Trois sous-scores d'un même questionnaire : un seul code.
     expect(motifsNonMesureBesoin(10, {}, SANS_CONTEXTE)).toEqual([
@@ -55,7 +53,6 @@ describe('motifsNonMesureBesoin — un motif par étage, jamais pour un besoin m
   it('une passation entièrement écartée par le filtre de validité n’est pas « aucune passation »', () => {
     const contexte: ContexteMotifs = { ecartes: new Set(['Q_STR_02']), datesRetenues: {} };
     expect(motifsNonMesureBesoin(9, {}, contexte)).toEqual([
-      { motif: 'aucune_passation', idsQuestionnaire: ['Q_STR_01', 'Q_STR_03'], dateDernierePassation: null },
       { motif: 'passation_ecartee', idsQuestionnaire: ['Q_STR_02'], dateDernierePassation: null },
     ]);
   });
@@ -63,18 +60,17 @@ describe('motifsNonMesureBesoin — un motif par étage, jamais pour un besoin m
   it('recueil incomplet : daté de la passation retenue, une ligne par questionnaire', () => {
     const contexte: ContexteMotifs = {
       ecartes: new Set(),
-      datesRetenues: { Q_STR_01: new Date('2026-10-12T08:00:00.000Z') },
+      datesRetenues: { Q_STR_02: new Date('2026-10-12T08:00:00.000Z') },
     };
-    expect(motifsNonMesureBesoin(9, { Q_STR_01: STR_01_PARTIEL }, contexte)).toEqual([
-      { motif: 'recueil_incomplet', idsQuestionnaire: ['Q_STR_01'], dateDernierePassation: '2026-10-12T08:00:00.000Z' },
-      { motif: 'aucune_passation', idsQuestionnaire: ['Q_STR_02', 'Q_STR_03'], dateDernierePassation: null },
+    expect(motifsNonMesureBesoin(9, { Q_STR_02: STR_02_PARTIEL }, contexte)).toEqual([
+      { motif: 'recueil_incomplet', idsQuestionnaire: ['Q_STR_02'], dateDernierePassation: '2026-10-12T08:00:00.000Z' },
     ]);
     // Un sous-score partiel (HAD-D, besoin 8) passe par le même motif.
     expect(motifsNonMesureBesoin(8, { Q_NEU_11: { D2: '0' } }, SANS_CONTEXTE)?.[0].motif).toBe('recueil_incomplet');
   });
 
   it('un besoin mesuré ne reçoit aucun motif, même si une autre de ses sources manque', () => {
-    expect(motifsNonMesureBesoin(9, { Q_STR_01: STR_01_COMPLET }, SANS_CONTEXTE)).toBeNull();
+    expect(motifsNonMesureBesoin(9, { Q_STR_02: STR_02_COMPLET }, SANS_CONTEXTE)).toBeNull();
     expect(motifsNonMesureBesoin(8, { Q_NEU_11: HAD_D_COMPLET }, SANS_CONTEXTE)).toBeNull();
   });
 });
@@ -85,11 +81,11 @@ describe('motifsNonMesureBesoin — un motif par étage, jamais pour un besoin m
 describe('motifsNonMesureBesoin — égalité null ⇔ motif contre calculerCouverturesTousLesBesoins', () => {
   const JEUX: Record<string, ReponsesParQuestionnaire> = {
     vide: {},
-    'stress complet': { Q_STR_01: STR_01_COMPLET },
-    'stress partiel': { Q_STR_01: STR_01_PARTIEL },
+    'stress complet': { Q_STR_02: STR_02_COMPLET },
+    'stress partiel': { Q_STR_02: STR_02_PARTIEL },
     'HAD-D complet': { Q_NEU_11: HAD_D_COMPLET },
     'HAD-D partiel': { Q_NEU_11: { D2: '0' } },
-    mélange: { Q_STR_01: STR_01_PARTIEL, Q_NEU_11: HAD_D_COMPLET, Q_STR_02: {} },
+    mélange: { Q_STR_02: STR_02_PARTIEL, Q_NEU_11: HAD_D_COMPLET, Q_STR_01: {} },
   };
 
   for (const [nom, reponses] of Object.entries(JEUX)) {
@@ -138,12 +134,12 @@ describe('ecartsDecisionBesoin — les routes mesurent, la décision écarte', (
 
   it('passation entière complète : aucun écart', () => {
     expect(ecartsDecisionBesoin(8, { Q_NEU_11: repondus(itemsDe('Q_NEU_11')) }, SANS_CONTEXTE)).toBeNull();
-    expect(ecartsDecisionBesoin(9, { Q_STR_01: STR_01_COMPLET }, SANS_CONTEXTE)).toBeNull();
+    expect(ecartsDecisionBesoin(9, { Q_STR_02: STR_02_COMPLET }, SANS_CONTEXTE)).toBeNull();
   });
 
   it('un besoin non mesuré n’a jamais d’écart : l’écart ne va que des routes vers la décision', () => {
     expect(ecartsDecisionBesoin(8, { Q_NEU_11: { D2: '0' } }, SANS_CONTEXTE)).toBeNull();
-    expect(ecartsDecisionBesoin(9, { Q_STR_01: STR_01_PARTIEL }, SANS_CONTEXTE)).toBeNull();
+    expect(ecartsDecisionBesoin(9, { Q_STR_02: STR_02_PARTIEL }, SANS_CONTEXTE)).toBeNull();
     expect(ecartsDecisionBesoin(2, {}, SANS_CONTEXTE)).toBeNull();
   });
 
@@ -186,7 +182,7 @@ describe('ecartsDecisionBesoin — les routes mesurent, la décision écarte', (
   it('sur chaque jeu : un écart n’existe que pour un besoin mesuré', () => {
     const jeux: ReponsesParQuestionnaire[] = [
       {},
-      { Q_NEU_11: HAD_D_COMPLET, Q_STR_01: STR_01_PARTIEL },
+      { Q_NEU_11: HAD_D_COMPLET, Q_STR_02: STR_02_PARTIEL },
       { Q_INF_03: repondus(itemsDe('Q_INF_03', 'ME')) },
     ];
     for (const reponses of jeux) {

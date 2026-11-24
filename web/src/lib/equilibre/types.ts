@@ -32,6 +32,11 @@ export type SourceQuestionnaire = {
   // part pas de 0 — la fatigue générale du MFI-20, de 4 à 20 ([[D-438]] §1) —
   // rendrait sinon 0,8 à un patient sans aucune fatigue.
   min?: number;
+  // MESURE DÉRIVÉE : la valeur lue est le total de l'instrument MOINS le total de
+  // ce sous-score servi — le besoin 1 lit l'enquête alimentaire sans les items du
+  // rythme, qui restent au besoin 3 ([[D-516]] §2.1). Exclusif de `sousScore`. Le
+  // `max` est celui de la mesure dérivée, pas celui de l'instrument.
+  sansSousScore?: string;
   inverser: boolean;
   // Poids DANS le groupe (défaut 1). Sans groupe partagé, il n'a aucun effet.
   poids?: number;
@@ -60,11 +65,20 @@ export type FondationCritiqueDeclenchee = {
   couverture: number;
 };
 
+// Le total est la MOYENNE DIRECTE, à parts égales, des couvertures des besoins
+// mesurés ([[D-547]], [[D-548]]) : plus de plafond, donc plus de total « avant
+// plafond » ni de fondations critiques. Les champs de plafond ci-dessous ne sont
+// plus PRODUITS — ils restent déclarés, optionnels, parce que les résultats déjà
+// stockés (v16/v17 et avant) les portent et ne sont jamais réécrits : les
+// lecteurs les tolèrent sans les produire ([[D-547]] §4.2).
 export type ResultatEquilibre = {
   scoreGlobal: number | null; // 0-100, arrondi
-  scoreGlobalAvantPlafond: number | null;
-  plafondApplique: boolean;
-  fondationsCritiquesDeclenchees: FondationCritiqueDeclenchee[];
+  /** Hérité des versions antérieures à v18/v19, jamais produit désormais. */
+  scoreGlobalAvantPlafond?: number | null;
+  /** Hérité des versions antérieures à v18/v19, jamais produit désormais. */
+  plafondApplique?: boolean;
+  /** Hérité des versions antérieures à v18/v19, jamais produit désormais. */
+  fondationsCritiquesDeclenchees?: FondationCritiqueDeclenchee[];
   strates: ResultatStrate[];
   versionScore: string;
 };
@@ -102,9 +116,10 @@ export type ResultatMomentum = {
 };
 
 // A = questionnaire clinique validé · B = référentiel neuronutrition (SIIN/DNSM)
-// C = biologie fonctionnelle interprétative · D = hypothèse WellNeuro.
+// · D = hypothèse WellNeuro. Le niveau C (« biologie fonctionnelle ») est retiré
+// ([[D-424]] §1 et §4) : il désignait un type de mesure, pas un niveau de preuve.
 // Cf. docs/claude/E2_EVIDENCE_LEVELS_MOMENTUM_CONTEXTE.md.
-export type NiveauPreuve = 'A' | 'B' | 'C' | 'D';
+export type NiveauPreuve = 'A' | 'B' | 'D';
 
 // Besoin sans aucune source répondue : distinct de 'D', jamais à confondre
 // (un besoin non mesuré n'a par définition aucune preuve, même faible).

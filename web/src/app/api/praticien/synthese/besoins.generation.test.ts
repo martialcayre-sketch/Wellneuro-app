@@ -238,10 +238,10 @@ describe('le bloc voit les mêmes passations que le cockpit', () => {
   function passationsCitees(): void {
     prisma.questionnaireReponse.findMany.mockResolvedValue([
       {
-        idQuestionnaire: 'Q_STR_01',
+        idQuestionnaire: 'Q_STR_02',
         titre: 'Stress',
         dateReponse: new Date('2026-07-10'),
-        scoresJson: { rawAnswers: { A1: 1 } },
+        scoresJson: { rawAnswers: { P1: 1 } },
         scorePrincipal: 1,
         interpretation: null,
         statutValidite: 'VALID',
@@ -267,7 +267,7 @@ describe('le bloc voit les mêmes passations que le cockpit', () => {
     });
     await POST(req());
     // Le bloc cite bien des instruments : sans eux, ce banc ne prouverait rien.
-    expect(bloc).toContain('Q_STR_01');
+    expect(bloc).toContain('Q_STR_02');
     expect(bloc).toContain('recueil incomplet sur les items lus (Q_NEU_11');
     expect(ecartsDeRestitution()).toEqual([]);
   });

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { agregerEquilibre, calculerCouvertureBesoin, calculerCouvertureSource, clamp01, evaluerCouvertureSource } from './score';
-import { BESOIN_SOURCES, PLAFOND_FONDATION_CRITIQUE } from './constants';
+import { BESOIN_SOURCES, MAX_MESURE_DERIVEE_ALIMENTAIRE } from './constants';
 import { QUESTIONNAIRE_CATALOGUE } from '../questions';
 import { Q_ALI_01_SIIN_57 } from '../questionnaires/alimentaire';
 
@@ -23,38 +23,50 @@ describe('clamp01', () => {
 });
 
 describe('agregerEquilibre', () => {
-  it('score global sans aucune donnée doit être null, pas de plafond', () => {
+  it('score global sans aucune donnée doit être null', () => {
     const vide = agregerEquilibre({});
     expect(vide.scoreGlobal).toBeNull();
-    expect(vide.plafondApplique).toBe(false);
   });
 
-  it('score global parfait (couverture 1.0 partout) doit être 100, pas de plafond', () => {
+  it('score global parfait (couverture 1.0 partout) doit être 100', () => {
     const couverturesParfaites = Object.fromEntries(
       Array.from({ length: 12 }, (_, i) => [i + 1, 1])
     );
     const parfait = agregerEquilibre(couverturesParfaites);
     expect(parfait.scoreGlobal).toBe(100);
-    expect(parfait.plafondApplique).toBe(false);
   });
 
-  it(
-    // "aucune moyenne ne masque une carence sévère" (MON_EQUILIBRE_CONTEXTE.md §2)
-    'le plafond se déclenche sur une fondation critique effondrée (besoin 5) même si la moyenne brute serait haute',
-    () => {
-      const couverturesParfaites = Object.fromEntries(
-        Array.from({ length: 12 }, (_, i) => [i + 1, 1])
-      );
-      const couverturesAvecEffondrement = { ...couverturesParfaites, 5: 0.1 };
-      const effondre = agregerEquilibre(couverturesAvecEffondrement);
+  // [[D-547]], [[D-548]] : le plafonnement par fondations critiques est retiré.
+  // Ce test était « le plafond se déclenche sur une fondation critique
+  // effondrée » : il garde désormais l'inverse, et que les champs du plafond ne
+  // sont plus produits.
+  it('un besoin effondré (besoin 5) ne plafonne plus : le total est la moyenne directe', () => {
+    const couverturesParfaites = Object.fromEntries(
+      Array.from({ length: 12 }, (_, i) => [i + 1, 1])
+    );
+    const effondre = agregerEquilibre({ ...couverturesParfaites, 5: 0.1 });
 
-      expect(effondre.scoreGlobalAvantPlafond).not.toBeNull();
-      expect(effondre.scoreGlobalAvantPlafond as number).toBeGreaterThan(PLAFOND_FONDATION_CRITIQUE);
-      expect(effondre.plafondApplique).toBe(true);
-      expect(effondre.scoreGlobal).toBe(PLAFOND_FONDATION_CRITIQUE);
-      expect(effondre.fondationsCritiquesDeclenchees.some(f => f.besoin === 5)).toBe(true);
-    }
-  );
+    // (11 × 1 + 0,1) / 12 = 0,9250 → 93 ; plafonné, il aurait rendu 50.
+    expect(effondre.scoreGlobal).toBe(93);
+    expect(effondre).not.toHaveProperty('plafondApplique');
+    expect(effondre).not.toHaveProperty('fondationsCritiquesDeclenchees');
+    expect(effondre).not.toHaveProperty('scoreGlobalAvantPlafond');
+  });
+
+  it('la moyenne est directe : parts égales entre besoins, quelle que soit leur strate', () => {
+    // Trois besoins du CORPS (1, 4, 5) à 1 et un de l'ESPRIT (8) à 0 : sous les
+    // parts 60/20/20 de v17 ce total valait 0,6 × 1 + 0,2 × 0 renormalisé ; sous
+    // la moyenne directe c'est 3 / 4.
+    expect(agregerEquilibre({ 1: 1, 4: 1, 5: 1, 8: 0 }).scoreGlobal).toBe(75);
+  });
+
+  it('aucun minimum de besoins mesurés : un seul suffit, le compte dit sur quoi', () => {
+    expect(agregerEquilibre({ 4: 0.9 }).scoreGlobal).toBe(90);
+  });
+
+  it('un besoin non mesuré sort de la moyenne, il n’y entre jamais comme 0', () => {
+    expect(agregerEquilibre({ 1: 1, 2: null, 3: 0.5 }).scoreGlobal).toBe(75);
+  });
 });
 
 describe('calculerCouvertureBesoin', () => {
@@ -296,7 +308,7 @@ describe('besoin 5 — mouvement et repos à parts égales', () => {
       Q_STR_02: { P1: 3, P2: 2, P3: 4, P4: 2, P5: 3, P6: 1, P7: 4, P8: 3, P9: 2, P10: 1 },
     };
     const attendu = calculerCouvertureSource(
-      { idQuestionnaire: 'Q_STR_02', max: 50, inverser: true },
+      { idQuestionnaire: 'Q_STR_02', min: 10, max: 50, inverser: true },
       reponses,
     );
     expect(attendu).not.toBeNull();
@@ -370,29 +382,27 @@ describe('besoin 5 — mouvement et repos à parts égales', () => {
 // Invariants ancrés par la revue adversariale du 2026-07-27 (P0 métrologique).
 // Le correctif « le besoin 2 n'est plus mesuré par la fatigue » repose sur un
 // raisonnement — « une couverture null n'est pas un zéro » — qui n'était
-// affirmé qu'en commentaire. Ces tests le rendent exécutable.
-describe('fondations critiques sans source (invariants v4)', () => {
-  it('une fondation critique sans source ne déclenche jamais le plafond', () => {
-    // Toutes les fondations critiques (1, 2, 4, 5, 9) sont non renseignées :
-    // couverture null. Si null était assimilé à 0, le plafond tomberait.
+// affirmé qu'en commentaire. Ces tests le rendent exécutable. Depuis v18/v19
+// ([[D-547]]) il n'y a plus de plafond à déclencher : l'invariant qui reste est
+// que `null` ne devient jamais 0 dans la moyenne.
+describe('besoins sans source (invariants v4, repris en v18/v19)', () => {
+  it('des besoins sans source ne tirent pas le total vers 0', () => {
+    // Les besoins 1, 2, 4, 5, 9 sont non renseignés : couverture null. Si null
+    // était assimilé à 0, le total tomberait ; il vaut la moyenne des trois.
     const aucuneFondationRenseignee = agregerEquilibre({ 8: 1, 10: 1, 12: 1 });
-
-    expect(aucuneFondationRenseignee.fondationsCritiquesDeclenchees).toEqual([]);
-    expect(aucuneFondationRenseignee.plafondApplique).toBe(false);
+    expect(aucuneFondationRenseignee.scoreGlobal).toBe(100);
   });
 
-  it('le besoin 2 ne peut plus déclencher le plafond, quel que soit le Pichot', () => {
-    // Pichot au maximum (fatigue extrême) : avant v4, la couverture du besoin 2
-    // tombait sous SEUIL_EFFONDREMENT et plafonnait tout le score global.
+  it('le besoin 2 reste non mesuré, quel que soit le Pichot', () => {
+    // Pichot au maximum (fatigue extrême) : la couverture du besoin 2 est null
+    // depuis v4, et n'entre pas dans la moyenne.
     const couvertureBesoin2 = calculerCouvertureBesoin(2, {
       Q_SOM_06: { P1: '4', P2: '4', P3: '4', P4: '4', P5: '4', P6: '4', P7: '4', P8: '4' },
     });
     expect(couvertureBesoin2).toBeNull();
 
     const avecFatigueMaximale = agregerEquilibre({ 1: 1, 2: couvertureBesoin2, 4: 1, 5: 1, 9: 1 });
-    expect(avecFatigueMaximale.fondationsCritiquesDeclenchees.some(f => f.besoin === 2)).toBe(false);
-    expect(avecFatigueMaximale.plafondApplique).toBe(false);
-    expect(avecFatigueMaximale.scoreGlobal).toBeGreaterThan(PLAFOND_FONDATION_CRITIQUE);
+    expect(avecFatigueMaximale.scoreGlobal).toBe(100);
   });
 
   it('répondre au seul Pichot ne produit plus aucun indice global', () => {
@@ -405,7 +415,6 @@ describe('fondations critiques sans source (invariants v4)', () => {
       }),
     });
     expect(seulPichot.scoreGlobal).toBeNull();
-    expect(seulPichot.scoreGlobalAvantPlafond).toBeNull();
   });
 });
 
@@ -445,22 +454,13 @@ describe('besoin 5 — le PSQI partiel n’est plus une mesure', () => {
     expect(calculerCouvertureBesoin(5, { Q_SOM_01: dixSeptSurDixHuit })).toBeNull();
   });
 
-  it('LE PLAFOND DE FONDATION CRITIQUE TOMBE — c’est ce qui impose le bump', () => {
-    // LA contre-épreuve du bump de version, et elle manquait : les trois autres
-    // bancs s'arrêtent à « la couverture devient null », alors que la phrase qui
-    // motive tout est « la fondation critique disparaît, le plafond de 50 tombe,
-    // le score global REMONTE ». Sans cette assertion, la justification du bump
-    // n'est tenue par rien.
-    //
-    // Même patient, mêmes réponses aux autres besoins. Seul change le PSQI :
-    // complet et dégradé d'un côté, amputé d'un item de l'autre.
+  it('un PSQI dégradé ne plafonne plus le total — il pèse un besoin sur douze', () => {
+    // Avant v18/v19, un PSQI complet à 16/21 effondrait le besoin 5 et ramenait
+    // le total à 50 ; depuis [[D-547]] il est un besoin parmi les autres de la
+    // moyenne directe. Même patient, autres besoins à 1.
     const autresBesoins: Record<number, number> = {};
     for (const id of [1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 12]) autresBesoins[id] = 1;
 
-    // PSQI complet à 16/21 → couverture repos 1 − 16/21 = 0,238, sous le seuil
-    // d'effondrement 0,34 du besoin 5. Le total est celui du moteur, mesuré :
-    // une première rédaction de ce banc visait 14 et sortait à 10, donc au-dessus
-    // du seuil — le test rougissait pour la bonne raison.
     const psqiDegrade = {
       Q1: 0, Q2: 60, Q3: 7, Q4: 4,
       Q5a: 3, Q5b: 3, Q5c: 2, Q5d: 1, Q5e: 1,
@@ -472,19 +472,15 @@ describe('besoin 5 — le PSQI partiel n’est plus une mesure', () => {
     expect(couvertureDegradee as number).toBeLessThan(0.34);
 
     const avec = agregerEquilibre({ ...autresBesoins, 5: couvertureDegradee });
-    expect(avec.plafondApplique).toBe(true);
-    expect(avec.scoreGlobal).toBe(PLAFOND_FONDATION_CRITIQUE);
+    expect(avec.scoreGlobal).toBe(Math.round(((11 + (couvertureDegradee as number)) / 12) * 100));
+    expect(avec.scoreGlobal as number).toBeGreaterThan(50);
 
     // Le MÊME patient, à qui il manque un seul item : le besoin 5 n'est plus
-    // mesuré, la fondation critique ne peut plus s'effondrer, et le score passe
-    // au-dessus du plafond. C'est une remontée, pas une protection.
+    // mesuré (la garde du recueil partiel reste), et sort de la moyenne.
     const { Q5j, ...ampute } = psqiDegrade;
     void Q5j;
     expect(calculerCouvertureBesoin(5, { Q_SOM_01: ampute })).toBeNull();
-
-    const sans = agregerEquilibre({ ...autresBesoins, 5: null });
-    expect(sans.plafondApplique).toBe(false);
-    expect(sans.scoreGlobal as number).toBeGreaterThan(PLAFOND_FONDATION_CRITIQUE);
+    expect(agregerEquilibre({ ...autresBesoins, 5: null }).scoreGlobal).toBe(100);
   });
 
   it('un PSQI partiel DÉGRADÉ ne remonte pas la couverture — il la retire', () => {
@@ -497,73 +493,101 @@ describe('besoin 5 — le PSQI partiel n’est plus une mesure', () => {
   });
 });
 
-// ── Q_STR_01 partiel et besoin 9 ────────────────────────────────────────────
+// ── PSS-10 seule et besoin 9 ([[D-541]] §5.1, [[D-552]]) ────────────────────
 //
-// TROISIÈME OCCURRENCE DE LA MÊME CLASSE (D-055 / LOT-08, revue wn-reviewer B1) :
-// `group_majority` publie désormais `missing` à la racine, donc
-// `extraireValeurBrute` écarte une passation partielle de `Q_STR_01` — source du
-// besoin 9, `inverser: true`, `max: 42`, fondation critique. Même direction
-// contre-intuitive que le PSQI (besoin 5) et le TFD (besoin 4) : retirer une
-// mesure basse est RASSURANT, le plafond de fondation critique peut tomber, et
-// c'est ce qui a imposé le bump v12/v13 → v14/v15.
-describe('besoin 9 — le Q_STR_01 partiel n’est plus une mesure', () => {
-  const ITEMS_STR_01 = [
-    'A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7',
-    'B8', 'B9', 'B10', 'B11', 'B12', 'B13', 'B14',
-    'C15', 'C16', 'C17', 'C18', 'C19', 'C20', 'C21',
-  ];
-  const COMPLET_AU_MIEUX: Record<string, number> = Object.fromEntries(
-    ITEMS_STR_01.map(id => [id, 0]),
-  );
+// Depuis v18/v19 le besoin 9 ne lit que la PSS-10 (`Q_STR_02`), avec sa borne
+// basse déclarée (`min: 10`, `max: 50`) : le SIIN stress (`Q_STR_01`) et le
+// Cungi (`Q_STR_03`) sortent du calcul. La garde du recueil partiel du moteur de
+// la PSS-10 reste, pour la même raison qu'avant : sur une source inversée,
+// retirer une mesure basse est rassurant.
+describe('besoin 9 — la PSS-10 seule, de 10 à 50', () => {
+  const ITEMS_PSS = ['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8', 'P9', 'P10'];
+  const toutA = (valeur: number): Record<string, number> => Object.fromEntries(ITEMS_PSS.map(id => [id, valeur]));
 
-  it('une passation COMPLÈTE renseigne toujours le besoin 9 — contre-épreuve', () => {
-    expect(calculerCouvertureBesoin(9, { Q_STR_01: COMPLET_AU_MIEUX })).toBeCloseTo(1, 6);
+  it('la source du besoin 9 est la PSS-10 seule, de 10 à 50, inversée', () => {
+    expect(BESOIN_SOURCES[9]).toEqual([{ idQuestionnaire: 'Q_STR_02', min: 10, max: 50, inverser: true }]);
+  });
+
+  it('un patient au minimum de stress perçu (total 10) atteint 1, et non 0,8', () => {
+    // Sans borne basse, 1 − 10/50 = 0,8 : le meilleur résultat possible
+    // n'atteignait jamais 1 ([[D-552]] §2).
+    expect(calculerCouvertureBesoin(9, { Q_STR_02: toutA(1) })).toBeCloseTo(1, 6);
+  });
+
+  it('un patient au maximum de stress perçu (total 50) tombe à 0', () => {
+    expect(calculerCouvertureBesoin(9, { Q_STR_02: toutA(5) })).toBeCloseTo(0, 6);
+  });
+
+  it('le milieu de la plage (total 30) rend 0,5', () => {
+    expect(calculerCouvertureBesoin(9, { Q_STR_02: toutA(3) })).toBeCloseTo(0.5, 6);
   });
 
   it('un SEUL item manquant rend le besoin 9 non mesuré, et non mieux couvert', () => {
-    const { C21, ...vingtSurVingtEtUn } = COMPLET_AU_MIEUX;
-    void C21;
-    expect(calculerCouvertureBesoin(9, { Q_STR_01: vingtSurVingtEtUn })).toBeNull();
+    const { P10, ...neufSurDix } = toutA(1);
+    void P10;
+    expect(calculerCouvertureBesoin(9, { Q_STR_02: neufSurDix })).toBeNull();
   });
 
-  it('LE PLAFOND DE FONDATION CRITIQUE TOMBE — c’est ce qui impose le bump', () => {
-    // Même patient, mêmes réponses aux autres besoins. Seul change `Q_STR_01` :
-    // complet et sévère d'un côté, amputé d'un item de l'autre. Le seuil de
-    // bascule (total >= 28 → couverture 1 − 28/42 = 0,333 < 0,34) vaut quand
-    // `Q_STR_01` est la SEULE source répondue du besoin 9 — c'est le cas ici,
-    // ni Q_STR_02 ni Q_STR_03 ne sont fournis.
-    const autresBesoins: Record<number, number> = {};
-    for (const id of [1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12]) autresBesoins[id] = 1;
+  it('le SIIN stress et le Cungi ne nourrissent plus le besoin 9', () => {
+    const items01 = (QUESTIONNAIRE_CATALOGUE as any).Q_STR_01.sections
+      .flatMap((sec: any) => sec.questions.map((qu: any) => qu.id));
+    const complet01: Record<string, number> = Object.fromEntries(items01.map((id: string) => [id, 0]));
+    const items03 = (QUESTIONNAIRE_CATALOGUE as any).Q_STR_03.sections
+      .flatMap((sec: any) => sec.questions.map((qu: any) => qu.id));
+    const complet03: Record<string, number> = Object.fromEntries(items03.map((id: string) => [id, 5]));
+    expect(calculerCouvertureBesoin(9, { Q_STR_01: complet01 })).toBeNull();
+    expect(calculerCouvertureBesoin(9, { Q_STR_03: complet03 })).toBeNull();
+  });
+});
 
-    // 14 items à 2 (les groupes A et B entiers), les 7 autres à 0 : total 28/42.
-    const severe: Record<string, number> = Object.fromEntries(
-      ITEMS_STR_01.map(id => [id, id.startsWith('C') ? 0 : 2]),
+// ── Besoin 1 : la mesure dérivée de l'enquête alimentaire ([[D-516]] §2.1) ──
+describe('besoin 1 — la mesure dérivée, sans le sous-score du rythme', () => {
+  const SIIN57_ACTIF = process.env.WN_ALI_01_SIIN57 === 'true';
+
+  it('la source du besoin 1 retire le sous-score du rythme, sans autre arithmétique', () => {
+    const source = BESOIN_SOURCES[1][0];
+    expect(source.idQuestionnaire).toBe('Q_ALI_01');
+    expect(source.sansSousScore).toBe('RYTHME_CHRONO');
+    expect(source.sousScore).toBeUndefined();
+    expect(source.max).toBe(MAX_MESURE_DERIVEE_ALIMENTAIRE);
+  });
+
+  it('sous la forme courte, le besoin 1 n’a aucune source utilisable : non évalué', () => {
+    // Forme courte : aucun sous-score servi, donc max dérivé 0 — la source est
+    // refusée avant toute division, jamais une couverture sur un barème que le
+    // dossier ne couvre pas ([[D-516]] §6.2).
+    if (SIIN57_ACTIF) return;
+    expect(MAX_MESURE_DERIVEE_ALIMENTAIRE).toBe(0);
+    expect(calculerCouvertureBesoin(1, { Q_ALI_01: { AL1: '1', AL2: '2' } })).toBeNull();
+  });
+
+  it('sous la forme complète, la mesure est le total moins les points du rythme', () => {
+    if (!SIIN57_ACTIF) return;
+    const completer = (rythme: Record<string, number>): Record<string, number> => ({
+      ...Object.fromEntries(
+        Q_ALI_01_SIIN_57.sections.flatMap(sec => sec.questions).map(qu => [qu.id, Number((qu.options ?? [])[0]?.v)]),
+      ),
+      ...rythme,
+    });
+    // Rythme au repère (7 points) ou à zéro : la mesure dérivée ne bouge pas,
+    // alors que le total de l'instrument bouge de 7 — le double compte avec le
+    // besoin 3 a disparu.
+    const auRepere = calculerCouvertureBesoin(1, { Q_ALI_01: completer({ SIIN52: 1, SIIN53: 1, SIIN54: 12, SIIN55: 1 }) });
+    const aZero = calculerCouvertureBesoin(1, { Q_ALI_01: completer({ SIIN52: 0, SIIN53: 0, SIIN54: 0, SIIN55: 0 }) });
+    expect(auRepere).not.toBeNull();
+    expect(aZero).not.toBeNull();
+    expect(auRepere).toBeCloseTo(aZero as number, 9);
+    // Le rythme, lui, bouge bien le besoin 3.
+    expect(calculerCouvertureBesoin(3, { Q_ALI_01: completer({ SIIN52: 1, SIIN53: 1, SIIN54: 12, SIIN55: 1 }) })).toBe(1);
+  });
+
+  it('une enquête incomplète ne nourrit pas le besoin 1 (garde du recueil partiel)', () => {
+    if (!SIIN57_ACTIF) return;
+    const reponses: Record<string, number> = Object.fromEntries(
+      Q_ALI_01_SIIN_57.sections.flatMap(sec => sec.questions).map(qu => [qu.id, Number((qu.options ?? [])[0]?.v)]),
     );
-    const couvertureSevere = calculerCouvertureBesoin(9, { Q_STR_01: severe });
-    expect(couvertureSevere).not.toBeNull();
-    expect(couvertureSevere as number).toBeLessThan(0.34);
-
-    const avec = agregerEquilibre({ ...autresBesoins, 9: couvertureSevere });
-    expect(avec.plafondApplique).toBe(true);
-    expect(avec.scoreGlobal).toBe(PLAFOND_FONDATION_CRITIQUE);
-
-    // Le MÊME patient, à qui il manque un seul item : plus de mesure, plus de
-    // fondation critique effondrée, le score passe au-dessus du plafond. Une
-    // remontée, pas une protection — la raison exacte du bump d'étiquette.
-    const { C21, ...ampute } = severe;
-    void C21;
-    expect(calculerCouvertureBesoin(9, { Q_STR_01: ampute })).toBeNull();
-
-    const sans = agregerEquilibre({ ...autresBesoins, 9: null });
-    expect(sans.plafondApplique).toBe(false);
-    expect(sans.scoreGlobal as number).toBeGreaterThan(PLAFOND_FONDATION_CRITIQUE);
-  });
-
-  it('un Q_STR_01 partiel BAS ne remonte pas la couverture — il la retire', () => {
-    // LE cas qui motive la garde : un item par groupe, à 2. Le moteur rend un
-    // total de 6/42, qui se lirait « 1 − 6/42 = 0,86 » — un stress bien géré,
-    // tiré d'un instrument rempli à trois items sur vingt et un.
-    expect(calculerCouvertureBesoin(9, { Q_STR_01: { A1: 2, B8: 2, C15: 2 } })).toBeNull();
+    delete reponses.SIIN01;
+    expect(calculerCouvertureBesoin(1, { Q_ALI_01: reponses })).toBeNull();
   });
 });
 
@@ -626,8 +650,8 @@ describe('compterBesoinsMesures et sa mention ([[D-329]] §3)', () => {
   });
 });
 
-describe('plafond des fondations critiques — un axe partiel ne le déclenche plus ([[D-329]] §1)', () => {
-  it('une seule réponse d’activité au pire ne plafonne pas le total', async () => {
+describe('un axe partiel ne produit aucune couverture au pire ([[D-329]] §1)', () => {
+  it('une seule réponse d’activité au pire ne tire pas le total', async () => {
     const { calculerEquilibre } = await import('./score');
     // Besoin 8 bien couvert (axe D complet au mieux), plus une seule réponse
     // d'activité au pire. Avant D-329 : mouvement à 0, besoin 5 effondré,
@@ -637,8 +661,6 @@ describe('plafond des fondations critiques — un axe partiel ne le déclenche p
       Q_NEU_11: axeD,
       Q_MOD_01: { ACTIVITE_PHYSIQUE_Q001: '0' },
     });
-    expect(resultat.fondationsCritiquesDeclenchees).toEqual([]);
-    expect(resultat.plafondApplique).toBe(false);
     expect(resultat.scoreGlobal).toBe(100);
   });
 });

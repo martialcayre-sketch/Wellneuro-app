@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { calculerNiveauPreuveBesoin, listerSourcesPreuveBesoin } from './evidence';
 import { calculerCouvertureBesoin, calculerCouvertureSource } from './score';
 import { BESOIN_SOURCES, NIVEAU_PREUVE_PAR_SOURCE } from './constants';
+import { Q_ALI_01_SIIN_57 } from '../questionnaires/alimentaire';
 
 /**
  * Agenda du sommeil clôturé : 21 nuits et ses agrégats. Au-dessus du seuil de
@@ -183,20 +184,32 @@ describe('evidence — une source répondue mais non exploitable ne compte pas',
     expect(calculerNiveauPreuveBesoin(1, passationPartielle)).toBe('NON_MESURE');
     expect(calculerCouvertureBesoin(1, passationPartielle)).toBeNull();
 
-    // Ce que le test prouvait à l'origine reste prouvé, mais il faut désormais
-    // une passation COMPLÈTE pour l'isoler — sinon les deux positions du drapeau
-    // rendent NON_MESURE pour deux raisons différentes et le test ne distingue
-    // plus rien. Drapeau éteint, la forme courte reconnaît ses quatorze clés et
-    // le besoin 1 vaut 'B' ; allumé, la forme SIIN n'en reconnaît aucune.
+    // DEPUIS v18/v19 ([[D-548]]), le besoin 1 lit la mesure dérivée de l'enquête
+    // SIIN (le total moins le sous-score du rythme) : la forme courte, quatorze
+    // clés `AL*` complètes comprises, n'a AUCUNE source — NON_MESURE dans les deux
+    // positions du drapeau, la première pour l'absence de sous-score servi, la
+    // seconde pour l'absence de clés SIIN reconnues ([[D-516]] §6.2). Ce qui valait
+    // 'B' drapeau éteint ne vaut plus rien : c'est le besoin que le dossier ne
+    // couvre pas qui cesse d'afficher une preuve.
     const passationComplete = {
       Q_ALI_01: Object.fromEntries(
         Array.from({ length: 14 }, (_, i) => [`AL${i + 1}`, '2']),
       ),
     };
-    const attendu = process.env.WN_ALI_01_SIIN57 === 'true' ? 'NON_MESURE' : 'B';
-    expect(calculerNiveauPreuveBesoin(1, passationComplete)).toBe(attendu);
+    expect(calculerNiveauPreuveBesoin(1, passationComplete)).toBe('NON_MESURE');
     // Et la cohérence avec le score, dans les deux positions.
-    expect(calculerCouvertureBesoin(1, passationComplete) === null).toBe(attendu === 'NON_MESURE');
+    expect(calculerCouvertureBesoin(1, passationComplete)).toBeNull();
+  });
+
+  it('BESOIN 1 : l’enquête SIIN complète est une preuve de niveau B, en position SIIN seulement', () => {
+    // La contre-épreuve de la mesure dérivée : sans elle, une source qui rendrait
+    // NON_MESURE en toutes circonstances passerait le test précédent.
+    if (process.env.WN_ALI_01_SIIN57 !== 'true') return;
+    const complete = Object.fromEntries(
+      Q_ALI_01_SIIN_57.sections.flatMap(sec => sec.questions).map(qu => [qu.id, Number((qu.options ?? [])[0]?.v)]),
+    );
+    expect(calculerNiveauPreuveBesoin(1, { Q_ALI_01: complete })).toBe('B');
+    expect(calculerCouvertureBesoin(1, { Q_ALI_01: complete })).not.toBeNull();
   });
 
   it('INVARIANT : NON_MESURE si et seulement si le besoin n’est pas couvert', () => {

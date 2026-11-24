@@ -26,10 +26,12 @@ function ligne(bloc: string, besoin: number): string {
   return trouvee;
 }
 
+// Depuis v18/v19 ([[D-548]]), le besoin 9 ne lit que la PSS-10 (`Q_STR_02`) : le
+// besoin à plusieurs sources de ce dossier est le 4 (`Q_GAS_01`, `Q_INF_01`).
 const DOSSIER: ReponseBrute[] = [
-  passation('Q_STR_01', reponsesCompletes('Q_STR_01', 1)),
   passation('Q_STR_02', reponsesCompletes('Q_STR_02', 1), '2026-03-14'),
   passation('Q_GAS_01', reponsesCompletes('Q_GAS_01', 1), '2026-02-01'),
+  passation('Q_INF_01', reponsesCompletes('Q_INF_01', 1), '2026-02-10'),
 ];
 
 describe('bloc des besoins — côté modèle', () => {
@@ -59,19 +61,28 @@ describe('bloc des besoins — côté modèle', () => {
   });
 
   it('un besoin mesuré nomme ses sources lues, datées, et les deux libellés', () => {
-    const l = ligne(construireBlocBesoins(DOSSIER), 9);
-    const besoin = BESOINS.find(b => b.id === 9)!;
-    expect(l).toContain(`Besoin 9, ${besoin.libellePraticien} (au patient : « ${besoin.libellePatient} ») : mesuré. Sources : `);
-    expect(l).toContain('Q_STR_01, passation du 2026-03-12');
-    expect(l).toContain('Q_STR_02, passation du 2026-03-14');
-    // La troisième source du besoin n'a pas été passée : elle n'est pas citée.
-    expect(l).not.toContain('Q_STR_03');
+    const l = ligne(construireBlocBesoins(DOSSIER), 4);
+    const besoin = BESOINS.find(b => b.id === 4)!;
+    expect(l).toContain(`Besoin 4, ${besoin.libellePraticien} (au patient : « ${besoin.libellePatient} ») : mesuré. Sources : `);
+    expect(l).toContain('Q_GAS_01, passation du 2026-02-01');
+    expect(l).toContain('Q_INF_01, passation du 2026-02-10');
+    // Un instrument qui n'est plus une source du besoin n'est pas cité, même passé.
+    expect(l).not.toContain('Q_STR_02');
     expect(l.endsWith('.')).toBe(true);
   });
 
   it('une source unique se dit au singulier', () => {
-    const bloc = construireBlocBesoins([passation('Q_STR_01', reponsesCompletes('Q_STR_01', 1))]);
-    expect(ligne(bloc, 9)).toContain(': mesuré. Source : Q_STR_01, passation du 2026-03-12.');
+    const bloc = construireBlocBesoins([passation('Q_STR_02', reponsesCompletes('Q_STR_02', 1))]);
+    expect(ligne(bloc, 9)).toContain(': mesuré. Source : Q_STR_02, passation du 2026-03-12.');
+  });
+
+  it('le SIIN stress et le Cungi ne sont plus cités au besoin 9 ([[D-548]])', () => {
+    const bloc = construireBlocBesoins([
+      passation('Q_STR_01', reponsesCompletes('Q_STR_01', 1)),
+      passation('Q_STR_03', reponsesCompletes('Q_STR_03', 1)),
+    ]);
+    expect(ligne(bloc, 9)).toContain(': non mesuré, aucune passation exploitable pour ce calcul.');
+    expect(ligne(bloc, 9)).not.toMatch(/Q_STR_0[13]/);
   });
 
   it('les besoins sans source portent leur motif, au mot près', () => {
@@ -115,10 +126,10 @@ describe('bloc des besoins — côté modèle', () => {
 
   it('deux passations datées : la plus récente, quel que soit l’ordre de lecture', () => {
     const passations = [
-      passation('Q_STR_01', reponsesCompletes('Q_STR_01', 1), '2026-01-05'),
-      passation('Q_STR_01', reponsesCompletes('Q_STR_01', 1), '2026-03-12'),
+      passation('Q_STR_02', reponsesCompletes('Q_STR_02', 1), '2026-01-05'),
+      passation('Q_STR_02', reponsesCompletes('Q_STR_02', 1), '2026-03-12'),
     ];
-    const attendu = ': mesuré. Source : Q_STR_01, passation du 2026-03-12.';
+    const attendu = ': mesuré. Source : Q_STR_02, passation du 2026-03-12.';
     expect(ligne(construireBlocBesoins(passations), 9)).toContain(attendu);
     expect(ligne(construireBlocBesoins([...passations].reverse()), 9)).toContain(attendu);
   });
@@ -140,10 +151,14 @@ describe('bloc des besoins — côté modèle', () => {
 
   // La forme servie se fixe au CHARGEMENT de `alimentaire.ts` : poser le drapeau ne
   // suffit pas, il faut recharger les modules pour jouer réellement chaque position.
+  //
+  // Depuis v18/v19 ([[D-548]], [[D-516]] §6.2), le besoin 1 lit la mesure dérivée :
+  // sous la forme courte (drapeau éteint) il n'a AUCUNE source et se dit non mesuré
+  // par la forme, jamais « mesuré » ni sur la plus récente ni sur l'ancienne.
   it.each([
     ['allumé', 'true'],
     ['éteint', 'false'],
-  ])('Q_ALI_01 passé deux fois, drapeau %s : le besoin 1 cite la plus récente, seule', async (_position, valeur) => {
+  ])('Q_ALI_01 passé deux fois, drapeau %s : le besoin 1 cite la plus récente, ou la forme', async (_position, valeur) => {
     vi.resetModules();
     vi.stubEnv('WN_ALI_01_SIIN57', valeur);
     try {
@@ -157,8 +172,13 @@ describe('bloc des besoins — côté modèle', () => {
         construire([passation('Q_ALI_01', reponses, '2026-01-05'), passation('Q_ALI_01', reponses, '2026-03-12')]),
         1,
       );
-      expect(l).toContain(': mesuré. Source : Q_ALI_01, passation du 2026-03-12');
-      expect(l).not.toContain('2026-01-05');
+      if (valeur === 'true') {
+        expect(l).toContain(': mesuré. Source : Q_ALI_01, passation du 2026-03-12');
+        expect(l).not.toContain('2026-01-05');
+      } else {
+        expect(l).toContain(': non mesuré, sous-score non servi par la forme du questionnaire.');
+        expect(l).not.toMatch(/Q_[A-Z]{3}_\d{2}/);
+      }
     } finally {
       vi.unstubAllEnvs();
       vi.resetModules();
@@ -177,8 +197,8 @@ describe('bloc des besoins — côté patient, aucune valeur', () => {
   });
 
   it('la valeur ne change rien au bloc : deux cotations opposées donnent le même texte', () => {
-    const bas = construireBlocBesoins([passation('Q_STR_01', reponsesCompletes('Q_STR_01', 0))]);
-    const haut = construireBlocBesoins([passation('Q_STR_01', reponsesCompletes('Q_STR_01', 2))]);
+    const bas = construireBlocBesoins([passation('Q_STR_02', reponsesCompletes('Q_STR_02', 1))]);
+    const haut = construireBlocBesoins([passation('Q_STR_02', reponsesCompletes('Q_STR_02', 5))]);
     // Sans cette assertion, deux lignes passées à « non mesuré » rendraient le banc vide.
     expect(ligne(bas, 9)).toContain(': mesuré. ');
     expect(bas).toBe(haut);

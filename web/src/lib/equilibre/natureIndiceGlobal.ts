@@ -46,6 +46,19 @@
 export const MENTION_NATURE_INDICE_GLOBAL = 'Repère de suivi, pas un score clinique';
 
 /**
+ * CE QU'EST LE TOTAL, DIT SOUS LE CHIFFRE — [[D-548]] §2.8, [[D-547]] §2. Depuis
+ * v18/v19 le total est la moyenne directe, à parts égales, des couvertures des
+ * besoins mesurés : l'égalité entre besoins est une convention de modèle, plus
+ * un effet du plafonnement. La mention le dit au praticien, avec le compte
+ * (« Calculé sur n besoins mesurés sur 12 ») qui le précède.
+ *
+ * TEXTE À VALIDER MOT POUR MOT PAR LE RESPONSABLE avant le merge ([[D-548]],
+ * « Arbitrages rendus » point 2). Servi au praticien seulement, là où le chiffre
+ * s'affiche ; le portail ne montre aucun chiffre.
+ */
+export const MENTION_MOYENNE_BESOINS_MESURES = 'Moyenne des besoins mesurés, égale par besoin';
+
+/**
  * CE SUR QUOI LE TOTAL EST ÉTABLI — [[D-329]] §3, audit de D-312 (section 10).
  *
  * Les besoins non mesurés sortent de la moyenne, et les strates vides de la

@@ -1,11 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  BESOIN_SOURCES,
-  PLAFOND_FONDATION_CRITIQUE,
-  SEUIL_EFFONDREMENT,
-  VERSION_SCORE_EQUILIBRE,
-} from './constants';
+import * as constantes from './constants';
+import { BESOIN_SOURCES, VERSION_SCORE_EQUILIBRE } from './constants';
 import { agregerEquilibre } from './score';
 
 // LOT-11 « Doctrine exécutable » — [[D-107]], dette nommée par [[D-106]].
@@ -54,21 +50,29 @@ import { agregerEquilibre } from './score';
 // `POIDS_STRATE` laisserait passer le `100 → 99` : la valeur épinglée n'aurait
 // pas bougé. Une sortie ne se contourne qu'en changeant la sortie.
 
+// ─────────────────────────────────────────────────────────────────────────────
+// REPRIS PAR J3-12f, VAGUE 1 — [[D-547]] §4.4, [[D-548]] : v18/v19.
+//
+// LE PLAFONNEMENT A DISPARU. Le seuil d'effondrement, le plafond du total, la
+// liste des cinq fondations critiques et les parts 60/20/20 ne sont plus des
+// constantes du dépôt, et le total est la MOYENNE DIRECTE, à parts égales, des
+// besoins mesurés. Le banc garde donc deux choses : que RIEN ne plafonne dans la
+// version neuve, et que les versions anciennes GARDENT leur valeur — le registre
+// ci-dessous est conservé, sans être rejoué (la formule qui les produisait n'est
+// plus dans le code), pour qu'une réécriture d'entrée publiée se voie au diff.
+//
+// Les entrées par version restent le patron : changer une sortie, un mapping ou
+// une valeur sans nouvelle étiquette rougit le banc.
+
 /**
- * Les deux valeurs de plafonnement, par étiquette de version de score.
+ * Les deux valeurs de plafonnement des VERSIONS ANTÉRIEURES, par étiquette.
  *
- * `v14` et `v15` coexistent parce que `VERSION_SCORE_EQUILIBRE` dépend de la
- * FORME SERVIE de `Q_ALI_01` (`maxTotal === 90` ⇒ `v15`, sinon `v14`) : les
- * deux positions du drapeau `WN_ALI_01_SIIN57` doivent donc être couvertes, sans
- * quoi le banc ne garderait que la position dans laquelle il tourne.
- *
- * Les deux portent les MÊMES valeurs, et c'est exact : elles n'ont jamais
- * changé. `D-106` les a **validées telles quelles** le 2026-08-24 — validation
- * sans modification, donc délibérément sans bump, puisque aucune valeur calculée
- * ne bouge et qu'un bump aurait cassé l'historique de tous les patients pour
- * n'enregistrer qu'une signature.
+ * Archive, non rejouée : v14 à v17 portaient ces valeurs ([[D-106]], validées
+ * « telles quelles » le 2026-08-24). v18/v19 n'en portent AUCUNE : le plafond est
+ * retiré ([[D-547]]). Les résultats stockés sous ces étiquettes gardent leurs
+ * champs de plafond et ne sont jamais réécrits.
  */
-const VALEURS_PAR_VERSION: Record<string, { seuil: number; plafond: number }> = {
+const VALEURS_PAR_VERSION_ANCIENNE: Record<string, { seuil: number; plafond: number }> = {
   v14: { seuil: 0.34, plafond: 50 },
   v15: { seuil: 0.34, plafond: 50 },
   // [[D-474]] applique [[D-438]] : le mapping change, pas le plafonnement.
@@ -76,28 +80,44 @@ const VALEURS_PAR_VERSION: Record<string, { seuil: number; plafond: number }> = 
   v17: { seuil: 0.34, plafond: 50 },
 };
 
-describe('plafonnement — une valeur ne change pas sans bump de version', () => {
-  // Anti-vacuité : une étiquette inconnue rendrait la comparaison `undefined`
-  // contre `undefined` sur un `toEqual` mal écrit. Ici elle rougit d'abord.
-  it('la version courante est couverte par le registre', () => {
-    expect(Object.keys(VALEURS_PAR_VERSION)).toContain(VERSION_SCORE_EQUILIBRE);
+describe('plafonnement — retiré en v18/v19, gardé tel quel dans les versions anciennes', () => {
+  it('les constantes du plafonnement ne sont plus exportées', () => {
+    const noms = Object.keys(constantes);
+    for (const retiree of ['POIDS_STRATE', 'BESOINS_FONDATIONS_CRITIQUES', 'SEUIL_EFFONDREMENT', 'PLAFOND_FONDATION_CRITIQUE']) {
+      expect(noms).not.toContain(retiree);
+    }
   });
 
-  it('les deux valeurs correspondent à celles de la version courante', () => {
-    const attendu = VALEURS_PAR_VERSION[VERSION_SCORE_EQUILIBRE];
-    expect({ seuil: SEUIL_EFFONDREMENT, plafond: PLAFOND_FONDATION_CRITIQUE }).toEqual(attendu);
+  it('la version courante n’est PAS une version plafonnée', () => {
+    expect(Object.keys(VALEURS_PAR_VERSION_ANCIENNE)).not.toContain(VERSION_SCORE_EQUILIBRE);
   });
 
-  // Le registre couvre les DEUX positions du drapeau, pas seulement celle qui
-  // tourne : sans ce cas, supprimer l'entrée de la position inactive passerait
-  // inaperçu jusqu'au jour où le drapeau bascule.
-  it('les deux positions du drapeau restent couvertes', () => {
-    expect(Object.keys(VALEURS_PAR_VERSION)).toEqual(expect.arrayContaining(['v16', 'v17']));
+  it('les versions anciennes gardent leur valeur', () => {
+    expect(VALEURS_PAR_VERSION_ANCIENNE).toEqual({
+      v14: { seuil: 0.34, plafond: 50 },
+      v15: { seuil: 0.34, plafond: 50 },
+      v16: { seuil: 0.34, plafond: 50 },
+      v17: { seuil: 0.34, plafond: 50 },
+    });
+  });
+
+  it('les deux positions du drapeau avancent ensemble : v16 → v18, v17 → v19', () => {
+    expect(['v18', 'v19']).toContain(VERSION_SCORE_EQUILIBRE);
+  });
+
+  it('une fondation effondrée ne plafonne plus : la moyenne directe, et aucun champ de plafond', () => {
+    // Le besoin 1 à 0,2 sur un score par ailleurs haut : plafonné à 50 jusqu'en
+    // v17, c'est la moyenne directe (84) depuis v18.
+    const resultat = agregerEquilibre({ 1: 0.2, 2: 0.9, 3: 0.9, 4: 0.9, 5: 0.9, 6: 0.9, 7: 0.9, 8: 0.9, 9: 0.9, 10: 0.9, 11: 0.9, 12: 0.9 });
+    expect(resultat.scoreGlobal).toBe(84);
+    expect(resultat).not.toHaveProperty('plafondApplique');
+    expect(resultat).not.toHaveProperty('fondationsCritiquesDeclenchees');
+    expect(resultat).not.toHaveProperty('scoreGlobalAvantPlafond');
   });
 });
 
 /**
- * Six scénarios de couverture, choisis pour toucher chacun un mécanisme
+ * Sept scénarios de couverture, choisis pour toucher chacun un mécanisme
  * DISTINCT — un scénario de plus qui n'éclairerait rien de neuf ne garderait
  * rien de neuf.
  *
@@ -107,98 +127,67 @@ describe('plafonnement — une valeur ne change pas sans bump de version', () =>
  * registre.
  */
 const SCENARIOS: Record<string, Record<number, number | null>> = {
-  // Toutes strates mesurées, aucune fondation sous le seuil : la formule et les
-  // poids 60/20/20, nus.
+  // Tous les besoins mesurés : la moyenne directe, nue.
   pleine: { 1: 0.8, 2: 0.7, 3: 0.6, 4: 0.9, 5: 0.5, 6: 0.4, 7: 0.8, 8: 0.6, 9: 0.7, 10: 0.5, 11: 0.9, 12: 0.3 },
-  // Une seule fondation effondrée sur un score par ailleurs haut : le
-  // plafonnement anti-moyenne, seul énoncé de priorité entre besoins.
+  // Un seul besoin effondré sur un score par ailleurs haut : NE PLAFONNE PLUS
+  // ([[D-547]]). Rendait 50 jusqu'en v17.
   fondationEffondree: { 1: 0.2, 2: 0.9, 3: 0.9, 4: 0.9, 5: 0.9, 6: 0.9, 7: 0.9, 8: 0.9, 9: 0.9, 10: 0.9, 11: 0.9, 12: 0.9 },
-  // Les cinq fondations effondrées, mais le score est DÉJÀ sous le plafond :
-  // `plafondApplique` doit rester faux. Un plafond qui s'appliquerait ici
-  // REMONTERAIT le score — l'inverse de sa raison d'être.
-  toutBasSansPlafond: { 1: 0.1, 2: 0.2, 3: 0.2, 4: 0.2, 5: 0.2, 6: 0.2, 7: 0.2, 8: 0.2, 9: 0.2, 10: 0.2, 11: 0.2, 12: 0.2 },
-  // Strate ESPRIT entièrement non mesurée : la renormalisation des poids sur
-  // les seules strates disponibles (0,53 / 0,8 et non 0,53 / 1,0).
+  // Tous bas : la moyenne directe, sans plafond à appliquer ni à éviter.
+  toutBas: { 1: 0.1, 2: 0.2, 3: 0.2, 4: 0.2, 5: 0.2, 6: 0.2, 7: 0.2, 8: 0.2, 9: 0.2, 10: 0.2, 11: 0.2, 12: 0.2 },
+  // Une strate entièrement non mesurée : les besoins non mesurés SORTENT de la
+  // moyenne (neuf besoins, pas douze), sans renormalisation de strate.
   strateAbsente: { 1: 0.8, 2: 0.7, 3: 0.6, 4: 0.9, 5: 0.5, 6: 0.4, 7: 0.8, 8: 0.6, 9: 0.7, 10: null, 11: null, 12: null },
   // Rien de mesuré : `null`, JAMAIS `0` (`DC-24`).
   rienDeMesure: { 1: null, 2: null, 3: null, 4: null, 5: null, 6: null, 7: null, 8: null, 9: null, 10: null, 11: null, 12: null },
-  // SUR LA FRONTIÈRE D'ARRONDI, et il a fallu le mesurer pour le voir. Rejouée
-  // contre les cinq scénarios ci-dessus, la mutation de la contre-revue
-  // (`× 100` → `× 99`) n'en faisait rougir QU'UN : l'arrondi entier absorbe 1 %
-  // sur les petites valeurs, et `Math.round` → `Math.floor` passait vert sur les
-  // cinq. Ici CORPS seul est mesuré, à 0,645 — le total tombe exactement sur
-  // 64,5, que `round` rend 65 et `floor` 64. La règle d'arrondi devient une
-  // valeur gardée, comme les autres.
-  frontiereArrondi: { 1: 0.645, 2: 0.645, 3: 0.645, 4: 0.645, 5: 0.645, 6: 0.645, 7: null, 8: null, 9: null, 10: null, 11: null, 12: null },
+  // SUR LA FRONTIÈRE D'ARRONDI. Six besoins à 0,625 (valeur exacte en binaire) :
+  // le total tombe exactement sur 62,5, que `Math.round` rend 63 et `Math.floor`
+  // 62 — la règle d'arrondi est une valeur gardée, comme les autres.
+  frontiereArrondi: { 1: 0.625, 2: 0.625, 3: 0.625, 4: 0.625, 5: 0.625, 6: 0.625, 7: null, 8: null, 9: null, 10: null, 11: null, 12: null },
+  // AUCUN MINIMUM de besoins mesurés ([[D-548]] §2.8, M3 A) : un seul besoin
+  // mesuré suffit à produire un total — le compte dit sur quoi il est établi.
+  unSeulBesoin: { 1: null, 2: null, 3: null, 4: 0.9, 5: null, 6: null, 7: null, 8: null, 9: null, 10: null, 11: null, 12: null },
 };
 
-type SortieDeReference = {
-  global: number | null;
-  avantPlafond: number | null;
-  plafondApplique: boolean;
-  fondations: number[];
-};
+type SortieDeReference = { global: number | null };
 
 /**
- * Les sorties de référence, par étiquette de version.
+ * Les sorties de référence, par étiquette de version courante.
  *
  * LES DEUX VERSIONS PORTENT LES MÊMES SORTIES, et ce n'est pas une recopie :
  * `agregerEquilibre` reçoit des couvertures DÉJÀ CALCULÉES, donc ne dépend pas
  * de la forme servie de `Q_ALI_01`. Ce que le drapeau change, c'est le MAPPING
- * qui produit ces couvertures — et c'est le registre suivant qui le garde, où
- * les deux versions diffèrent bel et bien.
+ * qui produit ces couvertures — et c'est le registre suivant qui le garde.
  *
- * Valeurs vérifiées à la main avant d'être inscrites, et non recopiées d'une
- * exécution : `pleine` = (0,65×0,6 + 0,7×0,2 + 0,5667×0,2) × 100 = 64,33 → 64 ;
- * `strateAbsente` = 0,53 / 0,8 × 100 = 66,25 → 66 ; `fondationEffondree` = 83,
- * plafonné à 50. Épingler le résultat d'un `console.log` fige un comportement
- * sans jamais l'avoir jugé.
+ * Valeurs vérifiées à la main avant d'être inscrites : `pleine` = 7,7 / 12 =
+ * 64,17 → 64 ; `fondationEffondree` = (0,2 + 11 × 0,9) / 12 = 84,17 → 84 ;
+ * `toutBas` = (0,1 + 11 × 0,2) / 12 = 19,17 → 19 ; `strateAbsente` = 6,0 / 9 =
+ * 66,67 → 67 ; `frontiereArrondi` = 62,5 → 63 ; `unSeulBesoin` = 90. Les
+ * entrées des versions plafonnées (v14 à v17) ne sont plus rejouables : la
+ * formule qui les produisait est retirée.
  */
 const SORTIES_PAR_VERSION: Record<string, Record<string, SortieDeReference>> = {
-  v14: {
-    pleine: { global: 64, avantPlafond: 64, plafondApplique: false, fondations: [] },
-    fondationEffondree: { global: 50, avantPlafond: 83, plafondApplique: true, fondations: [1] },
-    toutBasSansPlafond: { global: 19, avantPlafond: 19, plafondApplique: false, fondations: [1, 2, 4, 5, 9] },
-    strateAbsente: { global: 66, avantPlafond: 66, plafondApplique: false, fondations: [] },
-    rienDeMesure: { global: null, avantPlafond: null, plafondApplique: false, fondations: [] },
-    frontiereArrondi: { global: 65, avantPlafond: 65, plafondApplique: false, fondations: [] },
+  v18: {
+    pleine: { global: 64 },
+    fondationEffondree: { global: 84 },
+    toutBas: { global: 19 },
+    strateAbsente: { global: 67 },
+    rienDeMesure: { global: null },
+    frontiereArrondi: { global: 63 },
+    unSeulBesoin: { global: 90 },
   },
-  v15: {
-    pleine: { global: 64, avantPlafond: 64, plafondApplique: false, fondations: [] },
-    fondationEffondree: { global: 50, avantPlafond: 83, plafondApplique: true, fondations: [1] },
-    toutBasSansPlafond: { global: 19, avantPlafond: 19, plafondApplique: false, fondations: [1, 2, 4, 5, 9] },
-    strateAbsente: { global: 66, avantPlafond: 66, plafondApplique: false, fondations: [] },
-    rienDeMesure: { global: null, avantPlafond: null, plafondApplique: false, fondations: [] },
-    frontiereArrondi: { global: 65, avantPlafond: 65, plafondApplique: false, fondations: [] },
-  },
-  // v16/v17 ([[D-474]]) : la formule ne change pas — seul le mapping change,
-  // gardé plus bas. Mêmes sorties, vérifiées par le même calcul.
-  v16: {
-    pleine: { global: 64, avantPlafond: 64, plafondApplique: false, fondations: [] },
-    fondationEffondree: { global: 50, avantPlafond: 83, plafondApplique: true, fondations: [1] },
-    toutBasSansPlafond: { global: 19, avantPlafond: 19, plafondApplique: false, fondations: [1, 2, 4, 5, 9] },
-    strateAbsente: { global: 66, avantPlafond: 66, plafondApplique: false, fondations: [] },
-    rienDeMesure: { global: null, avantPlafond: null, plafondApplique: false, fondations: [] },
-    frontiereArrondi: { global: 65, avantPlafond: 65, plafondApplique: false, fondations: [] },
-  },
-  v17: {
-    pleine: { global: 64, avantPlafond: 64, plafondApplique: false, fondations: [] },
-    fondationEffondree: { global: 50, avantPlafond: 83, plafondApplique: true, fondations: [1] },
-    toutBasSansPlafond: { global: 19, avantPlafond: 19, plafondApplique: false, fondations: [1, 2, 4, 5, 9] },
-    strateAbsente: { global: 66, avantPlafond: 66, plafondApplique: false, fondations: [] },
-    rienDeMesure: { global: null, avantPlafond: null, plafondApplique: false, fondations: [] },
-    frontiereArrondi: { global: 65, avantPlafond: 65, plafondApplique: false, fondations: [] },
+  v19: {
+    pleine: { global: 64 },
+    fondationEffondree: { global: 84 },
+    toutBas: { global: 19 },
+    strateAbsente: { global: 67 },
+    rienDeMesure: { global: null },
+    frontiereArrondi: { global: 63 },
+    unSeulBesoin: { global: 90 },
   },
 };
 
 function sortieObservee(couvertures: Record<number, number | null>): SortieDeReference {
-  const resultat = agregerEquilibre(couvertures);
-  return {
-    global: resultat.scoreGlobal,
-    avantPlafond: resultat.scoreGlobalAvantPlafond,
-    plafondApplique: resultat.plafondApplique,
-    fondations: resultat.fondationsCritiquesDeclenchees.map(f => f.besoin),
-  };
+  return { global: agregerEquilibre(couvertures).scoreGlobal };
 }
 
 describe('formule — une sortie ne change pas sans bump de version', () => {
@@ -206,7 +195,7 @@ describe('formule — une sortie ne change pas sans bump de version', () => {
     expect(Object.keys(SORTIES_PAR_VERSION)).toContain(VERSION_SCORE_EQUILIBRE);
   });
 
-  it('les six scénarios sont tous inscrits pour la version courante', () => {
+  it('les sept scénarios sont tous inscrits pour la version courante', () => {
     // Anti-vacuité : un scénario retiré du registre cesserait d'être comparé
     // sans que rien ne rougisse — le `for` ci-dessous ne boucle que sur ce qui
     // est inscrit.
@@ -224,7 +213,7 @@ describe('formule — une sortie ne change pas sans bump de version', () => {
   }
 
   it('les deux positions du drapeau restent couvertes', () => {
-    expect(Object.keys(SORTIES_PAR_VERSION)).toEqual(expect.arrayContaining(['v16', 'v17']));
+    expect(Object.keys(SORTIES_PAR_VERSION)).toEqual(expect.arrayContaining(['v18', 'v19']));
   });
 });
 
@@ -246,7 +235,7 @@ function empreinteDuMapping(): string {
       const decrites = sources
         // La borne basse ([[D-474]]) n'apparaît que déclarée (`min..max`) : les
         // empreintes v14/v15, écrites avant elle, restent lisibles telles quelles.
-        .map(s => [s.idQuestionnaire, s.sousScore ?? '-', s.min === undefined ? s.max : `${s.min}..${s.max}`, s.inverser ? 'inv' : 'dir', s.groupe ?? '-', s.poids ?? 1].join('|'))
+        .map(s => [s.idQuestionnaire, s.sousScore ?? (s.sansSousScore ? `sans:${s.sansSousScore}` : '-'), s.min === undefined ? s.max : `${s.min}..${s.max}`, s.inverser ? 'inv' : 'dir', s.groupe ?? '-', s.poids ?? 1].join('|'))
         .join(',');
       return `${besoin}:${decrites || '-'}`;
     })
@@ -295,6 +284,29 @@ const MAPPING_PAR_VERSION: Record<string, string> = {
     + '9:Q_STR_01|-|42|inv|-|1,Q_STR_02|-|50|inv|-|1,Q_STR_03|-|55|inv|-|1 '
     + '10:Q_INF_03|DA|40|inv|-|1,Q_INF_03|NA|40|inv|-|1,Q_INF_03|SE|40|inv|-|1 '
     + '11:- 12:Q_INF_03|ME|40|inv|-|1',
+  // v18/v19 ([[D-548]], vague 1 de J3-12f) : v16/v17 moins les deux sources du
+  // besoin 9 qui sortent (SIIN stress, Cungi), la PSS-10 avec sa borne basse, et
+  // le besoin 1 sur la MESURE DÉRIVÉE (le total moins le sous-score du rythme).
+  // Sous la forme courte, le `max` du besoin 1 vaut 0 : aucune source ([[D-516]]
+  // §6.2) ; sous la forme complète, 90 − 7 = 83.
+  v18:
+    '1:Q_ALI_01|sans:RYTHME_CHRONO|0|dir|-|1 2:- 3:Q_ALI_01|RYTHME_CHRONO|0|dir|-|1 '
+    + '4:Q_GAS_01|-|93|inv|-|1,Q_INF_01|-|96|inv|-|1 '
+    + '5:Q_MOD_01|ACTIVITE_PHYSIQUE|20|dir|mouvement|1,Q_SOM_01|-|21|inv|repos|2,Q_SOM_09|-|100|dir|repos|1,'
+    + 'Q_SOM_02|-|24|inv|repos|1,Q_SOM_07|GEN|4..20|inv|repos|1 '
+    + '6:- 7:- 8:Q_NEU_11|D|21|inv|-|1 '
+    + '9:Q_STR_02|-|10..50|inv|-|1 '
+    + '10:Q_INF_03|DA|40|inv|-|1,Q_INF_03|NA|40|inv|-|1,Q_INF_03|SE|40|inv|-|1 '
+    + '11:- 12:Q_INF_03|ME|40|inv|-|1',
+  v19:
+    '1:Q_ALI_01|sans:RYTHME_CHRONO|83|dir|-|1 2:- 3:Q_ALI_01|RYTHME_CHRONO|7|dir|-|1 '
+    + '4:Q_GAS_01|-|93|inv|-|1,Q_INF_01|-|96|inv|-|1 '
+    + '5:Q_MOD_01|ACTIVITE_PHYSIQUE|20|dir|mouvement|1,Q_SOM_01|-|21|inv|repos|2,Q_SOM_09|-|100|dir|repos|1,'
+    + 'Q_SOM_02|-|24|inv|repos|1,Q_SOM_07|GEN|4..20|inv|repos|1 '
+    + '6:- 7:- 8:Q_NEU_11|D|21|inv|-|1 '
+    + '9:Q_STR_02|-|10..50|inv|-|1 '
+    + '10:Q_INF_03|DA|40|inv|-|1,Q_INF_03|NA|40|inv|-|1,Q_INF_03|SE|40|inv|-|1 '
+    + '11:- 12:Q_INF_03|ME|40|inv|-|1',
 };
 
 describe('mapping — une source ne change pas sans bump de version', () => {
@@ -311,9 +323,10 @@ describe('mapping — une source ne change pas sans bump de version', () => {
     // positions tout en cessant de décrire l'une des deux.
     expect(MAPPING_PAR_VERSION.v14).not.toBe(MAPPING_PAR_VERSION.v15);
     expect(MAPPING_PAR_VERSION.v16).not.toBe(MAPPING_PAR_VERSION.v17);
+    expect(MAPPING_PAR_VERSION.v18).not.toBe(MAPPING_PAR_VERSION.v19);
   });
 
   it('les deux positions du drapeau restent couvertes', () => {
-    expect(Object.keys(MAPPING_PAR_VERSION)).toEqual(expect.arrayContaining(['v16', 'v17']));
+    expect(Object.keys(MAPPING_PAR_VERSION)).toEqual(expect.arrayContaining(['v18', 'v19']));
   });
 });

@@ -2,7 +2,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MonEquilibreDetail, PALIER_PEU_COUVERT, libelleCouverture } from './MonEquilibreDetail';
-import { SEUIL_EFFONDREMENT } from '@/lib/equilibre/constants';
 
 const REPONSE = {
   indiceGlobal: 60,
@@ -69,11 +68,13 @@ describe('MonEquilibreDetail — accessibilité de « Mes 12 besoins »', () => 
   });
 });
 
-// D-280 : « Peu couvert » suit le seuil d'effondrement signé (D-106), recopié
-// dans le composant client. Ce banc échoue si l'un bouge sans l'autre.
+// D-280, D-547 §4.5 : « Peu couvert » commence à 34, valeur LITTÉRALE, sans motif
+// — « sans motif, lot dédié des paliers (D-547) ». Elle n'est plus égale à aucun
+// seuil d'effondrement (retiré avec le plafonnement) ; ce banc ne garde que la
+// valeur servie, qui ne change pas : la surface patient est inchangée.
 describe('paliers de couverture (D-280)', () => {
-  it('« Peu couvert » commence sous le seuil d’effondrement signé', () => {
-    expect(PALIER_PEU_COUVERT).toBe(Math.round(SEUIL_EFFONDREMENT * 100));
+  it('« Peu couvert » commence à 34, en littéral, sans seuil sous-jacent', () => {
+    expect(PALIER_PEU_COUVERT).toBe(34);
   });
 
   it('33 est « Peu couvert », 34 « Couverture partielle », 70 « Bien couvert »', () => {

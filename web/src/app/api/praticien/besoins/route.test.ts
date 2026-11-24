@@ -94,14 +94,16 @@ describe('GET /api/praticien/besoins', () => {
       prisma.questionnaireReponse.findMany.mockResolvedValue([
         // Q_STR_02 : sa seule passation est invalidée → écartée par le filtre.
         { idQuestionnaire: 'Q_STR_02', dateReponse: new Date('2026-10-01T08:00:00Z'), scoresJson: { rawAnswers: { P1: '2' } }, statutValidite: 'INVALID' },
-        // Q_STR_01 : une passation retenue, incomplète.
-        { idQuestionnaire: 'Q_STR_01', dateReponse: new Date('2026-10-12T08:00:00Z'), scoresJson: { rawAnswers: { A1: 2 } }, statutValidite: null },
+        // Q_NEU_11 : une passation retenue, incomplète (besoin 8).
+        { idQuestionnaire: 'Q_NEU_11', dateReponse: new Date('2026-10-12T08:00:00Z'), scoresJson: { rawAnswers: { D2: '0' } }, statutValidite: null },
       ]);
       const json = (await (await GET(request())).json()) as { besoins: { id: number; motifNonMesure: unknown }[] };
+      // Depuis v18/v19 ([[D-548]]), le besoin 9 ne lit que la PSS-10 : une seule ligne.
       expect(json.besoins.find(b => b.id === 9)?.motifNonMesure).toEqual([
-        { motif: 'recueil_incomplet', idsQuestionnaire: ['Q_STR_01'], dateDernierePassation: '2026-10-12T08:00:00.000Z' },
         { motif: 'passation_ecartee', idsQuestionnaire: ['Q_STR_02'], dateDernierePassation: null },
-        { motif: 'aucune_passation', idsQuestionnaire: ['Q_STR_03'], dateDernierePassation: null },
+      ]);
+      expect(json.besoins.find(b => b.id === 8)?.motifNonMesure).toEqual([
+        { motif: 'recueil_incomplet', idsQuestionnaire: ['Q_NEU_11'], dateDernierePassation: '2026-10-12T08:00:00.000Z' },
       ]);
     } finally {
       vi.unstubAllEnvs();

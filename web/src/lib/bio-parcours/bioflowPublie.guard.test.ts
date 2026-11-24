@@ -115,6 +115,10 @@ const LECTEURS_PUBLIES = [
   // des indications au statut `suspendue`, aucune règle ni valeur lue —
   // septième lecteur hors biologie (2026-11-19).
   'web/src/lib/clinical/lignesSuspendues.ts',
+  // Les constats biologiques du besoin 1 ([[D-548]] §2.2) : le dernier résultat
+  // qui fait foi de deux analytes, au cockpit seulement, hors couverture —
+  // huitième lecteur hors biologie (2026-11-24).
+  'web/src/lib/equilibre/constatsBiomarqueursBesoin1Service.ts',
 ];
 
 const DOSSIER = 'web/src/lib/biology-library/';

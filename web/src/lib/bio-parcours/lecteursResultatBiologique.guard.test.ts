@@ -57,6 +57,8 @@ const ACCES_ADMIS = [
   'web/src/lib/biology-library/publie.ts',
   // Portes biologiques des assiettes ([[D-245]]).
   'web/src/lib/clinical/portesBiologiquesService.ts',
+  // Constats biologiques du besoin 1 ([[D-548]] §2.2) : l'HbA1c et l'index oméga-3, derniers résultats qui font foi ; hors couverture, cockpit seulement.
+  'web/src/lib/equilibre/constatsBiomarqueursBesoin1Service.ts',
   // Effacement du dossier (droit à l'effacement) : supprime, ne lit pas.
   'web/src/lib/patient/effacement.ts',
 ];
