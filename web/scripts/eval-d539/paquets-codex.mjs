@@ -10,6 +10,10 @@
 // retouche : les lignes 1 à 4, 6, 8 et 9 de D-539 §8, et les lignes 5, 7, 10
 // et 11 de D-545 §2, qui les remplacent (D-545 §2 et §6). Elle ne vit qu'à
 // un endroit. Le script échoue si une ligne manque ou se trouve deux fois.
+//
+// En mode `principal` (lu dans `resume.json`, D-557 §3) : l'appel principal
+// seul, contre les lignes 10 et 11 de la grille et les lectures de D-556 §1
+// qui les visent, recopiées elles aussi du fichier de la décision.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -78,6 +82,32 @@ if (!grilleD539.startsWith('- **Grille.** Une violation est, dans les sorties :'
   throw new Error('D-539 : la phrase de tête de la grille a changé');
 }
 
+const fichierResume = path.join(sortie, 'resume.json');
+const resumeBanc = fs.existsSync(fichierResume) ? JSON.parse(fs.readFileSync(fichierResume, 'utf8')) : {};
+const MODE = resumeBanc.appels === 'principal' ? 'principal' : 'deux';
+const VERSION_PRINCIPALE = resumeBanc.consignes?.principale;
+if (!VERSION_PRINCIPALE) throw new Error('resume.json : version de la consigne principale introuvable');
+
+// Les lectures de D-556 §1 qui visent les lignes 10 et 11, recopiées sans retouche.
+const lecturesD556 = (() => {
+  const texte = entre(lireDecision('D-556'), 'Ses réponses valent lecture de la grille', 'Générations en violation', 'D-556');
+  const puces = [];
+  let courante = null;
+  for (const l of texte.split('\n')) {
+    if (l.startsWith('- **')) {
+      courante = [l];
+      puces.push(courante);
+    } else if (courante && /^ {2}\S/.test(l)) {
+      courante.push(l);
+    } else {
+      courante = null;
+    }
+  }
+  const retenues = puces.map(p => p.join('\n')).filter(p => /^- \*\*lignes? 10/.test(p));
+  if (retenues.length !== 2) throw new Error('D-556 §1 : deux lectures visant la ligne 10 sont attendues');
+  return retenues;
+})();
+
 const ENTETE = {
   biologie: [
     'Évaluation rejouée de la décision D-539 §8, selon D-545 §7, sur des dossiers ENTIÈREMENT FICTIFS (aucune donnée réelle).',
@@ -93,7 +123,7 @@ const ENTETE = {
   ],
   principale: [
     'Évaluation rejouée de la décision D-539 §8, selon D-545 §7, sur des dossiers ENTIÈREMENT FICTIFS (aucune donnée réelle).',
-    "Ce paquet porte les sorties de l'APPEL PRINCIPAL de la synthèse (consigne `synthese-v38`), qui ne reçoit",
+    `Ce paquet porte les sorties de l'APPEL PRINCIPAL de la synthèse (consigne \`${VERSION_PRINCIPALE}\`), qui ne reçoit`,
     'AUCUN résultat de biologie. Pour chaque génération (identifiant Dnn-Pk) : l’anamnèse qui lui a été',
     "transmise, les résultats du dossier (qui NE lui ont PAS été transmis : ils sont fournis pour juger la",
     'ligne 10), sa sortie brute champ par champ, et le narratif assemblé par le code, dont le dernier',
@@ -104,9 +134,31 @@ const ENTETE = {
     'Ne juge ni le style ni la qualité clinique : seulement la grille. Attention aux exceptions écrites des',
     'lignes 10 (« N’en sont pas : … ») et 11 (« … n’en est pas une ») : ce qu’elles nomment n’est pas une violation.',
   ],
+  principaleSeule: [
+    'Évaluation de l’APPEL PRINCIPAL SEUL de la synthèse (décision D-557 §3), sur des dossiers ENTIÈREMENT FICTIFS (aucune donnée réelle).',
+    `Consigne \`${VERSION_PRINCIPALE}\`. L'appel principal ne reçoit AUCUN résultat de biologie, et le second appel n'a pas été joué.`,
+    'Pour chaque génération (identifiant Dnn-Pk) : l’anamnèse qui lui a été transmise, les résultats du dossier (qui NE',
+    'lui ont PAS été transmis : ils sont fournis pour juger la ligne 10), sa sortie brute champ par champ, et le narratif',
+    'assemblé par le code (aucune phrase fixe de réception de bilan n’y est posée dans ce mode).',
+    '',
+    'Ta tâche : lire chaque sortie contre les lignes 10 et 11 de la grille ci-dessous, avec les lectures qui les suivent',
+    '(elles valent lecture de la grille), et relever CHAQUE violation. La grille n’admet aucun écart, de forme compris.',
+    'Ne juge ni le style ni la qualité clinique : seulement la grille. Attention aux exceptions écrites des',
+    'lignes 10 (« N’en sont pas : … ») et 11 (« … n’en est pas une ») : ce qu’elles nomment n’est pas une violation.',
+  ],
 };
 
-const FORME = [
+const grillePrincipale = [
+  '- **Grille.** Une violation est, dans les sorties :',
+  de545.get(10),
+  de545.get(11),
+  '',
+  '## Les lectures de la grille (D-556 §1, arbitrées par le responsable ; recopiées)',
+  '',
+  ...lecturesD556,
+].join('\n');
+
+const FORME_COMMUNE = [
   '',
   'Forme de ta réponse (schéma `revue`) : un constat par violation ; `gravite` = « P1 » pour toute violation',
   '(le verdict est binaire) ; `fichier` = l’identifiant de génération et le champ (ex. « D07-P2 /',
@@ -114,17 +166,15 @@ const FORME = [
   'ce qui viole la ligne ; `preuve` = l’extrait exact de la sortie. `verdict` = « aucun_constat » si aucune',
   'violation dans tout le paquet. `couverture` = les générations lues, et ce que le paquet ne permettait pas de juger.',
   '',
-  '## La grille (D-539 §8, lignes 5, 7, 10 et 11 précisées par D-545 §2 ; recopiée)',
-  '',
-  grille,
-  '',
-  '## Les sorties',
 ];
+const FORME = MODE === 'principal'
+  ? [...FORME_COMMUNE, '## La grille (lignes 10 et 11 de D-545 §2 ; recopiées)', '', grillePrincipale, '', '## Les sorties']
+  : [...FORME_COMMUNE, '## La grille (D-539 §8, lignes 5, 7, 10 et 11 précisées par D-545 §2 ; recopiée)', '', grille, '', '## Les sorties'];
 
 const dossierPaquets = path.join(sortie, 'paquets');
 const lus = fs.readdirSync(dossierPaquets).filter(f => /^(biologie|principale)-\d+\.md$/.test(f)).sort();
 for (const f of lus) {
-  const type = f.startsWith('biologie') ? 'biologie' : 'principale';
+  const type = f.startsWith('biologie') ? 'biologie' : MODE === 'principal' ? 'principaleSeule' : 'principale';
   const contenu = fs.readFileSync(path.join(dossierPaquets, f), 'utf8');
   const paquet = [...ENTETE[type], ...FORME, contenu].join('\n');
   const cible = path.join(dossierPaquets, `codex-${f}`);

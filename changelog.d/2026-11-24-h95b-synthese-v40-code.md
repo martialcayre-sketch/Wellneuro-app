@@ -1,0 +1,6 @@
+### Synthèse IA, biologie : consigne principale `synthese-v40` (D-557, H95 part B, 2026-11-24)
+
+- **Consigne principale** : dans la section « Résultats de biologie », le paragraphe de D-557 §2 s'ajoute, au mot près, après celui de D-545 §5, qui ne change pas. `VERSION_PROMPT_SYNTHESE` passe à `synthese-v40`. Bump assumé et déclaré : un résultat de biologie rapporté par l'anamnèse n'est plus repris par la synthèse (le praticien le lit dans l'anamnèse), et une question d'entretien sur un examen non déclaré demande s'il a été fait. Rien ne change pour un diagnostic déclaré, un examen déclaré, le nom d'un nutriment ou d'une analyse, ni la mention qu'un dosage serait nécessaire.
+- **Gardes** : la section attendue se construit des citations de D-539, D-545 et D-557, sans recopie à la main ; empreintes de la section et de la consigne, drapeau éteint et posé, reportées sur `synthese-v40`.
+- **Banc d'évaluation** (`web/scripts/eval-d539/`) : il exige `synthese-v40` et sait jouer l'appel principal seul (`lancer.sh … --confirme principal`), drapeau éteint comme en service ; les paquets de lecture indépendante portent alors les lignes 10 et 11 de la grille et les lectures de D-556 §1, recopiées des décisions.
+- **Inchangés** : `synthese-biologie-v2`, le contrôle de D-545 §4, le drapeau `WN_SYNTHESE_BIOLOGIE_ENABLED` (éteint).

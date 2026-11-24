@@ -402,7 +402,17 @@ export const CLAUDE_MODEL = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6';
 // d'indications biologiques que le responsable a suspendues pour relecture.
 // Textes validés mot pour mot par le responsable. Bump assumé et déclaré : une
 // synthèse rédigée sous v38 ne connaissait pas cette ligne du bloc.
-export const VERSION_PROMPT_SYNTHESE = 'synthese-v39';
+// v40 (H95 part B, [[D-557]] §2, arbitrages `20261124-0800-b-h95`,
+// `0801-b-h95` (A) et `0802-b-h95`) : dans la section « Résultats de
+// biologie », un paragraphe neuf s'ajoute après celui de D-545 §5, qui ne
+// change pas — un diagnostic, une suspicion ou un suivi déclarés ne déclarent
+// aucun examen ; un résultat que rapporte l'anamnèse n'est repris dans aucun
+// champ ni pris pour argument ; un état que seule la biologie établit reste une
+// hypothèse. Textes validés mot pour mot par le responsable le 2026-11-24,
+// servis après le verdict conforme de l'évaluation de l'appel principal seul
+// (D-557 §3). Comme v39, v40 vaut drapeau posé ou non. Bump assumé et déclaré :
+// sous v39, un résultat rapporté par l'anamnèse pouvait être repris.
+export const VERSION_PROMPT_SYNTHESE = 'synthese-v40';
 // v3 (LOT-01 étape 4) : la sortie du modèle est lue par `analyserSortieSynthese`
 // — schéma fermé, énumérations contrôlées, rejet + une relance. La forme du JSON
 // est inchangée ; ce qui change est qu'une sortie non conforme n'est plus servie
@@ -688,6 +698,12 @@ Si le bloc est absent, n'en parle pas.
 ## Résultats de biologie
 
 Les résultats de biologie enregistrés au dossier ne te sont pas transmis : ils sont restitués au praticien à part, hors de toi. N'en suppose aucun, n'en parle dans aucun champ, et n'en conclus pas qu'aucun bilan n'a été fait. La réception d'un bilan est dite au patient par le code, pas par toi. Tu peux rappeler qu'un examen a été déclaré dans l'anamnèse, en le présentant comme une déclaration, sans en déduire de résultat ni de conclusion biologique ; une question d'entretien peut y revenir, en rappelant qu'il a été déclaré et sans supposer aucun résultat. Ne présente jamais comme fait un examen que l'anamnèse ne déclare pas, et ne laisse jamais entendre qu'un résultat est connu. Tu peux aussi mentionner qu'un dosage biologique serait nécessaire pour conclure, dans les limites posées plus haut. Nommer un nutriment ou une analyse n'est pas en parler comme d'un résultat.
+
+Un diagnostic, une suspicion, un traitement ou un suivi déclarés ne déclarent aucun examen : n'en déduis pas qu'un bilan a été fait. Dans aucun champ, question ou point de vigilance compris, ne suppose fait un examen que l'anamnèse ne déclare pas : ne parle ni du « dernier » bilan, ni de sa date, ni de ses résultats, et ne le dis pas déclaré. Une question d'entretien peut demander s'il a été fait, sans rien en supposer.
+
+Un résultat de biologie que rapporte l'anamnèse n'est pas un résultat transmis : ne le reprends dans aucun champ, et n'en fais l'argument d'aucun axe, d'aucune hypothèse ni d'aucune priorité ; tu peux seulement rappeler que l'examen a été déclaré. Un diagnostic déclaré reste un antécédent déclaré, que tu peux reprendre comme tel.
+
+Ne présente jamais comme établi, à partir de symptômes ou de scores, un état que seule la biologie permet d'établir : présente-le comme une hypothèse à confirmer.
 
 ## Consignes de réponse
 
