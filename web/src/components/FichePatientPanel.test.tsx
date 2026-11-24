@@ -4,6 +4,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testi
 import { FichePatientPanel } from './FichePatientPanel';
 import { compteRenduDemande, estOngletFiche, estPhaseFiche, type PhaseFiche } from '@/lib/praticien/ongletsFiche';
 import { C5FeatureProvider } from './patient-cockpit/C5FeatureProvider';
+import { CbFeatureProvider } from './patient-cockpit/CbFeatureProvider';
 import type { DecisionCard } from '@/lib/clinical-engine/types';
 import { MESSAGE_DOSSIER_CLOS } from '@/lib/patient/cycleDeVie';
 import { reinitialiserReplisFiche } from './patient-cockpit/replisFiche';
@@ -3901,5 +3902,147 @@ describe('FichePatientPanel — PRA-6h2 : lecture hors contrat et focus après �
 
     await waitFor(() => expect(within(panneau).queryByRole('button', { name: 'Réessayer' })).toBeNull());
     await waitFor(() => expect(document.activeElement).toBe(panneau));
+  });
+});
+
+// ── PRA-6n : banc structurel de la hiérarchie des titres ───────────────────
+// Le `h1` de la fiche est le nom du dossier (PRA-6e) ; sous lui, aucun saut de
+// niveau, onglet par onglet et phase par phase. C'est l'absence de ce banc qui
+// avait laissé passer le saut h3 → h5 d'`OptionsAuCockpitBloc` sous
+// `ConstatsParcoursPanel` (revue de PRA-6e). Les dialogues ont leur racine
+// propre (`Dialog.Title` en h2) et se jugent à part.
+
+/** Titres exposés à l'arbre d'accessibilité, dans l'ordre du document. */
+function titresExposes(racine: ParentNode = document.body): { niveau: number; texte: string }[] {
+  return Array.from(racine.querySelectorAll<HTMLElement>('h1, h2, h3, h4, h5, h6, [role="heading"]'))
+    .filter(el => !el.closest('[hidden]'))
+    .filter(el => {
+      const details = el.closest('details');
+      return !details || details.open || Boolean(el.closest('summary'));
+    })
+    .map(el => ({
+      niveau: el.getAttribute('aria-level') ? Number(el.getAttribute('aria-level')) : Number(el.tagName.slice(1)),
+      texte: (el.textContent ?? '').replace(/\s+/g, ' ').trim(),
+    }));
+}
+
+/** Les sauts : un titre plus profond de plus d'un niveau que celui qui le précède. */
+function sautsDeNiveau(titres: { niveau: number; texte: string }[], racine: number): string[] {
+  const sauts: string[] = [];
+  let precedent = racine - 1;
+  for (const titre of titres) {
+    if (titre.niveau > precedent + 1) sauts.push(`h${precedent} → h${titre.niveau} « ${titre.texte} »`);
+    precedent = titre.niveau;
+  }
+  return sauts;
+}
+
+describe('FichePatientPanel — hiérarchie des titres, sans saut (PRA-6n)', () => {
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  // Synthétiques : aucun code d'hypothèse ni d'option réel.
+  const TETE_CONFIRMEE = {
+    id: 'c1', ordre: '1', acte: 'pose', hypotheseCode: 'HYP_TEST_A', verdict: 'confirmee', motif: null,
+    note: null, aRevoirLe: null, idConstatRemplace: null, praticienEmail: 'praticien@wellneuro.fr',
+    acteLe: '2026-10-10T09:00:00.000Z', pieces: [],
+  };
+  const CONSTATS = {
+    ok: true,
+    structureSignee: true,
+    offertes: [{ hypotheseCode: 'HYP_TEST_A', libelle: 'Hypothèse de test' }],
+    aujourdhui: '2026-10-20',
+    hypotheses: [{ hypotheseCode: 'HYP_TEST_A', tete: TETE_CONFIRMEE, aRelire: [], historique: [TETE_CONFIRMEE] }],
+    citables: [],
+    optionsBibliotheque: {
+      lecture: 'ok',
+      etatStructure: 'signee',
+      hypotheses: [{
+        hypotheseCode: 'HYP_TEST_A',
+        options: [{
+          id: 'OPT_BANC_A',
+          populations: ['POP_BANC'],
+          rubriques: [{ rubrique: 'dose', renvois: ['information_manquante'], etat: 'validee', texte: 'Texte validé synthétique.', valideLe: '2026-11-13T10:00:00.000Z' }],
+        }],
+      }],
+    },
+  };
+  const SYNTHESES = {
+    syntheses: [{
+      statut: 'Validee_Praticien',
+      dateValidation: '2026-11-01T10:00:00.000Z',
+      syntheseJson: { resume_praticien: 'Résumé synthétique.', narratif_patient: 'Narratif synthétique.' },
+    }],
+  };
+
+  async function rendreFicheComplete() {
+    const base = stubFetch({ runtime: 'ready', trajectoire: 'cycleJ21Mesure', checkins: 'unPoint' });
+    const reponse = (payload: unknown) => Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(payload) });
+    vi.stubGlobal('fetch', vi.fn((input: unknown, init?: unknown) => {
+      const url = String(input);
+      if (url.includes('/api/praticien/biologie/constats')) return reponse(CONSTATS);
+      if (url.includes('/api/praticien/synthese')) return reponse(SYNTHESES);
+      return (base as unknown as (i: unknown, n?: unknown) => unknown)(input, init);
+    }));
+    render(
+      <C5FeatureProvider enabled={false}>
+        <CbFeatureProvider enabled={false} bioConstatEnabled>
+          <FichePatientPanel idPatient="PAT001" />
+        </CbFeatureProvider>
+      </C5FeatureProvider>,
+    );
+    await waitFor(() => expect(screen.getAllByText('Sophie Nicola').length).toBeGreaterThan(0));
+  }
+
+  it('chaque phase du poste de pilotage : un h1, aucun saut, et le titre de phase seul en h2 dans la zone focale', async () => {
+    await rendreFicheComplete();
+    const rail = screen.getByRole('tablist', { name: 'Cycle clinique' });
+    const phases = ['Patient', 'Données fiables', 'Compréhension', 'Décision 21 j', 'Actions', 'Suivi', 'Réévaluation'];
+    for (const libelle of phases) {
+      fireEvent.click(within(rail).getByRole('tab', { name: new RegExp(`^\\d\\. ${libelle}`) }));
+      const zone = document.getElementById('zone-focale') as HTMLElement;
+      await waitFor(() => expect(within(zone).getAllByRole('heading', { level: 2 })[0]?.textContent).toBe(libelle));
+      // Le panneau de la phase Actions est bien rendu : le banc le juge.
+      if (libelle === 'Actions') await screen.findByRole('heading', { name: 'Protocole 21 jours' });
+
+      const titres = titresExposes();
+      expect(titres[0]?.niveau, `phase ${libelle}`).toBe(1);
+      expect(sautsDeNiveau(titres, 1), `phase ${libelle}`).toEqual([]);
+      const h2DeZone = titresExposes(zone).filter(t => t.niveau <= 2).map(t => t.texte);
+      expect(h2DeZone, `phase ${libelle}`).toEqual([libelle]);
+    }
+  });
+
+  it('chaque onglet de la fiche : un h1, aucun saut — Biologie compris, avec les options sous un constat confirmé', async () => {
+    await rendreFicheComplete();
+    const onglets = screen.getByRole('tablist', { name: 'Vues de la fiche patient' });
+    for (const libelle of ['Poste de pilotage', 'Les 12 besoins', 'Alimentation', 'Trajectoire', 'Biologie', 'Correspondance']) {
+      fireEvent.click(within(onglets).getByRole('tab', { name: libelle }));
+      await waitFor(() =>
+        expect(within(onglets).getByRole('tab', { name: libelle }).getAttribute('aria-selected')).toBe('true'),
+      );
+      // Le cas qui a échappé à PRA-6e : le bloc des options, rendu sous le h3
+      // de l'hypothèse confirmée de `ConstatsParcoursPanel`.
+      if (libelle === 'Biologie') await screen.findByRole('region', { name: 'Bibliothèque des options' });
+
+      const titres = titresExposes();
+      expect(titres[0]?.niveau, `onglet ${libelle}`).toBe(1);
+      expect(sautsDeNiveau(titres, 1), `onglet ${libelle}`).toEqual([]);
+    }
+  });
+
+  it('tiroir de synthèse : ses intertitres en h3 sous le h2 du dialogue, aucun saut', async () => {
+    await rendreFicheComplete();
+    fireEvent.click(screen.getByRole('button', { name: /Synthèse IA & booklet/i }));
+    const dialogue = await screen.findByRole('dialog');
+    await within(dialogue).findByText('Résumé synthétique.');
+
+    const titres = titresExposes(dialogue);
+    expect(titres[0]?.niveau).toBe(2);
+    expect(sautsDeNiveau(titres, 2)).toEqual([]);
+    expect(within(dialogue).getByRole('heading', { level: 3, name: 'Résumé praticien' })).toBeTruthy();
+    expect(within(dialogue).getByRole('heading', { level: 3, name: 'Narratif patient' })).toBeTruthy();
   });
 });

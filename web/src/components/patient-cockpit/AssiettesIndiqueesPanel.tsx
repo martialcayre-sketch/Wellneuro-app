@@ -355,9 +355,9 @@ export function AssiettesIndiqueesPanel({
       className="shrink-0 rounded-xl border border-rail bg-surface overflow-hidden"
     >
       <div className="border-l-8 border-rail p-4">
-        <h2 id="assiettes-indiquees-title" className="font-display text-lg font-semibold text-foreground">
+        <h3 id="assiettes-indiquees-title" className="font-display text-lg font-semibold text-foreground">
           Assiettes indiquées
-        </h2>
+        </h3>
         <p className="mt-1 text-sm text-muted-foreground">
           Lecture de la table signée des indications d’assiette. Aucune assiette n’est prescrite ni
           transmise : la décision reste la vôtre.
@@ -413,16 +413,16 @@ export function AssiettesIndiqueesPanel({
                 </p>
                 {hierarchie.liees.length > 0 && (
                   <>
-                    <h3 className="mt-3 text-sm font-medium text-foreground">
+                    <h4 className="mt-3 text-sm font-medium text-foreground">
                       En lien avec la priorité {qualificatifPriorite} — « {prioriteVisee?.libelle} »
-                    </h3>
+                    </h4>
                     <ul className="mt-2 grid gap-3">{hierarchie.liees.map(carteAssiette)}</ul>
                   </>
                 )}
                 {hierarchie.autres.length > 0 && (
                   <>
                     {hierarchie.liees.length > 0 && (
-                      <h3 className="mt-4 text-sm font-medium text-foreground">Autres assiettes indiquées</h3>
+                      <h4 className="mt-4 text-sm font-medium text-foreground">Autres assiettes indiquées</h4>
                     )}
                     <ul className="mt-2 grid gap-3">{hierarchie.autres.map(carteAssiette)}</ul>
                   </>
@@ -432,7 +432,7 @@ export function AssiettesIndiqueesPanel({
 
             {lecture.nonEvaluees.length > 0 && (
               <div className="mt-4">
-                <h3 className="text-sm font-medium text-foreground">Non évaluées — ce qui manque</h3>
+                <h4 className="text-sm font-medium text-foreground">Non évaluées — ce qui manque</h4>
                 <ul className="mt-2 grid gap-2">
                   {lecture.nonEvaluees.map(assiette => (
                     <li key={assiette.ligneId} className="text-xs text-muted-foreground">

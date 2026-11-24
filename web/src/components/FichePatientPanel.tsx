@@ -498,17 +498,17 @@ function TiroirSyntheseInline({ idPatient }: { idPatient: string }) {
             </p>
             {validee.resume && (
               <>
-                <h4 className="mt-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                <h3 className="mt-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   Résumé praticien
-                </h4>
+                </h3>
                 <p className="mt-1 whitespace-pre-wrap text-sm text-foreground">{validee.resume}</p>
               </>
             )}
             {validee.narratif && (
               <>
-                <h4 className="mt-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                <h3 className="mt-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   Narratif patient
-                </h4>
+                </h3>
                 <p className="mt-1 whitespace-pre-wrap text-sm text-foreground">{validee.narratif}</p>
               </>
             )}
