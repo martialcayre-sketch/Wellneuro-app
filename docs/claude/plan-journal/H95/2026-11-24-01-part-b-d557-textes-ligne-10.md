@@ -1,0 +1,5 @@
+- **Mise à jour (2026-11-24, part B, D-557 acceptée — textes de la retouche de la consigne principale)**. [[D-557]] applique [[D-556]] §6 et §7.
+  - Les 16 générations en violation de l'appel principal se rangent en trois formes : un examen supposé fait (12), un résultat déclaré pris pour argument (3, avec le narratif), un état biologique présenté comme établi (1).
+  - Un paragraphe neuf, trois textes validés mot pour mot (`20261124-0800-b-h95`, `0801-b-h95` A, `0802-b-h95`), s'ajoute après le paragraphe « Résultats de biologie » de [[D-545]] §5, inchangé. La consigne passe à `synthese-v40`.
+  - Contre-revue Codex : aucun constat.
+  - **Suite** : lot de code sous `release-db` (consigne, empreinte, gardes, banc à `synthese-v40` et en mode appel principal seul), puis l'évaluation de l'appel principal seul sur la branche ; la PR n'est déclarée « prête » qu'après un verdict conforme. Le drapeau reste éteint.
