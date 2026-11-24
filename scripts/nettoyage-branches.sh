@@ -60,7 +60,18 @@ done
 protegee() { case "$PROTEGEES" in *" $1 "*) return 0;; *) return 1;; esac; }
 
 # Nom de branche admis tel quel dans une requête REST (`head=<owner>:<nom>`).
-branche_sure() { case "$1" in *..*|'') return 1;; *[!A-Za-z0-9._/-]*) return 1;; *) return 0;; esac; }
+# L'alphabet s'écrit en toutes lettres, sans plage : sous bash 3.2 (macOS),
+# une plage `a-z` suit l'ordre de collation de la locale, où « é » tombe
+# entre « e » et « f » — un nom accentué passait pour sûr, partait non encodé
+# vers `gh` et revenait « lecture GitHub en échec » au lieu d'être dit non
+# interrogeable.
+branche_sure() {
+  case "$1" in
+    *..*|'') return 1;;
+    *[!ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._/-]*) return 1;;
+    *) return 0;;
+  esac
+}
 
 # Preuve d'obsolescence d'un commit porté par une branche nommée.
 # Sortie : "PR #N mergée" / "ancêtre de main" si prouvé (code 0) ; code 1
