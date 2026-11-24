@@ -46,15 +46,20 @@
 //   non ouverte · 18 PR empilées · 19 origine non vérifiée · 20 délai de
 //   repentir non échu · 21 parole après la déclaration (suspendu) · 22 bail
 //   · 23 aucune déclaration « prête » sur ce sha · 25 mergée, mais l'avance
-//   de la copie principale a échoué (à arbitrer).
+//   de la copie principale a échoué (à arbitrer) · 26 focus area de PR-Agent
+//   dont le titre n'est cité par aucun commentaire du propriétaire jusqu'à la
+//   déclaration, ou focus areas illisibles (`autonomie-pieges-restes`,
+//   partie 14).
 import { execFileSync, spawnSync } from 'node:child_process';
 import { appendFileSync, existsSync, mkdirSync, readFileSync, realpathSync, renameSync, rmdirSync, unlinkSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { aplatirPages, brancheSure, versPrGraphql } from './lib/gh-rest.mjs';
+import { titresFocus, titresNonCites } from './lib/focus-areas-pr-agent.mjs';
 import { libelleOrigine, motifsOrigine } from './lib/origine-declaration.mjs';
 import { declaration } from './wn-guetteur.mjs';
+import { AUTEUR_PR_AGENT, MARQUEUR_REVUE } from './wn-revue-pr-agent.mjs';
 
 const RACINE = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -84,6 +89,7 @@ export const CODES = Object.freeze({
   declaration: 23,
   // 24 est évité : « porte 24 » désigne autre chose dans le plan.
   avance: 25,
+  focus: 26,
 });
 
 const SHA_COMPLET = /^[0-9a-f]{40}$/;
@@ -167,6 +173,35 @@ export function parolesApres(decl, { commentaires = [], revues = [], enLigne = [
   return paroles.sort((a, b) => a.at.localeCompare(b.at));
 }
 
+/**
+ * Focus areas de PR-Agent sans verdict (partie 14 d'`autonomie-pieges-
+ * restes`). Chaque titre du commentaire persistant (`pr-agent:review:full`,
+ * le dernier écrit) doit être cité, tel que PR-Agent l'écrit, par un
+ * commentaire de conversation du propriétaire (`OWNER`, comme l'origine des
+ * déclarations) dont l'heure de parole ne dépasse pas celle de la
+ * déclaration — la déclaration elle-même comprise. Rend `{ titres,
+ * manquants }` ; `titres` vaut `null` quand la section existe mais qu'aucun
+ * titre ne s'y lit. Sans commentaire persistant : rien à exiger ici, la
+ * preuve de revue reste celle de `wn-revue-pr-agent.mjs`.
+ */
+export function focusSansVerdict(decl, { commentaires = [], proprietaire = '' }) {
+  const revues = commentaires.filter((c) => c?.user?.login === AUTEUR_PR_AGENT && String(c?.body ?? '').includes(MARQUEUR_REVUE));
+  if (revues.length === 0) return { titres: [], manquants: [] };
+  const revue = revues.reduce((a, b) => (heureParole(b) > heureParole(a) ? b : a));
+  const titres = titresFocus(revue.body);
+  if (titres === null) return { titres: null, manquants: [] };
+  const limite = heureParole(decl);
+  const textes = commentaires
+    .filter((c) => c?.user?.type !== 'Bot' && typeof proprietaire === 'string' && proprietaire !== '' && c?.user?.login === proprietaire && c?.author_association === 'OWNER')
+    .filter((c) => heureParole(c) <= limite)
+    // L'intégrateur parle du même compte : son commentaire marqué qui
+    // reprend un refus 26 citerait le titre à la place de la file (revue
+    // `wn-reviewer`, partie 14).
+    .filter((c) => !estCommentaireIntegrateur('commentaire', c, proprietaire))
+    .map((c) => String(c?.body ?? ''));
+  return { titres, manquants: titresNonCites(titres, textes) };
+}
+
 /** Secondes restantes avant la fin d'un délai parti de `depuis` (ISO). */
 export function secondesRestantes(depuis, maintenantMs, delaiS) {
   const t = Date.parse(depuis);
@@ -186,12 +221,25 @@ export function etatBail(bail, session) {
  * passer. En `sans-merge`, le délai et le bail sont dits dans `notes`.
  *
  * @param {{decl: object|null, motifs: string[], paroles: object[], maintenantMs: number,
- *          mode: 'merge'|'sans-merge'|'filet', bail: object|null, session: string}} e
+ *          mode: 'merge'|'sans-merge'|'filet', bail: object|null, session: string,
+ *          focus?: {titres: string[]|null, manquants: string[]}}} e
  */
-export function verdictGardes({ decl, motifs, paroles, maintenantMs, mode, bail, session }) {
+export function verdictGardes({ decl, motifs, paroles, maintenantMs, mode, bail, session, focus = { titres: [], manquants: [] } }) {
   const notes = [];
   if (!decl) return { code: CODES.declaration, motif: 'aucune déclaration « prête » sur ce sha', notes };
   if (motifs.length) return { code: CODES.origine, motif: libelleOrigine(motifs), notes };
+  // Dans tous les modes, filet compris : un constat sans verdict ne se merge pas.
+  if (focus.titres === null) {
+    return { code: CODES.focus, motif: 'focus areas de PR-Agent illisibles (gabarit inconnu) : lire le commentaire persistant en entier, puis arbitrer', notes };
+  }
+  if (focus.manquants.length) {
+    const liste = focus.manquants.map((t) => `« ${t} »`).join(' · ');
+    return {
+      code: CODES.focus,
+      motif: `${focus.manquants.length} focus area(s) de PR-Agent sans verdict cité jusqu'à la déclaration : ${liste} — un commentaire cite chaque titre tel quel avec son verdict, puis la file redéclare`,
+      notes,
+    };
+  }
   if (mode === 'filet') {
     const prise = paroles.filter((p) => p.integrateur);
     if (prise.length) return { code: CODES.parole, motif: `prise en charge par l'intégrateur à ${prise[0].at} : pas de filet`, notes };
@@ -397,6 +445,7 @@ export async function integrer(n, sha, mode, deps) {
       decl,
       motifs: decl ? motifsOrigine(decl, lu.pr, lu.proprietaire) : [],
       paroles: decl ? parolesApres(decl, lu) : [],
+      focus: decl ? focusSansVerdict(decl, lu) : undefined,
       maintenantMs: maintenant(),
       mode,
       bail: deps.lireBail(),

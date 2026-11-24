@@ -139,7 +139,9 @@ leur file les merge jusqu'au bout. Une remarque de bot arrivée après
 ne corrige pas une PR. Depuis `D-546`, l'intégrateur merge par
 `scripts/wn-integrer.mjs`, qui exige l'origine de la déclaration, un délai
 de repentir de dix minutes après elle et le bail unique, puis écrit le
-journal des merges. Toute parole sur la PR depuis la déclaration suspend le
+journal des merges. Il refuse aussi (26) une focus area de PR-Agent dont le
+titre n'est cité par aucun commentaire du propriétaire jusqu'à la
+déclaration. Toute parole sur la PR depuis la déclaration suspend le
 merge, celle d'un robot comprise ; la file redéclare, et le délai repart.
 En repli, sur décision du responsable (`D-454`,
 amendement du 2026-11-08), chaque session reprend ses merges selon le même cycle, plus bas. Une PR « prête » ni mergée ni commentée par l'intégrateur vingt minutes après sa déclaration revient à sa file, qui la merge selon ce même cycle (même amendement). Une PR qui écrit la réponse à une
