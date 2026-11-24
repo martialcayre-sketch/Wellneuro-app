@@ -10,6 +10,9 @@
 //      silence ;
 //   3. une preuve illisible se dit « lecture GitHub en échec », jamais
 //      « aucune preuve ».
+// Et un nom de branche accentué se dit « non interrogeable », sans partir
+// vers GitHub : l'alphabet de `branche_sure` s'écrit sans plage, qui suit la
+// collation de la locale sous bash 3.2 (macOS), où « é » tombe dans `a-z`.
 // Le faux `gh` refuse aussi tout `gh pr …` : un retour à GraphQL rougit.
 
 import test from 'node:test';
@@ -62,12 +65,12 @@ function preparer() {
   git(depot, 'config', 'core.hooksPath', path.join(racine, 'sans-crochets'));
   git(depot, 'commit', '-q', '--allow-empty', '-m', 'racine');
   git(depot, 'remote', 'add', 'origin', origine);
-  for (const b of ['ouverte', 'mergee', 'inconnue', 'fix+z']) {
+  for (const b of ['ouverte', 'mergee', 'inconnue', 'fix+z', 'fix-é']) {
     git(depot, 'switch', '-q', '-c', b, 'main');
     git(depot, 'commit', '-q', '--allow-empty', '-m', b);
   }
   git(depot, 'switch', '-q', 'main');
-  git(depot, 'push', '-q', 'origin', 'main', 'ouverte', 'mergee', 'inconnue', 'fix+z');
+  git(depot, 'push', '-q', 'origin', 'main', 'ouverte', 'mergee', 'inconnue', 'fix+z', 'fix-é');
   const bin = path.join(racine, 'bin');
   fs.mkdirSync(bin);
   fs.writeFileSync(path.join(bin, 'gh'), FAUX_GH);
@@ -103,6 +106,10 @@ test('constat nominal en REST : PR ouverte protégée, PR mergée prouvée, aucu
   assert.match(r.stdout, /À EXAMINER \(nom de branche non interrogeable\) : fix\+z/);
   assert.match(r.stdout, /À EXAMINER \(nom de branche non interrogeable\) : origin\/fix\+z/);
   assert.ok(r.appels.every((a) => !a.some((x) => x.includes('fix+z'))), 'le nom hors alphabet a été envoyé à GitHub');
+  // Un nom accentué non plus (P3 laissé de #2287, bash 3.2).
+  assert.match(r.stdout, /À EXAMINER \(nom de branche non interrogeable\) : fix-é/);
+  assert.match(r.stdout, /À EXAMINER \(nom de branche non interrogeable\) : origin\/fix-é/);
+  assert.ok(r.appels.every((a) => !a.some((x) => x.includes('fix-é'))), 'le nom accentué a été envoyé à GitHub');
   assert.match(r.stdout, /Constat seul — rien n'a été supprimé/);
   assert.ok(r.appels.length > 0, 'le faux gh n’a pas été appelé');
   assert.ok(r.appels.every((a) => a[0] === 'api'), 'un appel `gh pr` (GraphQL) subsiste');
@@ -125,4 +132,14 @@ test('preuve illisible : « lecture GitHub en échec », jamais « aucune preuve
   assert.match(r.stdout, /À EXAMINER \(lecture GitHub en échec\) : mergee/);
   assert.match(r.stdout, /À EXAMINER \(lecture GitHub en échec\) : origin\/mergee/);
   assert.doesNotMatch(r.stdout, /SUPPRIMABLE/);
+});
+
+test('alphabet de `branche_sure` sans plage : la collation de bash 3.2 n’y entre pas', () => {
+  const source = fs.readFileSync(SCRIPT, 'utf8');
+  const motifs = [...source.matchAll(/\*\[!([^\]]+)\]\*/g)].map((m) => m[1]);
+  assert.ok(motifs.length > 0, 'motif de `branche_sure` introuvable');
+  for (const m of motifs) {
+    // Seul un tiret final est admis (littéral) ; tout autre tiret forme une plage.
+    assert.doesNotMatch(m.slice(0, -1), /-/, `plage dans l’alphabet : [!${m}]`);
+  }
 });
