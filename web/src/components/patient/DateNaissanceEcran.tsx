@@ -88,7 +88,7 @@ export function EcranCircuitMineur({
 }) {
   const [entree, ...suite] = texteMineurJeune(tranche);
   return (
-    <PatientCard maxWidth="md">
+    <PatientCard>
       <PatientPageHeader title={entree.titre} as="h2" />
       <div className="space-y-4 text-sm text-muted-foreground leading-relaxed">
         <p>{entree.texte}</p>
@@ -142,7 +142,7 @@ export function DateNaissanceEcran({
   };
 
   return (
-    <PatientCard maxWidth="md">
+    <PatientCard>
       <PatientPageHeader title="Votre date de naissance" />
       <div className="space-y-3 text-sm text-muted-foreground leading-relaxed">
         <p>

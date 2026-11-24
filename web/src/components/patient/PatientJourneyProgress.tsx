@@ -63,28 +63,32 @@ export function PatientJourneyProgress({ steps }: { steps: JourneyStep[] }) {
     // `tabIndex` : la frise défile sans contenu focalisable ; sans lui, le clavier
     // ne pouvait pas la faire défiler (WCAG 2.1.1, règle axe du 2026-11-06).
     // L'anneau est le `:focus-visible` global de `globals.css`.
+    // Refonte Lien, PAT-7l (F6 a) : sous 768 px, les six étapes se posent en
+    // 3 × 2, toutes visibles, sans liaison ni défilement (planche PAT-2,
+    // téléphone) ; au-delà, une ligne reliée, qui ne défile qu'en dernier
+    // recours (grand texte du confort de lecture).
     <ol
       tabIndex={0}
-      className="relative flex items-start overflow-x-auto pb-1 -mx-1 px-1"
+      className="relative -mx-1 grid grid-cols-3 gap-x-1 gap-y-3 px-1 pb-1 md:flex md:items-start md:overflow-x-auto"
       aria-label="Étapes de votre parcours"
     >
       {steps.map((step, index) => {
         const classes = STATE_CLASSES[step.state];
         return (
-          <li key={step.id} className="flex shrink-0 items-start">
+          <li key={step.id} className="flex min-w-0 justify-center md:shrink-0 md:items-start md:justify-start">
             <span className="flex min-w-0 flex-col items-center gap-1.5">
               <span
                 className={`inline-block h-3.5 w-3.5 rounded-full ${classes.dot}`}
                 aria-hidden="true"
               />
-              <span className={`whitespace-nowrap px-1 text-2xs ${classes.label}`}>
+              <span className={`px-1 text-center text-2xs md:whitespace-nowrap ${classes.label}`}>
                 {step.label}
                 {step.state === 'current' && <span className="sr-only"> (étape actuelle)</span>}
                 {step.state === 'done' && <span className="sr-only"> (terminée)</span>}
               </span>
             </span>
             {index < steps.length - 1 && (
-              <span className="mt-[6px] h-0.5 w-4 shrink-0 bg-border sm:w-6" aria-hidden="true" />
+              <span className="mt-[6px] hidden h-0.5 w-6 shrink-0 bg-border md:block" aria-hidden="true" />
             )}
           </li>
         );
