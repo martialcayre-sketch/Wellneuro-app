@@ -203,17 +203,27 @@ export function DepotDocuments({ token }: { token: string }) {
               <p className="text-base text-foreground">{MESSAGES_DEPOT_DOCUMENT[donnees.plafond]}</p>
             ) : (
               <div className="space-y-4">
+                {/* Options en cartes de la planche (PAT-7k, F5 a) : le radio natif
+                    reste dessous (clavier, flèches, restitution) ; la carte
+                    choisie prend un bord pétrole de 2 px. */}
                 <fieldset className="space-y-2" disabled={occupe}>
-                  <legend className="text-base font-semibold text-foreground">{LEGENDE_CATEGORIE}</legend>
+                  <legend className="mb-2 text-base font-semibold text-foreground">{LEGENDE_CATEGORIE}</legend>
                   {CATEGORIES_DOCUMENT.map(c => (
-                    <label key={c} className="flex min-h-11 items-center gap-3 text-base text-foreground">
+                    <label
+                      key={c}
+                      className={`flex min-h-12 cursor-pointer items-center gap-3 rounded px-4 py-2.5 text-sm transition-colors ${
+                        categorie === c
+                          ? 'border-2 border-primary bg-primary/10 font-semibold text-primary'
+                          : 'border border-control-border bg-surface text-foreground hover:border-primary/60'
+                      }`}
+                    >
                       <input
                         type="radio"
                         name="categorie"
                         value={c}
                         checked={categorie === c}
                         onChange={() => setCategorie(c)}
-                        className="h-5 w-5"
+                        className="h-5 w-5 shrink-0 accent-primary"
                       />
                       {LIBELLES_CATEGORIE_DOCUMENT[c]}
                     </label>

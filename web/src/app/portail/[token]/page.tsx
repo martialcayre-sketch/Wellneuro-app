@@ -391,7 +391,9 @@ function ChampSimple({ champ, valeur, onChange, requis }: {
                 type="button"
                 aria-pressed={actif}
                 onClick={() => onChange(actif ? '' : opt)}
-                className={`min-h-11 px-3 py-1.5 rounded-lg border text-sm transition-colors ${actif ? 'bg-primary text-primary-foreground border-primary' : 'bg-surface text-muted-foreground border-border hover:border-primary/60'}`}
+                // Tuile de la planche (PAT-7k, F5 a) : 48 px, 15 px, rayon 14 ;
+                // pressée, bord pétrole de 2 px sur fond teinté.
+                className={`min-h-12 px-3.5 py-2 rounded text-sm transition-colors ${actif ? 'border-2 border-primary bg-primary/10 font-semibold text-primary' : 'border border-control-border bg-surface font-medium text-foreground hover:border-primary/60'}`}
               >
                 {opt}
               </button>

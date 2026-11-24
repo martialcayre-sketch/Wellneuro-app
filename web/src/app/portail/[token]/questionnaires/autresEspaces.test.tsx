@@ -315,7 +315,7 @@ describe('« Autres espaces » — matrice majeur, mineur, dossier clos (EP-20)'
 });
 
 describe('« Mon accompagnement » — déplié d’office quand un protocole est servi (D-423 §3, Q19)', () => {
-  const blocAccompagnement = () => screen.getByText('Mon accompagnement', { selector: 'summary' }).closest('details')!;
+  const blocAccompagnement = () => screen.getByText('Mon accompagnement', { selector: 'summary > span' }).closest('details')!;
 
   it('protocole servi : déplié', async () => {
     const fetchMock = monter({ age: 'majeur', dossierOuvert: true, bilanConsultable: false, protocoleDiffuse: true });

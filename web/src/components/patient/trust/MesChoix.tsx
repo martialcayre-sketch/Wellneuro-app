@@ -5,6 +5,7 @@ import { FINALITES } from '@/lib/trust/finalitesChoix';
 import type { ChoixEtat } from '@/app/api/portail/trust/etat/route';
 import { PatientButton } from '@/components/patient/ui/PatientButton';
 import { PatientInlineMessage } from '@/components/patient/ui/PatientInlineMessage';
+import { PatientVolet } from '@/components/patient/ui/PatientVolet';
 import { enTeteDossierPage } from '@/lib/portail/dossierPage';
 import { LienReconnexion } from '@/components/patient/LienReconnexion';
 
@@ -98,14 +99,18 @@ export function MesChoix({
         const statut = courant?.statut ?? null;
         const historique = historiqueChoix.filter(h => h.finalite === def.finalite);
         return (
-          <details key={def.finalite} className="rounded-lg border border-border bg-surface">
-            <summary className="cursor-pointer px-4 py-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-lg flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-              <span className="min-w-0 grow basis-24 font-semibold text-foreground">{def.libelle}</span>
-              <span className="text-muted-foreground">
-                {statut ? LIBELLE_STATUT[statut] ?? statut : 'Non autorisé'}
+          <PatientVolet
+            key={def.finalite}
+            titre={
+              <span className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                <span className="min-w-0 grow basis-24">{def.libelle}</span>
+                <span className="font-normal text-muted-foreground">
+                  {statut ? LIBELLE_STATUT[statut] ?? statut : 'Non autorisé'}
+                </span>
               </span>
-            </summary>
-            <div className="px-4 pb-4 space-y-2 text-sm text-muted-foreground leading-relaxed">
+            }
+            corpsClassName="px-4 pb-4 space-y-2 text-sm text-muted-foreground leading-relaxed"
+          >
               <p>
                 <span className="font-semibold text-foreground">Finalité : </span>
                 {def.finaliteDetail}
@@ -174,8 +179,7 @@ export function MesChoix({
                   </ul>
                 </div>
               )}
-            </div>
-          </details>
+          </PatientVolet>
         );
       })}
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-2 text-sm rounded-lg border border-border bg-surface">
