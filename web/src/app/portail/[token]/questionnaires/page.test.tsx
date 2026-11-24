@@ -213,7 +213,7 @@ describe('QuestionnairesHubPage — parcours d’un dossier clos', () => {
   // tranchée par le prototype validé le 2026-11-11). Le chiffre seul part.
   it('l’intertitre repliable ne porte aucun compteur', async () => {
     await rendre({ statutAge: 'majeur', dossierOuvert: true });
-    const titre = screen.getByText('Transmis au praticien', { selector: 'summary' });
+    const titre = screen.getByText('Transmis au praticien', { selector: 'summary > span' });
     expect(titre.textContent).toBe('Transmis au praticien');
   });
 });

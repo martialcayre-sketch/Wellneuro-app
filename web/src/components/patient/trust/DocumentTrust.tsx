@@ -1,10 +1,11 @@
 import { Fragment } from 'react';
 import type { VersionDocumentTrust } from '@/lib/trust/types';
 import { datePublicationEnLettres } from '@/lib/trust/datePublication';
+import { PatientVolet } from '@/components/patient/ui/PatientVolet';
 
 /**
  * Rendu de la version canonique HTML d'un document d'information TRUST.
- * Deux modes : blocs (lecture continue) ou accordéons natifs <details>
+ * Deux modes : blocs (lecture continue) ou accordéons natifs <details> (volets à chevron, PatientVolet)
  * (accessibles clavier/lecteur d'écran sans JS). La version et la date de
  * publication sont toujours visibles (LOT-02, « version visible »).
  */
@@ -31,17 +32,12 @@ export function DocumentTrust({
           ) : null;
         const cle = `${section.partie ?? ''}|${section.titre}`;
         const bloc = accordeons ? (
-          <details
-            className="rounded-lg border border-border bg-surface"
+          <PatientVolet
+            titre={section.titre}
             open={section.partie !== undefined && partiesDepliees.includes(section.partie)}
           >
-            <summary className="cursor-pointer px-4 py-3 text-sm font-semibold text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-lg">
-              {section.titre}
-            </summary>
-            <div className="px-4 pb-4">
-              <SectionCorps section={section} />
-            </div>
-          </details>
+            <SectionCorps section={section} />
+          </PatientVolet>
         ) : (
           <section>
             <h4 className="text-sm font-semibold text-foreground mb-1">{section.titre}</h4>

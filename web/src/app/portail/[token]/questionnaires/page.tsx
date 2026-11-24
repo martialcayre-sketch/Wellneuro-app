@@ -32,8 +32,7 @@ import type { PointEtape } from '@/lib/protocol/checkinDomain';
 import type { LectureAttendue } from '@/lib/portail/lecturesAttendues';
 import { PropositionPackReevaluation } from '@/components/patient/PropositionPackReevaluation';
 import { deriverEtatParcoursPatient } from '@/lib/trajectoire-partagee/contrat';
-import { ChevronDown } from 'lucide-react';
-import { TRAIT_ICONE } from '@/components/ui/icone';
+import { PatientVolet } from '@/components/patient/ui/PatientVolet';
 
 export default function QuestionnairesHubPage() {
   const { token } = useParams<{ token: string }>();
@@ -514,23 +513,12 @@ export default function QuestionnairesHubPage() {
       */}
       {/* Volet de l'Empreinte (prototype PAT-3 validé) : en-tête lisible de
           48 px, chevron qui suit l'ouverture ; même condition d'ouverture. */}
-      <details
+      <PatientVolet
+        titre="Mon accompagnement"
         open={signauxProtocole.protocoleDiffuse || lectureProtocoleEchouee}
-        className="group rounded-lg border border-border bg-surface"
       >
-        <summary className="flex min-h-12 cursor-pointer select-none list-none items-center justify-between gap-4 rounded-lg px-5 py-3 text-sm font-semibold text-foreground [overflow-wrap:anywhere] max-[319px]:hyphens-auto [&::-webkit-details-marker]:hidden">
-          Mon accompagnement
-          <ChevronDown
-            aria-hidden="true"
-            size={18}
-            strokeWidth={TRAIT_ICONE}
-            className="shrink-0 transition-transform duration-reveal ease-lien group-open:rotate-180 motion-reduce:transition-none"
-          />
-        </summary>
-        <div className="px-4 pb-4">
-          <PatientCompanionHome token={token} />
-        </div>
-      </details>
+        <PatientCompanionHome token={token} />
+      </PatientVolet>
 
       {/*
         ── CE QUI OCCUPAIT CETTE PLACE, ET POURQUOI IL N'Y EST PLUS ──────────
@@ -592,15 +580,13 @@ export default function QuestionnairesHubPage() {
 
             // "À compléter" reste toujours visible ; les sections secondaires
             // (transmis/correction/expiré) sont repliées par défaut sous un
-            // <details> natif — accessible sans JavaScript custom.
+            // <details> natif — accessible sans JavaScript custom —, habillé en
+            // volet à chevron comme « Mon accompagnement » (PAT-7k, F5 a).
             if (GROUPES_SECONDAIRES.has(cle)) {
               return (
-                <details key={cle} className="space-y-3">
-                  <summary className="text-sm font-semibold text-muted-foreground uppercase tracking-wide cursor-pointer select-none">
-                    {titre}
-                  </summary>
-                  <div className="mt-3">{liste}</div>
-                </details>
+                <PatientVolet key={cle} titre={titre}>
+                  {liste}
+                </PatientVolet>
               );
             }
 
