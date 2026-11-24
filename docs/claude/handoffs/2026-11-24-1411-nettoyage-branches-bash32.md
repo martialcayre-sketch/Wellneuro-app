@@ -32,7 +32,9 @@ le dire « prouvé » ni le supprimer.
 ## Fichiers modifiés
 
 - `scripts/nettoyage-branches.sh` (`branche_sure`)
-- `scripts/nettoyage-branches.test.mjs` (branche `fix-é`, sentinelle sans plage)
+- `scripts/nettoyage-branches.test.mjs` (branche `fix-é`, sentinelle sans plage
+  bornée au corps de `branche_sure` après la revue PR-Agent « Sentinelle
+  fragile », contre-épreuve : la plage réintroduite est détectée)
 - `changelog.d/2026-11-24-nettoyage-branches-bash32.md`
 - `docs/claude/handoffs/2026-11-24-1411-nettoyage-branches-bash32.md`
 

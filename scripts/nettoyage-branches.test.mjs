@@ -136,10 +136,14 @@ test('preuve illisible : « lecture GitHub en échec », jamais « aucune preuve
 
 test('alphabet de `branche_sure` sans plage : la collation de bash 3.2 n’y entre pas', () => {
   const source = fs.readFileSync(SCRIPT, 'utf8');
-  const motifs = [...source.matchAll(/\*\[!([^\]]+)\]\*/g)].map((m) => m[1]);
-  assert.ok(motifs.length > 0, 'motif de `branche_sure` introuvable');
-  for (const m of motifs) {
+  // Le corps de `branche_sure` seul (revue PR-Agent #2321) : d'autres motifs du
+  // script peuvent porter une plage légitime.
+  const corps = (source.match(/^branche_sure\(\) \{\n([\s\S]*?)^\}/m) || [])[1];
+  assert.ok(corps, 'corps de `branche_sure` introuvable');
+  const crochets = [...corps.matchAll(/\[!?([^\]]+)\]/g)].map((m) => m[1]);
+  assert.ok(crochets.length > 0, 'alphabet de `branche_sure` introuvable');
+  for (const c of crochets) {
     // Seul un tiret final est admis (littéral) ; tout autre tiret forme une plage.
-    assert.doesNotMatch(m.slice(0, -1), /-/, `plage dans l’alphabet : [!${m}]`);
+    assert.doesNotMatch(c.slice(0, -1), /-/, `plage dans l’alphabet : [${c}]`);
   }
 });
