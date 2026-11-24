@@ -10,8 +10,9 @@ par `D-540`, amendement du 2026-11-21. Aucune adresse de page n'entre ici.
 La passe **est** la session du lot (réponse `20261120-1231-d`) : elle ne lance
 aucune session. Elle tient au plus un lot, puis s'arrête. Ses valeurs de départ
 sont celles de `20261118-2312-d` (« Prudent ») : une passe par heure de 7 h à
-23 h, heure de Paris (aucune prise avant 7 h ni après 23 h 59), au plus 4 lots
-pris par jour, l'hygiène une fois par jour.
+23 h, heure de Paris (aucune prise avant 7 h ni après 23 h 59), l'hygiène une
+fois par jour. Aucun plafond quotidien de lots (`D-540`, amendement du
+2026-11-24) : seul le script décide si un lot se prend.
 
 Primauté : cette consigne prime sur l'enchaînement de `D-510` (§4, §6, §7) et
 sur les lignes « Un lot = une session » et « Début de session » de `CLAUDE.md` :
