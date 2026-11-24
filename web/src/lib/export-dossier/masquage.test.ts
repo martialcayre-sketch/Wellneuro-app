@@ -659,10 +659,19 @@ describe('creerMasqueur — garanties', () => {
     const tel = creerMasqueur(patient({ telephone: '06 12 34 56 78' }), PSEUDONYME);
     const N = 80_000;
     tel('(' + ' '.repeat(N));
+    // Meilleure de cinq passes : une passe isolée peut dépasser 50 ms sous la
+    // charge de la suite (79 ms constatés le 2026-11-16). Une régression
+    // quadratique — 80 000² opérations — dépasse le seuil à chaque passe :
+    // la garde rougit toujours ; seule la gigue d'ordonnancement est absorbée.
     for (const blanc of [' ', '\t', '\n', '\u{A0}']) {
-      const debut = performance.now();
-      tel('(' + blanc.repeat(N));
-      expect(performance.now() - debut, JSON.stringify(blanc)).toBeLessThan(50);
+      const texte = '(' + blanc.repeat(N);
+      let meilleure = Infinity;
+      for (let passe = 0; passe < 5 && meilleure >= 50; passe++) {
+        const debut = performance.now();
+        tel(texte);
+        meilleure = Math.min(meilleure, performance.now() - debut);
+      }
+      expect(meilleure, JSON.stringify(blanc)).toBeLessThan(50);
     }
   });
 
