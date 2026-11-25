@@ -110,6 +110,13 @@ describe('LienDecor — aucun mouvement', () => {
           '[@media(prefers-reduced-motion:no-preference)]:opacity-50 [mask-image:none] md:w-[9rem]',
       ),
     ).toBe('w-[12rem] [mask-image:none] md:w-[9rem]');
+    // Formes longues (second constat PR-Agent sur #2339).
+    expect(
+      classesAdmises(
+        '[transition-property:all] [transition-duration:1s] [animation-name:pulse] [animation-duration:1s] ' +
+          '[-webkit-user-select:text] [-webkit-animation-name:x] md:[animation-play-state:running] h-[3px]',
+      ),
+    ).toBe('h-[3px]');
     const noeud = rendre({ emplacement: 'deux-voix', className: 'my-4 animate-spin print:block pointer-events-auto' })
       .noeud!;
     expect(noeud.className).toContain('my-4');

@@ -92,8 +92,13 @@ const SOCLE = 'pointer-events-none select-none print:hidden';
  * mouvement, pointeur, impression, empilement.
  */
 const UTILITAIRE_INTERDIT = /^!?-?(?:animate-|transition|duration-|ease-|delay-|will-change-|pointer-events-|select-|z-)/;
-/** Propriété arbitraire (`[animation:…]`, `[pointer-events:auto]`…). */
-const PROPRIETE_INTERDITE = /^!?\[\s*(?:-webkit-)?(?:animation|transition|pointer-events|user-select|z-index|will-change)\s*:/;
+/**
+ * Propriété arbitraire dont le nom commence par un préfixe interdit, formes
+ * longues comprises (`[animation:…]`, `[transition-duration:1s]`,
+ * `[pointer-events:auto]`…).
+ */
+const PROPRIETE_INTERDITE =
+  /^!?\[\s*(?:-(?:webkit|moz|ms)-)?(?:animation|transition|pointer-events|user-select|z-index|will-change)[a-z-]*\s*:/;
 const VARIANTES_INTERDITES = new Set(['print', 'motion-safe', 'motion-reduce']);
 /** Variante arbitraire (`[@media_print]:`…) qui vise l'impression ou le mouvement. */
 const VARIANTE_ARBITRAIRE_INTERDITE = /^\[.*(?:print|motion).*\]$/;

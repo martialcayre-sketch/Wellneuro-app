@@ -5,8 +5,10 @@
 - Branche `claude/refonte-lien-com1-liendecor-b82e12`, worktree neuf
   `.claude/worktrees/refonte-lien-com1-liendecor-b82e12`, créé sur `origin/main` `30d2a0d1`
   fraîchement fetché, avancé par `--ff-only` à `8bb812f8` en cours de lot (branche sans
-  commit propre ; `main` n'avait touché que des docs).
-- Un commit de lot, une PR. La session ne merge pas : « prête @<sha> » à l'intégrateur.
+  commit propre ; `main` n'avait touché que des docs). Après trois commits propres, `main` a de
+  nouveau avancé (`6450f72a`, crochets, CI outillage, D-559, sans fichier commun) : fusion
+  d'`origin/main` sur arbitrage écrit du responsable (D-518, « Fusionner origin/main »).
+- Une PR. La session ne merge pas : « prête @<sha> » à l'intégrateur.
   L'annonce dans les deux pages de suivi revient à la session d'orchestration.
 
 ## Objectif
@@ -41,7 +43,8 @@ Aucun écran ne l'emploie dans ce lot.
   `motion-safe:`/`motion-reduce:`), le pointeur, la sélection, l'empilement (`z-`) et les
   variantes `print:`. Le découpage ignore les `:` entre crochets : propriétés et variantes
   arbitraires (`[animation:…]`, `[pointer-events:auto]`, `[@media_print]:`) sont retirées
-  aussi (constat PR-Agent sur la première tête, corrigé). Un fond n'accepte pas de classes.
+  aussi, formes longues comprises (`[transition-duration:…]`, `[animation-name:…]`) — deux
+  constats PR-Agent successifs, « Filtre contournable » et « Filtre incomplet », corrigés. Un fond n'accepte pas de classes.
 - **Refus** : au typage (union discriminée, `@ts-expect-error` au banc) et à l'exécution
   (rend `null`, clé héritée comprise par `Object.hasOwn`).
 - **Garde du §1 quater** (`LienDecor.guard.test.ts`, à part : un banc qui balaie une
