@@ -37,11 +37,14 @@ const nommeLOutillage = (specificateur: string) =>
   /(^|\/)(balayageSources|resolutionImports)(\.[cm]?[jt]sx?)?(\?.*)?$/i.test(specificateur);
 
 /**
- * LE CLIENT PRISMA EN LIEN HORS DU DÉPÔT (`wn-reviewer` sur ce lot) : le
- * contrôle de fusion pose `web/src/generated/prisma` en lien symbolique vers la
- * copie source. Canonicalisé, le fichier atteint sort alors du dépôt (`../…`) :
- * il est ramené à son chemin DANS le dépôt, pour rester balayé — et exempté de
- * la règle des noms nus, comme le client généré l'est (`importsResolus`).
+ * LE CLIENT PRISMA EN LIEN HORS DU DÉPÔT (`wn-reviewer` sur ce lot) : quand
+ * `web/src/generated/prisma` est un lien symbolique vers une copie hors de la
+ * racine, le fichier atteint, canonicalisé, sort du dépôt (`../…`) : il est
+ * ramené à son chemin DANS le dépôt, pour rester balayé — et exempté de la
+ * règle des noms nus, comme le client généré l'est (`importsResolus`). Le
+ * contrôle de fusion ne pose plus ce lien : il COPIE le client dans l'arbre
+ * extrait depuis la partie 11 d'`autonomie-pieges-restes` (#2305). La
+ * compensation reste pour tout arbre où le client serait relié.
  */
 const CLIENT_GENERE = 'web/src/generated/prisma/';
 function dansLeDepot(atteint: string | null): string | null {
@@ -184,9 +187,10 @@ describe('outillage des bancs de garde — importé par aucun module de producti
     expect(nommeLOutillage('@/lib/bio-parcours/balayageSourcesBis')).toBe(false);
   });
 
-  // CONTRE-ÉPREUVE DU CONTRÔLE DE FUSION : `web/src/generated/prisma` en vrai
-  // lien vers une copie hors de la racine. Le client reste atteint, balayé sous
-  // son chemin du dépôt, et ses noms nus ne le font pas importeur.
+  // CONTRE-ÉPREUVE DE LA COMPENSATION `dansLeDepot` : `web/src/generated/prisma`
+  // en vrai lien vers une copie hors de la racine (ce que posait le contrôle de
+  // fusion avant #2305, qui copie désormais le client). Le client reste atteint,
+  // balayé sous son chemin du dépôt, et ses noms nus ne le font pas importeur.
   it('le client Prisma généré en lien hors du dépôt reste atteint et balayé', () => {
     const racine = mkdtempSync(join(tmpdir(), 'wn-garde-client-racine-'));
     const ailleurs = mkdtempSync(join(tmpdir(), 'wn-garde-client-ailleurs-'));

@@ -167,11 +167,14 @@ const ACCES_EXTERIEURS = new Set([
 ]);
 
 /**
- * LE CLIENT PRISMA EN LIEN HORS DU DÉPÔT (P1 de `wn-reviewer` sur #2111) : le
- * contrôle de fusion pose `web/src/generated/prisma` en lien vers la copie
- * source ; canonicalisé, le client atteint sort du dépôt (`../…`). Il est
+ * LE CLIENT PRISMA EN LIEN HORS DU DÉPÔT (P1 de `wn-reviewer` sur #2111) :
+ * quand `web/src/generated/prisma` est un lien vers une copie hors de la
+ * racine, le client atteint, canonicalisé, sort du dépôt (`../…`). Il est
  * ramené à son chemin du dépôt, pour rester une borne — sinon il passerait
- * pour un module extérieur et rougirait ce banc, « imputable ».
+ * pour un module extérieur et rougirait ce banc, « imputable ». Le contrôle de
+ * fusion ne pose plus ce lien : il COPIE le client dans l'arbre extrait depuis
+ * la partie 11 d'`autonomie-pieges-restes` (#2305). La compensation reste pour
+ * tout arbre où le client serait relié.
  */
 function dansLeDepot(atteint: string | null): string | null {
   if (atteint === null || !atteint.startsWith('../')) return atteint;
@@ -417,9 +420,10 @@ describe('Bibliothèque des options au cockpit — la fermeture résolue ne lit 
     expect(temoin.acces).toEqual(ACCES_ADMIS);
   });
 
-  // CONTRE-ÉPREUVE DU CONTRÔLE DE FUSION (rappel du P1 de #2111) : le client
-  // généré en vrai lien vers une copie hors de la racine reste une borne, sous
-  // son chemin du dépôt — il ne passe pas pour un module extérieur.
+  // CONTRE-ÉPREUVE DE LA COMPENSATION `dansLeDepot` (rappel du P1 de #2111) :
+  // le client généré en vrai lien vers une copie hors de la racine (ce que
+  // posait le contrôle de fusion avant #2305) reste une borne, sous son chemin
+  // du dépôt — il ne passe pas pour un module extérieur.
   it('le client Prisma généré en lien hors du dépôt reste une borne', () => {
     const racine = mkdtempSync(join(tmpdir(), 'wn-garde-cockpit-racine-'));
     const ailleurs = mkdtempSync(join(tmpdir(), 'wn-garde-cockpit-ailleurs-'));
