@@ -194,7 +194,11 @@ défaut quand aucun claim ne relie un résultat à une conclusion) ; un mot de
 fréquence ou de régularité d'une prise, et un apport situé par rapport à une
 référence, sont des quantités de prise ; dans « surveillance_arret », un
 contrôle biologique dit utile, conseillé, fréquent ou habituel est un usage,
-qui s'écrit attribué et réservé ou pas du tout.
+qui s'écrit attribué et réservé ou pas du tout. Le §19 s'y joint : dans « precautions », pour une
+fiche dont le marqueur sécurité / admissibilité est « oui », une condition
+propre à une spécialité nommée s'écrit attribuée à sa source avec toutes ses
+restrictions, sans posologie, et une interaction attribuée nomme ses
+principes actifs, avec le délai entre prises qu'elle porte.
 
 ## Ce que l'outil ne voit pas
 

@@ -97,7 +97,20 @@ Il est INFIDÈLE s'il contient au moins un des défauts suivants :
   schéma de prise, n'est pas un défaut ; un fait propre à une spécialité
   généralisé à cette catégorie en est un ; nommer une forme de nutriment
   (un sel, un composé) n'est pas, en soi, nommer un médicament, sauf quand
-  elle est nommée en tant que médicament ;
+  elle est nommée en tant que médicament ; ne sont pas des défauts, dans
+  « precautions » seulement et quand le marqueur sécurité / admissibilité
+  est « oui » : une condition de sécurité ou d'admissibilité qu'un claim
+  attache à une spécialité nommée, attribuée à sa source (« Selon le RCP
+  de <spécialité>, … »), avec toutes les restrictions que le claim lui
+  attache (forme, indication, excipient, population, période), sans
+  posologie ; un fait d'interaction attribué à sa source qui nomme les
+  principes actifs ou les classes que son claim nomme, avec le délai entre
+  les prises que ce claim attache à l'interaction ; en sont un : la même
+  chose hors de « precautions » ou d'une fiche dont le marqueur est
+  « oui », sans attribution, privée d'une de ses restrictions, généralisée
+  au nutriment ou à la catégorie « médicaments », accompagnée d'une autre
+  quantité de prise (dose, durée, fréquence, moment), ou réunissant dans
+  une même phrase un fait propre à une spécialité et une interaction ;
 - une quantité à prendre ou à consommer (dose, volume, nombre d'unités,
   apport recommandé ou de référence), une fréquence ou un fractionnement
   des prises, une durée de prise ou de traitement, un moment de prise (le
@@ -107,7 +120,8 @@ Il est INFIDÈLE s'il contient au moins un des défauts suivants :
   « au-delà des » références), ou toute autre valeur
   qui n'est ni une teneur ni un seuil (par exemple une teneur maximale
   recommandée pour un produit), même rapportés par un claim, hors une
-  valeur reprise d'une désignation approuvée comme dit plus haut ; ne sont pas
+  valeur reprise d'une désignation approuvée comme dit plus haut, et hors
+  le délai entre les prises d'une interaction admis plus haut ; ne sont pas
   des défauts une teneur de composition (la quantité d'un nutriment
   effectivement présente dans un aliment, une eau ou un produit) et un
   seuil qui borne une observation ou un risque (la quantité au-delà de

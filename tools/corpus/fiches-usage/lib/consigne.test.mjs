@@ -345,3 +345,23 @@ test('v14 : test d\'« interpretations », mots de fréquence et de référence,
   assert.match(r, /Dans « surveillance_arret » surtout, une phrase qui dit un contrôle biologique utile, conseillé, fréquent ou habituel présente un usage/);
   assert.match(c, /« precautions » comprise, et « surveillance_arret » aussi \(un contrôle biologique dit utile, conseillé, fréquent ou habituel est un usage\)/);
 });
+
+// v14, §19 de [[D-501]] (20261125-1800-b) : exception des médicaments nommés,
+// en « precautions » seulement, fiche sécurité « oui », des deux côtés.
+test('v14 §19 : exception des médicaments nommés, bornée, et délai d\'interaction, des deux côtés', () => {
+  const { redaction, contreLecture } = lireConsignes();
+  const r = redaction.replace(/\s+/g, ' ');
+  const c = contreLecture.replace(/\s+/g, ' ');
+  assert.match(r, /Exception, dans « precautions » seulement et seulement quand le marqueur sécurité \/ admissibilité est « oui »/);
+  assert.match(c, /ne sont pas des défauts, dans « precautions » seulement et quand le marqueur sécurité \/ admissibilité est « oui »/);
+  for (const t of [r, c]) {
+    assert.match(t, /« Selon le RCP de <spécialité>, … »/);
+    assert.match(t, /\(forme, indication, excipient, population, période\)/);
+    assert.match(t, /délai entre les prises/);
+  }
+  // La règle générale reste : aucun médicament nommé hors de l'exception.
+  assert.match(r, /LES MÉDICAMENTS\. Aucun médicament nommé/);
+  assert.match(r, /Une condition que l'exception des MÉDICAMENTS, ci-dessous, permet d'écrire ne relève pas de ce refus\./);
+  assert.match(c, /sans attribution, privée d'une de ses restrictions, généralisée au nutriment ou à la catégorie « médicaments », accompagnée d'une autre quantité de prise \(dose, durée, fréquence, moment\), ou réunissant dans une même phrase un fait propre à une spécialité et une interaction/);
+  assert.match(r, /Les faits propres à une spécialité et les interactions s'écrivent dans des phrases distinctes\./);
+});

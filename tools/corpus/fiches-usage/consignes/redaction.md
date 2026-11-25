@@ -105,7 +105,8 @@ Les DÉSIGNATIONS APPROUVÉES servent seulement à nommer (voir plus bas).
   consommer (dose, volume, nombre d'unités, apport recommandé ou de
   référence), une fréquence ou un fractionnement des prises, une durée de
   prise ou de traitement, un moment de prise (le soir, au repas, à jeun) ;
-  chacune est, ci-après, une quantité de prise. Un mot de fréquence ou de
+  chacune est, ci-après, une quantité de prise, hors le délai entre les
+  prises d'une interaction que l'exception des MÉDICAMENTS admet. Un mot de fréquence ou de
   régularité (« régulièrement », « chaque jour », « quotidiennement »,
   « souvent ») attaché à une prise ou à une consommation, et un apport situé
   par rapport à une valeur de référence (« proche des », « au-delà des »,
@@ -138,7 +139,8 @@ Les DÉSIGNATIONS APPROUVÉES servent seulement à nommer (voir plus bas).
   prend la phrase de quantité, pas la phrase d'absence. Si le marqueur sécurité / admissibilité est
   « oui » et qu'une condition de sécurité ou d'admissibilité ne peut
   s'écrire qu'avec une quantité exclue ou un médicament nommé, ne rédige rien :
-  réponds {"refus": "<motif en une phrase>"}.
+  réponds {"refus": "<motif en une phrase>"}. Une condition que l'exception
+  des MÉDICAMENTS, ci-dessous, permet d'écrire ne relève pas de ce refus.
 - LES MÉDICAMENTS. Aucun médicament nommé : ni spécialité ou nom
   commercial, ni principe actif ou classe thérapeutique nommés en tant que
   médicaments ; ni aucune posologie. Nommer une forme de nutriment (un
@@ -147,6 +149,21 @@ Les DÉSIGNATIONS APPROUVÉES servent seulement à nommer (voir plus bas).
   quand un claim la mentionne dans un fait descriptif de sécurité ou de
   comparaison, sans spécialité nommée ni schéma de prise. Un fait propre à
   une spécialité ne se généralise jamais à cette catégorie.
+  Exception, dans « precautions » seulement et seulement quand le marqueur
+  sécurité / admissibilité est « oui » : une condition de sécurité ou
+  d'admissibilité que son claim attache à une spécialité nommée s'écrit
+  attribuée à sa source (« Selon le RCP de <spécialité>, … »), la
+  spécialité nommée telle que le claim la nomme, avec toutes les
+  restrictions que le claim lui attache (forme, indication, excipient,
+  population, période), sans posologie, et jamais généralisée au nutriment
+  ni à la catégorie « médicaments ». Dans la même rubrique et sous la même
+  condition, un fait d'interaction attribué à sa source nomme les principes
+  actifs ou les classes thérapeutiques que son claim nomme, et le délai
+  entre les prises que ce claim attache à l'interaction s'écrit avec elle :
+  c'est une mesure de sécurité, pas une quantité de prise. Aucune autre
+  quantité de prise ne s'y écrit (ni dose, ni durée, ni fréquence, ni
+  moment). Les faits propres à une spécialité et les interactions
+  s'écrivent dans des phrases distinctes.
 - Garde les conditions, les populations et les limites que portent les
   claims : ne les élargis pas, ne les supprime pas. Un fait se restitue
   avec toutes les conditions que son claim lui attache (population, âge,
