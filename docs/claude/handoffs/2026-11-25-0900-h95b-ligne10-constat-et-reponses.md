@@ -4,7 +4,7 @@
 
 - Worktree `b-h95-second-appel`, branche `b-h95-ligne10-constat`, née d'`origin/main`. PR de doc seule.
 - #2322 (`synthese-v40`, non conforme) fermée sans merge, sur arbitrage du responsable du 2026-11-25. Son constat et son handoff partent ici, inchangés.
-- #2324 (le banc seul) est déclarée « prête » ; l'intégrateur la merge.
+- #2324 (le banc seul) est mergée (`f7482e8a`).
 
 ## 2. Objectif
 
@@ -34,7 +34,7 @@ Verser sur `main` le constat de l'évaluation de `synthese-v40` (journal H95, `2
 
 ## 7. Prochaine action exacte
 
-Instruire le projet de décision de retouche de la ligne 10 (numéro réservé par `wn-reserver-decision`), à partir de la cotation détaillée et des réponses ; aucun texte clinique n'y est arrêté sans le responsable.
+Instruire le projet de décision de retouche de la ligne 10 (numéro réservé par `wn-reserver-decision`), à partir de la cotation détaillée et des réponses ; aucun texte clinique n'y est arrêté sans le responsable. Y examiner aussi, sous la réponse 1426 B, les états nommés d'après le DNST à l'indicatif sans modalisateur, que la cotation n'a pas levés comme doutes (relevés par la revue de la PR de doc, au dépôt privé seulement) : 19 est le compte sur les cas levés.
 
 ## 8. Interdits encore actifs
 
