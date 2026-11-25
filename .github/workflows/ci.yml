@@ -424,6 +424,12 @@ jobs:
       - name: État de campagne et vue humaine (banc du script)
         run: node --test scripts/wn-campaign.test.mjs
 
+      # Banc de `scripts/wn-campaign-audit.mjs` : un lot ou une campagne au
+      # statut « transféré » compte comme fermé (arbitrage du 2026-11-25), un
+      # statut voisin (« transférer », « transfert prévu ») reste ouvert.
+      - name: Audit des campagnes, statut transféré (banc du script)
+        run: node --test scripts/wn-campaign-audit.test.mjs
+
       # Les deux bancs de `scripts/wn-etat-reel.mjs` : l'observation des six
       # dimensions, et les trois gardes de cohérence qui en confrontent trois
       # (vue `ACTIVE_CAMPAIGN.md` contre `.wn/state.json`, cohérence des deux
