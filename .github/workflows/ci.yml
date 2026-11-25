@@ -523,6 +523,11 @@ jobs:
       - name: Contrôle de clôture (banc)
         run: node --test scripts/wn-controle-cloture.test.mjs
 
+      # Banc du garde « SESSION_LOG : ajout en fin seulement » (le garde
+      # lui-même tourne plus bas, sur PR seulement).
+      - name: SESSION_LOG ajout en fin (banc)
+        run: node --test scripts/wn-session-log-ajout.test.mjs
+
       # Bancs des gardes que l'intégrateur exige avant un merge (preuve de
       # revue PR-Agent sur la tête, sonde release-db, chevauchement, contrôle
       # sur l'arbre fusionné, avis Codex de D-505) et du contrôle des
@@ -570,6 +575,18 @@ jobs:
       - name: Contrôle de clôture (fragment de handoff)
         if: github.event_name == 'pull_request' && steps.scope.outputs.docs_only != 'true'
         run: node scripts/wn-controle-cloture.mjs "${{ github.event.pull_request.base.sha }}"
+
+      # Piège « SESSION_LOG réordonné » (autonomie-pieges-restes, partie 15) :
+      # `merge=union` range l'entrée d'un lot devant celles de `main` quand la
+      # branche fusionne `main`. Le journal de la PR doit commencer par celui
+      # de la base, à l'octet près — ajout en fin seulement (compaction gelée,
+      # D-372 §2). Sur TOUTE PR, documentaire comprise : un résumé de session
+      # en est une. Base `HEAD^1`, comme l'étape des décisions ci-dessous.
+      # Node seul, celui du runner si `setup-node` est sauté. `!cancelled()` :
+      # un contrôle de clôture rouge ne masque pas ce verdict-ci.
+      - name: SESSION_LOG ajout en fin
+        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+        run: node scripts/wn-session-log-ajout.mjs HEAD^1 HEAD
 
       # D-370 §4 : sur une PR non documentaire, signale une décision ajoutée
       # sans réservation — si une autre PR prend le numéro d'abord, la

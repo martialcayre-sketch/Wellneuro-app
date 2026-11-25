@@ -32,4 +32,9 @@
 # une résurrection, invisible au diff de fusion. Ne jamais compacter tant qu'une
 # branche parallèle touche le journal, et relire le fichier après toute fusion
 # qui l'implique.
+#
+# Revers de `union` : une branche qui fusionne `main` y voit son entrée rangée
+# DEVANT celles de `main` (« nos » lignes d'abord). Le CI le refuse depuis la
+# partie 15 d'autonomie-pieges-restes (`scripts/wn-session-log-ajout.mjs`) :
+# le journal d'une PR commence par celui de sa base, à l'octet près.
 docs/claude/SESSION_LOG.md merge=union
