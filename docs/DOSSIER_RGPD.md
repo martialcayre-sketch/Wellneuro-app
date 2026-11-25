@@ -998,7 +998,8 @@ d'avocat. Ses références ont été vérifiées par la session.
   des deux titulaires. — 2026-11-18 : la revue de nécessité est faite, et
   elle requiert une AIPD pour le volet mineurs (rubrique 13). Cette AIPD
   s'ajoute aux conditions restantes : elle doit être finie et validée avant
-  la première admission.
+  la première admission. — 2026-11-25 : la durée, l'engagement et l'arrêt
+  sont écrits par le responsable (« Faits du contrat », plus bas).
 - **Texte 2B** : il est réécrit maintenant, en entier. Le responsable le
   valide mot pour mot, puis un lot de code le sert (§7). — 2026-11-17 :
   validé mot pour mot (questions `20261117-1346-c` et `-1919-c`) et servi en deux
@@ -1054,6 +1055,47 @@ entier.
 l'étape du consentement : personne, ni le jeune ni un parent, ne consent
 encore pour lui. Si l'hypothèse est confirmée, J3-mineurs placera le
 consentement du jeune lui-même après l'accord parental.
+
+**Faits du contrat — écrits par le responsable le 2026-11-20 et le 2026-11-25
+([[D-537]] §9, question `20261117-2200-c-4`).** C'est la rubrique « Faits du
+contrat » que [[D-344]] renvoyait au responsable. Le texte cité est le sien,
+transcrit mot pour mot, orthographe comprise : seuls les retours à la ligne
+sont de la session. La session n'en tire aucune conséquence. La
+qualification d'« acte usuel » et le réexamen de la nécessité de l'accord
+(R2, plus bas) se font à part.
+
+Les numéros renvoient aux points que la session a posés le 2026-11-25 :
+1. le coût total et la façon de le payer, frais annexes compris ;
+2. la durée totale et les étapes ;
+3. l'engagement minimal ;
+4. l'arrêt par le jeune : comment, avec ou sans motif, et qui prévient les
+   parents ;
+5. l'arrêt par les parents, y compris quand le jeune veut continuer ou que
+   les deux parents ne sont pas d'accord ;
+6. le sort des sommes payées en cas d'arrêt ;
+7. ce qui se passe dans l'application, où seul le praticien clôt un suivi :
+   a) quand le jeune dit vouloir arrêter ; b) quand il ne répond plus, sans
+   rien avoir dit ;
+8. ce qui se passe si l'offre devient commerciale pendant le suivi d'un
+   mineur.
+
+> pour l'instant wellneuro n'est pas une offre commerciale et mon intervention est bénévole
+>
+> 1 participation bénévole, compléments éventuels en suppléments, frais chez le médecin, analyses biologiques payantes parfois
+>
+> 2 une première periode de trois mois à poursuivre si le besoin s'en fait sentir avec le jeune, un point de controle à un an
+>
+> 3 aucun engagement
+>
+> 4 un message tout moyen mis à disposition , le praticien prévient les parents
+>
+> 5 discussion avec le jeune et les 2 parents
+>
+> 6 sans objet pour l'instant
+>
+> 7 a je cloture aussitot b je désactive
+>
+> 8 nouvel accord
 
 **Seuils d'âge et non-discrimination.** Une condition d'âge dans l'accès au
 service est une différence de traitement fondée sur l'âge (loi n° 2008-496 du
@@ -1132,7 +1174,9 @@ d'admission ([[D-537]] §4).*
   l'accompagnement ne sont pas documentés ([[D-537]] §9), rien ne permet de
   dire que l'accompagnement est un acte courant conclu à des conditions
   normales. Sans accord, le contrat est exposé à l'annulation, au détriment
-  du jeune comme du praticien.
+  du jeune comme du praticien. — 2026-11-25 : ils sont écrits par le
+  responsable (« Faits du contrat », plus haut) ; le réexamen de cette
+  nécessité reste à faire, à part.
 - **Adaptée.** L'accord porte sur la prestation seule :
   - pour les fonctions de l'art. 45, le jeune consent lui-même au traitement
     de ses données (H1) ;
@@ -1166,7 +1210,9 @@ d'admission ([[D-537]] §4).*
     J3-mineurs (file A) ;
   - la nécessité de l'accord se réexamine une fois la durée, l'engagement
     et l'arrêt documentés : si l'accompagnement se révèle un acte courant à
-    des conditions normales, elle se pose autrement.
+    des conditions normales, elle se pose autrement. — 2026-11-25 : ils
+    sont écrits (« Faits du contrat », plus haut) ; ce réexamen reste à
+    faire.
 
   Question `20261117-2200-c-2`.
 
@@ -2638,7 +2684,7 @@ dossier en garde alors la conclusion, la date et l'emplacement.
 | 1 | Responsable | Identité juridique exacte | Responsable | 2027-06-30 (était 2026-10-21) | ici, rubrique 1 |
 | 1 | Responsable | **Clos le 2026-10-13 ([[D-284]] §6) : pas d'obligation de désigner un DPO à cette échelle, selon l'avis reçu ; analyse datée à revoir à chaque changement d'échelle.** *Historique :* aucun DPO désigné, le responsable est le point de contact ([[D-283]] §7). Contradiction DPO (G-TRUST-02 vs D-005) | Responsable | fermé | `docs/DECISIONS.md` |
 | 3 | Base légale | ~~Qualification, non rédigée à ce jour~~ — **qualifiée le 2026-10-04** par déclaration du responsable ([[D-265]] §3) | Responsable | fermé | ici, rubrique 3 |
-| 4 | Personnes | **2026-10-13 ([[D-284]] §3-4) : mineur jusqu'à 18 ans, entrée validée par un titulaire de l'autorité parentale, âge inconnu demandé avant toute fonction de santé ; 2026-10-22 ([[D-344]]) : version provisoire de la rubrique ; « un seul titulaire suffit » et « aucun secret opposable » suspendus ; avocat consulté (six questions : art. 8, consentement du jeune aux données de santé, acte usuel, accès parental, droits du jeune, seuils d'âge) ; 2026-11-17 ([[D-536]]) : avocat reporté à la commercialisation, point 7 de [[D-449]] §6, avis GPT d'abord ; 2026-11-17 ([[D-537]]) : huit arbitrages sur l'avis GPT — formule (a) sous conditions, (b) abandonnée, H1-H4 réécrites, plancher à 15 ans, admission sans l'avocat, revue de nécessité de l'AIPD, texte 2B à réécrire.** *Historique :* encadrés, non exclus ([[D-283]] §5). Cas des mineurs | Responsable | 2027-06-30 (était 2026-10-21) | `SOURCES_ET_VALIDATIONS.md` |
+| 4 | Personnes | **2026-10-13 ([[D-284]] §3-4) : mineur jusqu'à 18 ans, entrée validée par un titulaire de l'autorité parentale, âge inconnu demandé avant toute fonction de santé ; 2026-10-22 ([[D-344]]) : version provisoire de la rubrique ; « un seul titulaire suffit » et « aucun secret opposable » suspendus ; avocat consulté (six questions : art. 8, consentement du jeune aux données de santé, acte usuel, accès parental, droits du jeune, seuils d'âge) ; 2026-11-17 ([[D-536]]) : avocat reporté à la commercialisation, point 7 de [[D-449]] §6, avis GPT d'abord ; 2026-11-17 ([[D-537]]) : huit arbitrages sur l'avis GPT — formule (a) sous conditions, (b) abandonnée, H1-H4 réécrites, plancher à 15 ans, admission sans l'avocat, revue de nécessité de l'AIPD, texte 2B à réécrire ; 2026-11-25 ([[D-537]] §9) : faits du contrat (durée, engagement, arrêt) écrits par le responsable, transcrits mot pour mot dans la rubrique.** *Historique :* encadrés, non exclus ([[D-283]] §5). Cas des mineurs | Responsable | 2027-06-30 (était 2026-10-21) | `SOURCES_ET_VALIDATIONS.md` |
 | 5 | Catégories | **Soldé le 2026-10-13 ([[D-283]] §3) : les six classées en catégorie particulière, la liste du banc est vide.** *Historique — constat d'origine :* **Six tables filles de `patients` ne sont pas déclarées** — dix-sept au 2026-09-09, mesuré en comparant `schema.prisma` à cette rubrique (38 modèles portaient alors une relation vers `Patient`, 21 y étaient cités ; ils sont 46 et 40 au 2026-09-13). ONZE noms sont sortis de la liste depuis, dont dix le 2026-09-13 : `DecisionPrioritySelection`, déclarée avec `EcartementProposition` sous une même entrée ; et neuf **dettes périmées** — déjà déclarées depuis le rattrapage `D-167`, mais laissées dans la liste, donc DISPENSÉES de vérification alors qu'elles n'en avaient plus besoin. Les qualifier (art. 9 ou non) reste un acte juridique, pas une écriture de code ; la liste vit dans `rubrique5.modeles.test.ts`, qui **rougit sur toute table ajoutée après cette date** et, depuis la purge, sur toute déclaration retirée pour l'une des dix — le passif est ouvert, la récidive est fermée | Responsable + conseil | fermé | ici, rubrique 5 |
 | 5 | Catégories | ~~Catégorie « résultats biologiques » absente~~ — **déclarée le 2026-09-09** (quatre tables du rayon), mais **après** la pose de `WN_CB_RESULTS_ENABLED` que la rubrique 2 posait comme conditionnée à cette déclaration préalable. Écart daté en rubrique 2 ; portée nulle sur les données (0 ligne au constat) | — | fermé | ici, rubriques 2 et 5 |
 | 6 | Sous-traitants | Aucun DPA archivé — forme connue depuis la réponse du 2026-08-11 (DPA + annexe HDS distincte, signature séparée requise) mais ~~**signature et archivage non faits**~~ — **annexe HDS signée le 2026-08-30** (déclaration du responsable, consignée le 2026-08-31, `D-121`) ; **restent dus : l'archivage du document signé, et la signature + archivage du DPA** | Responsable | 2027-06-30 (était : ~~avant bascule Scalingo~~ — ordre suspendu par `D-078` : **dès réception de l'annexe** (demandée 2026-08-12, relancée 2026-08-19 — **canal et dates vérifiés au fil le 2026-08-20**, rubrique 6 ; **signée le 2026-08-30**) ; ~~en tout état de cause **avant tout décommissionnement**~~ — **plus depuis `D-080`** (2026-08-22) ; archivage dû **avant la revue du 2026-10-21**) | `CHECKLIST_FINALISATION.md` §F |
