@@ -999,7 +999,10 @@ d'avocat. Ses références ont été vérifiées par la session.
   elle requiert une AIPD pour le volet mineurs (rubrique 13). Cette AIPD
   s'ajoute aux conditions restantes : elle doit être finie et validée avant
   la première admission. — 2026-11-25 : la durée, l'engagement et l'arrêt
-  sont écrits par le responsable (« Faits du contrat », plus bas).
+  sont écrits par le responsable (« Faits du contrat », plus bas). —
+  2026-11-25 : R2 est réexaminé. L'accompagnement n'est ni un acte courant
+  ni un acte usuel, et l'accord de chaque titulaire devient la règle, et non
+  plus un régime transitoire (« R2 — Réexamen du 2026-11-25 », plus bas).
 - **Texte 2B** : il est réécrit maintenant, en entier. Le responsable le
   valide mot pour mot, puis un lot de code le sert (§7). — 2026-11-17 :
   validé mot pour mot (questions `20261117-1346-c` et `-1919-c`) et servi en deux
@@ -1176,7 +1179,8 @@ d'admission ([[D-537]] §4).*
   normales. Sans accord, le contrat est exposé à l'annulation, au détriment
   du jeune comme du praticien. — 2026-11-25 : ils sont écrits par le
   responsable (« Faits du contrat », plus haut) ; le réexamen de cette
-  nécessité reste à faire, à part.
+  nécessité reste à faire, à part. — 2026-11-25 : réexamen fait, l'accord
+  reste nécessaire (« R2 — Réexamen du 2026-11-25 », plus bas).
 - **Adaptée.** L'accord porte sur la prestation seule :
   - pour les fonctions de l'art. 45, le jeune consent lui-même au traitement
     de ses données (H1) ;
@@ -1212,9 +1216,125 @@ d'admission ([[D-537]] §4).*
     et l'arrêt documentés : si l'accompagnement se révèle un acte courant à
     des conditions normales, elle se pose autrement. — 2026-11-25 : ils
     sont écrits (« Faits du contrat », plus haut) ; ce réexamen reste à
-    faire.
+    faire. — 2026-11-25 : fait. Ce n'est pas un acte courant, et l'accord
+    reste nécessaire, de chaque titulaire (réexamen ci-dessous).
 
   Question `20261117-2200-c-2`.
+
+*R2 — Réexamen du 2026-11-25 : nécessité de l'accord et qualification
+d'« acte usuel » ([[D-537]] §1, §4 et §9, lot `r2-accord-parental-reexamen`).*
+L'analyse est rédigée par la session sur les seuls faits du contrat (plus
+haut), cités sans être reformulés. Les références sont celles de l'avis GPT
+de [[D-537]], vérifiées le 2026-11-17. Ce n'est pas un avis de juriste. *Les
+trois conclusions ont été arbitrées par le responsable en session le
+2026-11-25, toutes selon l'option recommandée (questions `20261125-1400-c` à
+`-c-3`).*
+
+Les deux qualifications sont distinctes, et aucune ne découle de l'autre :
+- l'« acte courant » (C. civ. art. 1148) dit si le jeune peut conclure seul ;
+- l'« acte usuel » (art. 372-2) dit si un seul titulaire peut agir, l'autre
+  étant réputé d'accord, à l'égard des tiers de bonne foi seulement.
+
+1. *L'accompagnement est-il un acte courant conclu à des conditions normales
+   (art. 1148) ?*
+   - **Conditions normales.** Pour la prestation elle-même, elles sont
+     réunies au vu des faits : « mon intervention est bénévole », « aucun
+     engagement », et l'arrêt par « un message tout moyen mis à
+     disposition ». Aucune lésion (art. 1149) n'est en vue tant que la
+     prestation reste gratuite. La lecture de « participation bénévole »
+     reste ouverte (point 2 de la liste plus bas).
+   - **Acte courant.** Il ne l'est pas :
+     - ce n'est pas un acte de la vie quotidienne d'un jeune ;
+     - il porte sur sa santé pendant « une première periode de trois mois »,
+       avec « un point de controle à un an » ;
+     - il collecte des données de santé que l'IA lit ;
+     - il peut conduire à des dépenses : « compléments éventuels en
+       suppléments, frais chez le médecin, analyses biologiques payantes
+       parfois ».
+   - **Au-delà du contrat.** L'art. 1148 règle la capacité à contracter. La
+     santé de l'enfant relève en outre de l'autorité parentale (art. 371-1),
+     et la gratuité ne la lève pas.
+2. *En conséquence, l'accord parental reste-t-il nécessaire, et de qui ?*
+   - **Nécessaire.** Oui. L'acte n'étant pas courant, le jeune ne peut pas
+     le conclure seul (art. 1146). La conclusion de R2 et [[D-537]] §8 sont
+     confirmées.
+   - **Acte usuel.** Non.
+     - Pour : la gratuité, l'absence d'engagement et l'arrêt libre.
+     - Contre : c'est un suivi nouveau, qui ne prolonge pas une habitude. Il
+       est orienté vers la santé, dure de trois mois à un an, traite des
+       données de santé avec l'IA et peut mener à des frais.
+     - Les faits associent eux-mêmes les deux parents à l'arrêt :
+       « discussion avec le jeune et les 2 parents ».
+   - **De qui.** De chaque titulaire de l'autorité parentale :
+     - le seul titulaire, s'il est seul, sur justificatif ;
+     - la première condition de [[D-537]] §1 n'étant pas remplie, l'accord
+       d'un seul de deux titulaires ne suffit jamais ;
+     - un titulaire injoignable ou opposé : aucune admission automatique,
+       le dossier s'instruit à la main.
+
+Grille (loi n° 2008-496, art. 2, 3°), appliquée à l'accord de chaque
+titulaire :
+- **But.** Deux buts :
+  - la capacité à contracter (C. civ. art. 1146 à 1148) ;
+  - l'exercice conjoint de l'autorité parentale sur la santé de l'enfant
+    (art. 371-1), sans laisser le praticien exposé à un désaccord connu
+    (art. 372-2).
+- **Nécessaire.** Un seul accord ne protège qu'à l'égard du tiers de bonne
+  foi. Il tombe dès qu'une opposition est connue, suivi commencé compris.
+- **Adaptée.** L'accord porte sur la prestation seule. Le jeune consent
+  lui-même au traitement de ses données (H1), et l'accord n'ouvre aux parents
+  aucun accès au portail ([[D-537]] §2).
+- **Proportionnée.**
+  - C'est un geste unique, à l'entrée.
+  - Un seul accord suffit quand il n'y a qu'un titulaire.
+  - L'émancipé est admis comme un majeur (R2, plus haut).
+  - Les pouvoirs fondés sur l'autorité parentale cessent à 18 ans (H4).
+  - La gêne est l'attente du second accord. Un parent injoignable retarde
+    ou empêche l'entrée, d'où l'instruction à la main plutôt qu'un refus.
+- **Alternatives écartées.**
+  - Acte courant, le jeune s'engage seul : écartée (point 1). Elle aurait
+    amendé [[D-537]] §8.
+  - Acte usuel, un seul titulaire sous les conditions de [[D-537]] §1 :
+    écartée (point 2).
+  - Un seul titulaire pour les trois premiers mois, les deux pour
+    poursuivre : écartée. La qualification du même accompagnement
+    changerait avec sa durée, et les trois premiers mois resteraient
+    exposés à l'opposition de l'autre parent.
+  - Ne pas qualifier, en attendant l'avocat : écartée. Le circuit serait le
+    même, mais le cadrage de J3-mineurs n'aurait pas de conclusion.
+
+*Ce que les faits laissent ouvert* — signalé, non comblé. Ces points sont
+transmis au cadrage de J3-mineurs comme points à trancher (question
+`20261125-1400-c-3`) :
+1. « pour l'instant » : la gratuité n'est pas acquise pour toute la durée du
+   suivi (le point 8 répond au passage au commercial : « nouvel accord ») ;
+2. « participation bénévole » se lit de deux façons : l'intervention est
+   gratuite, ou la famille verse une participation libre ;
+3. les frais annexes (compléments, frais chez le médecin, analyses
+   biologiques) : qui les décide, qui les paie, auprès de qui ;
+4. la poursuite après trois mois, « avec le jeune » : les parents y ont-ils
+   part ;
+5. « un point de controle à un an » : son contenu ;
+6. « le praticien prévient les parents » : les deux ;
+7. l'arrêt par les parents : l'issue si, après la discussion, les parents ne
+   s'accordent pas entre eux ou avec le jeune ;
+8. « je désactive » : les parents en sont-ils informés.
+
+Aucun de ces points ne change la conclusion du point 1. Les points 3, 4, 6
+et 7 touchent la forme de l'accord.
+
+**Conclusions arbitrées (2026-11-25).**
+- L'accompagnement n'est pas un acte courant : le jeune ne s'engage pas
+  seul, et l'accord parental reste nécessaire jusqu'à 18 ans (question
+  `20261125-1400-c`).
+- Ce n'est pas un acte usuel : l'accord de chaque titulaire est requis. La
+  qualification que [[D-537]] §9 laissait ouverte est tranchée, et l'accord
+  des deux titulaires n'est plus transitoire (question `-c-2`).
+- Les huit points ouverts vont au cadrage de J3-mineurs (question `-c-3`).
+
+Ces conclusions se réexaminent si les faits changent (« pour l'instant » ;
+point 8 : « nouvel accord »). L'avocat relit l'ensemble à la
+commercialisation (point 7 de [[D-449]] §6).
 
 *R3 — Pause des questionnaires de santé et de la biologie, pour le mineur non
 admis et pour le dossier sans date de naissance ([[D-284]] §4, lot (h)).*
@@ -2684,7 +2804,7 @@ dossier en garde alors la conclusion, la date et l'emplacement.
 | 1 | Responsable | Identité juridique exacte | Responsable | 2027-06-30 (était 2026-10-21) | ici, rubrique 1 |
 | 1 | Responsable | **Clos le 2026-10-13 ([[D-284]] §6) : pas d'obligation de désigner un DPO à cette échelle, selon l'avis reçu ; analyse datée à revoir à chaque changement d'échelle.** *Historique :* aucun DPO désigné, le responsable est le point de contact ([[D-283]] §7). Contradiction DPO (G-TRUST-02 vs D-005) | Responsable | fermé | `docs/DECISIONS.md` |
 | 3 | Base légale | ~~Qualification, non rédigée à ce jour~~ — **qualifiée le 2026-10-04** par déclaration du responsable ([[D-265]] §3) | Responsable | fermé | ici, rubrique 3 |
-| 4 | Personnes | **2026-10-13 ([[D-284]] §3-4) : mineur jusqu'à 18 ans, entrée validée par un titulaire de l'autorité parentale, âge inconnu demandé avant toute fonction de santé ; 2026-10-22 ([[D-344]]) : version provisoire de la rubrique ; « un seul titulaire suffit » et « aucun secret opposable » suspendus ; avocat consulté (six questions : art. 8, consentement du jeune aux données de santé, acte usuel, accès parental, droits du jeune, seuils d'âge) ; 2026-11-17 ([[D-536]]) : avocat reporté à la commercialisation, point 7 de [[D-449]] §6, avis GPT d'abord ; 2026-11-17 ([[D-537]]) : huit arbitrages sur l'avis GPT — formule (a) sous conditions, (b) abandonnée, H1-H4 réécrites, plancher à 15 ans, admission sans l'avocat, revue de nécessité de l'AIPD, texte 2B à réécrire ; 2026-11-25 ([[D-537]] §9) : faits du contrat (durée, engagement, arrêt) écrits par le responsable, transcrits mot pour mot dans la rubrique.** *Historique :* encadrés, non exclus ([[D-283]] §5). Cas des mineurs | Responsable | 2027-06-30 (était 2026-10-21) | `SOURCES_ET_VALIDATIONS.md` |
+| 4 | Personnes | **2026-10-13 ([[D-284]] §3-4) : mineur jusqu'à 18 ans, entrée validée par un titulaire de l'autorité parentale, âge inconnu demandé avant toute fonction de santé ; 2026-10-22 ([[D-344]]) : version provisoire de la rubrique ; « un seul titulaire suffit » et « aucun secret opposable » suspendus ; avocat consulté (six questions : art. 8, consentement du jeune aux données de santé, acte usuel, accès parental, droits du jeune, seuils d'âge) ; 2026-11-17 ([[D-536]]) : avocat reporté à la commercialisation, point 7 de [[D-449]] §6, avis GPT d'abord ; 2026-11-17 ([[D-537]]) : huit arbitrages sur l'avis GPT — formule (a) sous conditions, (b) abandonnée, H1-H4 réécrites, plancher à 15 ans, admission sans l'avocat, revue de nécessité de l'AIPD, texte 2B à réécrire ; 2026-11-25 ([[D-537]] §9) : faits du contrat (durée, engagement, arrêt) écrits par le responsable, transcrits mot pour mot dans la rubrique ; 2026-11-25 ([[D-537]] §9, R2 réexaminé) : ni acte courant ni acte usuel, accord de chaque titulaire, huit points ouverts transmis au cadrage de J3-mineurs.** *Historique :* encadrés, non exclus ([[D-283]] §5). Cas des mineurs | Responsable | 2027-06-30 (était 2026-10-21) | `SOURCES_ET_VALIDATIONS.md` |
 | 5 | Catégories | **Soldé le 2026-10-13 ([[D-283]] §3) : les six classées en catégorie particulière, la liste du banc est vide.** *Historique — constat d'origine :* **Six tables filles de `patients` ne sont pas déclarées** — dix-sept au 2026-09-09, mesuré en comparant `schema.prisma` à cette rubrique (38 modèles portaient alors une relation vers `Patient`, 21 y étaient cités ; ils sont 46 et 40 au 2026-09-13). ONZE noms sont sortis de la liste depuis, dont dix le 2026-09-13 : `DecisionPrioritySelection`, déclarée avec `EcartementProposition` sous une même entrée ; et neuf **dettes périmées** — déjà déclarées depuis le rattrapage `D-167`, mais laissées dans la liste, donc DISPENSÉES de vérification alors qu'elles n'en avaient plus besoin. Les qualifier (art. 9 ou non) reste un acte juridique, pas une écriture de code ; la liste vit dans `rubrique5.modeles.test.ts`, qui **rougit sur toute table ajoutée après cette date** et, depuis la purge, sur toute déclaration retirée pour l'une des dix — le passif est ouvert, la récidive est fermée | Responsable + conseil | fermé | ici, rubrique 5 |
 | 5 | Catégories | ~~Catégorie « résultats biologiques » absente~~ — **déclarée le 2026-09-09** (quatre tables du rayon), mais **après** la pose de `WN_CB_RESULTS_ENABLED` que la rubrique 2 posait comme conditionnée à cette déclaration préalable. Écart daté en rubrique 2 ; portée nulle sur les données (0 ligne au constat) | — | fermé | ici, rubriques 2 et 5 |
 | 6 | Sous-traitants | Aucun DPA archivé — forme connue depuis la réponse du 2026-08-11 (DPA + annexe HDS distincte, signature séparée requise) mais ~~**signature et archivage non faits**~~ — **annexe HDS signée le 2026-08-30** (déclaration du responsable, consignée le 2026-08-31, `D-121`) ; **restent dus : l'archivage du document signé, et la signature + archivage du DPA** | Responsable | 2027-06-30 (était : ~~avant bascule Scalingo~~ — ordre suspendu par `D-078` : **dès réception de l'annexe** (demandée 2026-08-12, relancée 2026-08-19 — **canal et dates vérifiés au fil le 2026-08-20**, rubrique 6 ; **signée le 2026-08-30**) ; ~~en tout état de cause **avant tout décommissionnement**~~ — **plus depuis `D-080`** (2026-08-22) ; archivage dû **avant la revue du 2026-10-21**) | `CHECKLIST_FINALISATION.md` §F |
