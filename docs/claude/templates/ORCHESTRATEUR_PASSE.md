@@ -101,6 +101,14 @@ main et ne la discute pas.
    - GitHub en REST (`gh api`) ou par les outils GitHub de la session :
      `gh pr …` est refusé en cloud (GraphQL, 403) ;
    - clôture (fragment `changelog.d/`, handoff) avant la PR ;
+   - **la PR sort du brouillon avant le CI et la revue**, jamais après
+     « prête ». Si l'outil l'ouvre en brouillon, la passe la passe « ready
+     for review » aussitôt après l'avoir ouverte. L'intégrateur ne sert pas
+     un brouillon, et une sortie du brouillon après « prête » fait réécrire
+     par CodeRabbit son avis : c'est une parole qui suspend le merge
+     (`D-546`). Avant « prête », la passe vérifie que la PR n'est plus en
+     brouillon (`gh api repos/{owner}/{repo}/pulls/<N> --jq .draft` rend
+     `false`) ;
    - `node scripts/wn-attendre-ci.mjs <N>`, puis
      `node scripts/wn-revue-pr-agent.mjs <N>` : `0` seul vaut ;
    - un verdict pour chaque commentaire ; « prête @<sha> » sur la PR ; ligne
