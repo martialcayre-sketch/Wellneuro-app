@@ -101,7 +101,10 @@ Il est INFIDÈLE s'il contient au moins un des défauts suivants :
 - une quantité à prendre ou à consommer (dose, volume, nombre d'unités,
   apport recommandé ou de référence), une fréquence ou un fractionnement
   des prises, une durée de prise ou de traitement, un moment de prise (le
-  soir, au repas, à jeun), ou toute autre valeur
+  soir, au repas, à jeun), un mot de fréquence ou de régularité attaché à
+  une prise ou à une consommation (« régulièrement », « chaque jour »), un
+  apport situé par rapport à une valeur de référence (« proche des »,
+  « au-delà des » références), ou toute autre valeur
   qui n'est ni une teneur ni un seuil (par exemple une teneur maximale
   recommandée pour un produit), même rapportés par un claim, hors une
   valeur reprise d'une désignation approuvée comme dit plus haut ; ne sont pas
@@ -130,7 +133,9 @@ Il est INFIDÈLE s'il contient au moins un des défauts suivants :
   (« Selon <source>, … »), avec toutes ses conditions, et terminée par
   « , mais cet usage n'est pas établi. » : cette phrase n'est pas un défaut,
   et sans l'attribution ou sans cette réserve, elle en est un, dans toute
-  rubrique, « precautions » comprise ; un usage qui n'est pas dit
+  rubrique, « precautions » comprise, et « surveillance_arret » aussi (un
+  contrôle biologique dit utile, conseillé, fréquent ou habituel est un
+  usage) ; un usage qui n'est pas dit
   non validé, ou qui déclenche un examen ou une décision, alors que le
   statut est « non_valide » (une rubrique qui ne présente aucun usage n'a
   pas à le dire) ; une « information_contributive » présentée
@@ -146,6 +151,11 @@ Il est INFIDÈLE s'il contient au moins un des défauts suivants :
   qualification diagnostique, plutôt qu'un état fonctionnel d'un seul
   nutriment dans le sens bas ; ou un nom qui contient l'un des douze termes
   écartés, même dérivé ou contenu dans un autre mot.
+
+Dans « interpretations », une phrase qui ne nomme pas à la fois un résultat
+de l'examen et ce que ce résultat permet ou interdit de conclure est hors de
+l'objet de la rubrique ; la phrase d'absence, quand aucun claim fourni ne
+relie un résultat de l'examen à une conclusion, n'est pas un défaut.
 
 Un claim porte sur l'objet d'une rubrique quand il en traite le contenu
 même, pas seulement son sujet. Pour « interpretations », il dit ce qu'un

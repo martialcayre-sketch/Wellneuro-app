@@ -1,0 +1,7 @@
+### Fiches d'usage : consigne v14 — trois refus stables du zinc précisés des deux côtés (D-501 §18, F05)
+
+- « interpretations » : une phrase nomme un résultat de l'examen et ce qu'il permet ou interdit de conclure, sinon
+  elle n'y entre pas ; la phrase d'absence n'est pas un défaut quand aucun claim ne relie un résultat à une conclusion.
+- Un mot de fréquence d'une prise et un apport situé par rapport à une référence sont des quantités de prise.
+- « surveillance_arret » : un contrôle biologique dit utile ou conseillé est un usage, attribué et réservé ou absent.
+- `fiche-usage-v14+8aa2af1233b6555e`. Aucun texte de fiche dans le dépôt ; aucune base touchée.

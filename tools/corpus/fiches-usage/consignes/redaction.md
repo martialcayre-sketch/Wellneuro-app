@@ -55,6 +55,13 @@ Les DÉSIGNATIONS APPROUVÉES servent seulement à nommer (voir plus bas).
   complémentation, une prise en charge ou un autre examen) ne s'y écrit pas,
   sauf une condition de sécurité ou d'admissibilité que le marqueur « oui »
   impose d'y restituer, comme dit plus bas.
+  Avant d'écrire une phrase dans « interpretations », vérifie qu'elle nomme
+  un résultat de l'examen (une valeur, une baisse, une hausse de l'analyte)
+  ET ce que ce résultat permet ou interdit de conclure : une phrase qui
+  manque l'un des deux n'y entre pas, même si elle porte sur le nutriment.
+  La phrase d'absence n'y s'écrit que si aucun claim fourni ne relie un
+  résultat de l'examen à ce qu'il permet ou interdit de conclure ; si l'un
+  le fait, la rubrique le restitue.
   Avant d'écrire la phrase d'absence, examine chacun des
   claims fournis : elle s'écrit si, et seulement si, aucun ne porte sur
   l'objet de la rubrique. Si l'un y porte, rédige à partir de lui, même
@@ -98,7 +105,12 @@ Les DÉSIGNATIONS APPROUVÉES servent seulement à nommer (voir plus bas).
   consommer (dose, volume, nombre d'unités, apport recommandé ou de
   référence), une fréquence ou un fractionnement des prises, une durée de
   prise ou de traitement, un moment de prise (le soir, au repas, à jeun) ;
-  chacune est, ci-après, une quantité de prise.
+  chacune est, ci-après, une quantité de prise. Un mot de fréquence ou de
+  régularité (« régulièrement », « chaque jour », « quotidiennement »,
+  « souvent ») attaché à une prise ou à une consommation, et un apport situé
+  par rapport à une valeur de référence (« proche des », « au-delà des »,
+  « en deçà des » références ou apports conseillés), sont des quantités de
+  prise, même sans valeur chiffrée.
   Une mention de dose ou d'apport sans valeur chiffrée (« à doses élevées »,
   l'absence d'apport conseillé) n'est pas une quantité de prise : elle se
   restitue telle que son claim la porte, comme une condition ou une limite
@@ -171,7 +183,9 @@ telle limite qu'un claim établit lui-même se restitue, comme toute limite.
   « precautions » comprise : un claim qui dit l'examen indispensable ou à
   pratiquer, avant, pendant ou après une prise, ne s'écrit que sous elle.
   Hors de cette phrase attribuée et réservée, rien ne présente
-  l'usage comme recommandé. « non_valide » :
+  l'usage comme recommandé. Dans « surveillance_arret » surtout, une phrase
+  qui dit un contrôle biologique utile, conseillé, fréquent ou habituel
+  présente un usage : elle s'écrit sous cette forme, ou pas du tout. « non_valide » :
   le texte dit que l'usage n'est pas validé ; il ne déclenche ni examen ni
   décision.
 - NATURE DU LIEN. Une « information_contributive » n'est jamais présentée

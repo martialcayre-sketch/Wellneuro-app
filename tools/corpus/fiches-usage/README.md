@@ -83,7 +83,7 @@ rejoué rend `BROUILLON_INCHANGE`.
 
 ## La consigne versionnée
 
-`versionConsigne` vaut `fiche-usage-v13+<empreinte des deux consignes>`,
+`versionConsigne` vaut `fiche-usage-v14+<empreinte des deux consignes>`,
 épinglée dans `lib/consigne.mjs` et gardée par `lib/consigne.test.mjs`.
 
 Depuis la v2 (`D-501`), le message d'une fiche porte ses cinq axes signés,
@@ -185,6 +185,16 @@ un terme écarté vaut une seule demande de correction, dans la même passe, ave
 la réponse entière du rédacteur (réflexion comprise) ; si le terme reste, la
 passe échoue (`registre_d535`) sans appel au contre-lecteur. Les populations
 ne passent pas par ce garde.
+
+Depuis la v14 (`D-501` §18), trois règles se précisent des deux côtés, après
+des refus stables sur les fiches du zinc : une phrase de « interpretations »
+nomme à la fois un résultat de l'examen et ce qu'il permet ou interdit de
+conclure, sinon elle n'y entre pas (et la phrase d'absence n'est pas un
+défaut quand aucun claim ne relie un résultat à une conclusion) ; un mot de
+fréquence ou de régularité d'une prise, et un apport situé par rapport à une
+référence, sont des quantités de prise ; dans « surveillance_arret », un
+contrôle biologique dit utile, conseillé, fréquent ou habituel est un usage,
+qui s'écrit attribué et réservé ou pas du tout.
 
 ## Ce que l'outil ne voit pas
 

@@ -1,4 +1,4 @@
-// La consigne « fiche-usage-v13 » est épinglée : un octet changé sans bump de
+// La consigne « fiche-usage-v14 » est épinglée : un octet changé sans bump de
 // version rougit ici, et l'outil refuse de tourner ([[D-314]] §4).
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -323,4 +323,25 @@ test('v13 : relecture du libellé contre la liste et correction unique, côté r
   const enLigne = redaction.replace(/\s+/g, ' ');
   assert.match(enLigne, /Avant de répondre, relis ton libellé mot par mot contre cette liste\./);
   assert.match(enLigne, /Si l'outil te signale ensuite un terme écarté, reformule une seule fois, sans lui\./);
+});
+
+// v14 ([[D-501]] §18) : trois familles de refus stables du zinc (essai v13 et
+// son rejeu), précisées des deux côtés.
+test('v14 : test d\'« interpretations », mots de fréquence et de référence, réserve en surveillance, des deux côtés', () => {
+  const { redaction, contreLecture } = lireConsignes();
+  const r = redaction.replace(/\s+/g, ' ');
+  const c = contreLecture.replace(/\s+/g, ' ');
+  assert.match(r, /vérifie qu'elle nomme un résultat de l'examen \(une valeur, une baisse, une hausse de l'analyte\) ET ce que ce résultat permet ou interdit de conclure/);
+  assert.match(c, /une phrase qui ne nomme pas à la fois un résultat de l'examen et ce que ce résultat permet ou interdit de conclure est hors de l'objet de la rubrique/);
+  // Codex : la phrase d'absence reste bornée aux claims (aucun ne relie un résultat à une conclusion), des deux côtés,
+  // et aucune liste d'exclusion ne s'ajoute au couple résultat-conclusion.
+  assert.match(r, /La phrase d'absence n'y s'écrit que si aucun claim fourni ne relie un résultat de l'examen à ce qu'il permet ou interdit de conclure ; si l'un le fait, la rubrique le restitue\./);
+  assert.match(c, /la phrase d'absence, quand aucun claim fourni ne relie un résultat de l'examen à une conclusion, n'est pas un défaut/);
+  assert.doesNotMatch(r, /une variation, une limite, une recommandation d'usage/);
+  for (const t of [r, c]) {
+    assert.match(t, /« régulièrement », « chaque jour »/);
+    assert.match(t, /« proche des »/);
+  }
+  assert.match(r, /Dans « surveillance_arret » surtout, une phrase qui dit un contrôle biologique utile, conseillé, fréquent ou habituel présente un usage/);
+  assert.match(c, /« precautions » comprise, et « surveillance_arret » aussi \(un contrôle biologique dit utile, conseillé, fréquent ou habituel est un usage\)/);
 });
