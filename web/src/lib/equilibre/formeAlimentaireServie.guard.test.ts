@@ -57,9 +57,10 @@ describe('forme alimentaire servie', () => {
     // v14 / v15 depuis les comptes de recueil de `group_majority` (2026-08-13,
     // D-055 / LOT-08), v16 / v17 ([[D-438]], appliquée par [[D-474]], 2026-11-10),
     // puis v18 / v19 ([[D-548]], première vague de J3-12f : la moyenne directe, le
-    // besoin 1 sur la mesure dérivée, la PSS-10 seule au besoin 9). Chaque branche
-    // avance d'un cran, comme à chaque fois.
-    expect(VERSION_SCORE_EQUILIBRE).toBe(SIIN57_ACTIF ? 'v19' : 'v18');
+    // besoin 1 sur la mesure dérivée, la PSS-10 seule au besoin 9), puis v20 / v21
+    // ([[D-565]], le besoin 12 sur la sous-échelle « Relation aux autres »).
+    // Chaque branche avance d'un cran, comme à chaque fois.
+    expect(VERSION_SCORE_EQUILIBRE).toBe(SIIN57_ACTIF ? 'v21' : 'v20');
   });
 
   it('le plafonnement n’existe plus : ni constante, ni liste de fondations ([[D-547]])', () => {

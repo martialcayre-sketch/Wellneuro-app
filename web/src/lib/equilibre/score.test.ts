@@ -599,6 +599,7 @@ describe('sous-score partiel — non mesuré, sur le vrai catalogue', () => {
   const ITEMS_HAD_D = ['D2', 'D4', 'D6', 'D8', 'D10', 'D12', 'D14'];
   const ITEMS_ACTIVITE = [1, 2, 3, 4, 5].map(n => `ACTIVITE_PHYSIQUE_Q00${n}`);
   const ITEMS_ME = Array.from({ length: 10 }, (_, i) => `ME${i + 1}`);
+  const ITEMS_RELATION = [1, 2, 3, 4, 5].map(n => `RELATION_AUX_AUTRES_Q00${n}`);
 
   it('besoin 8 : un seul item HAD-D répondu au minimum ne rend pas « bien couvert »', () => {
     expect(calculerCouvertureBesoin(8, { Q_NEU_11: { D2: '0' } })).toBeNull();
@@ -618,12 +619,27 @@ describe('sous-score partiel — non mesuré, sur le vrai catalogue', () => {
     expect(calculerCouvertureBesoin(5, { Q_MOD_01: tous(ITEMS_ACTIVITE, '4') })).toBe(1);
   });
 
-  it('besoin 12 : un seul item ME répondu au minimum ne rend pas « bien couvert »', () => {
-    expect(calculerCouvertureBesoin(12, { Q_INF_03: { ME1: '0' } })).toBeNull();
+  // Depuis v20/v21 ([[D-565]]), le besoin 12 lit la sous-échelle « Relation aux
+  // autres » de `Q_MOD_01` : plus haut vaut mieux, chaque item se cote de 0 à 4.
+  it('besoin 12 : un seul item de relation répondu au pire ne rend pas « effondré »', () => {
+    expect(calculerCouvertureBesoin(12, { Q_MOD_01: { RELATION_AUX_AUTRES_Q001: '0' } })).toBeNull();
   });
 
-  it('besoin 12 : l’axe ME complet se lit', () => {
-    expect(calculerCouvertureBesoin(12, { Q_INF_03: tous(ITEMS_ME, '0') })).toBe(1);
+  it('besoin 12 : l’axe de relation complet se lit, au mieux comme au pire', () => {
+    expect(calculerCouvertureBesoin(12, { Q_MOD_01: tous(ITEMS_RELATION, '4') })).toBe(1);
+    expect(calculerCouvertureBesoin(12, { Q_MOD_01: tous(ITEMS_RELATION, '0') })).toBe(0);
+  });
+
+  it('besoin 5 et besoin 12 tirés de Q_MOD_01 : chacun jugé sur son propre axe (D-565)', () => {
+    // Activité physique complète, relation partielle : le besoin 5 se mesure, le 12 reste non mesuré.
+    const reponses = { Q_MOD_01: { ...tous(ITEMS_ACTIVITE, '4'), RELATION_AUX_AUTRES_Q001: '4' } };
+    expect(calculerCouvertureBesoin(5, reponses)).not.toBeNull();
+    expect(calculerCouvertureBesoin(12, reponses)).toBeNull();
+  });
+
+  it('besoin 12 : le sous-score ME de Q_INF_03 ne l’alimente plus (D-565)', () => {
+    // Même axe ME complet qu'avant : le besoin n'a plus de source dans ce questionnaire.
+    expect(calculerCouvertureBesoin(12, { Q_INF_03: tous(ITEMS_ME, '0') })).toBeNull();
   });
 
   it('besoin 10 : seuls les axes complets entrent dans la moyenne', () => {

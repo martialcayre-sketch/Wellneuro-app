@@ -253,7 +253,24 @@ import { Q_ALI_01 } from '../questionnaires/alimentaire';
 // Comme v16/v17, l'étiquette SUIT LE DRAPEAU de la forme alimentaire : les deux
 // branches avancent d'un cran, v16 → v18 (forme courte) et v17 → v19 (forme
 // complète), comme en v8/v9 et v16/v17.
-export const VERSION_SCORE_EQUILIBRE = Q_ALI_01.scoring.maxTotal === 90 ? 'v19' : 'v18';
+//
+// v18/v19 → v20/v21 ([[D-565]], besoin 12, 2026-11-25 ; UN SEUL changement, celui
+// du besoin 12 : [[D-548]] §4, amendée le 2026-11-25, ne donne une version qu'à un
+// dossier signé qui change le calcul, une source ou une table). Ce que la
+// version couvre :
+//   — besoin 12 : la source devient la sous-échelle `RELATION_AUX_AUTRES` de
+//     `Q_MOD_01` (niveau B, [[D-424]] §2 et §3) ; le sous-score `ME` de
+//     `Q_INF_03` quitte le besoin, et l'axe sommeil et rythmes n'est pas
+//     réintroduit (décision 4 c du 2026-10-18, appliquée) ;
+//   — un dossier qui n'a que `Q_MOD_01` gagne le besoin 12 : c'est une mesure,
+//     jamais un zéro (`DC-24`).
+// Les sections signées des besoins 3, 6, 7, 8, 10 et 11 ([[D-564]], [[D-566]] à
+// [[D-570]]) ne changent ni source, ni formule, ni table : aucune version.
+// Les résultats déjà stockés ne sont JAMAIS réécrits : ils gardent leur étiquette.
+//
+// Comme v16/v17 et v18/v19, l'étiquette SUIT LE DRAPEAU de la forme alimentaire :
+// v18 → v20 (forme courte) et v19 → v21 (forme complète).
+export const VERSION_SCORE_EQUILIBRE = Q_ALI_01.scoring.maxTotal === 90 ? 'v21' : 'v20';
 
 /**
  * Maximum du sous-score servi au besoin 3, DÉRIVÉ du barème de la forme servie.
@@ -398,7 +415,15 @@ export const BESOIN_SOURCES: Record<number, SourceQuestionnaire[]> = {
     { idQuestionnaire: 'Q_INF_03', sousScore: 'SE', max: 40, inverser: true },
   ],
   11: [],
-  12: [{ idQuestionnaire: 'Q_INF_03', sousScore: 'ME', max: 40, inverser: true }],
+  // Besoin 12 « Relation aux autres » : la sous-échelle `RELATION_AUX_AUTRES` du
+  // questionnaire de mode de vie (`Q_MOD_01`), cible de la décision 4 c du
+  // 2026-10-18, appliquée par [[D-565]] (acceptée le 2026-11-25). Le sous-score
+  // `ME` de `Q_INF_03` quitte le besoin ; l'axe sommeil et rythmes n'est pas
+  // réintroduit. Le sous-score va de 0 au maximum de son axe (cinq items cotés de
+  // 0 à 4, `mode-de-vie.ts`) et plus haut vaut mieux : `inverser: false`, comme
+  // l'activité physique du besoin 5. Niveau B de `Q_MOD_01`, valable pour les
+  // besoins 5 et 12 ([[D-424]] §2 et §3, table ci-dessous).
+  12: [{ idQuestionnaire: 'Q_MOD_01', sousScore: 'RELATION_AUX_AUTRES', max: 20, inverser: false }],
 };
 
 // Jalons glissants (feat/e2-momentum-tracking) : nombre de jours depuis
