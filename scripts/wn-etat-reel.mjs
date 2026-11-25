@@ -448,6 +448,48 @@ function premiereLigneDivergente(texte, autre) {
   return '(identiques)';
 }
 
+/**
+ * Ce que chacune des trois confrontations annoncées a RÉELLEMENT pu comparer.
+ * Fonction pure, qui relit les conditions d'entrée des gardes de `comparerEtat`
+ * sans les modifier : une garde qui n'a rien eu à comparer ne produit aucun
+ * écart, et son silence se lisait « 0 écart » dans le résumé. La consigne
+ * d'hygiène de la passe cloud (`docs/claude/templates/ORCHESTRATEUR_PASSE.md`
+ * §5) exige « non confronté » dans ce cas, jamais « zéro écart ».
+ *
+ * `etatLu` est faux quand `.wn/state.json` est absent, illisible ou vide :
+ * `readMachineState` rend alors `{}` dans les trois cas.
+ *
+ * @param {object} etatMachine  Retour de `readMachineState()`.
+ * @param {{vueSurDisque?: string|null, vueAttendue?: string|null, campagneActiveSurDisque?: boolean}} reel
+ * @returns {{etatLu: boolean, menees: string[], nonMenees: string[]}}
+ */
+export function confrontationsMenees(etatMachine, reel) {
+  const etatLu = Boolean(etatMachine) && Object.keys(etatMachine).length > 0;
+  const dateValide = (valeur) => Boolean(valeur) && !Number.isNaN(new Date(valeur).getTime());
+  const possibles = [
+    ['vue dérivée', typeof reel.vueSurDisque === 'string' && typeof reel.vueAttendue === 'string'],
+    ['cohérence des dates', dateValide(etatMachine?.validation?.last_checked_at) && dateValide(etatMachine?.updated_at)],
+    ['lot courant', Boolean(etatMachine?.active_campaign) && reel.campagneActiveSurDisque === true],
+  ];
+  return {
+    etatLu,
+    menees: possibles.filter(([, possible]) => etatLu && possible).map(([nom]) => nom),
+    nonMenees: possibles.filter(([, possible]) => !(etatLu && possible)).map(([nom]) => nom),
+  };
+}
+
+/** La ligne de tête du résumé : « non confronté » dès qu'une confrontation n'a rien pu comparer. */
+export function ligneDeTete(rapport) {
+  const { etatLu, menees, nonMenees } = rapport.confrontations;
+  const debut = 'wn-etat-reel : 6 dimensions observées';
+  if (!etatLu) return `${debut}, non confronté (.wn/state.json absent ou illisible)`;
+  if (nonMenees.length === 0) {
+    return `${debut}, 3 confrontées (${menees.join(', ')}), ${rapport.ecarts.length} écart(s) avec .wn/state.json`;
+  }
+  const faites = menees.length > 0 ? ` (${menees.join(', ')})` : '';
+  return `${debut}, ${menees.length}/3 confrontées${faites}, non confronté : ${nonMenees.join(', ')} ; ${rapport.ecarts.length} écart(s) avec .wn/state.json`;
+}
+
 // ── Orchestration ────────────────────────────────────────────────────────────
 
 export function construireRapport(racine) {
@@ -466,8 +508,8 @@ export function construireRapport(racine) {
     etatMachine?.updated_at && vueSurDisque !== null
       ? rendreVueCampagnesActives(etatMachine, campagnes)
       : null;
-  const lotCourantDeclare =
-    campagnes.find((campagne) => campagne.name === etatMachine?.active_campaign)?.lotCourant ?? null;
+  const campagneActive = campagnes.find((campagne) => campagne.name === etatMachine?.active_campaign);
+  const lotCourantDeclare = campagneActive?.lotCourant ?? null;
 
   const ecarts = comparerEtat(etatMachine, {
     worktreesVivants,
@@ -476,6 +518,11 @@ export function construireRapport(racine) {
     vueSurDisque,
     vueAttendue,
     lotCourantDeclare,
+  });
+  const confrontations = confrontationsMenees(etatMachine, {
+    vueSurDisque,
+    vueAttendue,
+    campagneActiveSurDisque: Boolean(campagneActive),
   });
 
   return {
@@ -499,6 +546,7 @@ export function construireRapport(racine) {
       branchesDistantes: collecterBranchesDistantes(racine),
     },
     parcoursPatient: collecterParcoursPatient(racine),
+    confrontations,
     ecarts,
   };
 }
@@ -508,10 +556,9 @@ function resumerSurStderr(rapport) {
   // « 6 dimensions observées » sans dire combien sont CONFRONTÉES est ce qui a
   // laissé lire « zéro écart » comme « tout est cohérent » (dette 6 de la
   // déclaration 5.0). Le compte des comparaisons est donc affiché avec celui
-  // des observations.
-  lignes.push(
-    `wn-etat-reel : 6 dimensions observées, 3 confrontées (vue dérivée, cohérence des dates, lot courant), ${rapport.ecarts.length} écart(s) avec .wn/state.json`,
-  );
+  // des observations — et une confrontation qui n'a rien pu comparer se dit
+  // « non confronté » au lieu de compter pour zéro écart.
+  lignes.push(ligneDeTete(rapport));
   lignes.push(`  flags référencés     : ${rapport.flags.referencesDansLeCode.length} (valeur d'environnement non lue)`);
   lignes.push(`  migrations (disque)  : ${rapport.migrations.noms.length} (base non vérifiée ici)`);
   lignes.push(`  certification        : ${rapport.certification.status}`);
