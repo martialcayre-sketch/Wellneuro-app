@@ -75,7 +75,11 @@ describe('LienDecor — décoratif seulement', () => {
   it('le bandeau du hub prend toute la largeur, dans le flux, à hauteur fixe, recadré sans être étiré', () => {
     const bandeau = rendre({ emplacement: 'hub-patient', className: '-mx-8 -mt-8' }).noeud!;
     const classes = bandeau.className.split(/\s+/);
-    expect(classes).toEqual(expect.arrayContaining(['block', 'w-full', 'h-[52px]', 'md:h-16', '-mx-8', '-mt-8']));
+    expect(classes).toEqual(expect.arrayContaining(['block', 'h-[52px]', 'md:h-16', '-mx-8', '-mt-8']));
+    // Aucune largeur fixée : sous `-mx-8`, une largeur de 100 % décalerait le
+    // bandeau sans l'élargir (constat PR-Agent sur #2364) ; à largeur
+    // automatique, il va d'un bord à l'autre de la carte.
+    expect(bandeau.className).not.toMatch(/(?:^|\s)w-/);
     expect(bandeau.className).not.toMatch(/(?:^|\s)(?:absolute|fixed|-?z-)/);
     expect(bandeau.style.backgroundSize).toBe('cover');
     expect(bandeau.style.backgroundPosition).toBe('left center');

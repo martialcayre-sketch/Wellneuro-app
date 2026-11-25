@@ -5,7 +5,9 @@
 - Branche `claude/refonte-lien-com2-hub-patient`, worktree neuf
   `.claude/worktrees/refonte-lien-com2`, créé sur `origin/main` `97e0d72d` fraîchement
   fetché ; `npm ci` et `npx prisma generate` joués avant tout test.
-- Une PR. La session ne merge pas : « prête @<sha> » à l'intégrateur.
+- `origin/main` fusionné dans la branche après le merge de DOC-21, sur arbitrage écrit du
+  responsable (D-518, « Fusionner origin/main ») ; aucun fichier commun.
+- Une PR (#2364). La session ne merge pas : « prête @<sha> » à l'intégrateur.
 - Lot frère : DOC-21 (branche `claude/refonte-lien-doc21-signature-hub`), qui inscrit le
   choix dans [[D-481]] §1 bis ; ouvert en même temps (un DOC et un COM à la fois). PAT-3b
   (branche `claude/refonte-lien-pat3b-signature-hub-aaa4bc`) pose le bandeau après le
@@ -26,7 +28,11 @@ par DOC-21). Aucun écran ne l'emploie dans ce lot.
   visaient la largeur de A et B ; la hauteur retenue est celle du dessin.
 - **Troisième nature, `bandeau`** : pleine largeur du parent, dans le flux, hauteur fixe
   dans la primitive (`h-[52px] md:h-16`, la décision, pas l'appelant), `background-size:
-  cover` calé à gauche, aucun `aspect-ratio` : recadré, jamais étiré. À proportions
+  cover` calé à gauche, aucun `aspect-ratio` : recadré, jamais étiré. **Aucune largeur
+  posée** : un bloc à largeur automatique s'élargit sous les marges négatives de
+  l'appelant ; le `w-full` du premier commit le décalait sans l'élargir (constat
+  PR-Agent sur #2364, confirmé à l'écran : 292 px au lieu de la largeur de la carte),
+  retiré, et le banc refuse toute classe `w-` sur le bandeau. À proportions
   libres (nature `ornement`), le SVG de 1 200 × 180 aurait fait 101 px de haut au bureau.
 - **Emplacement `hub-patient`**, un seul élément (`quiet-sweep`), facultatif dans les
   props comme `deux-voix`. Tout autre élément au hub, et le bandeau ailleurs, sont

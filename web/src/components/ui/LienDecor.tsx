@@ -170,13 +170,16 @@ export function LienDecor(props: LienDecorProps) {
 
   if (entree.nature === 'bandeau') {
     // Hauteur fixée par la décision (52 px, 64 px dès `md`) ; recadré, jamais
-    // étiré : `cover` calé à gauche, sans rapport d'aspect imposé.
+    // étiré : `cover` calé à gauche, sans rapport d'aspect imposé. Aucune
+    // largeur posée : un bloc à largeur automatique remplit son parent et
+    // s'élargit sous les marges négatives de l'appelant (bord à bord) ; un
+    // `w-full` le décalerait sans l'élargir (constat PR-Agent sur #2364).
     return (
       <span
         aria-hidden="true"
         data-lien-decor={props.emplacement}
         data-element={element}
-        className={`${SOCLE} block h-[52px] w-full bg-no-repeat md:h-16 ${classesAdmises(props.className)}`.trim()}
+        className={`${SOCLE} block h-[52px] bg-no-repeat md:h-16 ${classesAdmises(props.className)}`.trim()}
         style={{
           backgroundImage: `url('${ornement.fichier}')`,
           backgroundSize: 'cover',
