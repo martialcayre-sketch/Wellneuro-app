@@ -455,6 +455,16 @@ function echapper(texte) {
  */
 export function mentionne(contenu, jeton) {
   if (/^[\w$]+$/.test(jeton)) return new RegExp(`\\b${echapper(jeton)}\\b`).test(contenu);
+  // Un spécificateur se lit ENTRE GUILLEMETS, entier. Une simple inclusion
+  // prenait le baril pour ses propres fichiers : la forme abrégée
+  // `@/lib/food-compass` (pour `food-compass/index`) se trouvait dans
+  // `'@/lib/food-compass/refValidation'` et `'@/lib/food-compass/plates'`,
+  // si bien que `protocol/fromPrisma.ts`, qui ne fait que VALIDER une
+  // référence de protocole, passait pour lecteur de la Boussole — et la
+  // colonne « Patient » disait « oui » par cinq routes du portail qui n'en
+  // servent aucune lecture (revue CodeRabbit de #1736). Même faux appelant
+  // pour `./catalogue` devant `./catalogueV2`.
+  if (/^(@\/|\.\.?\/)/.test(jeton)) return new RegExp(`['"\`]${echapper(jeton)}['"\`]`).test(contenu);
   return contenu.includes(jeton);
 }
 
