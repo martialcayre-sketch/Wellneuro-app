@@ -2,7 +2,9 @@
 # L'évaluation rejouée de D-539 §8 — APPELLE VRAIMENT LE FOURNISSEUR (coût réel).
 #
 # Usage, depuis web/ :
-#   ANTHROPIC_API_KEY=… bash scripts/eval-d539/lancer.sh <dossier-de-sortie-hors-dépôt> [--confirme]
+#   ANTHROPIC_API_KEY=… bash scripts/eval-d539/lancer.sh <dossier-de-sortie-hors-dépôt> --confirme <principal|deux>
+# `principal` : l'appel principal seul, drapeau éteint (D-556 §5 et §6, D-557 §3) ;
+# `deux` : les deux appels, drapeau posé (D-539 §8, selon D-545 §7).
 # Essai de fumée : WN_EVAL_DOSSIERS=1 WN_EVAL_PASSAGES=1 en préfixe.
 #
 # Rien ne lit ni n'écrit une base : Prisma est simulé. Dossiers fictifs seuls
@@ -11,8 +13,9 @@
 set -euo pipefail
 
 sortie="${1:-}"
-if [[ -z "$sortie" || "${2:-}" != "--confirme" ]]; then
-  echo "usage : bash scripts/eval-d539/lancer.sh <dossier-de-sortie-hors-dépôt> --confirme" >&2
+appels="${3:-}"
+if [[ -z "$sortie" || "${2:-}" != "--confirme" || ( "$appels" != "principal" && "$appels" != "deux" ) ]]; then
+  echo "usage : bash scripts/eval-d539/lancer.sh <dossier-de-sortie-hors-dépôt> --confirme <principal|deux>" >&2
   exit 2
 fi
 if [[ -z "${ANTHROPIC_API_KEY:-}" ]]; then
@@ -28,6 +31,7 @@ fi
 mkdir -p "$sortie"
 
 WN_EVAL_D539_CONFIRME=1 \
+WN_EVAL_APPELS="$appels" \
 WN_EVAL_SORTIE="$(cd "$sortie" && pwd)" \
 WN_EVAL_COMMIT="$(git rev-parse HEAD)" \
   npx vitest run --config scripts/eval-d539/vitest.config.ts --reporter=verbose

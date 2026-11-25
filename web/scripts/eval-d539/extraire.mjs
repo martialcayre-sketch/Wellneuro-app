@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-// Prépare la COTATION de l'évaluation de D-539 §8 rejouée selon D-545 §7, à partir des générations
+// Prépare la COTATION de l'évaluation de D-539 §8 rejouée selon D-545 §7 (ou, en mode `principal`,
+// de l'appel principal seul selon D-557 §3), à partir des générations
 // relevées par `evaluation.eval.ts`. Ne cote pas : il met en forme ce qui se
 // lit contre la grille, et relève des INDICES mécaniques qui orientent la
 // lecture sans la remplacer (un indice n'est pas une violation, son absence
@@ -7,8 +8,10 @@
 //
 //   node scripts/eval-d539/extraire.mjs <dossier-de-sortie>
 //
+// Le mode se lit dans `resume.json` (`appels`) ; absent, c'est `deux`.
+//
 // Écrit, dans le dossier de sortie (hors dépôt) :
-//   lecture-biologie.md   — par génération : le bloc envoyé, la restitution du second appel ;
+//   lecture-biologie.md   — mode `deux` seul : par génération, le bloc envoyé, la restitution du second appel ;
 //   lecture-principale.md — par génération : la sortie de l'appel principal, champ par champ,
 //                           et le narratif assemblé, phrase du §5 séparée ;
 //   indices.json          — indices mécaniques et contrôle de la phrase du §5 ;
@@ -25,6 +28,10 @@ if (!sortie) {
 const dossierGen = path.join(sortie, 'generations');
 const fichiers = fs.readdirSync(dossierGen).filter(f => /^D\d\d-P\d\.json$/.test(f)).sort();
 const generations = fichiers.map(f => ({ nom: f.replace('.json', ''), ...JSON.parse(fs.readFileSync(path.join(dossierGen, f), 'utf8')) }));
+const fichierResume = path.join(sortie, 'resume.json');
+const resumeBanc = fs.existsSync(fichierResume) ? JSON.parse(fs.readFileSync(fichierResume, 'utf8')) : {};
+const MODE = resumeBanc.appels === 'principal' ? 'principal' : 'deux';
+const VERSION_PRINCIPALE = resumeBanc.consignes?.principale ?? '(version inconnue)';
 
 const PHRASE = /^Votre praticien a reçu votre bilan biologique du (1er|\d{1,2}) [a-zéû]+ \d{4}\.$/;
 const MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
@@ -79,12 +86,12 @@ function champsPrincipaux(s) {
 
 const indices = [];
 let mdBio = '# Lecture — second appel (synthese-biologie-v2)\n';
-let mdPrin = '# Lecture — appel principal (synthese-v38) et narratif assemblé\n';
+let mdPrin = `# Lecture — appel principal (${VERSION_PRINCIPALE}${MODE === 'principal' ? ', seul' : ''}) et narratif assemblé\n`;
 const blocsBio = [];
 const blocsPrin = [];
 
 for (const g of generations) {
-  const principal = [...g.appels].reverse().find(a => a.consigne === 'synthese-v38');
+  const principal = [...g.appels].reverse().find(a => a.consigne === 'principale');
   const second = [...g.appels].reverse().find(a => a.consigne === 'synthese-biologie-v2');
   const sortiePrincipale = principal ? lireJson(principal.sortie) : null;
   const sortieBio = second ? lireJson(second.sortie) : null;
@@ -120,7 +127,7 @@ for (const g of generations) {
     statutHttp: g.statutHttp,
     issueBiologie: g.appelBiologie?.issue ?? null,
     entrees: g.entrees,
-    relancePrincipale: g.appels.filter(a => a.consigne === 'synthese-v38').length > 1,
+    relancePrincipale: g.appels.filter(a => a.consigne === 'principale').length > 1,
     relanceBiologie: g.appels.filter(a => a.consigne === 'synthese-biologie-v2').length > 1,
     phrase: { posee: phrasePosee, conforme: attendue !== null && dernier === attendue, attendue, lue: dernier },
     principalTermesDuBloc: [...new Set(passagesPrincipaux.flatMap(p => p.termesDuBloc))],
@@ -128,16 +135,18 @@ for (const g of generations) {
   });
 
   const enteteGen = `\n\n## ${g.nom}\n`;
-  const bio = `${enteteGen}\n### Bloc envoyé au second appel\n\n\`\`\`\n${g.blocBiologie ?? '(aucun)'}\n\`\`\`\n\n### Restitution (second appel, issue : ${g.appelBiologie?.issue ?? '—'})\n\n` +
+  const bio = MODE === 'principal' ? '' : `${enteteGen}\n### Bloc envoyé au second appel\n\n\`\`\`\n${g.blocBiologie ?? '(aucun)'}\n\`\`\`\n\n### Restitution (second appel, issue : ${g.appelBiologie?.issue ?? '—'})\n\n` +
     `**resume_biologie_praticien**\n\n${sortieBio?.resume_biologie_praticien ?? '(vide)'}\n\n**points_de_vigilance_biologie**\n\n` +
     `${(sortieBio?.points_de_vigilance_biologie ?? []).map(x => `- ${x}`).join('\n') || '(aucun)'}\n`;
-  mdBio += bio;
-  blocsBio.push(bio);
+  if (bio) {
+    mdBio += bio;
+    blocsBio.push(bio);
+  }
 
   const premierMessage = principal ? String(principal.messages?.[0]?.content ?? '') : '';
   const declaratif = premierMessage.match(/^<donnees_declaratives_patient>$[\s\S]*?^<\/donnees_declaratives_patient>$/m)?.[0] ?? '(aucune anamnèse transmise)';
   const prin = `${enteteGen}\n### Anamnèse transmise à l'appel principal\n\n\`\`\`\n${declaratif}\n\`\`\`\n\n` +
-    `### Résultats du dossier (bloc NON transmis à l'appel principal ; pour la ligne 10)\n\n\`\`\`\n${g.blocBiologie ?? '(aucun)'}\n\`\`\`\n\n` +
+    `### Résultats du dossier (bloc NON transmis à l'appel principal${MODE === 'principal' ? ', construit par le banc' : ''} ; pour la ligne 10)\n\n\`\`\`\n${g.blocBiologie ?? '(aucun)'}\n\`\`\`\n\n` +
     `### Sortie brute de l'appel principal (champ par champ)\n\n` +
     champsPrincipaux(sortiePrincipale).map(([c, v]) => `- **${c}** : ${v}`).join('\n') +
     `\n\n### Narratif assemblé\n\n${narratifHorsPhrase}\n\n**Phrase du §5 (posée par le code)** : ${phrasePosee ? dernier : '(absente)'}\n`;
@@ -146,7 +155,7 @@ for (const g of generations) {
   if (!sortiePrincipale) indices[indices.length - 1].principalIllisible = true;
 }
 
-fs.writeFileSync(path.join(sortie, 'lecture-biologie.md'), mdBio);
+if (MODE === 'deux') fs.writeFileSync(path.join(sortie, 'lecture-biologie.md'), mdBio);
 fs.writeFileSync(path.join(sortie, 'lecture-principale.md'), mdPrin);
 fs.writeFileSync(path.join(sortie, 'indices.json'), JSON.stringify(indices, null, 2));
 
@@ -174,8 +183,11 @@ const resume = {
   generations: generations.length,
   http200: indices.filter(i => i.statutHttp === 200).length,
   issuesBiologie: indices.reduce((o, i) => ({ ...o, [i.issueBiologie]: (o[i.issueBiologie] ?? 0) + 1 }), {}),
-  entreesConformes: indices.filter(i => i.entrees.principalSansBloc && i.entrees.secondBlocSeul && i.entrees.ecarts.length === 0).length,
-  phrasesConformes: indices.filter(i => i.phrase.conforme).length,
+  appels: MODE,
+  entreesConformes: indices.filter(i => i.entrees.principalSansBloc && i.entrees.secondBlocSeul !== false && i.entrees.ecarts.length === 0).length,
+  // Mode `principal` : drapeau éteint, la phrase du §5 n'est jamais posée ; un compte non nul est un écart.
+  phrasesConformes: MODE === 'principal' ? null : indices.filter(i => i.phrase.conforme).length,
+  phrasesPosees: indices.filter(i => i.phrase.posee).length,
   relancesPrincipales: indices.filter(i => i.relancePrincipale).length,
   relancesBiologie: indices.filter(i => i.relanceBiologie).length,
   generationsAvecTermesDuBlocDansLePrincipal: indices.filter(i => i.principalTermesDuBloc.length).map(i => `${i.generation}: ${i.principalTermesDuBloc.join(' | ')}`),

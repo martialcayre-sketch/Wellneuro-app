@@ -1,7 +1,17 @@
 import { describe, expect, it, vi } from 'vitest';
 
 // L'ÉVALUATION REJOUÉE DE [[D-539]] §8, selon [[D-545]] §7 — 24 dossiers
-// fictifs × 3 passages, sous `synthese-v38` et `synthese-biologie-v2`.
+// fictifs × 3 passages, sous `synthese-v39` et `synthese-biologie-v2`.
+//
+// DEUX MODES (`WN_EVAL_APPELS`, posé par `lancer.sh`) :
+// - `principal` ([[D-556]] §5 et §6, [[D-557]] §3) : l'appel principal SEUL.
+//   Le drapeau `WN_SYNTHESE_BIOLOGIE_ENABLED` reste éteint pendant les
+//   générations, comme en service : la route ne lit aucun résultat et le
+//   second appel ne part pas. Le bloc de chaque dossier est construit par le
+//   banc AVANT les générations (drapeau posé le temps de cette lecture, sans
+//   appel au fournisseur), pour vérifier que l'appel principal n'en reçoit
+//   rien et pour la lecture de la ligne 10 ;
+// - `deux` : les deux appels, drapeau posé, comme au rejeu de #2286.
 //
 // CE BANC APPELLE VRAIMENT LE FOURNISSEUR. Il n'est dans l'`include` d'aucune
 // configuration de CI : il se lance à la main, par
@@ -9,7 +19,7 @@ import { describe, expect, it, vi } from 'vitest';
 //
 // Conditions du §8 : hors production (rien ne lit ni n'écrit une base : Prisma
 // est simulé, en mémoire), dossiers entièrement fictifs ([[D-125]],
-// `dossiers.ts`), les vraies consignes (`synthese-v38`,
+// `dossiers.ts`), les vraies consignes (`synthese-v39`,
 // `synthese-biologie-v2`), le modèle de production, le vrai lecteur et le vrai
 // constructeur du bloc, et le vrai assemblage : la VRAIE route
 // `POST /api/praticien/synthese`, comme le banc de chaîne
@@ -23,8 +33,9 @@ import { describe, expect, it, vi } from 'vitest';
 // cotation contre la grille est une lecture (D-545 §6 : deux lectures, et un
 // verdict motivé sur chaque désaccord).
 
+/** `principale` = la consigne de l'appel principal, à la version exigée plus bas. */
 type Appel = {
-  consigne: 'synthese-v38' | 'synthese-biologie-v2' | 'inconnue';
+  consigne: 'principale' | 'synthese-biologie-v2' | 'inconnue';
   modele: string;
   messages: unknown;
   sortie: string;
@@ -102,7 +113,7 @@ vi.mock('@/lib/anthropic', async (importOriginal) => {
     const ctx = etat.courant?.();
     const releve = {
       consigne: (systeme === reel.SYSTEM_PROMPT_SYNTHESE
-        ? 'synthese-v38'
+        ? 'principale'
         : systeme === SYSTEM_PROMPT_SYNTHESE_BIOLOGIE
           ? 'synthese-biologie-v2'
           : 'inconnue') as Appel['consigne'],
@@ -160,6 +171,12 @@ for (const d of DOSSIERS) etat.dossiers.set(d.idPatient, d);
 
 const PASSAGES = 3;
 const MODELE_PRODUCTION = 'claude-sonnet-4-6';
+// La consigne principale servie par `main` ; à reporter avec elle à chaque version.
+const VERSION_EVALUEE = 'synthese-v39';
+type Mode = 'principal' | 'deux';
+const MODE: Mode | null = process.env.WN_EVAL_APPELS === 'principal' || process.env.WN_EVAL_APPELS === 'deux'
+  ? process.env.WN_EVAL_APPELS
+  : null;
 
 /** Les morceaux du bloc qui ne doivent JAMAIS figurer dans le message de l'appel principal. */
 function morceauxDuBloc(texteBloc: string): string[] {
@@ -177,14 +194,16 @@ type Generation = {
   statutHttp: number;
   erreur: string | null;
   appels: Appel[];
+  /** Mode `deux` : le bloc envoyé au second appel. Mode `principal` : le bloc construit par le banc, envoyé à aucun appel. */
   blocBiologie: string | null;
   appelBiologie: unknown;
   syntheseJson: unknown;
-  entrees: { principalSansBloc: boolean; secondBlocSeul: boolean; ordre: string[]; ecarts: string[] };
+  /** `secondBlocSeul` vaut `null` en mode `principal` : aucun second appel n'est attendu. */
+  entrees: { principalSansBloc: boolean; secondBlocSeul: boolean | null; ordre: string[]; ecarts: string[] };
   logs: { niveau: string; event?: string; message?: string }[];
 };
 
-async function generer(d: Dossier, passage: number): Promise<Generation> {
+async function generer(d: Dossier, passage: number, mode: Mode, blocConstruit: string | null): Promise<Generation> {
   const ctx: Contexte = { appels: [], enregistre: null, logs: [] };
   let statutHttp = 0;
   let erreur: string | null = null;
@@ -202,9 +221,12 @@ async function generer(d: Dossier, passage: number): Promise<Generation> {
   });
 
   const donnees = (ctx.enregistre?.donneesEntree ?? null) as { blocBiologie?: { texte: string } | null; appelBiologie?: unknown } | null;
-  const texteBloc = donnees?.blocBiologie?.texte ?? null;
+  const texteBlocEnvoye = donnees?.blocBiologie?.texte ?? null;
   const ecarts: string[] = [];
-  const principaux = ctx.appels.filter(a => a.consigne === 'synthese-v38');
+  if (mode === 'principal' && texteBlocEnvoye !== null) ecarts.push('mode principal : la route a construit un bloc');
+  // Mode `principal` : les morceaux cherchés sont ceux du bloc construit par le banc.
+  const texteBloc = mode === 'principal' ? blocConstruit : texteBlocEnvoye;
+  const principaux = ctx.appels.filter(a => a.consigne === 'principale');
   const seconds = ctx.appels.filter(a => a.consigne === 'synthese-biologie-v2');
   if (ctx.appels.some(a => a.consigne === 'inconnue')) ecarts.push('appel sous une consigne inconnue');
   if (ctx.appels.some(a => a.modele !== MODELE_PRODUCTION)) ecarts.push('modèle autre que celui de production');
@@ -220,8 +242,12 @@ async function generer(d: Dossier, passage: number): Promise<Generation> {
       }
     }
   }
-  let secondBlocSeul = texteBloc !== null && seconds.length > 0;
-  for (const a of seconds) {
+  let secondBlocSeul: boolean | null = texteBloc !== null && seconds.length > 0;
+  if (mode === 'principal') {
+    secondBlocSeul = null;
+    if (seconds.length > 0) ecarts.push(`mode principal : ${seconds.length} second(s) appel(s) parti(s)`);
+  }
+  for (const a of mode === 'principal' ? [] : seconds) {
     const msgs = a.messages as { role: string; content: unknown }[];
     if (msgs[0]?.role !== 'user' || msgs[0]?.content !== texteBloc) {
       secondBlocSeul = false;
@@ -235,7 +261,7 @@ async function generer(d: Dossier, passage: number): Promise<Generation> {
   }
   const ordre = ctx.appels.map(a => a.consigne);
   const premierSecond = ordre.indexOf('synthese-biologie-v2');
-  if (premierSecond !== -1 && ordre.slice(premierSecond).includes('synthese-v38')) ecarts.push('appel principal après le second');
+  if (premierSecond !== -1 && ordre.slice(premierSecond).includes('principale')) ecarts.push('appel principal après le second');
 
   return {
     dossier: d.numero,
@@ -291,15 +317,17 @@ async function enParallele<T, R>(items: T[], largeur: number, f: (t: T) => Promi
   return sorties;
 }
 
-describe('D-539 §8, selon D-545 §7 — évaluation rejouée (appels réels au fournisseur)', () => {
+describe('D-539 §8, selon D-545 §7 (D-557 §3 en mode principal) — évaluation rejouée (appels réels au fournisseur)', () => {
   it('relève les 72 générations et vérifie les entrées', async () => {
     const sortie = process.env.WN_EVAL_SORTIE;
     expect(process.env.WN_EVAL_D539_CONFIRME, 'lancer par scripts/eval-d539/lancer.sh').toBe('1');
+    expect(MODE, 'WN_EVAL_APPELS : principal ou deux').not.toBeNull();
+    const mode = MODE!;
     expect(sortie, 'WN_EVAL_SORTIE : dossier de sortie hors dépôt').toBeTruthy();
     expect(path.resolve(sortie!).startsWith(path.resolve(__dirname, '../../..')), 'sortie hors du dépôt').toBe(false);
     expect(process.env.ANTHROPIC_API_KEY, 'clé absente').toBeTruthy();
     expect(CLAUDE_MODEL).toBe(MODELE_PRODUCTION);
-    expect(VERSION_PROMPT_SYNTHESE).toBe('synthese-v38');
+    expect(VERSION_PROMPT_SYNTHESE).toBe(VERSION_EVALUEE);
     expect(VERSION_PROMPT_SYNTHESE_BIOLOGIE).toBe('synthese-biologie-v2');
     expect(couvertureManquante()).toEqual([]);
 
@@ -309,6 +337,11 @@ describe('D-539 §8, selon D-545 §7 — évaluation rejouée (appels réels au 
     vi.stubEnv('WN_SYNTHESE_STREAM', '');
     // Avant tout appel au fournisseur : la couverture qui se lit sur le bloc.
     expect(await couvertureManquanteSurLeBloc()).toEqual([]);
+    // Le bloc de chaque dossier, construit par le vrai lecteur, sans appel au fournisseur.
+    const blocs = new Map<number, string | null>();
+    for (const d of DOSSIERS) blocs.set(d.numero, (await lireBlocBiologiePourSynthese(d.idPatient))?.texte ?? null);
+    // Mode `principal` : drapeau éteint pendant les générations, comme en service.
+    if (mode === 'principal') vi.stubEnv('WN_SYNTHESE_BIOLOGIE_ENABLED', '');
 
     // Sous-ensemble pour un essai de fumée : `WN_EVAL_DOSSIERS=1,2`, `WN_EVAL_PASSAGES=1`.
     const filtre = process.env.WN_EVAL_DOSSIERS?.split(',').map(Number);
@@ -320,7 +353,7 @@ describe('D-539 §8, selon D-545 §7 — évaluation rejouée (appels réels au 
     const dossierSortie = path.join(sortie!, 'generations');
     fs.mkdirSync(dossierSortie, { recursive: true });
     const generations = await enParallele(travaux, Number(process.env.WN_EVAL_LARGEUR ?? 4), async ({ d, passage }) => {
-      const g = await generer(d, passage);
+      const g = await generer(d, passage, mode, blocs.get(d.numero) ?? null);
       const nom = `D${String(d.numero).padStart(2, '0')}-P${passage}.json`;
       fs.writeFileSync(path.join(dossierSortie, nom), JSON.stringify(g, null, 2));
       console.log(`${nom} : HTTP ${g.statutHttp}, ${g.appels.length} appel(s), écarts d'entrée ${g.entrees.ecarts.length}`);
@@ -330,16 +363,19 @@ describe('D-539 §8, selon D-545 §7 — évaluation rejouée (appels réels au 
     const usage = { input_tokens: 0, output_tokens: 0, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 };
     for (const g of generations) for (const a of g.appels) for (const k of Object.keys(usage) as (keyof typeof usage)[]) usage[k] += a.usage[k] ?? 0;
     const resume = {
-      decision: 'D-539 §8, selon D-545 §7',
+      decision: mode === 'principal' ? 'D-557 §3 (appel principal seul, D-556 §5 et §6)' : 'D-539 §8, selon D-545 §7',
+      appels: mode,
       commit: process.env.WN_EVAL_COMMIT ?? null,
       modele: CLAUDE_MODEL,
-      consignes: { principale: VERSION_PROMPT_SYNTHESE, biologie: VERSION_PROMPT_SYNTHESE_BIOLOGIE },
+      consignes: mode === 'principal'
+        ? { principale: VERSION_PROMPT_SYNTHESE }
+        : { principale: VERSION_PROMPT_SYNTHESE, biologie: VERSION_PROMPT_SYNTHESE_BIOLOGIE },
       generations: generations.length,
       http200: generations.filter(g => g.statutHttp === 200).length,
-      appelsPrincipaux: generations.reduce((n, g) => n + g.appels.filter(a => a.consigne === 'synthese-v38').length, 0),
+      appelsPrincipaux: generations.reduce((n, g) => n + g.appels.filter(a => a.consigne === 'principale').length, 0),
       appelsBiologie: generations.reduce((n, g) => n + g.appels.filter(a => a.consigne === 'synthese-biologie-v2').length, 0),
       issuesBiologie: generations.map(g => (g.appelBiologie as { issue?: string } | null)?.issue ?? null),
-      entreesConformes: generations.filter(g => g.entrees.principalSansBloc && g.entrees.secondBlocSeul && g.entrees.ecarts.length === 0).length,
+      entreesConformes: generations.filter(g => g.entrees.principalSansBloc && g.entrees.secondBlocSeul !== false && g.entrees.ecarts.length === 0).length,
       usage,
     };
     fs.writeFileSync(path.join(sortie!, 'resume.json'), JSON.stringify(resume, null, 2));
