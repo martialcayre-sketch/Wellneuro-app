@@ -53,6 +53,9 @@ test('versPrGraphql : état, fusionnabilité et commit de merge', () => {
   assert.equal(ouverte.mergeable, 'MERGEABLE');
   assert.equal(ouverte.mergeStateStatus, 'CLEAN');
   assert.equal(ouverte.headRefOid, SHA);
+  // `wn-attendre-ci` compare ce nom à la branche locale (tête attendue) : s'il
+  // disparaissait, le garde se désarmerait en silence.
+  assert.equal(ouverte.headRefName, 'docs/banc');
   assert.equal(ouverte.baseRefName, 'main');
   assert.equal(ouverte.mergeCommit, null, 'merge_commit_sha d’une PR ouverte est un essai de fusion, pas un merge');
 

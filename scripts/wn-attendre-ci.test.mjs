@@ -24,8 +24,11 @@ import {
   agregerParNom,
   analyserArguments,
   causesDuCheckAbsent,
+  delaiSurRunEnCours,
   diagnostiquer,
   intervalleMaxPourDelai,
+  shaAttenduApres,
+  shaAttenduDe,
   normaliserCheck,
   SORTIE_VERT,
   SORTIE_ECHEC,
@@ -468,10 +471,210 @@ test('intervalleMaxPourDelai : 60 s jusqu\'à 900 s inclus, 120 s au-delà', () 
 // `--delai 60 553` retenait « 60 » comme numéro de PR : le message le disait,
 // le code de sortie — seul consommé par un skill — ne le disait pas.
 test('analyserArguments : le drapeau et sa valeur ne sont pas pris pour un numéro', () => {
-  assert.deepEqual(analyserArguments(['--delai', '60', '553']), { numero: '553', delai: 60 });
-  assert.deepEqual(analyserArguments(['553', '--delai', '60']), { numero: '553', delai: 60 });
+  assert.deepEqual(analyserArguments(['--delai', '60', '553']), { numero: '553', delai: 60, sha: null });
+  assert.deepEqual(analyserArguments(['553', '--delai', '60']), { numero: '553', delai: 60, sha: null });
   // 1500 s = 25 min, au-dessus du run le plus long mesuré le 2026-09-04 (17 min).
   assert.equal(analyserArguments(['553']).delai, 1500);
   assert.equal(analyserArguments([]).numero, null);
   assert.equal(analyserArguments(['--delai']).numero, null);
+});
+
+// ---------------------------------------------------------------------------
+// Partie 18 du lot `autonomie-pieges-restes` (2026-11-25) : deux pièges.
+// ---------------------------------------------------------------------------
+
+const E2E_EN_COURS = [{ job: 'e2e (Desktop Chromium)', etape: 'Install Playwright browsers' }];
+
+// #1649, le 2026-10-22 : `verify` attend ses `needs` (l'e2e traînait sur
+// l'installation de Playwright) ; le script disait « JAMAIS créé », lu comme
+// un dispatch manqué.
+test('pas de verify à l\'expiration, un job du commit de tête en cours : sortie 3, job et étape nommés', () => {
+  const v = diagnostiquer(faits({ rollup: VERCEL, delaiDepasse: true, runsEnCours: E2E_EN_COURS }));
+  assert.equal(v.sortie, SORTIE_DELAI);
+  assert.match(v.message, /« verify » n'existe pas encore/);
+  assert.match(v.message, /e2e \(Desktop Chromium\) \(étape « Install Playwright browsers »\)/);
+  assert.match(v.message, /pas un run manqué/);
+  assert.doesNotMatch(v.message, /JAMAIS été créé/);
+});
+
+test('job en cours sans étape lisible : le job seul est nommé', () => {
+  const v = diagnostiquer(faits({ rollup: VERCEL, delaiDepasse: true, runsEnCours: [{ job: 'controles', etape: null }] }));
+  assert.equal(v.sortie, SORTIE_DELAI);
+  assert.match(v.message, /EN COURS : controles\./);
+});
+
+// `null` = lecture en échec, `[]` = rien en cours : aucun des deux n'est une
+// preuve qu'un run tourne, le verdict d'absence demeure.
+test('pas de verify à l\'expiration, jobs illisibles ou aucun en cours : sortie 2 inchangée', () => {
+  for (const runsEnCours of [null, [], undefined]) {
+    const v = diagnostiquer(faits({ rollup: VERCEL, delaiDepasse: true, runsEnCours }));
+    assert.equal(v.sortie, SORTIE_N_A_PAS_TOURNE, String(runsEnCours));
+    assert.match(v.message, /non diagnosticable/);
+  }
+});
+
+// Une cause qui EMPÊCHE le run reste le diagnostic : elle est actionnable.
+test('pas de verify, PR en conflit, un job en cours : sortie 2, la cause prime', () => {
+  const v = diagnostiquer(
+    faits({
+      rollup: VERCEL,
+      delaiDepasse: true,
+      runsEnCours: E2E_EN_COURS,
+      pr: { numero: 1, etat: 'OPEN', mergeable: 'CONFLICTING', mergeStateStatus: 'DIRTY' },
+    }),
+  );
+  assert.equal(v.sortie, SORTIE_N_A_PAS_TOURNE);
+  assert.match(v.message, /CONFLIT/);
+});
+
+test('pas de verify, job en cours, AVANT l\'expiration : on attend toujours', () => {
+  const v = diagnostiquer(faits({ rollup: VERCEL, runsEnCours: E2E_EN_COURS }));
+  assert.equal(v.attendre, true);
+  assert.equal(v.sortie, null);
+});
+
+// Un run annulé sans remplaçant visible au rollup, mais un run neuf du commit
+// de tête en cours : il le remplace, `2` (« aucun run ne l'a remplacé ») serait faux.
+test('verify CANCELLED à l\'expiration, un job du commit de tête en cours : sortie 3', () => {
+  const rollup = [{ name: 'verify', status: 'COMPLETED', conclusion: 'CANCELLED' }];
+  const v = diagnostiquer(faits({ rollup, delaiDepasse: true, runsEnCours: E2E_EN_COURS }));
+  assert.equal(v.sortie, SORTIE_DELAI);
+  assert.match(v.message, /EN COURS : e2e/);
+  const sans = diagnostiquer(faits({ rollup, delaiDepasse: true, runsEnCours: [] }));
+  assert.equal(sans.sortie, SORTIE_N_A_PAS_TOURNE);
+});
+
+test('delaiSurRunEnCours : null sans job lu en cours', () => {
+  assert.equal(delaiSurRunEnCours(1, 'verify', null), null);
+  assert.equal(delaiSurRunEnCours(1, 'verify', []), null);
+  assert.equal(delaiSurRunEnCours(1, 'verify', E2E_EN_COURS).sortie, SORTIE_DELAI);
+});
+
+// #1338, le 2026-10-06 : l'attente lancée avec le push a lu l'ANCIENNE tête et
+// rendu 2 (CONFLICTING). Tant que GitHub ne porte pas la tête attendue, aucun
+// verdict — même ceux qui sortent d'ordinaire sans attendre.
+const ANCIENNE = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+const NOUVELLE = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+const prSur = (headRefOid, surcharge = {}) => ({
+  numero: 1338,
+  etat: 'OPEN',
+  mergeable: 'MERGEABLE',
+  mergeStateStatus: 'CLEAN',
+  headRefOid,
+  ...surcharge,
+});
+
+test('tête GitHub ≠ tête attendue : on attend, même sur un conflit ou un vert de l\'ancienne', () => {
+  const conflit = diagnostiquer(
+    faits({ shaAttendu: NOUVELLE, rollup: VERCEL, pr: prSur(ANCIENNE, { mergeable: 'CONFLICTING', mergeStateStatus: 'DIRTY' }) }),
+  );
+  assert.equal(conflit.attendre, true);
+  assert.equal(conflit.sortie, null);
+  assert.match(conflit.message, /GitHub porte encore la tête aaaaaaaaaaaa, pas bbbbbbbbbbbb/);
+  const vert = diagnostiquer(faits({ shaAttendu: NOUVELLE, rollup: [VERIFY_VERT], pr: prSur(ANCIENNE) }));
+  assert.equal(vert.attendre, true);
+  assert.notEqual(vert.sortie, SORTIE_VERT);
+  const rouge = diagnostiquer(
+    faits({ shaAttendu: NOUVELLE, rollup: [{ name: 'verify', status: 'COMPLETED', conclusion: 'FAILURE' }], pr: prSur(ANCIENNE) }),
+  );
+  assert.equal(rouge.attendre, true);
+});
+
+test('tête GitHub ≠ tête attendue à l\'expiration : sortie 3, les deux sha nommés', () => {
+  const v = diagnostiquer(faits({ shaAttendu: NOUVELLE, rollup: [VERIFY_VERT], pr: prSur(ANCIENNE), delaiDepasse: true }));
+  assert.equal(v.sortie, SORTIE_DELAI);
+  assert.match(v.message, /porte toujours la tête aaaaaaaaaaaa et non bbbbbbbbbbbb/);
+  assert.match(v.message, /a-t-il été poussé/);
+});
+
+test('tête illisible avec une tête attendue : jamais de verdict', () => {
+  const v = diagnostiquer(faits({ shaAttendu: NOUVELLE, rollup: [VERIFY_VERT], pr: prSur(null) }));
+  assert.equal(v.attendre, true);
+  assert.match(v.message, /tête illisible/);
+});
+
+test('tête GitHub = tête attendue (sha complet ou abrégé, casse indifférente) : verdict ordinaire', () => {
+  assert.equal(diagnostiquer(faits({ shaAttendu: NOUVELLE, rollup: [VERIFY_VERT], pr: prSur(NOUVELLE) })).sortie, SORTIE_VERT);
+  assert.equal(
+    diagnostiquer(faits({ shaAttendu: 'bbbbbbb', rollup: [VERIFY_VERT], pr: prSur(NOUVELLE.toUpperCase()) })).sortie,
+    SORTIE_VERT,
+  );
+});
+
+test('sans tête attendue : comportement inchangé', () => {
+  assert.equal(diagnostiquer(faits({ rollup: [VERIFY_VERT], pr: prSur(ANCIENNE) })).sortie, SORTIE_VERT);
+  assert.equal(diagnostiquer(faits({ shaAttendu: null, rollup: [VERIFY_VERT], pr: prSur(ANCIENNE) })).sortie, SORTIE_VERT);
+});
+
+test('PR mergée avec une tête attendue différente : sortie 4, l\'état prime', () => {
+  const v = diagnostiquer(faits({ shaAttendu: NOUVELLE, pr: prSur(ANCIENNE, { etat: 'MERGED' }) }));
+  assert.equal(v.sortie, SORTIE_INDETERMINE);
+});
+
+test('shaAttenduDe : --sha prime, puis HEAD local sur la branche de la PR du dépôt même, sinon rien', () => {
+  const memeDepot = { isCrossRepository: false };
+  assert.equal(shaAttenduDe({ shaOption: 'ABCDEF1', brancheLocale: 'x', headLocal: NOUVELLE, headRefName: 'x', ...memeDepot }), 'abcdef1');
+  assert.equal(shaAttenduDe({ shaOption: 'ABCDEF1' }), 'abcdef1');
+  assert.equal(shaAttenduDe({ brancheLocale: 'chore/p18', headLocal: NOUVELLE, headRefName: 'chore/p18', ...memeDepot }), NOUVELLE);
+  // Copie principale sur `main`, HEAD détaché, branche illisible : rien.
+  assert.equal(shaAttenduDe({ brancheLocale: 'main', headLocal: ANCIENNE, headRefName: 'chore/p18', ...memeDepot }), null);
+  assert.equal(shaAttenduDe({ brancheLocale: null, headLocal: null, headRefName: 'chore/p18', ...memeDepot }), null);
+  assert.equal(shaAttenduDe({ brancheLocale: 'chore/p18', headLocal: null, headRefName: 'chore/p18', ...memeDepot }), null);
+  assert.equal(shaAttenduDe(), null);
+  // PR de fourche au même nom de branche, ou origine illisible : rien.
+  assert.equal(shaAttenduDe({ brancheLocale: 'chore/p18', headLocal: NOUVELLE, headRefName: 'chore/p18', isCrossRepository: true }), null);
+  assert.equal(shaAttenduDe({ brancheLocale: 'chore/p18', headLocal: NOUVELLE, headRefName: 'chore/p18', isCrossRepository: null }), null);
+});
+
+// Constat 1 de la revue adverse : la tête figée au départ faisait attendre
+// 25 min un sha que plus rien ne portera, si la session poussait son handoff
+// pendant l'attente ou si un tiers poussait par-dessus.
+test('shaAttenduApres : verrou dès la tête atteinte ou dépassée par un descendant', () => {
+  assert.equal(shaAttenduApres({ shaAttendu: 'bbbbbbb', tete: NOUVELLE }), null);
+  assert.equal(shaAttenduApres({ shaAttendu: 'bbbbbbb', tete: NOUVELLE.toUpperCase() }), null);
+  assert.equal(shaAttenduApres({ shaAttendu: NOUVELLE, tete: ANCIENNE, statutComparaison: 'ahead' }), null);
+  assert.equal(shaAttenduApres({ shaAttendu: NOUVELLE, tete: ANCIENNE, statutComparaison: 'identical' }), null);
+  // Ancêtre (GitHub n'a pas encore pris la poussée), divergence, comparaison illisible : on attend toujours.
+  for (const statutComparaison of ['behind', 'diverged', null, '']) {
+    assert.equal(shaAttenduApres({ shaAttendu: NOUVELLE, tete: ANCIENNE, statutComparaison }), NOUVELLE, String(statutComparaison));
+  }
+  assert.equal(shaAttenduApres({ shaAttendu: NOUVELLE, tete: null }), NOUVELLE);
+  assert.equal(shaAttenduApres({ shaAttendu: null, tete: ANCIENNE }), null);
+});
+
+test('job en cours : son statut est nommé (un `queued` sans fin n\'est pas un e2e lent)', () => {
+  const v = diagnostiquer(
+    faits({ rollup: VERCEL, delaiDepasse: true, runsEnCours: [{ job: 'e2e', statut: 'queued', etape: null }] }),
+  );
+  assert.match(v.message, /EN COURS : e2e \(queued\)/);
+  const w = diagnostiquer(
+    faits({ rollup: VERCEL, delaiDepasse: true, runsEnCours: [{ job: 'e2e', statut: 'in_progress', etape: 'Install' }] }),
+  );
+  assert.match(w.message, /e2e \(étape « Install », in_progress\)/);
+});
+
+test('verify CANCELLED + PR en conflit + job en cours, à l\'expiration : sortie 2, la cause prime', () => {
+  const v = diagnostiquer(
+    faits({
+      rollup: [{ name: 'verify', status: 'COMPLETED', conclusion: 'CANCELLED' }],
+      delaiDepasse: true,
+      runsEnCours: E2E_EN_COURS,
+      pr: { numero: 1, etat: 'OPEN', mergeable: 'CONFLICTING', mergeStateStatus: 'DIRTY' },
+    }),
+  );
+  assert.equal(v.sortie, SORTIE_N_A_PAS_TOURNE);
+  assert.match(v.message, /CONFLIT/);
+});
+
+test('analyserArguments : --sha lu, validé, jamais pris pour un numéro', () => {
+  assert.deepEqual(analyserArguments(['553', '--sha', 'ABCDEF1']), { numero: '553', delai: 1500, sha: 'abcdef1' });
+  assert.deepEqual(analyserArguments(['--sha', NOUVELLE, '553']), { numero: '553', delai: 1500, sha: NOUVELLE });
+  // Mal formé ou absent : usage (numéro nul), jamais un garde retiré en silence.
+  assert.equal(analyserArguments(['553', '--sha', 'zzz']).numero, null);
+  assert.equal(analyserArguments(['553', '--sha', '1234']).numero, null);
+  assert.equal(analyserArguments(['553', '--sha']).numero, null);
+  // Forme `--sha=` : lue, et validée de même (constat 6 de la revue).
+  assert.deepEqual(analyserArguments(['553', '--sha=ABCDEF1']), { numero: '553', delai: 1500, sha: 'abcdef1' });
+  assert.equal(analyserArguments(['553', '--sha=']).numero, null);
+  assert.equal(analyserArguments(['553', '--sha=xyz']).numero, null);
 });

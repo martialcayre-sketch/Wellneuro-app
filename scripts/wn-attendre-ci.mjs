@@ -187,6 +187,90 @@ export function causesDuCheckAbsent(faits) {
 }
 
 /**
+ * À l'expiration, un check obligatoire absent (ou annulé sans remplaçant)
+ * peut simplement ATTENDRE un job encore en cours du commit de tête :
+ * `verify` a `needs: [controles, typage-tests, e2e]` dans `ci.yml`, et GitHub
+ * ne le crée qu'à la fin de ces jobs. Le 2026-10-22 (#1649), l'étape
+ * « Install Playwright browsers » de l'e2e a traîné 20 à 45 minutes : le
+ * script sortait en `2` (« JAMAIS créé », « non diagnosticable »), lu comme
+ * un dispatch manqué, alors que le run tournait.
+ *
+ * Rend le verdict `3` qui nomme les jobs et leurs étapes en cours, ou `null`
+ * si aucun job n'est connu en cours (`runsEnCours` illisible ou vide) : le
+ * verdict `2` reste alors celui de l'appelant.
+ *
+ * @param {number} numero
+ * @param {string} noms
+ * @param {Array<{job: string, etape: string|null}>|null|undefined} runsEnCours
+ * @returns {{sortie: number, attendre: false, message: string}|null}
+ */
+export function delaiSurRunEnCours(numero, noms, runsEnCours) {
+  if (!Array.isArray(runsEnCours) || runsEnCours.length === 0) return null;
+  // Le statut est nommé : un job `queued` sans fin (aucun runner) n'est pas un
+  // e2e lent, et le lecteur doit pouvoir le voir.
+  const jobs = runsEnCours
+    .map((r) => {
+      const statut = r.statut ? `, ${r.statut}` : '';
+      return r.etape ? `${r.job} (étape « ${r.etape} »${statut})` : `${r.job}${r.statut ? ` (${r.statut})` : ''}`;
+    })
+    .join(', ');
+  return {
+    sortie: SORTIE_DELAI,
+    attendre: false,
+    message:
+      `PR #${numero} : délai dépassé, « ${noms} » n'existe pas encore — un run du commit de tête est EN COURS : ${jobs}. ` +
+      `Ce n'est pas un run manqué : relancer l'attente seule, sans pousser. ` +
+      `Expirer n'est pas réussir — aucun verdict vert n'est rendu.`,
+  };
+}
+
+/**
+ * Le sha que la PR doit porter pour que le verdict concerne ce qu'on vient de
+ * pousser. Le 2026-10-06 (#1338), l'attente lancée dans la même commande que
+ * le `git push` a lu l'ANCIENNE tête et rendu `2` (CONFLICTING) : GitHub
+ * n'avait pas encore pris la nouvelle.
+ *
+ * `--sha` prime ; sinon, appelé depuis la branche de la PR, le HEAD local ;
+ * sinon (copie principale sur `main`, autre branche, HEAD détaché) : `null`,
+ * rien à attendre de plus que la tête que porte GitHub.
+ *
+ * @param {{shaOption?: string|null, brancheLocale?: string|null, headLocal?: string|null, headRefName?: string|null}} entree
+ * @returns {string|null}
+ */
+export function shaAttenduDe({
+  shaOption = null,
+  brancheLocale = null,
+  headLocal = null,
+  headRefName = null,
+  isCrossRepository = null,
+} = {}) {
+  if (shaOption) return shaOption.toLowerCase();
+  // Une PR de fourche peut porter le même nom de branche : seule une tête du
+  // dépôt même (`false` lu, jamais `null` supposé) est celle qu'on a poussée.
+  if (isCrossRepository !== false) return null;
+  if (brancheLocale && headRefName && brancheLocale === headRefName && headLocal) return headLocal.toLowerCase();
+  return null;
+}
+
+/**
+ * La tête attendue, après un tour, VERROUILLÉE dès qu'elle est atteinte : une
+ * fois que GitHub l'a portée, ou porte un commit qui en DESCEND (statut
+ * `ahead`/`identical` de `compare/<attendu>...<tete>`), la tête GitHub refait
+ * foi comme avant — sinon une poussée pendant l'attente (le handoff, un
+ * fragment, ce que fait l'attente en fond) ou un commit de tiers par-dessus
+ * ferait attendre jusqu'au délai un sha que plus rien ne portera.
+ *
+ * @param {{shaAttendu: string|null, tete: string|null, statutComparaison?: string|null}} entree
+ * @returns {string|null}
+ */
+export function shaAttenduApres({ shaAttendu, tete, statutComparaison = null }) {
+  if (!shaAttendu) return null;
+  if (tete && tete.toLowerCase().startsWith(shaAttendu)) return null;
+  if (statutComparaison === 'ahead' || statutComparaison === 'identical') return null;
+  return shaAttendu;
+}
+
+/**
  * Verdict à partir de faits déjà collectés.
  *
  * L'ORDRE DES TESTS DÉCIDE DE CE QU'UN ÉCHEC RACONTE. Il est délibéré :
@@ -215,6 +299,31 @@ export function diagnostiquer(faits) {
       attendre: false,
       message: `PR #${numero} : état ${etat}, pas OPEN. Rien à attendre.`,
     };
+  }
+
+  // 0. La PR porte-t-elle la tête attendue ? Sinon, TOUT ce qui suit jugerait
+  // un autre commit — un conflit, un vert ou un rouge qui ne sont pas ceux de
+  // ce qu'on vient de pousser. On attend que GitHub prenne la nouvelle tête ;
+  // à l'expiration, `3` et les deux sha nommés, jamais un verdict sur l'ancien.
+  if (faits.shaAttendu) {
+    const tete = String(faits.pr.headRefOid ?? '').toLowerCase();
+    if (!tete || !tete.startsWith(faits.shaAttendu)) {
+      const porte = tete ? tete.slice(0, 12) : 'illisible';
+      if (!faits.delaiDepasse) {
+        return {
+          sortie: null,
+          attendre: true,
+          message: `PR #${numero} : GitHub porte encore la tête ${porte}, pas ${faits.shaAttendu.slice(0, 12)} ; on attend qu'il prenne la poussée.`,
+        };
+      }
+      return {
+        sortie: SORTIE_DELAI,
+        attendre: false,
+        message:
+          `PR #${numero} : délai dépassé, la PR porte toujours la tête ${porte} et non ${faits.shaAttendu.slice(0, 12)}. ` +
+          `Le commit a-t-il été poussé (\`git ls-remote origin\`) ? Aucun verdict n'est rendu sur une autre tête.`,
+      };
+    }
   }
 
   // `null` (API illisible) et `[]` (protection sans check obligatoire) sont
@@ -296,6 +405,10 @@ export function diagnostiquer(faits) {
           `plus récente) ; on attend le run du commit de tête.`,
       };
     }
+    if (causes.length === 0) {
+      const enCoursDeTete = delaiSurRunEnCours(numero, noms, faits.runsEnCours);
+      if (enCoursDeTete) return enCoursDeTete;
+    }
     const detail = causes.length > 0 ? `\nCause(s) :${causes.map((c) => `\n  · ${c}`).join('')}` : '';
     return {
       sortie: SORTIE_N_A_PAS_TOURNE,
@@ -317,8 +430,14 @@ export function diagnostiquer(faits) {
     // Sans cause diagnosticable, un run peut simplement n'être pas encore
     // enregistré : on attend. Mais à l'expiration, le verdict reste « n'a pas
     // tourné » et JAMAIS « délai dépassé » — l'absence est l'information utile.
+    // Sauf si un job du commit de tête est encore en cours : le check attend
+    // alors ses `needs`, et `3` le dit (voir `delaiSurRunEnCours`).
     if (causes.length === 0 && !faits.delaiDepasse) {
       return { sortie: null, attendre: true, message: `${enTete} Aucune cause diagnosticable pour l'instant ; on attend.` };
+    }
+    if (causes.length === 0) {
+      const enCoursDeTete = delaiSurRunEnCours(numero, absents.join(', '), faits.runsEnCours);
+      if (enCoursDeTete) return enCoursDeTete;
     }
     const detail = causes.length > 0 ? causes.map((c) => `\n  · ${c}`).join('') : "\n  · non diagnosticable — vérifier à la main pourquoi aucun run n'a été créé.";
     return { sortie: SORTIE_N_A_PAS_TOURNE, attendre: false, message: `${enTete}\nCause(s) :${detail}` };
@@ -389,11 +508,17 @@ export function diagnostiquer(faits) {
  * sur une autre PR — visible dans le message, invisible dans le code de sortie,
  * qui est ce que consomme l'appelant.
  *
+ * `--sha` mal formé n'est PAS ignoré comme `--delai` : l'ignorer retirerait
+ * en silence le garde de tête qu'il demande. Il rend `numero: null` (usage,
+ * code 4). La forme `--sha=<sha>` est lue aussi, pour la même raison.
+ *
  * @param {string[]} argv
- * @returns {{numero: string|null, delai: number}}
+ * @returns {{numero: string|null, delai: number, sha: string|null}}
  */
 export function analyserArguments(argv) {
   let delai = DELAI_PAR_DEFAUT_S;
+  let sha = null;
+  let shaInvalide = false;
   const restants = [];
   for (let i = 0; i < argv.length; i += 1) {
     if (argv[i] === '--delai') {
@@ -401,10 +526,17 @@ export function analyserArguments(argv) {
       i += 1;
       continue;
     }
+    if (argv[i] === '--sha' || argv[i].startsWith('--sha=')) {
+      const valeur = argv[i] === '--sha' ? (argv[i + 1] ?? '') : argv[i].slice('--sha='.length);
+      if (/^[0-9a-f]{7,40}$/i.test(valeur)) sha = valeur.toLowerCase();
+      else shaInvalide = true;
+      if (argv[i] === '--sha') i += 1;
+      continue;
+    }
     restants.push(argv[i]);
   }
-  const numero = restants.find((a) => /^\d+$/.test(a)) ?? null;
-  return { numero, delai };
+  const numero = shaInvalide ? null : (restants.find((a) => /^\d+$/.test(a)) ?? null);
+  return { numero, delai, sha };
 }
 
 // ---------------------------------------------------------------------------
@@ -481,6 +613,52 @@ function faitsDeDiagnostic(sha) {
   return faits;
 }
 
+// Le workflow qui publie `verify` : seuls SES runs peuvent le faire naître.
+// Compter ceux de PR-Agent (même `head_sha`, `pull_request` aussi) ferait
+// dire « en cours, pas un run manqué » d'un vrai dispatch manqué du CI.
+const WORKFLOW_DU_CHECK = '.github/workflows/ci.yml';
+
+// Jobs non conclus des runs CI du commit de tête, avec statut et étape en
+// cours. `null` si une lecture échoue : seul un `[]` lu dit « rien en cours »,
+// et seul un job lu en cours change le verdict (`3` au lieu de `2`). Lu à
+// chaque fois (il change d'un tour à l'autre), et seulement quand le verdict
+// reste `2` sans cause après les autres faits de diagnostic.
+function jobsEnCoursDe(sha) {
+  const runs = jsonOuNull(
+    gh([
+      'api',
+      `repos/:owner/:repo/actions/runs?head_sha=${sha}&per_page=100`,
+      '--jq',
+      `[.workflow_runs[] | select(.status != "completed" and ((.path // "") | startswith("${WORKFLOW_DU_CHECK}"))) | .id]`,
+    ]),
+  );
+  if (!Array.isArray(runs)) return null;
+  const enCours = [];
+  for (const id of runs) {
+    const jobs = jsonOuNull(
+      gh([
+        'api',
+        `repos/:owner/:repo/actions/runs/${id}/jobs?per_page=100`,
+        '--jq',
+        '[.jobs[] | select(.status != "completed") | {job: .name, statut: .status, etape: ([.steps[]? | select(.status == "in_progress") | .name][0])}]',
+      ]),
+    );
+    if (!Array.isArray(jobs)) return null;
+    for (const j of jobs) enCours.push({ job: String(j.job ?? '?'), statut: j.statut ?? null, etape: j.etape ?? null });
+  }
+  return enCours;
+}
+
+// Branche et HEAD du répertoire d'appel — celui de la session qui vient de
+// pousser, pas la racine du script. `null` hors dépôt ou sur erreur.
+function gitLocal(args) {
+  try {
+    return execFileSync('git', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], timeout: 5000 }).trim();
+  } catch {
+    return null;
+  }
+}
+
 // REST, pas `gh pr view` : GraphQL est refusé (403) dans une session cloud
 // (`D-540`, constat du 2026-11-20). Trois lectures au lieu d'une : la PR,
 // puis les check-runs et les statuts de sa tête. Une seule illisible, et la
@@ -508,6 +686,8 @@ function collecter(numero) {
       mergeStateStatus: vue.mergeStateStatus,
       base: vue.baseRefName,
       headRefOid: vue.headRefOid,
+      headRefName: vue.headRefName,
+      isCrossRepository: vue.isCrossRepository,
     },
     rollup,
     delaiDepasse: false,
@@ -517,11 +697,22 @@ function collecter(numero) {
 const dors = (s) => new Promise((resolve) => setTimeout(resolve, s * 1000));
 
 async function principal(argv) {
-  const { numero, delai } = analyserArguments(argv);
+  const { numero, delai, sha } = analyserArguments(argv);
   if (!numero) {
-    console.error('Usage : node scripts/wn-attendre-ci.mjs <n° de PR> [--delai <secondes>]');
+    console.error('Usage : node scripts/wn-attendre-ci.mjs <n° de PR> [--delai <secondes>] [--sha <7 à 40 hex>]');
     return SORTIE_INDETERMINE;
   }
+  // Lus une fois, au départ : la tête attendue est celle qu'on vient de
+  // pousser, pas un commit fait pendant l'attente.
+  // `branch --show-current`, pas `rev-parse --abbrev-ref` : celui-ci rend
+  // `heads/<nom>` quand un tag homonyme existe, et désarmait le garde.
+  const brancheLocale = sha ? null : gitLocal(['branch', '--show-current']) || null;
+  const headLocal = sha ? null : gitLocal(['rev-parse', 'HEAD']);
+  // Un HEAD que la référence distante suivie n'a pas est un commit non poussé
+  // (le push met cette référence à jour aussitôt) : attendre 25 min pour lui
+  // ne sert à rien. On le dit dès le départ.
+  const amont = sha ? null : gitLocal(['rev-parse', '@{u}']);
+  let shaAttendu;
   // Plus de sonde `gh --version` : si `gh` est absent ou muet, la première
   // lecture de la PR rend `pr: null` et le verdict sort en SORTIE_INDETERMINE avec un
   // message qui couvre ce cas.
@@ -533,6 +724,32 @@ async function principal(argv) {
   let tours = 0;
   for (;;) {
     let faits = collecter(numero);
+    // Fixée à la première lecture lisible de la PR (il faut son `headRefName`).
+    if (shaAttendu === undefined && faits.pr) {
+      shaAttendu = shaAttenduDe({
+        shaOption: sha,
+        brancheLocale,
+        headLocal,
+        headRefName: faits.pr.headRefName,
+        isCrossRepository: faits.pr.isCrossRepository,
+      });
+      if (shaAttendu) {
+        console.log(`Tête attendue : ${shaAttendu.slice(0, 12)}${sha ? ' (--sha)' : ' (HEAD local, branche de la PR)'}.`);
+        if (!sha && amont && amont.toLowerCase() !== shaAttendu) {
+          console.log(`⚠ le HEAD local ${shaAttendu.slice(0, 12)} n'est pas sa branche distante suivie (${amont.slice(0, 12)}) : commit non poussé ?`);
+        }
+      }
+    }
+    // Verrou : atteinte (ou dépassée par un descendant), la tête attendue
+    // tombe, et la tête GitHub refait foi pour le reste de l'attente.
+    if (shaAttendu && faits.pr) {
+      const tete = faits.pr.headRefOid ?? null;
+      const atteinte = tete && tete.toLowerCase().startsWith(shaAttendu);
+      const statutComparaison =
+        tete && !atteinte ? gh(['api', `repos/:owner/:repo/compare/${shaAttendu}...${tete}`, '--jq', '.status']) : null;
+      shaAttendu = shaAttenduApres({ shaAttendu, tete, statutComparaison });
+    }
+    faits.shaAttendu = shaAttendu ?? null;
     faits.delaiDepasse = (Date.now() - debut) / 1000 >= delai;
     let verdict = diagnostiquer(faits);
     if (!verdict.attendre && verdict.sortie === SORTIE_N_A_PAS_TOURNE && faits.pr) {
@@ -541,6 +758,12 @@ async function principal(argv) {
       // message nommera toutes les causes applicables (Copilot, squash…).
       faits = { ...faits, ...faitsDeDiagnostic(faits.pr.headRefOid) };
       verdict = diagnostiquer(faits);
+      // Toujours `2` sans cause, à l'expiration : un job CI du commit de tête
+      // encore en cours en ferait un `3` (voir `delaiSurRunEnCours`).
+      if (verdict.sortie === SORTIE_N_A_PAS_TOURNE && faits.delaiDepasse && causesDuCheckAbsent(faits).length === 0) {
+        faits = { ...faits, runsEnCours: jobsEnCoursDe(faits.pr.headRefOid) };
+        verdict = diagnostiquer(faits);
+      }
     }
     if (!verdict.attendre) {
       console.log(verdict.message);
