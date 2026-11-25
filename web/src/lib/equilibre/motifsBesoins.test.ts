@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { BESOIN_SOURCES, BESOINS, MAX_RYTHME_CHRONO } from './constants';
+import { BESOIN_SOURCES, BESOINS, MAX_MESURE_DERIVEE_ALIMENTAIRE, MAX_RYTHME_CHRONO } from './constants';
 import { questionnairesEcartesParValidite, type ReponseBrute } from './depuisPrisma';
 import { ecartsDecisionBesoin, motifsNonMesureBesoin, type ContexteMotifs } from './motifsBesoins';
 import { QUESTIONNAIRE_CATALOGUE } from '../questions';
@@ -48,6 +48,18 @@ describe('motifsNonMesureBesoin — un motif par étage, jamais pour un besoin m
   it('B3 : la forme du questionnaire qui ne sert pas le sous-score se dit, sans se lire « non passé »', () => {
     const attendu = MAX_RYTHME_CHRONO > 0 ? 'aucune_passation' : 'forme_sans_sous_score';
     expect(motifsNonMesureBesoin(3, {}, SANS_CONTEXTE)?.[0].motif).toBe(attendu);
+  });
+
+  // Le besoin 1 lit la MESURE DÉRIVÉE de l'enquête alimentaire ([[D-516]] §2.1) : sous
+  // la forme courte, qui ne déclare pas le sous-score du rythme, il n'a pas de
+  // barème (`max` à 0) et se dit « non évalué » par la forme, jamais « non passé »
+  // ([[D-516]] §6.2). La production sert la forme complète : ce cas n'y est pas
+  // visible, et le banc le garde pour la position éteinte du drapeau.
+  it('B1 : la forme courte de l’enquête alimentaire se dit « forme sans sous-score », sans se lire « non passé »', () => {
+    const attendu = MAX_MESURE_DERIVEE_ALIMENTAIRE > 0 ? 'aucune_passation' : 'forme_sans_sous_score';
+    expect(motifsNonMesureBesoin(1, {}, SANS_CONTEXTE)).toEqual([
+      { motif: attendu, idsQuestionnaire: ['Q_ALI_01'], dateDernierePassation: null },
+    ]);
   });
 
   it('une passation entièrement écartée par le filtre de validité n’est pas « aucune passation »', () => {

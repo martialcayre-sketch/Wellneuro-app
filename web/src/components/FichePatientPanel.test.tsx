@@ -186,6 +186,8 @@ type Options = {
   prioritesEcartSansProvenance?: boolean;
   /** r3_11 : une réponse sans le compte des besoins mesurés. */
   compteAbsent?: boolean;
+  /** D-516 §5.2 : le besoin 1 porte un constat biologique (HbA1c). */
+  prioritesConstatsBiologiques?: boolean;
   // Résumé des points d'étape. ABSENT par défaut : la route rend `resume: null`.
   checkins?: 'aucunPoint' | 'unPoint' | 'erreur';
   // `GET /api/praticien/orientation` (LOT-06). `actif` sert la seule branche
@@ -657,6 +659,30 @@ function stubFetch(options: Options = {}) {
               ...EQUILIBRE.priorites[0],
               ...(options.prioritesEcartSansProvenance ? { provenance: null } : {}),
               ecartDecision: [{ idQuestionnaire: 'Q_NEU_11', dateDernierePassation: '2026-10-12T08:00:00.000Z' }],
+            },
+            EQUILIBRE.priorites[1],
+          ],
+        });
+      }
+      if (options.prioritesConstatsBiologiques) {
+        return ok({
+          ...EQUILIBRE,
+          priorites: [
+            {
+              ...EQUILIBRE.priorites[0],
+              constatsBiologiques: [
+                {
+                  analyteCode: 'BIO_HBA1C',
+                  libelle: 'HbA1c',
+                  valeur: '5.4',
+                  unite: '%',
+                  preleveLe: '2026-11-10T08:00:00.000Z',
+                  reference: 6.5,
+                  lecture: 'sous_reference',
+                  lignes: ['ligne de lecture fictive'],
+                  claims: ['WN-CL-0654-001'],
+                },
+              ],
             },
             EQUILIBRE.priorites[1],
           ],
@@ -3477,6 +3503,27 @@ describe('FichePatientPanel — mode consultation sans chiffre (D-354)', () => {
     expect(within(tiroir).getAllByText(MENTION)).toHaveLength(1);
     // Le non mesuré garde son tiret et son motif : « masqué » n'est pas « non mesuré ».
     expect(within(tiroir).getByRole('cell', { name: /^—/ })).toBeTruthy();
+  });
+
+  // D-516 §5.2 : les constats biologiques du besoin 1 (HbA1c, indice oméga-3) sont
+  // des lectures de valeurs du cockpit ; l'écran partagé n'en porte aucune.
+  it('tiroir des 12 besoins : les constats biologiques du besoin 1 visibles hors mode, absents en consultation', async () => {
+    await rendreFiche({ prioritesConstatsBiologiques: true });
+    // Contrôle positif : hors du mode, le constat et sa valeur sont servis.
+    fireEvent.click(screen.getByRole('button', { name: /Les 12 besoins/i }));
+    const ouvert = await screen.findByRole('dialog');
+    expect(within(ouvert).getByText(/HbA1c : 5,4 %/)).toBeTruthy();
+    expect(within(ouvert).getByLabelText('Constats biologiques du besoin 1, hors couverture')).toBeTruthy();
+    fireEvent.click(within(ouvert).getByRole('button', { name: /fermer/i }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    // Dans le mode : ni la section, ni la valeur, ni le prélèvement.
+    activer();
+    fireEvent.click(screen.getByRole('button', { name: /Les 12 besoins/i }));
+    const tiroir = await screen.findByRole('dialog');
+    expect(within(tiroir).queryByLabelText('Constats biologiques du besoin 1, hors couverture')).toBeNull();
+    expect(tiroir.textContent).not.toContain('HbA1c');
+    expect(tiroir.textContent).not.toContain('5,4');
+    expect(tiroir.textContent).not.toContain('WN-CL-0654-001');
   });
 
   it('objets cliniques : indice global, réserve et momentum masqués, « Non mesuré » intact (§2)', async () => {

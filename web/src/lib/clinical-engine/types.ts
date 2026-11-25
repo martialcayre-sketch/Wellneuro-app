@@ -23,7 +23,12 @@ export const VERSION_SCHEMA_CLINICAL_SNAPSHOT = 'c1-clinical-snapshot-v1' as con
 // version du brouillon (`c1-protocol-draft-v4`, `ja-food-observation-v1`) et
 // jamais cette constante ; 9 approbations de diffusion. Les lignes déjà écrites
 // ne sont pas réécrites : leur empreinte se recalcule depuis le payload stocké.
-// Ce que le bump éteint, c'est ce que `VERSION_SCORE_EQUILIBRE` éteint déjà dans
+// Une ligne v2 n'est pas figée pour autant : la re-confirmation d'un épisode au
+// cockpit dont le contenu change passe par `toEpisodeUpdateInput`
+// (`protocol/versioning.ts`) et la réétiquette en `objets-cliniques-v3`. La
+// colonne `assessment_episodes.contract_version` mélangera donc v2 et v3, sans
+// que rien ne la lise pour décider (aucune comparaison littérale à l'ancienne
+// valeur). Ce que le bump éteint, c'est ce que `VERSION_SCORE_EQUILIBRE` éteint déjà dans
 // le même lot — 2 protocoles diffusés, comptés dans l'impact du lot — sans
 // extinction supplémentaire ([[D-548]] §4 : une seule extinction, étiquettes
 // comprises). Aucune de ces étiquettes n'entre dans un périmètre signé.
@@ -46,7 +51,11 @@ export const VERSION_MAPPING_BESOINS = 'besoins-v3' as const;
 // CE QUI BOUGERAIT sur un fil déjà persisté : le premier enregistrement après
 // déploiement compterait comme changement clinique sans changement clinique
 // (`clinicalContentHash` inclut `decisionCardInputHash`). Zéro fil concerné
-// aujourd'hui — dit ici parce que ce serait invisible autrement.
+// au 2026-08-12 — dit ici parce que ce serait invisible autrement. Cet état est
+// DATÉ : depuis, des épisodes existent (16 lignes au 2026-11-24, voir v2 → v3
+// plus haut), et le premier enregistrement après le déploiement de la v3 compte
+// comme changement clinique sans changement clinique ; ce coût est déjà payé par
+// la montée de `VERSION_SCORE_EQUILIBRE` du même lot, rien de plus ne s'éteint.
 // v2 → v3 (2026-11-24, [[D-548]]) : monte avec `VERSION_MAPPING_BESOINS`, pour
 // le même motif et au même coût (voir ci-dessus : 16 lignes d'épisodes en v2,
 // une seule extinction pour tout le lot). Entre dans `versions.clinicalObjects`

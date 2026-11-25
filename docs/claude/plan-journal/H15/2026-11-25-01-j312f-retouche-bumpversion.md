@@ -1,0 +1,5 @@
+- **Mise à jour (2026-11-25, J3-12f : lot de retouche de la vague 1 de `D-548`, tests et commentaires, aucun changement de comportement)** : forme opaque (`D-251` §4), identifiants et mécanismes seulement.
+  - **Test tautologique** de `bumpVersionScore.guard.test.ts` retiré ; l'en-tête dit que l'archive des versions anciennes est gardée par la seule relecture du diff.
+  - **Tests ajoutés** : constats biologiques du besoin 1 à la route (besoin 1 seul, après les gardes), masquage en consultation à la fiche (avec contrôle positif et essai de mutation), motif de la forme courte du besoin 1. La paire PSQI de part et d'autre du 2026-11-24 était déjà gardée.
+  - **Commentaires** de `clinical-engine/types.ts` : mélange v2/v3 de la colonne `contract_version`, état « zéro fil » daté du 2026-08-12.
+  - **Hors lot** : D-550 (radar) et D-551 (vignette) forment le lot interface suivant ; la vue du besoin 2 attend la table de familles de `D-554` §10 et la migration « familles concernées », sorties du lot.
