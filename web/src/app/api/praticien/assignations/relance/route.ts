@@ -252,20 +252,23 @@ export async function POST(req: Request): Promise<NextResponse<RelanceAssignatio
     // RIEN DE PARTI, RIEN DE CHANGÉ ([[D-562]] §1) : un échec ou une
     // messagerie absente n'ont rien dit au patient, et chaque envoi couvert
     // retrouve sa date d'avant — seulement s'il porte encore celle que la
-    // relance a posée. Une restauration qui échoue laisse une date repoussée
-    // sans e-mail : l'envoi reste ouvert, et la réservation soldée en échec
-    // ne compte pas dans la cadence, si bien qu'un nouveau clic est possible.
+    // relance a posée. CHAQUE ENVOI EST RESTAURÉ POUR SOI : un échec n'arrête
+    // pas les suivants. Et si l'un échoue, « Rien n'a changé » serait faux :
+    // la réponse devient l'erreur serveur, sans annonce d'aucune sorte.
     if (statut !== 'Envoye') {
-      try {
-        for (const { idAssignation: id, dateLimite } of issue.anciennesDates) {
+      let restaurationIncomplete = false;
+      for (const { idAssignation: id, dateLimite } of issue.anciennesDates) {
+        try {
           await prisma.assignation.updateMany({
             where: { idAssignation: id, dateLimite: nouvelleDateLimite },
             data: { dateLimite },
           });
+        } catch (erreur) {
+          restaurationIncomplete = true;
+          console.error('[relance] restauration d’une date après un envoi non parti :', erreur instanceof Error ? erreur.message : String(erreur));
         }
-      } catch (erreur) {
-        console.error('[relance] restauration des dates après un envoi non parti :', erreur instanceof Error ? erreur.message : String(erreur));
       }
+      if (restaurationIncomplete) return echec('server_error', 'Erreur serveur.', 500);
       return NextResponse.json<RelanceAssignationApiResponse>(
         { ok: true, statut, questionnaires: issue.couvertes.length },
         { status: 200 },

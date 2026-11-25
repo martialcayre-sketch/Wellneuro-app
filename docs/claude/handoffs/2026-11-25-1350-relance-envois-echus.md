@@ -43,6 +43,13 @@ Demande du responsable sur la fiche-trajectoire d'un dossier de test (phase
   - banc du changement d'heure en TZ Europe/Paris ;
   - le focus va au message du résultat quand la ligne perd son bouton après
     relecture.
+- Contre-revue Codex P0 sur la tête poussée : aucun P0.
+  - P1 corrigé : chaque date est restaurée pour soi, et une restauration
+    en échec rend l'erreur serveur au lieu de « Rien n'a changé ».
+  - P2 écarté avec motif : la liste du dialogue peut nommer un envoi que le
+    serveur exclut pour cadence (voir « Problèmes ouverts »). Le message de
+    résultat donne le nombre réellement couvert, et la ligne exclue garde
+    son badge et son bouton après relecture.
 - Écartés :
   - relance sans nouvelle date : elle ne levait pas l'alerte (Codex Q1-A) ;
   - bouton sur l'agenda du sommeil : sa relance par nuit manquante reste

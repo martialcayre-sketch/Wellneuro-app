@@ -234,19 +234,31 @@ describe('/api/praticien/assignations/relance', () => {
     });
   });
 
-  it('une restauration qui lève ne change pas la réponse : l’échec est dit, sans date', async () => {
+  // Contre-revue Codex (P1) : une restauration qui lève n'arrête pas les
+  // suivantes, et la réponse ne dit plus « Rien n'a changé ».
+  it('une restauration qui lève : les autres envois sont restaurés, la réponse est l’erreur serveur', async () => {
     vi.stubEnv('SMTP_URL', 'smtp://test');
+    prisma.assignation.findMany.mockResolvedValueOnce([
+      { idAssignation: 'ASS_1', statut: 'En attente', idQuestionnaire: 'Q_INF_03', dateLimite: DEMAIN_DU_RETARD },
+      { idAssignation: 'ASS_2', statut: 'En attente', idQuestionnaire: 'Q_INF_03', dateLimite: DEMAIN_DU_RETARD },
+    ]);
     sendMail.mockRejectedValueOnce(new Error('smtp'));
     prisma.assignation.updateMany
-      .mockResolvedValueOnce({ count: 1 })
-      .mockRejectedValueOnce(new Error('base indisponible'));
+      .mockResolvedValueOnce({ count: 2 })
+      .mockRejectedValueOnce(new Error('base indisponible'))
+      .mockResolvedValueOnce({ count: 1 });
     const erreurConsole = vi.spyOn(console, 'error').mockImplementation(() => {});
     const res = await POST(requete({ idAssignation: 'ASS_1' }));
 
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(500);
     const corps = await res.json();
-    expect(corps).toMatchObject({ ok: true, statut: 'Erreur' });
+    expect(corps).toMatchObject({ ok: false, error: 'Erreur serveur.' });
     expect(corps.nouvelleDateLimite).toBeUndefined();
+    expect(prisma.assignation.updateMany).toHaveBeenCalledTimes(3);
+    expect(prisma.assignation.updateMany).toHaveBeenLastCalledWith({
+      where: { idAssignation: 'ASS_2', dateLimite: nouvelleDateLimiteRelance(new Date()) },
+      data: { dateLimite: DEMAIN_DU_RETARD },
+    });
     expect(erreurConsole).toHaveBeenCalled();
     erreurConsole.mockRestore();
   });
