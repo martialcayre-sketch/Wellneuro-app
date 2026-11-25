@@ -251,4 +251,46 @@ Aucun n'est ouvert ; chacun attend le choix du responsable.
 - **M1, l'état du rail à la traversée d'un questionnaire.** L'arbitrage
   reste dû à PAT-7 : amender [[D-482]] §1 par un DOC-n, ou chercher un
   porteur d'état. Il n'est pas tranché ici.
-- **L'en-tête de U10** : après PAT-3b.
+- **L'en-tête de U10** : vu après PAT-3b, §6.
+
+## 6. En-tête de U10 après PAT-3b (2026-11-25)
+
+Constat laissé ouvert au §5, fait dans le lot PAT-3b. Il ne décide rien.
+
+- **Code servi.** Le hub de la branche PAT-3b, servi par `next dev` en
+  local, avec le bandeau du hub tel que COM-2 le livre (#2364, tête
+  `f692ee35`, largeur automatique). Base locale du worktree
+  (`scripts/wn-dev-db.sh`), trois fixtures ; Sophie Nicola (`PAT_SEED_01`),
+  accusé d'entrée posé ; drapeaux de `playwright.config.ts`.
+- **Mesures.** Deux passages, le 2026-11-25 à 18 h 47 et à 18 h 54 : le premier avec
+  `w-full`, le second après son retrait. Valeurs du second passage, sauf
+  mention.
+
+| Fenêtre | Carte | Bandeau | Bas de la première action | Haut de la barre basse |
+|---|---|---|---|---|
+| iPhone 13, WebKit (390 × 664) | 358 px | 356 × 52 px | 528 px | 599 px |
+| Chromium 390 × 844 | 358 px | 356 × 52 px | 512 px | non rendue au second passage ; 779 px au premier (action à 528 px) |
+| Chromium 1 280 × 800 | 672 px | 670 × 64 px | 428 px | sans objet |
+
+- *Observé sur fixture* : la première action, « Dire ce qui compte pour
+  moi », se lit sans défiler (`scrollY` 0), au-dessus de la barre basse
+  quand elle est rendue. Le bandeau va d'un bord à l'autre de la carte, à
+  l'intérieur de sa bordure d'un pixel ; ses coins suivent l'arrondi de la
+  carte (18 px) ; le SVG est recadré (`cover`), pas étiré.
+- *Observé sur fixture* : le bandeau est absent de l'arbre d'accessibilité
+  (`aria-hidden`, absent de l'instantané ARIA de `main`), et masqué en média
+  `print`. Le premier titre lisible de la carte reste « Mon parcours ».
+- *Observé sur fixture*, premier passage : avec `w-full`, le bandeau
+  faisait 292 px au téléphone, décalé à gauche et arrêté avant le bord
+  droit. Le constat PR-Agent sur #2364 l'avait annoncé ; COM-2 l'a corrigé.
+- *Observé sur fixture*, second passage, Chromium 390 × 844 : ni le bouton
+  « Menu » ni la barre basse n'étaient rendus à la capture, faite 500 ms
+  après le titre. Au premier passage, les deux l'étaient. La cause n'est
+  pas instruite ; le bandeau n'en dépend pas.
+- **Réception de PAT-3b**, épinglée par `e2e/portail-hub-signature.spec.ts`
+  (Chromium et WebKit) : hauteur du bandeau au téléphone et au bureau,
+  première action sans défilement au-dessus de la barre, absence de
+  l'accessibilité et de l'impression.
+- **Non vu** : téléphone réel, lecteur d'écran réel, Jennifer Martin et
+  Michel Dogné (l'une porte l'entrée, l'autre le parcours E2E), une reprise
+  longue (« Pour reprendre »).

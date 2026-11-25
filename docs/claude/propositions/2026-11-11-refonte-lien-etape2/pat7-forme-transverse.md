@@ -153,7 +153,7 @@ La frise sert aussi l'entrée (`page.tsx:863`) et le hub (`questionnaires/page.t
   enregistrer en PDF » de U21, « (N questionnaires) » de U41 (Q2 de PAT-3, non tranchée par écrit),
   encart d'urgence de U08 et fond de U36 (textes gelés).
 - **Décor** : aucun avant COM-1 (reporté).
-- **En-tête de U10** : après PAT-3b.
+- **En-tête de U10** : vu après PAT-3b (`pat7-constat-partiel.md` §6).
 - **Liste commune** : aucune question ouverte ou répondue sur les boutons, les rayons, les champs,
   les messages, les contrôles natifs ni les largeurs du portail patient (relu le 2026-11-21, 559 lignes).
 - **DOC-n** : aucun ouvert (dernier mergé : DOC-18, #2280) ; aucune PR de la refonte ouverte.

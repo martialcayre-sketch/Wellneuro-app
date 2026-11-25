@@ -1,6 +1,7 @@
 import { LienDuHub } from '@/components/patient/LienDuHub';
 import { patientButtonClassName } from '@/components/patient/ui/PatientButton';
 import { PatientCard } from '@/components/patient/ui/PatientCard';
+import { LienDecor } from '@/components/ui/LienDecor';
 import { evaluerReprise, phraseReprise } from '@/lib/patient/reprise';
 import type { FilDuJour } from '@/lib/portail/filDuJour';
 
@@ -74,6 +75,14 @@ export function MonParcoursAccueil({
 
   return (
     <PatientCard padding="lg" className="border-primary/30">
+      {/*
+        Signature du hub (PAT-3b ; [[D-481]] §1 bis, complément DOC-21) : le
+        bandeau `quiet-sweep` en tête de carte, bord à bord, 52 px au téléphone
+        et 64 px au bureau, posé par `LienDecor` — hors de l'accessibilité,
+        sans pointeur, absent à l'impression. Aucun texte ; la première action
+        reste visible sans défilement au téléphone.
+      */}
+      <LienDecor emplacement="hub-patient" className="-mx-8 -mt-8 mb-2 rounded-t-lg" />
       <h1 className="font-display text-2xl font-bold leading-tight text-foreground">Mon parcours</h1>
       <p className="mt-1 text-base text-muted-foreground">
         {prenom ? `Bonjour ${prenom}.` : 'Bonjour.'}
