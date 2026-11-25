@@ -153,7 +153,7 @@ Trente portes. Une porte de geste compte au rang 0 ; une porte de constat ou de 
 | 21 | K-22 : premier lecteur d'épisode hors domaine | revue de PR, au fait | fermée |
 | 22 | Premier dossier à deux jalons mesurés | constat, au fait | fermée |
 | 23 | Signature des contenus de BP-12a, BP-12b, BP-17 | le responsable, dans le lot, avant son merge | non levée |
-| 24 | Palier 1 sorti (lots de la ligne J2-base livrés), BP-26 clos ; K-19 sortie au palier 2 (D-534) | J2-base (rang 4) : H59 | en partie : BP-26 clos (D-276, #1392) ; palier 1 non sorti (D-534 §3) |
+| 24 | Palier 1 sorti (lots de la ligne J2-base livrés), BP-26 clos ; K-19 sortie au palier 2 (D-534) | J2-base (rang 4) : H59 | **levée le 2026-11-25**, à la demande du responsable, sur constat : BP-26 clos (D-276, #1392) ; les lots de la ligne J2-base, restes de D-534 §3, sont livrés sur `origin/main` e77418b0 — NF-7 lot 1 constaté (#2191), part sommeil (#2199) et hex (#2206), D/33 (#2207), CC-0 (#2203, #2211), OF-1 (D-560, #2349), OF-2 (#2354) ; le palier 1 est sorti. Les fiches qui l'attendaient (H67, F57 pour le palier 2, H74 par H67) restent tenues par leurs autres préalables ; la porte 21 (K-22) n'est pas constatée ici |
 | 25 | Constats sans item (analyte à deux dates, règle NU, PH-0, signal H3) | au fait | fermée ; ces branches restent fermées |
 | 26 | Accord du responsable sur la séance de constats | acquis | levée |
 | 27 | À chaque PR : CI vert (code 0), commentaires en ligne lus, clôture avant la PR | chaque PR | règle permanente |
