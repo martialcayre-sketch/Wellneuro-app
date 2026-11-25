@@ -153,7 +153,7 @@ type Options = {
   //   empêche de confirmer l'ancre, et celui qui a motivé ce compte ;
   // - `tronque` : la route plafonne, le dossier porte plus de lignes ;
   // - `filtreIgnore` : serveur qui n'écho pas l'absence de filtre.
-  envois?: 'defaut' | 'rideauIncomplet' | 'tronque' | 'filtreIgnore' | 'peremption' | 'relance' | 'aucun';
+  envois?: 'defaut' | 'rideauIncomplet' | 'tronque' | 'filtreIgnore' | 'peremption' | 'relance' | 'relanceCadence' | 'aucun';
   // Verdict du rideau T0 servi par la checklist du cockpit, branche
   // `proposal_required` seulement. ABSENT par défaut : la route ne le
   // calcule qu'en visant une ancre, et son absence doit rester testable.
@@ -567,6 +567,19 @@ const ENVOIS_RELANCE = [
 ];
 
 /**
+ * SOUS CADENCE ([[D-562]] §2, amendement du 2026-11-25) : les mêmes envois,
+ * mais un rappel parti il y a moins de 3 jours couvre le DNST — la route ne
+ * le relancerait pas. L'enquête porte une cadence échue, qui ne masque rien.
+ */
+const ENVOIS_RELANCE_CADENCE = ENVOIS_RELANCE.map(e =>
+  e.idQuestionnaire === 'Q_INF_03'
+    ? { ...e, rappelPossibleLe: '2099-01-01T00:00:00.000Z' }
+    : e.idQuestionnaire === 'Q_ALI_01'
+      ? { ...e, rappelPossibleLe: '2026-01-04T00:00:00.000Z' }
+      : e,
+);
+
+/**
  * LE DOSSIER ADMINISTRATIF servi par `GET /api/praticien/patients?idPatient=`.
  *
  * SANS LUI, LES BANCS VALIDAIENT UN ÉCRAN D'ERREUR (constat du 2026-09-17). La
@@ -863,6 +876,8 @@ function stubFetch(options: Options = {}) {
             ? ENVOIS_PEREMPTION
             : scenarioEnvois === 'relance'
               ? ENVOIS_RELANCE
+            : scenarioEnvois === 'relanceCadence'
+              ? ENVOIS_RELANCE_CADENCE
             : scenarioEnvois === 'aucun'
               ? []
               : ENVOIS_RIDEAU_COMPLET;
@@ -3275,6 +3290,20 @@ describe('FichePatientPanel — relancer un envoi échu', () => {
     expect(screen.getAllByText('échéance dépassée le 01/01/2026')).toHaveLength(3);
     expect(screen.getByText(/Relancer, c’est rappeler au patient les envois échus de ce dossier par un seul/))
       .toBeTruthy();
+  });
+
+  // Q1 A et Q2 A du 2026-11-25 : la ligne sous cadence garde son badge et
+  // perd le bouton ; le dialogue ne nomme que ce que la route relancera.
+  it('sous cadence : la ligne garde son badge, perd le bouton, et le dialogue ne la nomme pas', async () => {
+    await rendreFiche({ phaseDemandee: 'donnees', envois: 'relanceCadence' });
+
+    const boutons = await screen.findAllByRole('button', { name: /^Relancer le patient — / });
+    expect(boutons.map(b => b.getAttribute('aria-label'))).toEqual(['Relancer le patient — Enquête alimentaire SIIN']);
+    expect(screen.getAllByText('échéance dépassée le 01/01/2026')).toHaveLength(3);
+
+    fireEvent.click(boutons[0]);
+    const dialogue = await screen.findByRole('dialog');
+    expect(within(dialogue).getAllByRole('listitem').map(li => li.textContent)).toEqual(['Enquête alimentaire SIIN']);
   });
 
   it('aucun envoi échu : ni bouton ni phrase', async () => {

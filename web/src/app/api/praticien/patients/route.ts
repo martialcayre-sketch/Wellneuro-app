@@ -13,6 +13,9 @@ import { emailPraticien, filtrePatientsDuPraticien, verifierAppartenancePatient 
 import { AGENDA_ALI_ID } from '@/lib/agenda-alimentaire/types';
 import { jourCourantLocal } from '@/lib/patient-access';
 import { statutAge } from '@/lib/patient/gardeAge';
+import { TYPES_CORRESPONDANCE_PATIENT } from '@/lib/correspondance/patient';
+import { FILTRE_ENVOIS_PARTIS } from '@/lib/correspondance/reservation';
+import { envoisDeLAssignation, rappelPossibleLe } from '@/lib/praticien/relanceAssignation';
 
 const MAX_ASSIGNATIONS = 40;
 
@@ -116,6 +119,14 @@ type Assignation = {
   // lignes `agenda_alimentaire_jours` pour une seule date. Fait d'affichage
   // seul, comme `aPassation` : n'entre dans aucune décision d'autorisation.
   nbJourneesAgenda?: number | null;
+  // L'INSTANT (ISO) OÙ UN RAPPEL REDEVIENT POSSIBLE au regard de la cadence
+  // ([[D-562]] §2, amendement du 2026-11-25), calculé par `rappelPossibleLe`
+  // — la fonction que la route de relance applique, sur les mêmes rappels
+  // partis. `null` : aucun rappel parti ne couvre cet envoi, ou l'envoi n'est
+  // plus attendu. Un instant, pas une date sans fuseau : le navigateur le
+  // compare sans le relire à son heure. Optionnel : un serveur antérieur ne le
+  // publie pas, et la fiche garde alors son comportement d'avant.
+  rappelPossibleLe?: string | null;
 };
 
 export type PatientsPagination = {
@@ -321,16 +332,18 @@ export async function GET(req: Request): Promise<NextResponse<PatientsApiRespons
       // Les deux comptages sont indépendants : en série ils ajouteraient deux
       // allers-retours à la page au lieu d'un. Même raison que le `Promise.all`
       // ci-dessus — le coût d'une requête de plus ne se voit qu'en prod.
-      const [idsAvecPassation, nbJourneesParAssignation] = await Promise.all([
+      const [idsAvecPassation, nbJourneesParAssignation, rappelsPossibles] = await Promise.all([
         idsAssignationsAvecPassation(dbAssignations.map(a => a.idAssignation)),
         nbJourneesAgendaParAssignation(
           dbAssignations.filter(a => a.idQuestionnaire === AGENDA_ALI_ID).map(a => a.idAssignation),
         ),
+        rappelsPossiblesParAssignation(dbAssignations),
       ]);
 
       return NextResponse.json({
         patients: dbPatients.map(patientToDto),
-        assignations: dbAssignations.map(a => assignationToDto(a, idsAvecPassation, nbJourneesParAssignation)),
+        assignations: dbAssignations.map(a =>
+          assignationToDto(a, idsAvecPassation, nbJourneesParAssignation, rappelsPossibles)),
         assignationsMeta: {
           total: totalAssignations,
           plafond: MAX_ASSIGNATIONS,
@@ -369,16 +382,19 @@ export async function GET(req: Request): Promise<NextResponse<PatientsApiRespons
       prisma.assignation.count({ where: whereAssignations }),
     ]);
     // Même parallélisation que la branche paginée ci-dessus.
-    const [idsAvecPassationNonPaginee, nbJourneesParAssignationNonPaginee] = await Promise.all([
-      idsAssignationsAvecPassation(dbAssignations.map(a => a.idAssignation)),
-      nbJourneesAgendaParAssignation(
-        dbAssignations.filter(a => a.idQuestionnaire === AGENDA_ALI_ID).map(a => a.idAssignation),
-      ),
-    ]);
+    const [idsAvecPassationNonPaginee, nbJourneesParAssignationNonPaginee, rappelsPossiblesNonPaginee] =
+      await Promise.all([
+        idsAssignationsAvecPassation(dbAssignations.map(a => a.idAssignation)),
+        nbJourneesAgendaParAssignation(
+          dbAssignations.filter(a => a.idQuestionnaire === AGENDA_ALI_ID).map(a => a.idAssignation),
+        ),
+        rappelsPossiblesParAssignation(dbAssignations),
+      ]);
 
     return NextResponse.json({
       patients: dbPatients.map(patientToDto),
-      assignations: dbAssignations.map(a => assignationToDto(a, idsAvecPassationNonPaginee, nbJourneesParAssignationNonPaginee)),
+      assignations: dbAssignations.map(a =>
+        assignationToDto(a, idsAvecPassationNonPaginee, nbJourneesParAssignationNonPaginee, rappelsPossiblesNonPaginee)),
       assignationsMeta: {
         total: totalAssignations,
         plafond: MAX_ASSIGNATIONS,
@@ -451,6 +467,7 @@ function assignationToDto(
   },
   idsAvecPassation: Set<string>,
   nbJourneesParAssignation: Map<string, number>,
+  rappelsPossibles: Map<string, Date>,
 ): Assignation {
   return {
     idAssignation: a.idAssignation,
@@ -466,7 +483,47 @@ function assignationToDto(
     correctionDemandeeDate: a.correctionDemandeeDate ? a.correctionDemandeeDate.toISOString() : null,
     aPassation: idsAvecPassation.has(a.idAssignation),
     nbJourneesAgenda: a.idQuestionnaire === AGENDA_ALI_ID ? (nbJourneesParAssignation.get(a.idAssignation) ?? 0) : null,
+    rappelPossibleLe: rappelsPossibles.get(a.idAssignation)?.toISOString() ?? null,
   };
+}
+
+/**
+ * QUAND UN RAPPEL REDEVIENT POSSIBLE, PAR ASSIGNATION ([[D-562]] §2,
+ * amendement du 2026-11-25) — pour que le dialogue « Relancer » de la fiche
+ * ne liste que ce que la route relancera.
+ *
+ * LA MÊME LECTURE QUE LA ROUTE DE RELANCE, pièce à pièce : rappels de type
+ * `relance_questionnaire` du même dossier, filtrés par `FILTRE_ENVOIS_PARTIS`
+ * (un échec n'a rien dit au patient), rattachés par `envoisDeLAssignation`
+ * (un rappel groupé couvre chacun de ses envois), puis `rappelPossibleLe`. La
+ * route relit sous verrou et reste seule juge ; ceci ne fait qu'annoncer.
+ *
+ * Une seule requête pour la page, comme ses deux sœurs ci-dessus, et sur les
+ * seules assignations encore attendues : une rendue ou une annulée ne se
+ * relance pas, son instant ne servirait à rien.
+ */
+async function rappelsPossiblesParAssignation(
+  assignations: { idAssignation: string; idPatient: string; statut: string }[],
+): Promise<Map<string, Date>> {
+  const attendues = assignations.filter(a => a.statut === 'En attente');
+  if (attendues.length === 0) return new Map();
+  const envois = await prisma.correspondancePatient.findMany({
+    where: {
+      idPatient: { in: [...new Set(attendues.map(a => a.idPatient))] },
+      type: TYPES_CORRESPONDANCE_PATIENT.relanceQuestionnaire,
+      ...FILTRE_ENVOIS_PARTIS,
+    },
+    select: { idPatient: true, enregistreLe: true, referenceId: true },
+  });
+  const resultat = new Map<string, Date>();
+  for (const a of attendues) {
+    // Le dossier d'abord, comme la route : un identifiant d'assignation ne se
+    // rattache qu'aux rappels de son propre patient.
+    const duDossier = envois.filter(e => e.idPatient === a.idPatient);
+    const possibleLe = rappelPossibleLe(envoisDeLAssignation(duDossier, a.idAssignation));
+    if (possibleLe !== null) resultat.set(a.idAssignation, possibleLe);
+  }
+  return resultat;
 }
 
 // Une seule requête pour toute la page, jamais un `count` par ligne : sur
