@@ -42,21 +42,23 @@ Aucun écran ne l'emploie dans ce lot.
   variantes `print:`. Un fond n'accepte pas de classes.
 - **Refus** : au typage (union discriminée, `@ts-expect-error` au banc) et à l'exécution
   (rend `null`, clé héritée comprise par `Object.hasOwn`).
-- **Garde du §1 quater** dans le banc : aucun fichier de `web/src` ne cite
+- **Garde du §1 quater** (`LienDecor.guard.test.ts`, à part : un banc qui balaie une
+  arborescence est un `guard`, parité de `scripts/wn-controle-fusion.test.mjs`, rouge au
+  premier CI) : aucun fichier de `web/src` ne cite
   `wellneuro-lien/(backgrounds|ornaments|patterns)/` hors de la primitive ; prouvée rouge sur
   sources fabriquées. La marque (`brand/`) n'est pas visée.
 
 ## Fichiers modifiés
 
 - `web/src/components/ui/LienDecor.tsx` (neuf) ;
-- `web/src/components/ui/LienDecor.test.tsx` (neuf) ;
+- `web/src/components/ui/LienDecor.test.tsx` et `LienDecor.guard.test.ts` (neufs) ;
 - `changelog.d/2026-11-25-refonte-lien-com1-liendecor.md`, ce handoff.
 
 Aucun fichier de COM-0, aucun écran, aucun texte d'interface.
 
 ## Validations exécutées
 
-- Banc `LienDecor.test.tsx` : 37 tests verts ; il a d'abord attrapé un vrai défaut (une clé
+- Banc et garde : 37 tests verts ; il a d'abord attrapé un vrai défaut (une clé
   héritée, `toString`, passait pour un emplacement), corrigé par `Object.hasOwn`.
 - `tsc --noEmit` vert (les cinq `@ts-expect-error` sont tous effectivement en erreur) ;
   `next lint` sans avertissement sur les deux fichiers.

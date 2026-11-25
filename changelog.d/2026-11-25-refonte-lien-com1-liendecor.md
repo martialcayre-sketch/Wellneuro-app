@@ -17,7 +17,7 @@ par laquelle un écran pose un fond ou un ornement du kit `web/public/wellneuro-
   n'entrent pas ; aucun motif `patterns/`. Tout autre couple est refusé au typage et ne
   rend rien à l'exécution.
 - **Banc** (`LienDecor.test.tsx`) : réception de COM-1, SVG servis statiques et sans
-  texte, et garde du §1 quater — aucun fichier de `web/src` ne cite un décor du kit hors
+  texte ; **garde** du §1 quater (`LienDecor.guard.test.ts`) — aucun fichier de `web/src` ne cite un décor du kit hors
   de la primitive.
 
 Aucun écran ne l'emploie encore : les poses viendront par les lots nommés. Aucun texte,
