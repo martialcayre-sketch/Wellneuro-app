@@ -5,6 +5,7 @@ import {
   JOURS_NOUVELLE_ECHEANCE_RELANCE,
   deciderRelanceAssignation,
   nouvelleDateLimiteRelance,
+  rappelPossibleLe,
   type EntreeRelanceAssignation,
 } from './relanceAssignation';
 import { MESSAGE_RELANCE_SANS_REPONSE, messageResultatRelance } from './relanceEcheance';
@@ -148,6 +149,21 @@ describe('deciderRelanceAssignation', () => {
       maintenant: new Date('2026-03-25T09:00:00'),
     }));
     expect(decision).toMatchObject({ ok: false, raison: 'cadence' });
+  });
+
+  // UNE SEULE RÈGLE ([[D-562]] §2, amendement du 2026-11-25) : l'instant que
+  // la fiche reçoit est celui où la décision cesse de refuser par cadence.
+  it('rappelPossibleLe : le plus récent rappel plus la cadence, null sans rappel', () => {
+    expect(rappelPossibleLe([])).toBeNull();
+    const vieux = new Date('2026-03-21T08:00:00');
+    const recent = new Date('2026-03-25T08:00:00');
+    const possibleLe = rappelPossibleLe([{ enregistreLe: recent }, { enregistreLe: vieux }]);
+    expect(possibleLe?.getTime()).toBe(recent.getTime() + JOURS_ENTRE_RELANCES_ASSIGNATION * MS_PAR_JOUR);
+    const envoisPrecedents = [{ enregistreLe: recent }];
+    expect(deciderRelanceAssignation(entree({ envoisPrecedents, maintenant: new Date(possibleLe!.getTime() - 1) })))
+      .toEqual({ ok: false, raison: 'cadence', possibleLe });
+    expect(deciderRelanceAssignation(entree({ envoisPrecedents, maintenant: possibleLe! })))
+      .toEqual({ ok: true });
   });
 
   // L'ORDRE DES REFUS COMPTE : un questionnaire déjà rendu ne doit pas se voir

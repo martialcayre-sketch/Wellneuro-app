@@ -1369,8 +1369,18 @@ export function FichePatientPanel({
       // EN SOUFFRANCE = ÉCHÉANCE DÉPASSÉE ([[D-562]] §2), même borne que le
       // portail et la route : le lendemain de la date limite. L'agenda du
       // sommeil se relance depuis son panneau (§5).
+      //
+      // ET HORS CADENCE (§2, amendement du 2026-11-25) : un envoi qu'un rappel
+      // a couvert il y a moins de 3 jours, la route ne le relance pas — le
+      // dialogue ne le nomme donc pas, et sa ligne ne porte pas le bouton.
+      // L'instant vient du serveur (`rappelPossibleLe`, la règle de la route) ;
+      // absent, d'un serveur antérieur, il ne masque rien. Il se compare à
+      // l'heure de la lecture : une cadence qui expire fiche ouverte rend le
+      // bouton à la lecture suivante — en retard, jamais à tort.
       relancables: enAttente.filter(a =>
-        isDeadlineExpired(a.dateLimite) && a.idQuestionnaire !== AGENDA_SOMMEIL_ID),
+        isDeadlineExpired(a.dateLimite)
+        && a.idQuestionnaire !== AGENDA_SOMMEIL_ID
+        && !(a.rappelPossibleLe && Date.parse(a.rappelPossibleLe) > Date.now())),
     };
   }, [passations]);
 

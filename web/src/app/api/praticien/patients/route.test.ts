@@ -13,6 +13,9 @@ const { getServerSession, prisma } = vi.hoisted(() => ({
     assignation: { findMany: vi.fn(), count: vi.fn(), updateMany: vi.fn() },
     questionnaireReponse: { findMany: vi.fn(), updateMany: vi.fn() },
     agendaAlimentaireJour: { findMany: vi.fn() },
+    // Les rappels partis ([[D-562]] §2, amendement du 2026-11-25) : aucun par
+    // défaut. L'implémentation par défaut survit à `clearAllMocks`.
+    correspondancePatient: { findMany: vi.fn(async (..._args: unknown[]) => [] as unknown[]) },
     // Les trois autres porteuses de `email_patient`. `bookletEnvoi` n'y est
     // PAS, et son absence est une assertion : aucune ligne de ce banc ne doit
     // pouvoir l'écrire par mégarde.
@@ -1252,5 +1255,90 @@ describe('POST — la date de naissance est obligatoire à la création (D-302)'
     const res = await POST(post({ ...base, dateNaissance: '2015-06-01' }));
     expect(res.status).toBe(200);
     expect(prisma.patient.create).toHaveBeenCalledTimes(1);
+  });
+});
+
+// `rappelPossibleLe` ([[D-562]] §2, amendement du 2026-11-25) : la fiche ne
+// propose « Relancer » que si la route relancera. L'instant vient de la MÊME
+// lecture que la route — rappels partis du dossier, rattachés par
+// `envoisDeLAssignation`, puis `rappelPossibleLe` — et les DEUX branches le
+// portent.
+describe('GET /api/praticien/patients — rappelPossibleLe (D-562 §2)', () => {
+  const MS_PAR_JOUR = 24 * 60 * 60 * 1000;
+  const BASE = {
+    idPatient: 'PAT001',
+    emailPatient: 'a@wellneuro.fr',
+    idQuestionnaire: 'Q_INF_03',
+    titre: 'Questionnaire',
+    dateAssignation: new Date('2026-08-01T00:00:00.000Z'),
+    statut: 'En attente',
+    statutReponses: 'non_rempli',
+    dateLimite: '2026-08-10',
+    correctionCommentaire: null,
+    correctionDemandeeDate: null,
+  };
+  const RAPPELEE = { ...BASE, idAssignation: 'ASS_RAPPELEE' };
+  const GROUPEE = { ...BASE, idAssignation: 'ASS_GROUPEE' };
+  const JAMAIS = { ...BASE, idAssignation: 'ASS_JAMAIS' };
+  const RENDUE = { ...BASE, idAssignation: 'ASS_RENDUE', statut: 'Complété' };
+  const AUTRE_DOSSIER = { ...BASE, idAssignation: 'ASS_AUTRE', idPatient: 'PAT002' };
+  const VIEUX = new Date('2026-08-12T08:00:00.000Z');
+  const RECENT = new Date('2026-08-14T08:00:00.000Z');
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
+    prisma.patient.findMany.mockResolvedValue([]);
+    prisma.patient.count.mockResolvedValue(0);
+    prisma.assignation.findMany.mockResolvedValue([RAPPELEE, GROUPEE, JAMAIS, RENDUE, AUTRE_DOSSIER]);
+    prisma.assignation.count.mockResolvedValue(5);
+    prisma.questionnaireReponse.findMany.mockResolvedValue([]);
+    prisma.agendaAlimentaireJour.findMany.mockResolvedValue([]);
+    prisma.correspondancePatient.findMany.mockResolvedValue([
+      // Dans le désordre : le plus récent doit l'emporter.
+      { idPatient: 'PAT001', enregistreLe: RECENT, referenceId: 'ASS_RAPPELEE' },
+      { idPatient: 'PAT001', enregistreLe: VIEUX, referenceId: 'ASS_GROUPEE,ASS_RAPPELEE' },
+      // Le même identifiant, mais d'un autre dossier : ne compte pas.
+      { idPatient: 'PAT002', enregistreLe: RECENT, referenceId: 'ASS_JAMAIS' },
+    ]);
+  });
+
+  type Ligne = { idAssignation: string; rappelPossibleLe?: string | null };
+  const instant = (lignes: Ligne[], id: string) => lignes.find(a => a.idAssignation === id)?.rappelPossibleLe;
+
+  for (const [branche, query] of [['non paginée', ''], ['paginée', 'page=1']] as const) {
+    it(`branche ${branche} : le plus récent rappel parti plus la cadence, null sinon`, async () => {
+      const json = (await (await GET(get(query))).json()) as { assignations: Ligne[] };
+      expect(instant(json.assignations, 'ASS_RAPPELEE'))
+        .toBe(new Date(RECENT.getTime() + 3 * MS_PAR_JOUR).toISOString());
+      // Un rappel groupé couvre chacun de ses envois.
+      expect(instant(json.assignations, 'ASS_GROUPEE'))
+        .toBe(new Date(VIEUX.getTime() + 3 * MS_PAR_JOUR).toISOString());
+      expect(instant(json.assignations, 'ASS_JAMAIS')).toBeNull();
+      expect(instant(json.assignations, 'ASS_RENDUE')).toBeNull();
+      expect(instant(json.assignations, 'ASS_AUTRE')).toBeNull();
+    });
+  }
+
+  it('lit les rappels comme la route : même type, envois partis seuls, une requête pour la page', async () => {
+    await GET(get());
+    expect(prisma.correspondancePatient.findMany).toHaveBeenCalledTimes(1);
+    expect(prisma.correspondancePatient.findMany).toHaveBeenCalledWith({
+      where: {
+        idPatient: { in: ['PAT001', 'PAT002'] },
+        type: 'relance_questionnaire',
+        OR: [
+          { statut: 'Envoye' },
+          { statut: 'Non_envoye', erreurCourte: 'réservé : envoi en cours' },
+        ],
+      },
+      select: { idPatient: true, enregistreLe: true, referenceId: true },
+    });
+  });
+
+  it('aucune assignation attendue : n’émet pas de requête de rappels', async () => {
+    prisma.assignation.findMany.mockResolvedValue([RENDUE]);
+    await GET(get());
+    expect(prisma.correspondancePatient.findMany).not.toHaveBeenCalled();
   });
 });

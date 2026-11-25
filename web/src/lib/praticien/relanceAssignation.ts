@@ -97,6 +97,30 @@ function minuitDe(dateLimite: string | null): Date | null {
 }
 
 /**
+ * L'INSTANT OÙ UN RAPPEL REDEVIENT POSSIBLE au regard de la cadence : le plus
+ * récent des rappels partis qui couvrent l'assignation, plus
+ * `JOURS_ENTRE_RELANCES_ASSIGNATION` jours ; `null` si aucun ne la couvre.
+ *
+ * UNE SEULE RÈGLE ([[D-562]] §2, amendement du 2026-11-25) : la décision
+ * ci-dessous la lit, et la lecture des envois de la fiche
+ * (`GET /api/praticien/patients`) la publie, pour que le dialogue ne liste
+ * que ce que la route relancera. LE PLUS RÉCENT, pas le premier trouvé :
+ * l'appelant n'est pas tenu de trier.
+ */
+export function rappelPossibleLe(envoisPrecedents: readonly { enregistreLe: Date }[]): Date | null {
+  const dernier = envoisPrecedents.reduce<Date | null>(
+    (plusRecent, envoi) =>
+      plusRecent === null || envoi.enregistreLe.getTime() > plusRecent.getTime()
+        ? envoi.enregistreLe
+        : plusRecent,
+    null,
+  );
+  return dernier === null
+    ? null
+    : new Date(dernier.getTime() + JOURS_ENTRE_RELANCES_ASSIGNATION * MS_PAR_JOUR);
+}
+
+/**
  * RELANCER, OU DIRE POURQUOI ON NE RELANCE PAS.
  *
  * `sans_echeance` N'EST PAS UN REFUS TECHNIQUE, c'est le point du lot. Une
@@ -134,18 +158,9 @@ export function deciderRelanceAssignation(
   // LE PLUS RÉCENT, pas le premier trouvé : l'appelant n'est pas tenu de trier,
   // et se fier à son ordre ferait dépendre une garde de cadence d'un `orderBy`
   // qu'une lecture voisine pourrait changer sans le savoir.
-  const dernier = entree.envoisPrecedents.reduce<Date | null>(
-    (plusRecent, envoi) =>
-      plusRecent === null || envoi.enregistreLe.getTime() > plusRecent.getTime()
-        ? envoi.enregistreLe
-        : plusRecent,
-    null,
-  );
-  if (dernier !== null) {
-    const possibleLe = new Date(dernier.getTime() + JOURS_ENTRE_RELANCES_ASSIGNATION * MS_PAR_JOUR);
-    if (entree.maintenant.getTime() < possibleLe.getTime()) {
-      return { ok: false, raison: 'cadence', possibleLe };
-    }
+  const possibleLe = rappelPossibleLe(entree.envoisPrecedents);
+  if (possibleLe !== null && entree.maintenant.getTime() < possibleLe.getTime()) {
+    return { ok: false, raison: 'cadence', possibleLe };
   }
 
   // DÉPASSÉE = LE JOUR D'APRÈS, jamais « l'instant d'après minuit le jour
