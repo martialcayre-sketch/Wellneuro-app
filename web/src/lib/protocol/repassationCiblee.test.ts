@@ -25,10 +25,10 @@ describe('questionnairesCiblesPourPriorite', () => {
     expect(cibles.length).toBeGreaterThan(0);
   });
 
-  it('le besoin 12 cible le questionnaire de mode de vie, plus le DNSM (D-565)', () => {
-    expect(questionnairesCiblesPourPriorite([12])).toEqual(
-      ['Q_MOD_01'].filter(qid => IDS_ASSIGNABLES.has(qid)),
-    );
+  it('le besoin 12 cible le questionnaire de mode de vie seul, et non plus le DNSM (D-565)', () => {
+    // `Q_MOD_01` doit être assignable : sans cela l'attendu serait vide et le cas ne prouverait rien.
+    expect(IDS_ASSIGNABLES.has('Q_MOD_01')).toBe(true);
+    expect(questionnairesCiblesPourPriorite([12])).toEqual(['Q_MOD_01']);
   });
 
   it('déduplique deux besoins partageant une source', () => {
