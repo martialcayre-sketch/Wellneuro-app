@@ -304,7 +304,11 @@ export function buildClinicalSnapshot(input: {
     questionnaireFindings,
     balanceAssessment: {
       global: ratio(scoreToRatio(equilibre.scoreGlobal)),
-      globalBeforeCap: ratio(scoreToRatio(equilibre.scoreGlobalAvantPlafond)),
+      // PLUS DE PLAFOND depuis v18/v19 ([[D-547]]) : le total « avant plafond » EST
+      // le total, et aucune fondation critique n'est déclenchée. Les deux champs
+      // restent dans le schéma du cliché (changer sa forme est un autre lot) :
+      // le premier recopie le total, le second est toujours vide.
+      globalBeforeCap: ratio(scoreToRatio(equilibre.scoreGlobalAvantPlafond ?? equilibre.scoreGlobal)),
       strata: equilibre.strates.map(strate => ({ code: strate.strate, measurement: ratio(strate.couverture) })),
       needs: BESOINS.map(besoin => {
         const sources = BESOIN_SOURCES[besoin.id] ?? [];
@@ -332,7 +336,7 @@ export function buildClinicalSnapshot(input: {
           questionnaireIds: [...new Set(sources.map(source => source.idQuestionnaire))].sort(),
         };
       }),
-      criticalFoundations: equilibre.fondationsCritiquesDeclenchees.map(foundation => ({
+      criticalFoundations: (equilibre.fondationsCritiquesDeclenchees ?? []).map(foundation => ({
         needId: foundation.besoin,
         measurement: ratio(foundation.couverture),
       })),

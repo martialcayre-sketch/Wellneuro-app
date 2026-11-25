@@ -33,7 +33,11 @@ import type { ReponsesApiResponse, ReponseQuestionnaire } from '@/app/api/pratic
 import type { ResultatMomentum } from '@/lib/equilibre/types';
 // Import de VALEUR depuis un module FEUILLE (il n'importe rien) : la mention
 // suit la doctrine sans traîner le moteur d'équilibre dans le bundle client.
-import { MENTION_NATURE_INDICE_GLOBAL, mentionBesoinsMesures } from '@/lib/equilibre/natureIndiceGlobal';
+import {
+  MENTION_MOYENNE_BESOINS_MESURES,
+  MENTION_NATURE_INDICE_GLOBAL,
+  mentionBesoinsMesures,
+} from '@/lib/equilibre/natureIndiceGlobal';
 import {
   MENTION_POIDS_EGAL_MOTIVE,
   MENTION_SOURCES_INDISPONIBLES,
@@ -71,6 +75,8 @@ import {
 } from '@/lib/scoring/descriptifsScores';
 import { ETIQUETTE_NON_INTERPRETABLE } from '@/lib/scoring/passationsNonInterpretables';
 import { texteScoreNonCalcule } from '@/lib/scoring/enqueteAlimentaireIncomplete';
+import { lecturesAffichees } from '@/lib/scoring/lecturesAffichees';
+import { ConstatsBiomarqueursBesoin1 } from '@/components/besoins/ConstatsBiomarqueursBesoin1';
 import { ScoreGauge } from '@/components/ui/ScoreGauge';
 import { ScoreZones } from '@/components/ui/ScoreZones';
 import { Badge, varianteInterpretation } from '@/components/ui/Badge';
@@ -1628,6 +1634,13 @@ export function FichePatientPanel({
                         <DetailEcartDecision besoin={cle} ecarts={p.ecartDecision} />
                       </>
                     )}
+                    {/* Besoin 1 : l'HbA1c et l'index oméga-3, deux constats à part
+                        de l'enquête, hors couverture, au cockpit seulement
+                        ([[D-516]] §5.2). Masqués avec les valeurs en mode
+                        consultation ([[D-354]]). */}
+                    {p.besoin === 1 && !modeConsultationActif && p.constatsBiologiques && p.constatsBiologiques.length > 0 && (
+                      <ConstatsBiomarqueursBesoin1 constats={p.constatsBiologiques} />
+                    )}
                   </td>
                 </tr>
               );
@@ -1662,6 +1675,7 @@ export function FichePatientPanel({
         label="Indice global"
         value={objetsCliniques.indiceGlobal}
         mention={MENTION_NATURE_INDICE_GLOBAL}
+        tolerance={MENTION_MOYENNE_BESOINS_MESURES}
         base={mentionCompteBesoins}
         plafond={objetsCliniques.plafondApplique ? MENTION_PLAFOND_APPLIQUE : undefined}
         provenance={lignesDe(provenance?.indiceGlobal)}
@@ -1807,6 +1821,18 @@ export function FichePatientPanel({
                           {note}
                         </div>
                       )}
+                      {/* Lectures publiées, grille servie nommée, population de
+                          lecture ([[D-548]] §2.3 à §2.5) : un affichage, jamais
+                          une règle ; aucun score n'y entre. */}
+                      {lecturesAffichees(r.idQuestionnaire).map(ligne => (
+                        <div
+                          key={ligne.genre}
+                          className="mt-1 text-xs font-normal text-muted-foreground max-w-md"
+                          title={ligne.texte}
+                        >
+                          {ligne.texte}
+                        </div>
+                      ))}
                     </td>
                     <td className="px-4 py-2">
                       {/* Mode consultation ([[D-354]] §2) : score, sous-scores,

@@ -143,11 +143,15 @@ describe('comparerPassations (D-406)', () => {
       expect(comparerPassations([p('2026-08-11T00:00:00Z', 20), p('2026-09-02T08:00:00Z', 22)], null).paires).toHaveLength(1);
     });
 
-    it('PSQI : comparable à partir du 2026-09-14 seulement', () => {
-      expect(COMPARABLE_DEPUIS.get('Q_SOM_01')?.toISOString()).toBe('2026-09-14T00:00:00.000Z');
+    it('PSQI : comparable à partir du jour du déploiement de la cote de l\'efficacité (D-538 §2) seulement', () => {
+      expect(COMPARABLE_DEPUIS.get('Q_SOM_01')?.toISOString()).toBe('2026-11-24T00:00:00.000Z');
       const psqi = (date: string) => p(date, 8, { idQuestionnaire: 'Q_SOM_01' }, { maxTotal: 21 });
-      expect(comparerPassations([psqi('2026-09-13T08:00:00Z'), psqi('2026-09-20T08:00:00Z')], null).nonComparees[0].motif).toBe('version_non_etablie');
-      expect(comparerPassations([psqi('2026-09-14T08:00:00Z'), psqi('2026-09-20T08:00:00Z')], null).paires).toHaveLength(1);
+      expect(comparerPassations([psqi('2026-11-23T08:00:00Z'), psqi('2026-11-25T08:00:00Z')], null).nonComparees[0].motif).toBe('version_non_etablie');
+      expect(comparerPassations([psqi('2026-11-24T08:00:00Z'), psqi('2026-11-25T08:00:00Z')], null).paires).toHaveLength(1);
+    });
+
+    it('hyperexcitabilité : comparable à partir du jour du déploiement des bandes (D-526) seulement', () => {
+      expect(COMPARABLE_DEPUIS.get('Q_INF_01')?.toISOString()).toBe('2026-11-24T00:00:00.000Z');
     });
 
     it('interprétation retirée prime sur tout autre motif', () => {

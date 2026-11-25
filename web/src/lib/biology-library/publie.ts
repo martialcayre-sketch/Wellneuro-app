@@ -81,6 +81,14 @@ export {
 // aucun dossier.
 export { reglesIndicationsSuspendues } from './indicationsBiologieV1';
 
+// Huitième lecteur hors biologie : les deux constats biologiques du besoin 1
+// ([[D-548]] §2.2, [[D-516]] §5.2), au cockpit seulement, hors couverture — le
+// dernier résultat qui fait foi de l'HbA1c et de l'index oméga-3, par la même
+// élection que la fiche (fil de correction, annulations actives, prélèvement le
+// plus récent). Aucune plage de la bibliothèque : la valeur de référence est celle
+// du dossier signé du besoin 1.
+export { derniersResultatsParAnalyte } from './derniersResultats';
+
 /** Les fichiers de `biology-library` que cette entrée ré-exporte — liste fermée. */
 export const FICHIERS_PUBLIES = [
   'import/lectureDemandee',
@@ -94,6 +102,7 @@ export const FICHIERS_PUBLIES = [
   'import/valeurLue',
   'contextePrelevement',
   'indicationsBiologieV1',
+  'derniersResultats',
 ] as const;
 
 /**

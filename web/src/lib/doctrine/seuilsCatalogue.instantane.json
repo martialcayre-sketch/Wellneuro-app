@@ -22,6 +22,11 @@
       "empreinte": "6305125f2fa56160330ceb5a9de15e1760e50820ca6893c54f30d98fb0b89b28",
       "decision": "D-517",
       "date": "2026-11-13"
+    },
+    {
+      "empreinte": "bb0b0db4fdde95b841368ffe8fece2eb6e8bbdbddbbd2ae5a6f050c93d0eff5b",
+      "decision": "D-538",
+      "date": "2026-11-24"
     }
   ],
   "entrees": {
@@ -107,6 +112,11 @@
         "empreinte": "a8b044a9f767c57563cc624ff7f021707dd5300edaf28e26b4dcdd984e34247a",
         "decision": null,
         "date": "2026-10-21"
+      },
+      {
+        "empreinte": "e10366a853f15893fb975dea66e1b59c645abf5a5fa798c4f931b386b873e157",
+        "decision": "D-526",
+        "date": "2026-11-24"
       }
     ],
     "Q_GAS_02": [
@@ -170,6 +180,11 @@
         "empreinte": "637e8d3ba60b90560a55de96031207e1139cd45aed675565b887cd313f16beb9",
         "decision": null,
         "date": "2026-10-21"
+      },
+      {
+        "empreinte": "08055c613e43adf8bd6bdea2f566ab972c97f0d0fe70024647977a7440383280",
+        "decision": "D-526",
+        "date": "2026-11-24"
       }
     ],
     "Q_INF_02": [
@@ -366,6 +381,11 @@
         "empreinte": "cdd03d8bc62878d2e00569f8a08f59246bb6248cf9ee176e3153ab59a24defb1",
         "decision": null,
         "date": "2026-10-21"
+      },
+      {
+        "empreinte": "f74587503c01d50df3de5b20f2d1d72ddd38f3915e07ef414393a1032af3a4c9",
+        "decision": "D-538",
+        "date": "2026-11-24"
       }
     ],
     "Q_SOM_06": [
@@ -385,6 +405,11 @@
         "empreinte": "1972c562c54d1cc80b30de90a37f17887dcd68c021893851a5ce18c735b10173",
         "decision": "D-431",
         "date": "2026-11-03"
+      },
+      {
+        "empreinte": "5f82ba16b6b45e30527896d13718fd44ba586f09a29ce6269e8cce2e98011dab",
+        "decision": "D-542",
+        "date": "2026-11-24"
       }
     ],
     "Q_SOM_09": [

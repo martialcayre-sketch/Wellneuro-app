@@ -35,7 +35,7 @@
         "readministrable": null,
         "intervalleMinJours": null
       },
-      "sourceMonEquilibre": true,
+      "sourceMonEquilibre": false,
       "sourceIds": [
         "WN-SRC-0400",
         "WN-SRC-0401"
@@ -125,7 +125,7 @@
         "readministrable": null,
         "intervalleMinJours": null
       },
-      "sourceMonEquilibre": true,
+      "sourceMonEquilibre": false,
       "sourceIds": [
         "WN-SRC-0402",
         "WN-SRC-0403"
@@ -946,7 +946,7 @@
         "proprietaireDroits": "University of Pittsburgh"
       },
       "versionServie": {
-        "description": "24 items en 4 section(s), moteur `psqi`. L'ADAPTATION SUR LE NOMBRE D'ITEMS EST LEVÉE le 2026-07-31 sur arbitrage praticien (« le PSQI doit servir 24 items ») : le volet « conjoint ou camarade de chambre » — question 10 et sous-questions 11a à 11e — est désormais servi, et le banc lit 24 items des deux côtés. Ces six items NE SONT PAS COTÉS, conformément à Buysse 1989 qui bâtit les 7 composantes et le total /21 sur les seules questions 1 à 9 ; le moteur est inchangé et psqiVoletPartenaire.guard.test.ts le prouve par mutation. Ils atteignent le praticien par les réponses lisibles et la synthèse — 11a et 11b (ronflement fort, pauses respiratoires observées) sont les deux signaux d'apnée que seul un tiers peut rapporter. RÉSIDU ASSUMÉ : comme Q5j, Q11e est servie sans son champ « décrivez », l'UI patient n'ayant pas de champ texte libre. Étendue prouvée par construction : 0–21 (bornesAtteignables.guard.test.ts). Contenu verrouillé le 2026-07-31 sur l'empreinte servie du banc (statut `adapte` : aucune identité au mot près n'est affirmée, le banc ne la mesure pas).",
+        "description": "24 items en 4 section(s), moteur `psqi`. L'ADAPTATION SUR LE NOMBRE D'ITEMS EST LEVÉE le 2026-07-31 sur arbitrage praticien (« le PSQI doit servir 24 items ») : le volet « conjoint ou camarade de chambre » — question 10 et sous-questions 11a à 11e — est désormais servi, et le banc lit 24 items des deux côtés. Ces six items NE SONT PAS COTÉS, conformément à Buysse 1989 qui bâtit les 7 composantes et le total /21 sur les seules questions 1 à 9 ; le moteur est inchangé et psqiVoletPartenaire.guard.test.ts le prouve par mutation. Ils atteignent le praticien par les réponses lisibles et la synthèse — 11a et 11b (ronflement fort, pauses respiratoires observées) sont les deux signaux d'apnée que seul un tiers peut rapporter. RÉSIDU ASSUMÉ : comme Q5j, Q11e est servie sans son champ « décrivez », l'UI patient n'ayant pas de champ texte libre. La composante d'efficacité ne donne sa meilleure cote qu'aux valeurs strictement au-dessus de la borne publiée (85 %) depuis D-538 §5.2. Étendue prouvée par construction : 0–21 (bornesAtteignables.guard.test.ts). Contenu verrouillé le 2026-07-31 sur l'empreinte servie du banc (statut `adapte` : aucune identité au mot près n'est affirmée, le banc ne la mesure pas).",
         "langue": "fr",
         "traductionValidee": "fr — Blais et al. 1997 (Encéphale 23:447-453, PMID 9488928 ; WN-SRC-0604), vérifiée sur résumé le 2026-11-02 (D-424, D-425) ; identité au mot près de la version servie avec la version validée non établie (statutContenu « adapte »)",
         "statutContenu": "adapte"
@@ -1155,7 +1155,7 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": "19 items en 1 section(s), moteur `horne`. Écart assumé avec la traduction du support sur la borne 70 (la table publiée de Horne & Östberg fait foi) ; trou de source à 30 non traité. Le moteur ne rend jamais d'absence de bande : un seul item répondu reçoit un verdict de chronotype — résidu nommé, famille « donnée absente lue comme donnée basse ». Contenu verrouillé le 2026-07-30 sur l'empreinte servie du banc (statut `adapte` : aucune identité au mot près n'est affirmée, le banc ne la mesure pas).",
+        "description": "19 items en 1 section(s), moteur `horne`. Écart assumé avec la traduction du support sur la borne 70 (la table publiée de Horne & Östberg fait foi) ; le total 30, que le support laisse sans bande, passe dans la catégorie de la table publiée (« tout à fait du soir ») depuis D-538 §5.1 ; la note fixe au praticien (D-538 §5.3) nomme la validation française. Le moteur ne rend jamais d'absence de bande : un seul item répondu reçoit un verdict de chronotype — résidu nommé, famille « donnée absente lue comme donnée basse ». Contenu verrouillé le 2026-07-30 sur l'empreinte servie du banc (statut `adapte` : aucune identité au mot près n'est affirmée, le banc ne la mesure pas).",
         "langue": "fr",
         "traductionValidee": "fr — Taillard et al. 2004 (J Biol Rhythms 19:76-86 ; WN-SRC-0607) et Bessot et Margas 2024 (Chronobiol Int 41:81-92 ; WN-SRC-0608), vérifiées sur résumé le 2026-11-02 (D-425) ; identité au mot près de la version servie avec la version validée non établie (statutContenu « adapte »)",
         "statutContenu": "adapte"
@@ -1370,7 +1370,7 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": "24 items répartis en 3 sections de 8, chacun coté de 0 à 4. Score par somme, maxTotal déclaré 96, balayage moteur de 0 à 96, découpé en 4 bandes d'interprétation (0–24, 25–48, 49–72, 73–96). Aucune sous-échelle calculée, aucun item inversé.",
+        "description": "24 items répartis en 3 sections de 8, chacun coté de 0 à 4. Score par somme, maxTotal déclaré 96, balayage moteur de 0 à 96, découpé en 5 bandes d'interprétation de la pièce pro (0–20, 21–40, 41–60, 61–80, 81–96), posées sans évaluation consensuelle ; la valeur frontière 81, que la pièce laisse sans bande, est rangée en bande supérieure, extension de la convention de D-526 §6.2 à une valeur frontière unique arbitrée par le responsable (20261124-0800-b), appliquée par D-548. Aucune sous-échelle calculée, aucun item inversé.",
         "langue": "fr",
         "traductionValidee": "fr (référentiel d'origine)",
         "statutContenu": "cree_localement"
@@ -1602,7 +1602,7 @@
         "proprietaireDroits": "S.I.I.N. — Scientific Institute for Intelligent Nutrition"
       },
       "versionServie": {
-        "description": "L'application administre 31 items à 4 modalités, répartis en 5 sections, avec un scoring de type « tfd » calculant 5 sous-scores. Le balayage du moteur produit un total de 0 à 93. Aucune bande d'interprétation n'est servie.",
+        "description": "L'application administre 31 items à 4 modalités, répartis en 5 sections, avec un scoring de type « tfd » calculant 5 sous-scores. Le balayage du moteur produit un total de 0 à 93. Les bandes A, B, C par catégorie et au total sont celles de la pièce pro ; les valeurs frontières qu'elle laisse sans bande sont rangées par la convention de D-526 §6.2 (la valeur basse à la bande inférieure, la valeur haute à la bande supérieure), appliquée par D-548.",
         "langue": "fr",
         "traductionValidee": "fr (référentiel d'origine)",
         "statutContenu": "adapte"

@@ -23,13 +23,20 @@ import { motifNonInterpretable } from './passationsNonInterpretables';
 export const COMPARABLE_DEPUIS: ReadonlyMap<string, Date> = new Map([
   ['Q_ALI_01', new Date('2026-08-11T00:00:00.000Z')],
   ['Q_MOD_03', new Date('2026-08-11T00:00:00.000Z')],
-  ['Q_INF_01', new Date('2026-08-11T00:00:00.000Z')],
+  // Hyperexcitabilité (D-526, D-548 §2.3) : bandes de la pièce professionnelle
+  // posées le jour du déploiement du lot J3-12f vague 1, DATE PRÉVUE DU MERGE
+  // (2026-11-24) — à CONFIRMER par le constat du déploiement ; les passations
+  // antérieures ne sont plus comparées (« version non établie »).
+  ['Q_INF_01', new Date('2026-11-24T00:00:00.000Z')],
   ['Q_STR_02', new Date('2026-08-11T00:00:00.000Z')],
   // DASS-21 (D-420) : total brut des trois sous-échelles, 0 à 63, défini par
   // ses auteurs (FAQ Lovibond, Q26, WN-SRC-0601) ; complet à 7 sur 7 par axe.
   ['Q_STR_04', new Date('2026-08-11T00:00:00.000Z')],
-  // PSQI : bandes retouchées le 2026-09-13 (#1079, #1085).
-  ['Q_SOM_01', new Date('2026-09-14T00:00:00.000Z')],
+  // PSQI : bandes retouchées le 2026-09-13 (#1079, #1085) ; cote de l'efficacité
+  // du sommeil retouchée (D-538 §2 : la meilleure cote va aux valeurs
+  // strictement au-dessus de 85 %) le jour du déploiement du lot J3-12f vague 1,
+  // DATE PRÉVUE DU MERGE (2026-11-24) — à CONFIRMER par le constat du déploiement.
+  ['Q_SOM_01', new Date('2026-11-24T00:00:00.000Z')],
   // QIF (D-429) : total sur 100 (Bennett 2005, WN-SRC-0602). Son compte de
   // complétude (D-421) est en service depuis le 2026-11-02 au soir ; une
   // passation antérieure n'en porte pas, et un `missing` absent passerait

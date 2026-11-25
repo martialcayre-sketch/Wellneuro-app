@@ -1,4 +1,4 @@
-import type { BesoinDefinition, JalonMesure, NiveauPreuve, SourceQuestionnaire, StrateCode } from './types';
+import type { BesoinDefinition, JalonMesure, NiveauPreuve, SourceQuestionnaire } from './types';
 // Le maximum du besoin 1 est DÉRIVÉ de la forme réellement servie, jamais
 // recopié : un `max` littéral divergeant du barème est silencieux (aucun garde
 // ne les compare), et il sature ou effondre une fondation critique sans erreur.
@@ -189,7 +189,9 @@ import { Q_ALI_01 } from '../questionnaires/alimentaire';
 //     mesuré le sort de cette liste : le plafond se lève et le score global
 //     REMONTE. Le seuil de 28 vaut **quand `Q_STR_01` est la seule source
 //     répondue du besoin 9** : `Q_STR_02` et `Q_STR_03` l'alimentent aussi, et
-//     la moyenne déplace alors le point de bascule.
+//     la moyenne déplace alors le point de bascule. (État du 2026-08-13 :
+//     depuis [[D-548]] §2.5, le besoin 9 ne lit que la PSS-10 — `Q_STR_02` —
+//     et `Q_STR_01` comme `Q_STR_03` ne l'alimentent plus.)
 //
 // Relevé en revue `wn-reviewer` du 2026-08-13 (B1) : une première rédaction du
 // lot ne décrivait que la première branche et ne bumpait pas. Mesuré avant de
@@ -231,7 +233,27 @@ import { Q_ALI_01 } from '../questionnaires/alimentaire';
 // (`scoring/passationsNonInterpretables.ts`) ne nourrissent plus le moteur
 // (`depuisPrisma.ts`, `rawAnswersLisibles`) — sans quoi les MFI-20 d'avant la
 // reconstruction, rescorés sur la nouvelle échelle, deviendraient une mesure.
-export const VERSION_SCORE_EQUILIBRE = Q_ALI_01.scoring.maxTotal === 90 ? 'v17' : 'v16';
+// v16/v17 → v18/v19 ([[D-548]], première vague de J3-12f, 2026-11-23 ; UN SEUL
+// changement pour les sections signées des besoins 1, 4, 5 et 9, la moyenne
+// directe et la table des niveaux de preuve). Ce que la version couvre :
+//   — le total est la MOYENNE DIRECTE, à parts égales, des couvertures des
+//     besoins mesurés ([[D-547]]) : les parts 60/20/20 entre strates, le seuil
+//     d'effondrement, le plafond du total et la liste des cinq fondations
+//     critiques sont RETIRÉS ; aucun minimum de besoins mesurés ;
+//   — besoin 1 : la source devient la mesure dérivée de l'enquête alimentaire,
+//     forme complète, sans le sous-score du rythme ([[D-516]] §2.1, §5.1) ; le
+//     double compte avec le besoin 3 disparaît ; sous la forme courte, aucune
+//     source ([[D-516]] §6.2) ;
+//   — besoin 9 : la PSS-10 seule, avec sa borne basse déclarée ([[D-541]] §5.1,
+//     [[D-552]]) ; le SIIN stress et le Cungi sortent du calcul ;
+//   — table des niveaux de preuve ([[D-424]] §4) : le niveau C est retiré.
+// Les résultats déjà stockés ne sont JAMAIS réécrits : ils gardent leur étiquette
+// et leurs champs de plafond, que les lecteurs tolèrent sans les produire.
+//
+// Comme v16/v17, l'étiquette SUIT LE DRAPEAU de la forme alimentaire : les deux
+// branches avancent d'un cran, v16 → v18 (forme courte) et v17 → v19 (forme
+// complète), comme en v8/v9 et v16/v17.
+export const VERSION_SCORE_EQUILIBRE = Q_ALI_01.scoring.maxTotal === 90 ? 'v19' : 'v18';
 
 /**
  * Maximum du sous-score servi au besoin 3, DÉRIVÉ du barème de la forme servie.
@@ -256,11 +278,18 @@ export const MAX_RYTHME_CHRONO = (() => {
   );
 })();
 
-export const POIDS_STRATE: Record<StrateCode, number> = {
-  CORPS: 0.6,
-  ANCRAGE: 0.2,
-  ESPRIT: 0.2,
-};
+/**
+ * Maximum de la MESURE DÉRIVÉE de l'enquête alimentaire, au besoin 1 ([[D-516]]
+ * §2.1) : la somme des points du barème sur tous les items SAUF ceux du sous-score
+ * du rythme, qui restent au besoin 3. DÉRIVÉ du barème servi, jamais recopié :
+ * le total maximal de la forme servie moins `MAX_RYTHME_CHRONO`.
+ *
+ * Vaut 0 quand la forme servie ne déclare pas ce sous-score — la forme courte :
+ * le besoin 1 y est NON ÉVALUÉ ([[D-516]] §6.2), et `evaluerCouvertureSource`
+ * refuse alors la source avant toute division (`forme_sans_sous_score`), au lieu
+ * de rendre une couverture sur un barème que le dossier ne couvre pas.
+ */
+export const MAX_MESURE_DERIVEE_ALIMENTAIRE = MAX_RYTHME_CHRONO > 0 ? Q_ALI_01.scoring.maxTotal - MAX_RYTHME_CHRONO : 0;
 
 // 12 besoins fondamentaux, docs/claude/GUIDE_12_BESOINS_NEURONUTRITION.md.
 export const BESOINS: BesoinDefinition[] = [
@@ -278,28 +307,17 @@ export const BESOINS: BesoinDefinition[] = [
   { id: 12, libellePatient: 'Votre lien aux autres', libellePraticien: 'Besoins de reliance', pilier: 4, strate: 'ESPRIT' },
 ];
 
-// Fondations critiques (MON_EQUILIBRE_CONTEXTE.md §2) : sommeil effondré,
-// carences objectivées, troubles digestifs/hyperexcitabilité, stress
-// chronique, déséquilibre alimentaire — si l'une est effondrée, le score
-// global est plafonné quel que soit le niveau des autres besoins/strates.
-export const BESOINS_FONDATIONS_CRITIQUES = [1, 2, 4, 5, 9] as const;
-
-// VALIDÉS PAR LE PRATICIEN LE 2026-08-24 — [[D-106]], LOT-07 de « Doctrine
-// exécutable ». Les deux portaient depuis l'origine la mention « calibrage v1,
-// à valider par le praticien », et cette validation n'avait jamais eu lieu :
-// ce sont pourtant les deux valeurs qui façonnent le plus le total, puisqu'elles
-// commandent le plafonnement anti-moyenne.
-//
-// VALIDÉS TELS QUELS, sans changer d'un chiffre — et c'est la raison pour
-// laquelle aucun bump de `VERSION_SCORE_EQUILIBRE` n'accompagne cette décision :
-// aucune valeur calculée ne bouge, donc aucun épisode figé ne change de sens et
-// aucune comparaison de jalons ne se bloque. Un bump ici aurait coûté
-// l'historique de tous les patients pour n'enregistrer qu'une signature.
-//
-// Les modifier reste un changement clinique (`DC-17`, `DC-18`) : décision
-// `D-xxx`, fragment `changelog.d/` ET bump de `VERSION_SCORE_EQUILIBRE`.
-export const SEUIL_EFFONDREMENT = 0.34;
-export const PLAFOND_FONDATION_CRITIQUE = 50;
+// PLUS DE FONDATIONS CRITIQUES NI DE PLAFOND ([[D-547]], [[D-548]], v18/v19).
+// Le seuil d'effondrement (0,34), le plafond du total (50) et la liste des cinq
+// besoins qui les déclenchaient, validés « tels quels » en 2026-08 ([[D-106]]
+// décision 3) sans qu'aucun n'ait de source, sont retirés avec les parts
+// 60/20/20 entre strates. Le total est la moyenne directe, à parts égales, des
+// besoins mesurés : l'égalité entre besoins est une CONVENTION DE MODÈLE déclarée
+// ([[D-547]] §2, `DC-21`), et aucune règle du cabinet ne fonde une hiérarchie
+// entre les douze besoins. La contrepartie — un besoin très bas peut être
+// compensé dans le total par des besoins élevés — est assumée par le responsable
+// ([[D-547]] §3) : la lecture besoin par besoin est essentielle, le total reste
+// un repère de suivi sans interprétation clinique.
 
 // Mapping besoin → questionnaire(s) existants (web/src/lib/questions.ts).
 // Besoins 2, 6, 7, 11 : aucun questionnaire pertinent disponible dans le
@@ -316,7 +334,13 @@ export const PLAFOND_FONDATION_CRITIQUE = 50;
 // garde scripts/lib/verifier_registre_instruments.js contrôle l'alignement
 // dans les deux sens et fait échouer `scoring-check` (T1) sinon.
 export const BESOIN_SOURCES: Record<number, SourceQuestionnaire[]> = {
-  1: [{ idQuestionnaire: 'Q_ALI_01', max: Q_ALI_01.scoring.maxTotal, inverser: false }],
+  // Besoin 1 « Équilibre de l'assiette » : la MESURE DÉRIVÉE de l'enquête
+  // alimentaire, forme complète — le total de la forme servie moins le sous-score
+  // du rythme, qui reste au besoin 3 ([[D-516]] §2.1, [[D-548]] §2.2). Aucun poids
+  // de dimension, aucune tranche : un test fige qu'aucune règle ne la lit. Le
+  // maximum est DÉRIVÉ (`MAX_MESURE_DERIVEE_ALIMENTAIRE`), et vaut 0 sous la forme
+  // courte : aucune source, besoin non évalué ([[D-516]] §6.2).
+  1: [{ idQuestionnaire: 'Q_ALI_01', sansSousScore: 'RYTHME_CHRONO', max: MAX_MESURE_DERIVEE_ALIMENTAIRE, inverser: false }],
   // 2 : voir la note v3 → v4 en tête de fichier — Q_SOM_06 (fatigue de Pichot)
   // retiré, la fatigue ne mesurant pas la couverture micronutritionnelle.
   2: [],
@@ -358,10 +382,15 @@ export const BESOIN_SOURCES: Record<number, SourceQuestionnaire[]> = {
   6: [],
   7: [],
   8: [{ idQuestionnaire: 'Q_NEU_11', sousScore: 'D', max: 21, inverser: true }],
+  // Besoin 9 : la PSS-10 seule ([[D-541]] §5.1, signée le 2026-10-18). Le SIIN
+  // stress (`Q_STR_01`) et le Cungi (`Q_STR_03`) sortent du calcul et restent lus
+  // comme repères. `min: 10` : le total servi va de 10 à 50 (dix items cotés de
+  // 1 à 5), et sans minimum déclaré un patient sans stress perçu n'atteindrait
+  // jamais 1 ([[D-552]] §2, même forme que la fatigue du MFI-20 au besoin 5). La
+  // plage (40) est la même dans les deux cotations de l'instrument : aucun total
+  // stocké ne change, seule la lecture de la couverture est corrigée.
   9: [
-    { idQuestionnaire: 'Q_STR_01', max: 42, inverser: true },
-    { idQuestionnaire: 'Q_STR_02', max: 50, inverser: true },
-    { idQuestionnaire: 'Q_STR_03', max: 55, inverser: true },
+    { idQuestionnaire: 'Q_STR_02', min: 10, max: 50, inverser: true },
   ],
   10: [
     { idQuestionnaire: 'Q_INF_03', sousScore: 'DA', max: 40, inverser: true },
@@ -402,19 +431,14 @@ export const ORDRE_JALONS_MESURE: readonly JalonMesure[] = ['J21', 'J42', 'J90']
 // d'expérience patient réel — cf. docs/claude/E2_EVIDENCE_LEVELS_MOMENTUM_CONTEXTE.md §3.
 export const TOLERANCE_JOURS_JALON = 8;
 
-// Niveau de preuve par source (feat/e2-evidence-levels, cf.
-// docs/claude/E2_EVIDENCE_LEVELS_MOMENTUM_CONTEXTE.md) : A = questionnaire
-// clinique internationalement validé (PSQI, HAD, PSS-10, Pichot...), B =
-// référentiel neuronutrition SIIN/DNST (pas de validation psychométrique
-// tierce indépendante, mais référentiel clinique interne établi), C =
-// biologie fonctionnelle (aucune source actuelle n'est en C — biomarqueurs
-// hors périmètre v1), D = hypothèse WellNeuro.
-//
-// PROPOSITION INITIALE, PAS ENCORE VALIDÉE CLINIQUEMENT : ce mapping a été
-// dérivé du statut de validation connu de chaque échelle, pas confirmé par
-// un praticien. À faire valider avant tout affichage en production —
-// contrairement au reste de ce fichier, ceci n'est pas encore une décision
-// actée au même titre que POIDS_STRATE ou BESOIN_SOURCES.
+// Niveau de preuve par source — TABLE SIGNÉE ([[D-424]], appliquée par [[D-548]]
+// §2.6). Trois niveaux : A = questionnaire clinique internationalement validé
+// (PSQI, HAD, PSS-10, Epworth, MFI-20), B = référentiel neuronutrition SIIN ou
+// DNST, sans validation psychométrique tierce, D = hypothèse WellNeuro. Le
+// niveau C (« biologie fonctionnelle ») est RETIRÉ : il désignait un type de
+// mesure, pas un niveau de preuve, et aucune source n'y était classée. Un
+// niveau par clé (par questionnaire), le besoin portant celui de sa source la
+// plus faible.
 export const NIVEAU_PREUVE_PAR_SOURCE: Record<string, NiveauPreuve> = {
   Q_ALI_01: 'B',
   // Q_SOM_06 retiré en v4 avec sa source (besoin 2) : cette table n'est lue
@@ -438,13 +462,16 @@ export const NIVEAU_PREUVE_PAR_SOURCE: Record<string, NiveauPreuve> = {
   Q_SOM_02: 'A',
   Q_SOM_07: 'A',
   Q_NEU_11: 'A',
-  Q_STR_01: 'B',
+  // `Q_STR_01` et `Q_STR_03` quittent la table avec leur retrait du besoin 9
+  // ([[D-548]] §2.6) : elle n'est lue que pour les entrées du mapping, et une clé
+  // orpheline affirmerait qu'ils en restent des sources.
   Q_STR_02: 'A',
-  Q_STR_03: 'B',
   Q_INF_03: 'B',
 };
 
 // Ordre du plus faible au plus fort — sert à déterminer "le niveau le plus
 // faible parmi les sources d'un besoin" (règle actée : jamais de dilution
-// d'une source faible par une source plus robuste sur le même besoin).
-export const RANG_PREUVE: Record<NiveauPreuve, number> = { D: 0, C: 1, B: 2, A: 3 };
+// d'une source faible par une source plus robuste sur le même besoin). `RANG_PREUVE`
+// PERD C ([[D-424]] §4) : les valeurs de B et de A ne bougent pas, seul l'ordre
+// compte.
+export const RANG_PREUVE: Record<NiveauPreuve, number> = { D: 0, B: 2, A: 3 };

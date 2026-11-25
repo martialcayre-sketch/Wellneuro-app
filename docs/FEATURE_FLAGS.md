@@ -383,10 +383,10 @@ CI ; une table signée neuve absente du tableau aussi.
 
 | Table (fichier sous `web/src/lib/`) | `validationExterne` | `dateValidation` |
 |---|---|---|
-| `clinical/orientationRulesV1.ts` | `true` | `2026-11-22T00:00:00.000Z` |
+| `clinical/orientationRulesV1.ts` | `true` | `2026-11-24T00:00:00.000Z` |
 | `clinical/contradictionsV1.ts` | `true` | `2026-11-19T12:38:04.000Z` |
 | `clinical/stopRulesV1.ts` | `true` | `2026-11-20T07:43:09.000Z` |
-| `biology-library/indicationsBiologieV1.ts` | `true` | `2026-11-19T12:38:04.000Z` |
+| `biology-library/indicationsBiologieV1.ts` | `true` | `2026-11-24T00:00:00.000Z` |
 | `clinical/corpusSyntheseV1.ts` | `true` | `2026-08-22T00:00:00.000Z` |
 | `clinical/priorityRulesV1.ts` | `true` | `2026-08-28T00:00:00.000Z` |
 | `clinical/safetySignalsV1.ts` | `true` | `2026-08-23T00:00:00.000Z` |

@@ -1836,7 +1836,23 @@ export const ORIENTATION_METADATA: OrientationMetadata = {
   // sans cette ligne hache encore exactement l'empreinte précédente
   // (`6088b3c6…`, banc `exclusionQAli01Besoin1.guard.test.ts`). Aucun claim
   // ajouté ni retiré. L'heure n'a pas été relevée : le jour est le jour attesté.
-  dateValidation: '2026-11-22T00:00:00.000Z',
+  //
+  // RE-SIGNÉE LE 2026-11-24 ([[D-526]] §5.2, appliquée par [[D-548]] §2.3, J3-12f
+  // lot 3, vague 1), PAR LE RESPONSABLE EN SÉANCE (liste commune,
+  // `20261124-0806-b`). Changements du périmètre : la valeur 13 du digestif
+  // supérieur du TFD (`Q_GAS_01`, axe C1) passe de la bande B à la bande C, par la
+  // convention des valeurs frontières de [[D-526]] §6.2 (la `note` du bloc `scoring`
+  // de `Q_GAS_01`, texte seul, sans effet de calcul, change avec elle : elle dit
+  // désormais cette convention ; elle est dans le bloc haché, et c'est avec cette
+  // note que l'empreinte signée a été calculée) ; `R-GAS-01` lit la couleur
+  // globale de `Q_GAS_01`, dont les trois bandes ne bougent pas, et les règles, les
+  // fenêtres, la convergence et les claims ne changent pas. Même lot, HORS du
+  // périmètre haché (le moteur de cotation n'y est pas, classe de [[D-180]]) : la
+  // meilleure cote de l'efficacité du PSQI ne va plus qu'aux valeurs strictement
+  // au-dessus de 85 % ([[D-538]] §2), ce qui modifie ce que lisent `R-SOM-01` et
+  // `BIO-SOM-01` sans qu'aucun sha ne bouge ; 0 passation de production concernée.
+  // L'heure n'a pas été relevée : le jour est le jour attesté.
+  dateValidation: '2026-11-24T00:00:00.000Z',
   // Posé le 2026-08-16 ([[D-067]]), repris le 2026-09-13 : la chaîne hex
   // qu'`ORIENTATION_RULES_SHA256` valait à la relecture, recopiée telle quelle —
   // JAMAIS la constante (déclarée après cet objet ; et la comparaison serait
@@ -1863,6 +1879,8 @@ export const ORIENTATION_METADATA: OrientationMetadata = {
   //     (D-470, lot t67 : quatrième limite commune de convergence)
   //   · 2026-11-19 — `6088b3c6d450057e7ebbc2d7d9c2b3041a18dca51ffc1caaacfbf6cb9e696891`
   //     (D-543 : `R-STR-01` et `R-STR-02` suspendues)
+  //   · 2026-11-22 — `a28e99e636bc28df98c7dab06080eb69d7e85160640a52e1069b3187059c7fc0`
+  //     (D-555 : exclusion `Q_ALI_01` / besoin 1 dans la table de convergence)
   //
   // SECONDE ATTESTATION DU 2026-09-14, ET C'EST LA PREMIÈRE FOIS QUE LE
   // PÉRIMÈTRE COUVRE LE CALCUL. Un contre-audit a démontré le même jour que le
@@ -1878,7 +1896,7 @@ export const ORIENTATION_METADATA: OrientationMetadata = {
   // dérivation ne rendait rien —, puis le delta de périmètre sur les dix-huit
   // blocs de scoring. Les claims n'ont pas bougé : leur relecture du matin
   // couvre celle-ci.
-  shaPerimetre: 'a28e99e636bc28df98c7dab06080eb69d7e85160640a52e1069b3187059c7fc0',
+  shaPerimetre: '950b842468cf040070df858b5ae5c01db19e708543076740b49206998a83dde5',
   claimsSource: [
     { claimId: 'WN-CL-0047-008', versionClaim: 'v1.0' },
     { claimId: 'WN-CL-0105-001', versionClaim: 'v1.0' },

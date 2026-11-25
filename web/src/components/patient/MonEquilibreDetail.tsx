@@ -15,10 +15,13 @@ const LEGENDE_STRATE: { strate: string; label: string; couleur: string }[] = [
 // Équivalent texte de la couverture : le cercle ne la porte que par l'opacité
 // de sa couleur, qui n'est ni lisible au clavier ni par un lecteur d'écran.
 //
-// Paliers ([[D-280]]) : « Peu couvert » sous 34, le seuil d'effondrement déjà
-// signé (`SEUIL_EFFONDREMENT`, [[D-106]] décision 3) — recopié ici plutôt
-// qu'importé, pour ne pas embarquer les tables cliniques dans un composant
-// client ; un banc garde l'égalité. 70 est un repère du cabinet signé par le
+// Paliers ([[D-280]]) : « Peu couvert » sous 34 — SANS MOTIF. Cette valeur était
+// recopiée du seuil d'effondrement de [[D-106]], que [[D-547]] retire avec le
+// plafonnement : elle reste à 34 par arbitrage du responsable du 2026-11-21
+// ([[D-547]] §4.5, « Arbitrages rendus » point 1), repère d'affichage sans
+// source, et n'est plus liée à aucune autre constante. Les paliers (mots et
+// bornes) seront revus dans un LOT DÉDIÉ DES PALIERS ; la surface patient ne
+// change pas dans le lot de [[D-548]]. 70 est un repère du cabinet signé par le
 // praticien, sans source externe : c'est une construction WellNeuro. La
 // comparaison porte sur la valeur servie, arrondie à l'entier.
 export const PALIER_BIEN_COUVERT = 70;

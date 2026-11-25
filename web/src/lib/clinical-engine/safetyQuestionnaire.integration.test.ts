@@ -68,10 +68,21 @@ const NON = { ...POSITIF_HORS_EPISODE, idReponse: 'REP_BDI_NON', scoresJson: { r
 // version du score passe de v14/v15 à v16/v17, et elle entre dans l'empreinte.
 // Dérive VOULUE, décidée par D-438 §5 : chaque carte diffusée dérive, et son
 // écran protocole s'éteint jusqu'à réapprobation par le praticien.
+//
+// Relevées une troisième fois le 2026-11-23 ([[D-548]], première vague de
+// J3-12f) : la version passe de v16/v17 à v18/v19 (moyenne directe, besoin 1 sur
+// la mesure dérivée, PSS-10 seule au besoin 9, table des niveaux de preuve). Même
+// dérive VOULUE, même conséquence : chaque carte diffusée dérive.
+//
+// Relevées une quatrième fois le 2026-11-24 ([[D-548]], même lot) : les étiquettes
+// `VERSION_MAPPING_BESOINS` et `VERSION_OBJETS_CLINIQUES` montent en v3 (sources
+// des besoins 1 et 9, définition du total). Elles entrent dans l'empreinte ; même
+// dérive VOULUE, la même extinction que la version du score — aucune extinction
+// supplémentaire ([[D-548]] §4).
 const EMPREINTE_REFERENCE =
   process.env.WN_ALI_01_SIIN57 === 'true'
-    ? 'c5b806ab5b64917ae2eefa109677ce815331725eb8f3f74bdfee7408cd83fab7'
-    : 'f2e808ade7a5fa8998fa7edf53d7a727175d94918dcf6deb32065b8c5dc4c6a0';
+    ? '59e3aeea95e85bf7fb120cff7d4a73f5d01bc909d60d681c411553d4c55c79e8'
+    : '8d960b46e30098e59785691ccb5cde21b02836d7e2378160845b3ce967875030';
 
 beforeEach(() => {
   signerTablePriorites();

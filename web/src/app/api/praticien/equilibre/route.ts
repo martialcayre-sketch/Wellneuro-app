@@ -18,6 +18,8 @@ import {
   SOURCES_STABILITE_METABOLIQUE,
 } from '@/lib/equilibre/objetsCliniques';
 import { calculerCouvertureSource, compterBesoinsMesures } from '@/lib/equilibre/score';
+import type { ConstatBiomarqueur } from '@/lib/equilibre/constatsBiomarqueursBesoin1';
+import { lireConstatsBiomarqueursBesoin1 } from '@/lib/equilibre/constatsBiomarqueursBesoin1Service';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
 import { ancreCourante, lireAncresPersistees } from '@/lib/protocol/ancresPersistees';
 import { jourZeroDuCycleCourant } from '@/lib/protocol/calendriersPersistes';
@@ -52,6 +54,11 @@ export type PrioriteBesoin = {
   provenance: ProvenanceChiffre | null;
   /** La carte du cockpit qui sert la même valeur sous un autre nom (B9, B10). */
   carteLiee: 'reserveAdaptation' | 'clarte' | null;
+  /** Besoin 1 seulement : l'HbA1c et l'index oméga-3, deux constats SÉPARÉS, hors
+   *  couverture ([[D-548]] §2.2, [[D-516]] §5.2). Absent ou `null` : aucune
+   *  lecture (rayon fermé, lecture en échec, autre besoin) — jamais « aucun
+   *  résultat ». Un ancien conteneur sans le champ n'affiche rien. */
+  constatsBiologiques?: ConstatBiomarqueur[] | null;
 };
 
 export type ObjetsCliniquesReponse = {
@@ -71,7 +78,10 @@ export type ObjetsCliniquesReponse = {
   /** L'ancre du cycle courant, que nomment les motifs ; `null` sans cycle. */
   ancreMomentum: AncreCycle | null;
   /** Le total a été ramené au plafond des fondations critiques ([[D-106]]) :
-   *  le fait seul — ni le besoin, ni la valeur avant plafond (Q9). */
+   *  le fait seul — ni le besoin, ni la valeur avant plafond (Q9). Le plafond est
+   *  RETIRÉ depuis v18/v19 ([[D-547]]) : toujours `false` pour un résultat neuf,
+   *  champ gardé pour que la mention reste lisible sur un résultat ancien
+   *  ([[D-547]] §4.3). */
   plafondApplique: boolean;
   /** Version du moteur courant (`VERSION_SCORE_EQUILIBRE`), servie même sans
    *  indice : le chip « Au tour précédent » la lit, ses deux lectures étant
@@ -183,6 +193,10 @@ export async function GET(req: Request): Promise<NextResponse<EquilibreApiRespon
       objets.indiceGlobal.strates.flatMap(s => s.besoins).map(b => [b.besoin, b.couverture])
     );
 
+    // Besoin 1 : deux constats biologiques, lus à part de l'enquête et sans effet
+    // sur la couverture ([[D-516]] §5.2). Le portail n'en reçoit aucun chiffre.
+    const constatsBiologiquesBesoin1 = await lireConstatsBiomarqueursBesoin1(idPatient);
+
     const contexteMotifs = { ecartes: questionnairesEcartesParValidite(reponsesDb), datesRetenues };
 
     // Ordre fixe, B1 à B12 par strate — celui de `BESOINS` (Q1, r3_09). Aucun
@@ -197,6 +211,7 @@ export async function GET(req: Request): Promise<NextResponse<EquilibreApiRespon
       motifNonMesure: motifsNonMesureBesoin(b.id, reponses, contexteMotifs),
       ecartDecision: ecartsDecisionBesoin(b.id, reponses, contexteMotifs),
       provenance: provenanceDe(couverturesParBesoin.get(b.id) ?? null, BESOIN_SOURCES[b.id] ?? [], versionScore),
+      constatsBiologiques: b.id === 1 ? constatsBiologiquesBesoin1 : null,
       carteLiee:
         b.id === BESOIN_RESERVE_ADAPTATION ? ('reserveAdaptation' as const) : b.id === BESOIN_CLARTE ? ('clarte' as const) : null,
     }));
@@ -219,7 +234,7 @@ export async function GET(req: Request): Promise<NextResponse<EquilibreApiRespon
         momentum,
         motifMomentum: calcul.statut === 'absent' ? calcul.motif : null,
         ancreMomentum,
-        plafondApplique: objets.indiceGlobal.plafondApplique,
+        plafondApplique: objets.indiceGlobal.plafondApplique ?? false,
         versionCalcul: versionScore,
         provenance: {
           indiceGlobal: provenanceDe(

@@ -189,6 +189,8 @@ const IMPORTEURS_ADMIS = [
   'web/src/components/patient-cockpit/SaisieBilan.tsx',
   // Portes biologiques des assiettes ([[D-245]]).
   'web/src/lib/clinical/portesBiologiquesService.ts',
+  // Constats biologiques du besoin 1 ([[D-548]] §2.2, [[D-516]] §5.2) : par l'entrée publiée, au cockpit seulement.
+  'web/src/lib/equilibre/constatsBiomarqueursBesoin1Service.ts',
   // La carte « compte rendu à lire » du Fil ([[D-268]], BP-10) : le module pur
   // des états de lecture, qui ne lit aucune valeur.
   'web/src/lib/fil/cartes.ts',

@@ -19,7 +19,7 @@ import { describe, expect, it } from 'vitest';
 import { QUESTIONNAIRE_CATALOGUE, calculateScore } from '@/lib/questions';
 import { buildMiniSynthese } from '@/lib/scoring/miniSynthese';
 import { calculerCouvertureBesoin, calculerCouvertureSource } from '@/lib/equilibre/score';
-import { BESOINS_FONDATIONS_CRITIQUES, BESOIN_SOURCES, SEUIL_EFFONDREMENT } from '@/lib/equilibre/constants';
+import { BESOIN_SOURCES } from '@/lib/equilibre/constants';
 import { evaluerOrientation } from '@/lib/clinical/orientationEngine';
 import { ORIENTATION_RULES_V1 } from '@/lib/clinical/orientationRulesV1';
 
@@ -188,10 +188,11 @@ describe('TFD — recueil partiel', () => {
     // motif en « au moins ». Les assertions d'origine restent vraies une à une —
     // c'est leur lecture d'ensemble qui aurait vieilli en silence.
     //
-    // Direction de l'effet sur « Mon équilibre », et c'est l'inverse de l'autre
-    // branche : la couverture passait sous `SEUIL_EFFONDREMENT`, faisait du
-    // besoin 4 une fondation critique et plafonnait le score global à 50. La
-    // rendre non mesurée LÈVE ce plafond.
+    // Direction de l'effet sur « Mon équilibre » : jusqu'en v17, la couverture
+    // passait sous le seuil d'effondrement, faisait du besoin 4 une fondation
+    // critique et plafonnait le score global à 50 ; le plafond est retiré depuis
+    // v18/v19 ([[D-547]]). La garde reste, pour sa raison de fond : un recueil
+    // partiel ne se lit pas comme une mesure, il sort de la moyenne.
     const { C5_5, ...trenteSurTrenteEtUn } = { ...COMPLET_MAX };
     void C5_5;
     const r: any = calculateScore('Q_GAS_01', trenteSurTrenteEtUn);
@@ -199,20 +200,16 @@ describe('TFD — recueil partiel', () => {
     expect(r.interpretation).toBeNull();
 
     const source = BESOIN_SOURCES[4].find(s => s.idQuestionnaire === 'Q_GAS_01')!;
-    // LE FAIT PORTEUR, asséré et non raconté. Toute la thèse « le plafond se
-    // lève » repose sur l'appartenance du besoin 4 aux fondations critiques :
-    // l'en retirer rendrait faux le commentaire ci-dessus ET les dix lignes de
-    // `equilibre/constants.ts`, sans qu'aucun banc ne rougisse.
-    expect(BESOINS_FONDATIONS_CRITIQUES).toContain(4);
-    // Avant la garde : 1 − 90/93 ≈ 0,032, très en dessous du seuil de 0,34.
-    // Arithmétique sur littéraux — elle documente le chiffre, elle ne le garde
-    // pas ; c'est l'assertion précédente qui garde.
-    expect(1 - 90 / 93).toBeLessThan(SEUIL_EFFONDREMENT);
-    // Après : plus de mesure du tout, donc plus de fondation critique.
+    // Avant la garde : 1 − 90/93 ≈ 0,032, une couverture quasi nulle servie sur un
+    // recueil que l'instrument ne reconnaît pas comme complet. Arithmétique sur
+    // littéraux — elle documente le chiffre, elle ne le garde pas ; c'est
+    // l'assertion suivante qui garde.
+    expect(1 - 90 / 93).toBeLessThan(0.05);
+    // Après : plus de mesure du tout, donc le besoin sort de la moyenne.
     expect(calculerCouvertureSource(source, { Q_GAS_01: trenteSurTrenteEtUn })).toBeNull();
     // Le besoin 4 n'a qu'une autre source (`Q_INF_01`), absente ici : le besoin
-    // entier ressort non mesuré, et non pas 0 — un 0 le replacerait sous le seuil
-    // d'effondrement par la porte de derrière.
+    // entier ressort non mesuré, et non pas 0 — un 0 tirerait la moyenne par la
+    // porte de derrière.
     expect(calculerCouvertureBesoin(4, { Q_GAS_01: trenteSurTrenteEtUn })).toBeNull();
 
     // L'AUTRE MOITIÉ — l'orientation, elle, relit ce partiel. Le plancher est
