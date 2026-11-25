@@ -183,6 +183,16 @@ l'édition, jamais par l'absence du marqueur — un marqueur manquant signifie
   persistant, distinct du marqueur. Écrit **après** le verdict émis, avec des
   appels Git bornés à 2 s ; un échec est muet et ne change aucun verdict ; une
   session hors dépôt n'a pas de journal.
+- **Sessions concurrentes** (depuis le 2026-11-25, lot `autonomie-pieges-restes`, partie 16) : au démarrage,
+  une session ouverte dans la **copie principale** (pas un worktree lié) est avertie si d'autres processus
+  `claude` y ont leur répertoire courant (`lsof -a -c claude -d cwd`, hors chaîne d'ancêtres du crochet). Le
+  message nomme les pid, la règle (`D-373` §2, `D-454`) et les gestes : passer en worktree, sinon relire la
+  branche avant tout commit et indexer par chemin. **Jamais un refus** : le répertoire d'un processus est un
+  indice (une session passée en worktree ou inactive peut y figurer encore). Module
+  `sessions-concurrentes.mjs`, importé sous `try` par `git-freshness.mjs` : absent, en erreur, sans `lsof`
+  ou tué au délai (chaque appel borné à 2 s), il se tait et le constat de fraîcheur n'en dépend pas. Limites :
+  la première session n'est pas prévenue ; un processus nommé autrement que `claude` (installation par npm)
+  n'est pas vu ; l'intégrateur reçoit aussi l'avertissement.
 
 **Lanceur fermé.** Chaque garde bloquant est lancé par une ligne qui cherche le
 script sous `$CLAUDE_PROJECT_DIR`, puis sous la racine Git du répertoire

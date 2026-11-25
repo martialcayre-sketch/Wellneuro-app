@@ -290,11 +290,30 @@ function evaluer({ forcerFetch = false } = {}) {
   return { constat, fetchOk, verifiedAt };
 }
 
+// Sessions concurrentes sur la copie principale (autonomie-pieges-restes,
+// partie 16) : un avertissement, jamais un verdict. Import dynamique, sous
+// `try` : un module absent ou en erreur ne doit pas casser ce garde-ci.
+async function alerteConcurrentes(toplevel) {
+  try {
+    const gitDir = git(["rev-parse", "--absolute-git-dir"], { delai: 2_000 });
+    const commun = git(["rev-parse", "--path-format=absolute", "--git-common-dir"], { delai: 2_000 });
+    if (gitDir.status !== 0 || commun.status !== 0) return null;
+    const copiePrincipale = gitDir.stdout.trim() === commun.stdout.trim();
+    const { alerteSessionsConcurrentes } = await import("./sessions-concurrentes.mjs");
+    return alerteSessionsConcurrentes({ toplevel, copiePrincipale });
+  } catch {
+    return null;
+  }
+}
+
 if (event === "SessionStart") {
-  if (git(["rev-parse", "--show-toplevel"]).status !== 0) {
+  const racine = git(["rev-parse", "--show-toplevel"]);
+  if (racine.status !== 0) {
     process.stdout.write("Freshness Git non vérifiée : session hors dépôt. Aucune édition autorisée.\n");
     process.exit(0);
   }
+  const alerte = await alerteConcurrentes(racine.stdout.trim());
+  if (alerte) process.stdout.write(alerte);
 
   const { constat, fetchOk, verifiedAt } = evaluer({ forcerFetch: true });
 
