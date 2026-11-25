@@ -23,6 +23,7 @@ const TOUS: LienDecorProps[] = [
   { emplacement: 'entete-fiche', element: 'linked-loops-muted' },
   { emplacement: 'etat-vide', element: 'nutrition-sprout' },
   { emplacement: 'etat-vide', element: 'neural-branches' },
+  { emplacement: 'hub-patient' },
 ];
 
 const nom = (p: LienDecorProps) => `${p.emplacement}${p.element ? ` / ${p.element}` : ''}`;
@@ -69,6 +70,16 @@ describe('LienDecor — décoratif seulement', () => {
     cleanup();
     const ornement = rendre({ emplacement: 'etat-vide', element: 'nutrition-sprout' }).noeud!;
     expect(ornement.className).not.toMatch(/(?:^|\s)(?:absolute|fixed|-?z-)/);
+  });
+
+  it('le bandeau du hub prend toute la largeur, dans le flux, à hauteur fixe, recadré sans être étiré', () => {
+    const bandeau = rendre({ emplacement: 'hub-patient', className: '-mx-8 -mt-8' }).noeud!;
+    const classes = bandeau.className.split(/\s+/);
+    expect(classes).toEqual(expect.arrayContaining(['block', 'w-full', 'h-[52px]', 'md:h-16', '-mx-8', '-mt-8']));
+    expect(bandeau.className).not.toMatch(/(?:^|\s)(?:absolute|fixed|-?z-)/);
+    expect(bandeau.style.backgroundSize).toBe('cover');
+    expect(bandeau.style.backgroundPosition).toBe('left center');
+    expect(bandeau.style.aspectRatio).toBe('');
   });
 
   it('l’entrée patient sert le fond étroit sous 768 px et le fond large au-delà', () => {
@@ -126,7 +137,7 @@ describe('LienDecor — aucun mouvement', () => {
   it('les SVG servis par la primitive sont statiques, sans texte ni ressource externe', () => {
     const servis = new Set(TOUS.flatMap((p) => fichiersDe(rendre(p).noeud!)));
     cleanup();
-    expect(servis.size).toBe(8);
+    expect(servis.size).toBe(9);
     for (const f of servis) {
       const chemin = path.join(PUBLIC, f);
       expect(existsSync(chemin), f).toBe(true);
@@ -137,10 +148,11 @@ describe('LienDecor — aucun mouvement', () => {
 });
 
 describe('LienDecor — seuls les éléments nommés aux emplacements retenus', () => {
-  it('le catalogue est celui de D-481 §1 bis, choix du responsable du 2026-11-25', () => {
+  it('le catalogue est celui de D-481 §1 bis, choix du responsable du 2026-11-25 (COM-1 et DOC-21)', () => {
     expect(Object.keys(LIEN_DECOR).sort()).toEqual(
-      ['connexion-praticien', 'deux-voix', 'entete-fiche', 'entree-patient', 'etat-vide'].sort(),
+      ['connexion-praticien', 'deux-voix', 'entete-fiche', 'entree-patient', 'etat-vide', 'hub-patient'].sort(),
     );
+    expect(LIEN_DECOR['hub-patient']).toEqual({ nature: 'bandeau', elements: ['quiet-sweep'] });
     expect(LIEN_DECOR['connexion-praticien']).toMatchObject({ etroit: expect.stringContaining('login-calm.svg') });
     expect(LIEN_DECOR['deux-voix'].elements).toEqual(['divider-two-voices']);
     expect(LIEN_DECOR['entete-fiche'].elements).toEqual(['alliance-arcs', 'linked-loops-muted']);
@@ -160,6 +172,10 @@ describe('LienDecor — seuls les éléments nommés aux emplacements retenus', 
     expect(fichiersDe(rendre({ emplacement: 'entete-fiche', element: 'linked-loops-muted' }).noeud!)).toEqual([
       '/wellneuro-lien/ornaments/linked-loops-muted.svg',
     ]);
+    cleanup();
+    expect(fichiersDe(rendre({ emplacement: 'hub-patient' }).noeud!)).toEqual([
+      '/wellneuro-lien/ornaments/quiet-sweep.svg',
+    ]);
   });
 
   it('refuse, au typage, un élément hors de son emplacement ou un emplacement non retenu', () => {
@@ -168,8 +184,8 @@ describe('LienDecor — seuls les éléments nommés aux emplacements retenus', 
       <LienDecor key="1" emplacement="entete-fiche" element="nutrition-sprout" />,
       // @ts-expect-error -- l'en-tête de fiche attend le choix du prototype
       <LienDecor key="2" emplacement="entete-fiche" />,
-      // @ts-expect-error -- le hub patient (U10) n'a aucun élément nommé
-      <LienDecor key="3" emplacement="hub-patient" />,
+      // @ts-expect-error -- le hub patient (U10) n'accepte que son bandeau
+      <LienDecor key="3" emplacement="hub-patient" element="alliance-arcs" />,
       // @ts-expect-error -- un fond ne prend pas d'élément
       <LienDecor key="4" emplacement="entree-patient" element="alliance-arcs" />,
       // @ts-expect-error -- un fond remplit son parent, sans classes
@@ -179,7 +195,9 @@ describe('LienDecor — seuls les éléments nommés aux emplacements retenus', 
   });
 
   it.each([
-    ['emplacement non retenu', { emplacement: 'hub-patient' }],
+    ['emplacement non retenu', { emplacement: 'hub-praticien' }],
+    ['autre élément au hub', { emplacement: 'hub-patient', element: 'linked-loops-muted' }],
+    ['bandeau hors du hub', { emplacement: 'etat-vide', element: 'quiet-sweep' }],
     ['motif non retenu', { emplacement: 'etat-vide', element: 'living-links' }],
     ['élément hors de son emplacement', { emplacement: 'entete-fiche', element: 'nutrition-sprout' }],
     ['ornement neuf non validé', { emplacement: 'etat-vide', element: 'ornement-neuf' }],
