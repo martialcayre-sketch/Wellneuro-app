@@ -15,19 +15,24 @@
  * - seuls les éléments nommés aux emplacements retenus sont acceptés
  *   (`LIEN_DECOR`) ; tout autre couple emplacement/élément ne rend rien.
  *
- * Deux natures :
+ * Trois natures :
  * - un fond (`connexion-praticien`, `entree-patient`) remplit le plus proche
  *   parent positionné, sous le contenu (`-z-10`). Le parent porte
  *   `relative isolate` ; le contenu posé dessus est une carte opaque, jamais
  *   un champ, une grille ou un texte clinique à même le fond. Les SVG du kit
  *   laissent le centre libre ;
  * - un ornement (`deux-voix`, `entete-fiche`, `etat-vide`) prend sa place
- *   dans le flux, aux proportions de son SVG ; l'appelant en fixe la largeur.
+ *   dans le flux, aux proportions de son SVG ; l'appelant en fixe la largeur ;
+ * - un bandeau (`hub-patient`) prend toute la largeur de son parent, dans le
+ *   flux, à hauteur fixe (52 px, 64 px dès `md`), recadré par la gauche sans
+ *   être étiré ; l'appelant le pose bord à bord en tête de sa carte.
  *
  * Choix inscrits au lot (responsable, 2026-11-25) : l'en-tête de fiche
  * accepte les deux motifs d'alliance, le prototype PRA-3a choisit ; les
- * états vides acceptent les deux ornements nommés ; le hub patient (U10) et
- * l'ornement neuf du §1 ter n'entrent pas, faute d'élément nommé ou validé.
+ * états vides acceptent les deux ornements nommés ; l'ornement neuf du §1 ter
+ * n'entre pas, faute d'élément validé. Le hub patient (U10) reçoit le
+ * bandeau `quiet-sweep` (variante C du prototype PAT-3 révisé, complément
+ * DOC-21 du 2026-11-25 ; micro-lot COM-2).
  * Aucun motif (`patterns/`) n'est retenu par [[D-481]].
  */
 
@@ -41,6 +46,7 @@ const ORNEMENTS = {
   'linked-loops-muted': { fichier: `${KIT}/ornaments/linked-loops-muted.svg`, largeur: 320, hauteur: 240 },
   'nutrition-sprout': { fichier: `${KIT}/ornaments/nutrition-sprout.svg`, largeur: 480, hauteur: 220 },
   'neural-branches': { fichier: `${KIT}/ornaments/neural-branches.svg`, largeur: 320, hauteur: 260 },
+  'quiet-sweep': { fichier: `${KIT}/ornaments/quiet-sweep.svg`, largeur: 1200, hauteur: 180 },
 } as const satisfies Record<string, Ornement>;
 
 /**
@@ -67,6 +73,8 @@ export const LIEN_DECOR = {
   'entete-fiche': { nature: 'ornement', elements: ['alliance-arcs', 'linked-loops-muted'] },
   /** États vides réels (X03), chaque lot ; jamais une erreur ni un chargement. */
   'etat-vide': { nature: 'ornement', elements: ['nutrition-sprout', 'neural-branches'] },
+  /** Hub patient « Mon parcours » (U10), lot PAT-3b ; bandeau en tête de carte. */
+  'hub-patient': { nature: 'bandeau', elements: ['quiet-sweep'] },
 } as const;
 
 export type EmplacementDecor = keyof typeof LIEN_DECOR;
@@ -83,7 +91,8 @@ export type LienDecorProps =
   | { emplacement: EmplacementFond; element?: never; className?: never }
   | { emplacement: 'deux-voix'; element?: ElementsDe<'deux-voix'>; className?: string }
   | { emplacement: 'entete-fiche'; element: ElementsDe<'entete-fiche'>; className?: string }
-  | { emplacement: 'etat-vide'; element: ElementsDe<'etat-vide'>; className?: string };
+  | { emplacement: 'etat-vide'; element: ElementsDe<'etat-vide'>; className?: string }
+  | { emplacement: 'hub-patient'; element?: ElementsDe<'hub-patient'>; className?: string };
 
 const SOCLE = 'pointer-events-none select-none print:hidden';
 
@@ -158,6 +167,27 @@ export function LienDecor(props: LienDecorProps) {
   const element = props.element ?? (entree.elements.length === 1 ? entree.elements[0] : undefined);
   if (!element || !(entree.elements as readonly string[]).includes(element)) return null;
   const ornement: Ornement = ORNEMENTS[element as keyof typeof ORNEMENTS];
+
+  if (entree.nature === 'bandeau') {
+    // Hauteur fixée par la décision (52 px, 64 px dès `md`) ; recadré, jamais
+    // étiré : `cover` calé à gauche, sans rapport d'aspect imposé. Aucune
+    // largeur posée : un bloc à largeur automatique remplit son parent et
+    // s'élargit sous les marges négatives de l'appelant (bord à bord) ; un
+    // `w-full` le décalerait sans l'élargir (constat PR-Agent sur #2364).
+    return (
+      <span
+        aria-hidden="true"
+        data-lien-decor={props.emplacement}
+        data-element={element}
+        className={`${SOCLE} block h-[52px] bg-no-repeat md:h-16 ${classesAdmises(props.className)}`.trim()}
+        style={{
+          backgroundImage: `url('${ornement.fichier}')`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'left center',
+        }}
+      />
+    );
+  }
 
   return (
     <span
