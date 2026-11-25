@@ -12032,3 +12032,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** Reprendre ces pages après chaque série de merges.
 
 **Ouvert.** D-403 §6 contre le §10.2 de l'audit des 12 besoins (recueil partiel du besoin 1) : à vérifier dans le code. Suivi automatique des pages non activable.
+
+## 2026-11-25 — Refonte Lien, COM-1 : primitive `LienDecor`
+
+**Fait.** #2339 mergée (`b39c140e`) : `LienDecor`, seule porte du décor du kit (`aria-hidden`, sans pointeur, masquée à l'impression, sans mouvement), éléments nommés de D-481 §1 bis seuls ; banc de réception et garde du §1 quater. Choix du responsable : P04 les deux motifs, U10 hors lot, X03 les deux ornements. Deux constats PR-Agent corrigés (filtre de classes) ; `origin/main` fusionné sur arbitrage D-518.
+
+**Écarté.** Garde ajoutée à `BANCS_BALAYAGE` (toucherait le contrôle de fusion) ; rendu par `<img>` (dérogation de lint).
+
+**Prochaine action.** Poses par lots : PRA-2, PAT-2, PAT-5, PAT-6, PRA-3a.
+
+**Ouvert.** Élément de U10 ; prototype PRA-3a ; seuil 768 px de l'entrée patient.
