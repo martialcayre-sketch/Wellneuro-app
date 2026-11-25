@@ -153,6 +153,37 @@ describe('EvolutionPanel', () => {
     expect(screen.queryByText('30')).toBeNull();
   });
 
+  it('changement de dossier : la réponse du dossier précédent, arrivée en retard, est ignorée', async () => {
+    let libererA: (() => void) | undefined;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        const u = String(url);
+        if (u.includes('PAT_A') && u.startsWith('/api/praticien/evolution')) {
+          await new Promise<void>((resoudre) => {
+            libererA = resoudre;
+          });
+          return { ok: true, status: 200, json: async () => ({ ok: true, planche }) };
+        }
+        if (u.startsWith('/api/praticien/evolution')) {
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({ ok: true, planche: { colonnes: [], lignes: [], introuvablesParColonne: [] } }),
+          };
+        }
+        return { ok: true, status: 200, json: async () => ({ ok: true, resultats: [], series: [] }) };
+      }),
+    );
+    const { rerender } = render(<EvolutionPanel idPatient="PAT_A" />);
+    rerender(<EvolutionPanel idPatient="PAT_B" />);
+    expect(await screen.findByText('Aucun épisode confirmé pour l’instant.')).toBeTruthy();
+    libererA?.();
+    await new Promise((r) => setTimeout(r, 0));
+    expect(screen.queryByText('Instrument A')).toBeNull();
+    expect(screen.getByText('Aucun épisode confirmé pour l’instant.')).toBeTruthy();
+  });
+
   it('une lecture en échec se dit, jamais « aucune passation »', async () => {
     repondre({ status: 500, corps: { ok: false } }, { status: 503, corps: { ok: false, reason: 'cb_resultats_desactives' } });
     render(<EvolutionPanel idPatient="PAT_1" />);

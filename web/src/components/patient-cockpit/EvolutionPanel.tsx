@@ -7,7 +7,7 @@
 // interprète ; l'écran montre. Les passations se rangent par jalon ; la
 // biologie, à la date de prélèvement, une ligne par analyte et par unité.
 
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { EncartRefusD560 } from '@/components/patient-cockpit/EncartRefusD560';
 import { LIBELLES_MOTIF_NON_COMPARABILITE } from '@/components/patient-cockpit/EstimeMesurePanel';
 import { useChiffresMasques, ValeurMasquee } from '@/components/patient-cockpit/ChiffresMasques';
@@ -178,15 +178,23 @@ export function EvolutionPanel({ idPatient }: { idPatient: string }) {
   const [passations, setPassations] = useState<Etat<PlanchePassations>>({ lecture: 'chargement' });
   const [biologie, setBiologie] = useState<EtatBiologie>({ lecture: 'chargement' });
 
-  const charger = useCallback(async () => {
+  // UNE LECTURE PAR DOSSIER, ET SEULEMENT LA SIENNE. Le panneau peut rester
+  // monté d'un dossier à l'autre : l'état repart à « chargement », et une
+  // réponse arrivée après le changement de dossier est ignorée — sans quoi
+  // les valeurs du dossier précédent s'afficheraient sous le nouveau.
+  useEffect(() => {
+    let perimee = false;
+    setPassations({ lecture: 'chargement' });
+    setBiologie({ lecture: 'chargement' });
     const id = encodeURIComponent(idPatient);
     const lirePassations = async () => {
       try {
         const reponse = await fetch(`/api/praticien/evolution?idPatient=${id}`);
         const corps = (await reponse.json()) as { ok: boolean; planche?: PlanchePassations };
+        if (perimee) return;
         setPassations(reponse.ok && corps.ok && corps.planche ? { lecture: 'ok', donnees: corps.planche } : { lecture: 'erreur' });
       } catch {
-        setPassations({ lecture: 'erreur' });
+        if (!perimee) setPassations({ lecture: 'erreur' });
       }
     };
     const lireBiologie = async () => {
@@ -198,6 +206,7 @@ export function EvolutionPanel({ idPatient }: { idPatient: string }) {
           resultats?: { analyteCode: string; analyteLibelle: string }[];
           series?: SerieBiologieLue[];
         };
+        if (perimee) return;
         if (!reponse.ok && corps.reason === 'cb_resultats_desactives') {
           setBiologie({ lecture: 'desactivee' });
           return;
@@ -209,15 +218,15 @@ export function EvolutionPanel({ idPatient }: { idPatient: string }) {
         const libelles = new Map((corps.resultats ?? []).map((r) => [r.analyteCode, r.analyteLibelle]));
         setBiologie({ lecture: 'ok', donnees: construirePlancheBiologie(corps.series ?? [], libelles) });
       } catch {
-        setBiologie({ lecture: 'erreur' });
+        if (!perimee) setBiologie({ lecture: 'erreur' });
       }
     };
-    await Promise.all([lirePassations(), lireBiologie()]);
+    void lirePassations();
+    void lireBiologie();
+    return () => {
+      perimee = true;
+    };
   }, [idPatient]);
-
-  useEffect(() => {
-    void charger();
-  }, [charger]);
 
   return (
     <section aria-labelledby="evolution-titre" className="grid gap-4">

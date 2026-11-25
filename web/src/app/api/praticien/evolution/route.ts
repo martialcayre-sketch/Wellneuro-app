@@ -88,7 +88,10 @@ export async function GET(req: Request): Promise<NextResponse<EvolutionApiRespon
 
     return NextResponse.json({ ok: true, planche });
   } catch (err) {
-    console.error('[praticien/evolution GET]', err instanceof Error ? err.message : String(err));
+    // Le nom et le code seuls : le message d'une erreur Prisma peut reprendre
+    // les arguments de la requête (identifiants du dossier et des passations).
+    const code = (err as { code?: unknown })?.code;
+    console.error('[praticien/evolution GET]', err instanceof Error ? err.name : 'erreur', typeof code === 'string' ? code : '');
     return NextResponse.json({ ok: false, reason: 'exception', error: 'Erreur technique.' }, { status: 500 });
   }
 }
