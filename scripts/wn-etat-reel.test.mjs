@@ -24,7 +24,12 @@ import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-import { construireRapport, lireRegistreCertification } from './wn-etat-reel.mjs';
+import {
+  confrontationsMenees,
+  construireRapport,
+  ligneDeTete,
+  lireRegistreCertification,
+} from './wn-etat-reel.mjs';
 
 const SCRIPT = path.join(path.dirname(fileURLToPath(import.meta.url)), 'wn-etat-reel.mjs');
 const REPO_ROOT = path.join(path.dirname(SCRIPT), '..');
@@ -352,4 +357,82 @@ test("jamais d'écriture de fichier : ni writeFileSync, ni writeMachineState, nu
   assert.doesNotMatch(SOURCE, /fs\.write\(/);
   assert.doesNotMatch(SOURCE, /fs\.appendFile/);
   assert.doesNotMatch(SOURCE, /writeMachineState/);
+});
+
+// ── « Non confronté » : une garde qui n'a rien pu comparer ne compte pas zéro ─
+//
+// Une confrontation sans matière (état machine absent ou illisible, date
+// manquante, vue absente, campagne active introuvable) ne produit aucun écart ;
+// le résumé l'annonçait pourtant « 3 confrontées … 0 écart(s) ». La consigne
+// d'hygiène de la passe cloud (`ORCHESTRATEUR_PASSE.md` §5) exige « non
+// confronté ». Tests purs, sans horloge ni réseau ; puis le câblage réel.
+
+const DATES_VALIDES = { validation: { last_checked_at: '2026-01-01T00:00:00Z' }, updated_at: '2026-01-02T00:00:00Z' };
+
+test('état machine vide (absent ou illisible) : « non confronté », jamais « 0 écart »', () => {
+  const confrontations = confrontationsMenees({}, { vueSurDisque: 'v', vueAttendue: 'v', campagneActiveSurDisque: true });
+  assert.deepEqual(confrontations, {
+    etatLu: false,
+    menees: [],
+    nonMenees: ['vue dérivée', 'cohérence des dates', 'lot courant'],
+  });
+  const ligne = ligneDeTete({ confrontations, ecarts: [] });
+  assert.equal(ligne, 'wn-etat-reel : 6 dimensions observées, non confronté (.wn/state.json absent ou illisible)');
+  assert.doesNotMatch(ligne, /écart/);
+});
+
+test('les trois confrontations menées : la ligne de tête reste celle d’avant', () => {
+  const confrontations = confrontationsMenees(
+    { ...DATES_VALIDES, active_campaign: 'c' },
+    { vueSurDisque: 'v', vueAttendue: 'v', campagneActiveSurDisque: true },
+  );
+  assert.deepEqual(confrontations.nonMenees, []);
+  assert.equal(
+    ligneDeTete({ confrontations, ecarts: [] }),
+    'wn-etat-reel : 6 dimensions observées, 3 confrontées (vue dérivée, cohérence des dates, lot courant), 0 écart(s) avec .wn/state.json',
+  );
+});
+
+test('confrontation partielle : chacune nommée, « non confronté » pour celles sans matière', () => {
+  // Sans `updated_at`, la cohérence des dates n'a rien à comparer ; campagne
+  // active absente du disque : le lot courant non plus.
+  const confrontations = confrontationsMenees(
+    { validation: { last_checked_at: '2026-01-01T00:00:00Z' }, active_campaign: 'c' },
+    { vueSurDisque: 'v', vueAttendue: 'w', campagneActiveSurDisque: false },
+  );
+  assert.deepEqual(confrontations.menees, ['vue dérivée']);
+  assert.deepEqual(confrontations.nonMenees, ['cohérence des dates', 'lot courant']);
+  assert.equal(
+    ligneDeTete({ confrontations, ecarts: [{}] }),
+    'wn-etat-reel : 6 dimensions observées, 1/3 confrontées (vue dérivée), non confronté : cohérence des dates, lot courant ; 1 écart(s) avec .wn/state.json',
+  );
+
+  const aucune = confrontationsMenees({ ...DATES_VALIDES, validation: { last_checked_at: 'pas une date' } }, {});
+  assert.deepEqual(aucune.menees, []);
+  assert.match(ligneDeTete({ confrontations: aucune, ecarts: [] }), /0\/3 confrontées, non confronté : vue dérivée, cohérence des dates, lot courant ;/);
+});
+
+test('câblage : `.wn/state.json` absent puis illisible → le rapport dit etatLu=false', () => {
+  const racine = initDepotMinimal({ ...DATES_VALIDES });
+  try {
+    const present = construireRapport(racine);
+    // Sans campagne active ni vue sur disque, seule la cohérence des dates a
+    // de quoi comparer — ce que l'ancien résumé comptait pour trois.
+    assert.equal(present.confrontations.etatLu, true);
+    assert.deepEqual(present.confrontations.menees, ['cohérence des dates']);
+    assert.deepEqual(present.confrontations.nonMenees, ['vue dérivée', 'lot courant']);
+
+    const fichier = path.join(racine, '.wn', 'state.json');
+    fs.rmSync(fichier);
+    assert.equal(construireRapport(racine).confrontations.etatLu, false, 'état absent');
+
+    fs.mkdirSync(path.dirname(fichier), { recursive: true });
+    fs.copyFileSync(path.join(racine, 'web', 'prisma', 'migrations', '20260101000000_init', 'migration.sql'), fichier);
+    const illisible = construireRapport(racine);
+    assert.equal(illisible.confrontations.etatLu, false, 'état illisible (pas du JSON)');
+    assert.deepEqual(illisible.ecarts, []);
+    assert.match(ligneDeTete(illisible), /non confronté/);
+  } finally {
+    fs.rmSync(racine, { recursive: true, force: true });
+  }
 });
