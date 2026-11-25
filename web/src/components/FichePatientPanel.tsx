@@ -1574,8 +1574,19 @@ export function FichePatientPanel({
     refsOnglets.current[suivant]?.focus();
   };
 
+  // Tant que le dossier n'est pas affiché, le nom n'est pas connu : la page
+  // garde un titre, T-95 (PRA-6o, [[D-488]] DOC-22), au style du h1 du nom.
+  const titreSansDossier = (
+    <h1 className="font-display text-xl font-bold tracking-[-0.02em] text-foreground">Fiche patient</h1>
+  );
+
   if (loading) {
-    return <div className="text-base text-muted-foreground">Chargement de la fiche patient...</div>;
+    return (
+      <div className="flex flex-col gap-3">
+        {titreSansDossier}
+        <div className="text-base text-muted-foreground">Chargement de la fiche patient...</div>
+      </div>
+    );
   }
 
   if (!data || 'unavailable' in data) {
@@ -1587,19 +1598,27 @@ export function FichePatientPanel({
           ? 'Votre session a expiré. Déconnectez-vous puis reconnectez-vous.'
           : null;
     if (message) {
-      return <div className="bg-muted border border-border rounded-xl p-4 text-base text-muted-foreground">{message}</div>;
+      return (
+        <div className="flex flex-col gap-3">
+          {titreSansDossier}
+          <div className="bg-muted border border-border rounded-xl p-4 text-base text-muted-foreground">{message}</div>
+        </div>
+      );
     }
     return (
-      <div role="alert" className="flex flex-wrap items-center gap-3 bg-muted border border-border rounded-xl p-4 text-base text-muted-foreground">
-        <span className="min-w-0">La fiche patient n’a pas pu être lue.</span>
-        <button
-          ref={relectureFiche.boutonRef}
-          type="button"
-          onClick={() => void relectureFiche.relire(chargerFiche)}
-          className="ml-auto min-h-9 shrink-0 rounded-lg border border-accent px-3 py-1 text-xs font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
-        >
-          Réessayer
-        </button>
+      <div className="flex flex-col gap-3">
+        {titreSansDossier}
+        <div role="alert" className="flex flex-wrap items-center gap-3 bg-muted border border-border rounded-xl p-4 text-base text-muted-foreground">
+          <span className="min-w-0">La fiche patient n’a pas pu être lue.</span>
+          <button
+            ref={relectureFiche.boutonRef}
+            type="button"
+            onClick={() => void relectureFiche.relire(chargerFiche)}
+            className="ml-auto min-h-9 shrink-0 rounded-lg border border-accent px-3 py-1 text-xs font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+          >
+            Réessayer
+          </button>
+        </div>
       </div>
     );
   }

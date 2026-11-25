@@ -4337,3 +4337,70 @@ describe('FichePatientPanel — hiérarchie des titres, sans saut (PRA-6n)', () 
     expect(within(dialogue).getByRole('heading', { level: 3, name: 'Narratif patient' })).toBeTruthy();
   });
 });
+
+// PRA-6o ([[D-488]] DOC-22, T-95) : tant que le dossier n'est pas affiché, le
+// nom n'est pas connu ; la page garde un titre, « Fiche patient », au-dessus
+// du message, qui ne change pas. Une fois la fiche lue, le titre est le nom.
+describe('FichePatientPanel — titre des états sans dossier (PRA-6o)', () => {
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  /** Sert `reponse` à la lecture de la fiche (`/api/praticien/equilibre`), le harnais au reste. */
+  function servirFiche(reponse: () => Promise<unknown>) {
+    const base = stubFetch({});
+    vi.stubGlobal('fetch', vi.fn((input: unknown) =>
+      String(input).includes('/api/praticien/equilibre') ? reponse() : base(input),
+    ));
+  }
+  const contrat = (payload: unknown, status: number) =>
+    () => Promise.resolve({ ok: false, status, json: () => Promise.resolve(payload) });
+  const rendre = () =>
+    render(
+      <C5FeatureProvider enabled={false}>
+        <FichePatientPanel idPatient="PAT001" />
+      </C5FeatureProvider>,
+    );
+  /** Un seul h1, « Fiche patient », en tête, avant le message. */
+  function attendreTitreSansDossier(message: string) {
+    const titres = screen.getAllByRole('heading', { level: 1 });
+    expect(titres.map(t => t.textContent)).toEqual(['Fiche patient']);
+    const corps = screen.getByText(message);
+    expect(titres[0].compareDocumentPosition(corps) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  }
+
+  it('pendant le chargement', () => {
+    servirFiche(() => new Promise(() => {}));
+    rendre();
+    attendreTitreSansDossier('Chargement de la fiche patient...');
+  });
+
+  it('patient introuvable', async () => {
+    servirFiche(contrat({ unavailable: true, reason: 'patient_not_found' }, 404));
+    rendre();
+    await screen.findByText('Patient introuvable.');
+    attendreTitreSansDossier('Patient introuvable.');
+  });
+
+  it('session expirée', async () => {
+    servirFiche(contrat({ unavailable: true, reason: 'unauthenticated' }, 401));
+    rendre();
+    const message = 'Votre session a expiré. Déconnectez-vous puis reconnectez-vous.';
+    await screen.findByText(message);
+    attendreTitreSansDossier(message);
+  });
+
+  it('échec de lecture : le titre reste hors de l’alerte, puis laisse la place au nom', async () => {
+    stubFetch({ equilibreEchecs: 1 });
+    rendre();
+    const alerte = await screen.findByRole('alert');
+    attendreTitreSansDossier('La fiche patient n’a pas pu être lue.');
+    expect(within(alerte).queryByRole('heading')).toBeNull();
+
+    fireEvent.click(within(alerte).getByRole('button', { name: 'Réessayer' }));
+    await screen.findByRole('heading', { level: 1, name: 'Sophie Nicola' });
+    expect(screen.queryByRole('heading', { level: 1, name: 'Fiche patient' })).toBeNull();
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
+  });
+});
