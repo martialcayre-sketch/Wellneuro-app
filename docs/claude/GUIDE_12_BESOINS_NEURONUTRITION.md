@@ -71,21 +71,23 @@ L'efficacité des fonctions cérébrales et la synthèse des neurotransmetteurs
 dépendent des horloges biologiques et de la répartition des nutriments dans
 la journée.
 
-- **Variables d'entrée** : ratio protéines/glucides des repas, durée du
-  jeûne nocturne (nutripériode).
-- **Source questionnaire depuis le 2026-07-28** : sous-score `RYTHME_CHRONO` de
-  l'Enquête alimentaire SIIN (`Q_ALI_01`) — `SIIN52` et `SIIN53` (protéines et
-  ratio du petit déjeuner), `SIIN54` (jeûne nocturne, seuil ≥ 10 h, celui de la
-  règle ci-dessous), `SIIN55` (répartition de la charge sur la journée). Soit
-  7 points, DISTINCTS de la catégorie d'affichage `RYTHME_ALIMENTAIRE` qui en
-  compte 10. En sont écartés `SIIN50` (régularité des prises) et `SIIN51`
-  (restauration rapide) : ni l'un ni l'autre ne relève des deux variables
-  d'entrée ni de la répartition des nutriments. Servi seulement quand les quatre
-  items sont répondus — partiel vaut « pas de mesure », jamais une mesure basse.
-  Le besoin reste non évalué tant que `WN_ALI_01_SIIN57` est éteint.
-- **Règle de décision** : prescrire des protéines le matin (dopamine) et des
-  glucides complexes en fin de journée (sérotonine), en assurant un jeûne
-  nocturne d'au moins 10 à 12h.
+- **Section réécrite sur le dossier de preuve signé** (`D-564`, 2026-11-25, `D-312` §3). Les claims, valeurs et sources sont au dossier privé du besoin 3 ; ici, les mécanismes seulement (`D-251` §4).
+- **Variables d'entrée** : le sous-score `RYTHME_CHRONO` de l'Enquête
+  alimentaire SIIN (`Q_ALI_01`), quatre items, distinct de la catégorie
+  d'affichage `RYTHME_ALIMENTAIRE`, niveau B, référentiel interne sans
+  publication primaire ; servi seulement quand les quatre items sont répondus —
+  partiel vaut « pas de mesure », jamais une mesure basse. Les instruments
+  publiés décrits au dossier restent hors score.
+- **Règle de décision** : aucune. La règle précédente (composition des repas
+  selon l'heure, rattachée à des neurotransmetteurs, et jeûne nocturne) est
+  **non signable**, retirée et non appliquée ; son constat documentaire est
+  signé à part (`D-564` §1).
+- **Références citées** : identifiants au dossier privé ; seuls les claims
+  cités par une position signée fondent un constat (`D-564` §5.4).
+- **Population visée et « non évalué »** : `D-564` §4.
+- **Ouverts, en l'état** : la règle de priorité `PRIO-PON-01` et la lecture
+  « discordance » de `D-040` (`D-564` §6).
+- **Application** : aucun changement de calcul ni de version (`D-548` §4, amendée le 2026-11-25) ; mentions « non évalué » à l'affichage avec le prochain lot de code.
 
 ---
 
@@ -168,10 +170,23 @@ cerveau) et les phases de repos (qui restaurent).
 La respiration est le carrefour physiologique et émotionnel pour équilibrer
 le système nerveux autonome.
 
-- **Variables d'entrée** : fréquence cardiaque, stress perçu, présence de
-  soupirs/bâillements.
-- **Règle de décision** : intégrer des recommandations de mécanique
-  ventilatoire (cohérence cardiaque, yoga, étirements).
+- **Section réécrite sur le dossier de preuve signé** (`D-566`, 2026-11-25, `D-312` §3). Les claims, valeurs et sources sont au dossier privé du besoin 6 ; ici, les mécanismes seulement (`D-251` §4).
+- **Variables d'entrée** : aucune source de score ; le besoin reste
+  « non mesuré », jamais un zéro. Aucune fréquence cardiaque n'est saisie ; le
+  stress perçu et un item de soupir sont servis au besoin 9. Les mesures
+  décrites au dossier (plaintes respiratoires fonctionnelles, dyspnée, schéma
+  respiratoire, variabilité cardiaque, oxymétrie) sont des instruments
+  décrits, hors score.
+- **Règle de décision** : aucune. La règle précédente (recommandations de
+  mécanique ventilatoire) est **non signable**, retirée et non appliquée ; son
+  constat documentaire est signé à part (`D-566` §1). Les signaux d'adressage
+  (essoufflement inhabituel, douleur thoracique) sont inchangés (`DC-12`).
+- **Références citées** : identifiants au dossier privé ; seuls les claims
+  cités par une position signée fondent un constat (`D-566` §5.4).
+- **Population visée et « non évalué »** : `D-566` §4.
+- **Ouverts** : le recouvrement avec les items servis aux besoins 4 et 9 ; la
+  recherche des précautions et contre-indications (`D-566` §6).
+- **Application** : aucune source gagnée, donc aucun changement de version (`D-548` §4, amendée le 2026-11-25).
 
 ---
 
@@ -182,19 +197,42 @@ le système nerveux autonome.
 Le cerveau exige des stimulations via les cinq sens (lumière, sons, toucher,
 odeurs) pour assurer la croissance et la maintenance du système nerveux.
 
-- **Variables d'entrée** : analyse du mode de vie (exposition à la lumière
-  du jour, contacts sensoriels).
-- **Règle de décision** : proposer des actions sensorielles compensatrices
-  (luminothérapie, aromathérapie, musicothérapie).
+- **Section réécrite sur le dossier de preuve signé** (`D-569`, 2026-11-25, `D-312` §3). Les claims, valeurs et sources sont au dossier privé du besoin 7 ; ici, les mécanismes seulement (`D-251` §4).
+- **Variables d'entrée** : aucune source de score ; le besoin reste
+  « non mesuré », jamais un zéro. L'exposition à la lumière du jour et les
+  « contacts sensoriels » ne sont pas définis au guide. Les instruments décrits
+  au dossier (exposition lumineuse, odorat) sont hors score.
+- **Règle de décision** : aucune. La règle précédente (actions sensorielles
+  compensatrices) est **non signable**, retirée et non appliquée ; son constat
+  documentaire est signé à part (`D-569` §1).
+- **Références citées** : identifiants au dossier privé ; seuls les claims
+  cités par une position signée fondent un constat (`D-569` §5.3).
+- **Population visée et « non évalué »** : `D-569` §4.
+- **Ouvert** : la définition des « contacts sensoriels » (`D-569` §6).
+- **Application** : aucune source gagnée, donc aucun changement de version (`D-548` §4, amendée le 2026-11-25).
 
 ### 8. Se nourrir de sensations plaisantes
 
 Nécessité d'activer les boucles dopaminergiques et de récompense par le
 plaisir sensoriel et la satisfaction, pour contrer l'anhédonie.
 
-- **Variables d'entrée** : échelle HAD (sous-échelle Dépression, anhédonie).
-- **Règle de décision** : si score HAD-D > 10, recommander la réintégration
-  de « 3 petits plaisirs par jour » en pleine conscience.
+- **Section réécrite sur le dossier de preuve signé** (`D-567`, 2026-11-25, `D-312` §3). Les claims, valeurs et sources sont au dossier privé du besoin 8 ; ici, les mécanismes seulement (`D-251` §4).
+- **Variables d'entrée** : la sous-échelle Dépression de la HAD (`Q_NEU_11`,
+  sous-score `D`), niveau A, seule source ; elle n'est pas une mesure de
+  l'anhédonie au sens large. Les échelles de plaisir et d'anhédonie décrites au
+  dossier sont hors score.
+- **Règle de décision** : aucune. La règle précédente (seuil sur la HAD-D,
+  réintégration de petits plaisirs quotidiens en pleine conscience) est
+  **non signable**, retirée et non appliquée ; le seuil du guide est
+  « non évalué pour cet usage » ; son constat documentaire est signé à part
+  (`D-567` §1).
+- **Références citées** : identifiants au dossier privé ; seuls les claims
+  cités par une position signée fondent un constat (`D-567` §5.4).
+- **Population visée et « non évalué »** : `D-567` §4.
+- **Ouverts** : la position du responsable sur l'affect positif (lecture
+  directe, à sa signature) ; les cinq règles d'orientation qui lisent la HAD-D
+  (`D-567` §6).
+- **Application** : aucun changement de calcul ni de version (`D-548` §4, amendée le 2026-11-25).
 
 ### 9. Les sensations-émotions fondamentales (gestion du stress)
 
@@ -240,12 +278,22 @@ Besoin cognitif de schémas de pensée constructifs (dopamine/vitalité) et
 d'un esprit apaisé, capable de prendre du recul sans agitation mentale
 (sérotonine/sérénité).
 
-- **Variables d'entrée** : questionnaires DNSM (Dopamine, Noradrénaline,
-  Sérotonine, Mélatonine). Biomarqueurs : HVA, MHPG, 5-HIAA (urines), ratio
-  Kynurénine/Tryptophane.
-- **Règle de décision** : si score DNSM > 18 sur un axe, compenser via des
-  précurseurs en acides aminés (tyrosine, tryptophane) et des exercices
-  mentaux (méditation, rééducation cognitive).
+- **Section réécrite sur le dossier de preuve signé** (`D-568`, 2026-11-25, `D-312` §3). Les claims, valeurs et sources sont au dossier privé du besoin 10 ; ici, les mécanismes seulement (`D-251` §4).
+- **Variables d'entrée** : le questionnaire du cabinet (`Q_INF_03`), sous-scores
+  dopamine, noradrénaline et sérotonine, niveau B, sans validation
+  psychométrique indépendante ; le sous-score mélatonine est lu au besoin 12.
+  Aucune mesure publiée n'est servie ; aucun biomarqueur n'entre au score.
+- **Règle de décision** : aucune. La règle précédente (seuil sur un axe,
+  compensation par précurseurs en acides aminés et exercices mentaux) est
+  **non signable**, retirée et non appliquée ; le seuil du guide est
+  « non évalué pour cet usage » ; son constat documentaire est signé à part
+  (`D-568` §1).
+- **Références citées** : identifiants au dossier privé ; seuls les claims
+  cités par une position signée fondent un constat (`D-568` §5.5).
+- **Population visée et « non évalué »** : `D-568` §4.
+- **Ouvert** : le code qui lit ces sous-scores reste sous ses décisions
+  propres (`D-568` §6).
+- **Application** : aucun changement de calcul ni de version (`D-548` §4, amendée le 2026-11-25).
 
 ### 11. Les besoins de sens et de valeurs
 
@@ -253,23 +301,41 @@ Besoin d'accomplissement (Maslow). L'esprit a besoin d'un engagement
 fluide, d'altruisme et de bienveillance pour atteindre l'état de flow et le
 bonheur.
 
-- **Variables d'entrée** : évaluation clinique du niveau de conscience et
-  d'engagement. Biomarqueur systémique de neuroplasticité : BDNF.
-- **Règle de décision** : conditionnel — cette étape ne peut être consolidée
-  que si les besoins 1, 2 et 3 (et par extension la classe 3) sont
-  stabilisés. Recommander des pratiques de pleine conscience.
+- **Section réécrite sur le dossier de preuve signé** (`D-570`, 2026-11-25, `D-312` §3). Les claims, valeurs et sources sont au dossier privé du besoin 11 ; ici, les mécanismes seulement (`D-251` §4).
+- **Variables d'entrée** : aucune source de score ; le besoin reste
+  « non mesuré », jamais un zéro. Les instruments décrits au dossier (sens de
+  la vie, engagement, pleine conscience) sont hors score ; le BDNF
+  périphérique est « non évalué » pour un usage clinique individuel.
+- **Règle de décision** : aucune. La règle précédente (pratiques de pleine
+  conscience) et la condition « stabilisé » sont **non signables**, retirées et
+  non appliquées ; leurs constats documentaires sont signés à part
+  (`D-570` §1). Aucune règle d'orientation n'est modifiée.
+- **Références citées** : identifiants au dossier privé ; seuls les claims
+  cités par une position signée fondent un constat (`D-570` §5.3).
+- **Population visée et « non évalué »** : `D-570` §4.
+- **Ouvert** : l'issue du besoin (score, constat après entretien, ou les
+  deux) (`D-570` §6).
+- **Application** : aucune source gagnée, donc aucun changement de version (`D-548` §4, amendée le 2026-11-25).
 
 ### 12. Les besoins de reliance
 
 Besoin d'être connecté sainement à soi-même (congruence), aux autres
 (couple, amis, société) et à son écosystème (nature, transcendance).
 
-- **Variables d'entrée** : échelle d'évaluation analogique (EVA) du
-  bien-être au travail/social, questionnaire Mélatonine (isolement,
-  marginalisation).
-- **Règle de décision** : si déconnexion détectée, utiliser l'éducation
-  thérapeutique pour relancer le lien social et la connexion aux rythmes
-  universels (chronobiologie).
+- **Section réécrite sur le dossier de preuve signé** (`D-565`, 2026-11-25, `D-312` §3). Les claims, valeurs et sources sont au dossier privé du besoin 12 ; ici, les mécanismes seulement (`D-251` §4).
+- **Variables d'entrée** : la sous-échelle « Relation aux autres » du
+  questionnaire de mode de vie (`Q_MOD_01`), niveau B, cible de la décision du
+  2026-10-18 appliquée par `D-565` ; le sous-score `ME` de `Q_INF_03` quitte
+  le besoin. Les mesures publiées décrites au dossier (solitude, soutien
+  social, connexion à la nature) sont hors score ; aucun biomarqueur n'entre
+  au score.
+- **Règle de décision** : aucune. La règle précédente (éducation
+  thérapeutique si « déconnexion ») est **non signable**, retirée et non
+  appliquée ; son constat documentaire est signé à part (`D-565` §1).
+- **Références citées** : identifiants au dossier privé ; seuls les claims
+  cités par une position signée fondent un constat (`D-565` §5.3).
+- **Population visée et « non évalué »** : `D-565` §4.
+- **Application** : lot de code distinct, un seul changement de version (`D-565` §5.2, `D-548` §4 amendée le 2026-11-25) ; jusqu'à son déploiement le besoin 12 lit `ME`.
 
 ---
 
