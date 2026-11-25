@@ -39,7 +39,9 @@ Aucun écran ne l'emploie dans ce lot.
   de mouvement. `classesAdmises` retire des classes de l'appelant le mouvement
   (`animate-`, `transition`, `duration-`, `ease-`, `delay-`, `will-change-`, variantes
   `motion-safe:`/`motion-reduce:`), le pointeur, la sélection, l'empilement (`z-`) et les
-  variantes `print:`. Un fond n'accepte pas de classes.
+  variantes `print:`. Le découpage ignore les `:` entre crochets : propriétés et variantes
+  arbitraires (`[animation:…]`, `[pointer-events:auto]`, `[@media_print]:`) sont retirées
+  aussi (constat PR-Agent sur la première tête, corrigé). Un fond n'accepte pas de classes.
 - **Refus** : au typage (union discriminée, `@ts-expect-error` au banc) et à l'exécution
   (rend `null`, clé héritée comprise par `Object.hasOwn`).
 - **Garde du §1 quater** (`LienDecor.guard.test.ts`, à part : un banc qui balaie une

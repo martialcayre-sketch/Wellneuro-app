@@ -101,6 +101,15 @@ describe('LienDecor — aucun mouvement', () => {
           'select-text z-10 -z-10 md:z-20 print:block will-change-transform opacity-80',
       ),
     ).toBe('w-32 mx-auto opacity-80');
+    // Propriétés et variantes arbitraires : le `:` entre crochets ne coupe pas
+    // la classe (constat PR-Agent sur #2339).
+    expect(
+      classesAdmises(
+        'w-[12rem] [animation:spin_1s_linear_infinite] md:[pointer-events:auto] [transition:opacity_1s] ' +
+          '![z-index:50] [user-select:text] [will-change:transform] [@media_print]:block ' +
+          '[@media(prefers-reduced-motion:no-preference)]:opacity-50 [mask-image:none] md:w-[9rem]',
+      ),
+    ).toBe('w-[12rem] [mask-image:none] md:w-[9rem]');
     const noeud = rendre({ emplacement: 'deux-voix', className: 'my-4 animate-spin print:block pointer-events-auto' })
       .noeud!;
     expect(noeud.className).toContain('my-4');

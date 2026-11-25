@@ -92,12 +92,34 @@ const SOCLE = 'pointer-events-none select-none print:hidden';
  * mouvement, pointeur, impression, empilement.
  */
 const UTILITAIRE_INTERDIT = /^!?-?(?:animate-|transition|duration-|ease-|delay-|will-change-|pointer-events-|select-|z-)/;
+/** Propriété arbitraire (`[animation:…]`, `[pointer-events:auto]`…). */
+const PROPRIETE_INTERDITE = /^!?\[\s*(?:-webkit-)?(?:animation|transition|pointer-events|user-select|z-index|will-change)\s*:/;
 const VARIANTES_INTERDITES = new Set(['print', 'motion-safe', 'motion-reduce']);
+/** Variante arbitraire (`[@media_print]:`…) qui vise l'impression ou le mouvement. */
+const VARIANTE_ARBITRAIRE_INTERDITE = /^\[.*(?:print|motion).*\]$/;
+
+/** Découpe sur `:` hors des crochets : `[animation:x]` reste un seul segment. */
+function segments(classe: string): string[] {
+  const parties: string[] = [];
+  let profondeur = 0;
+  let courant = '';
+  for (const c of classe) {
+    if (c === '[') profondeur += 1;
+    else if (c === ']') profondeur = Math.max(0, profondeur - 1);
+    if (c === ':' && profondeur === 0) {
+      parties.push(courant);
+      courant = '';
+    } else courant += c;
+  }
+  parties.push(courant);
+  return parties;
+}
 
 function classeAdmise(classe: string): boolean {
-  const parties = classe.split(':');
+  const parties = segments(classe);
   const utilitaire = parties.pop() ?? '';
-  return !parties.some((v) => VARIANTES_INTERDITES.has(v)) && !UTILITAIRE_INTERDIT.test(utilitaire);
+  const varianteInterdite = parties.some((v) => VARIANTES_INTERDITES.has(v) || VARIANTE_ARBITRAIRE_INTERDITE.test(v));
+  return !varianteInterdite && !UTILITAIRE_INTERDIT.test(utilitaire) && !PROPRIETE_INTERDITE.test(utilitaire);
 }
 
 export function classesAdmises(className: string | undefined): string {
