@@ -141,9 +141,10 @@ ingérer après fourniture du PDF par le responsable (`WN-SRC-0825`, `0827`, `08
 BP-27, zinc (évaluateur signé), deux textes libres ingérés le 2026-11-23 sur
 accord du responsable (CC BY) : un chapitre d'ouvrage de référence sur la
 zincémie et une analyse d'enquêtes sur la zincémie et l'inflammation,
-`WN-SRC-0854` et `0855` ; quatre notices seules, `WN-SRC-0856` à `0859`, dont un
-texte à ingérer après fourniture du PDF par le responsable (`WN-SRC-0856`) et
-trois textes faute de licence qui admette le texte),
+`WN-SRC-0854` et `0855`, puis le 2026-11-25, sur le PDF fourni par le
+responsable, une étude d'intervalles de référence de la zincémie,
+`WN-SRC-0856` (CC BY, passages sur le zinc seuls) ; trois notices seules,
+`WN-SRC-0857` à `0859`, faute de licence qui admette le texte),
 dont seuls des extraits ciblés sont ingérés. Les quatorze vidéos de cours du
 praticien, `WN-SRC-0268` à `0281`, sont ingérées depuis le 2026-11-20 comme
 pièces internes (transcription automatique non relue, erreurs d'écoute évidentes

@@ -1,0 +1,10 @@
+- **Mise à jour (2026-11-25, zinc : 23 claims signés et étiquetés, troisième source ingérée)** : lot `bp27-cadrage` (file B). Pas de code, pas de décision `D-xxx` écrite. Forme opaque (`D-251` §4) : identifiants et comptes seulement.
+  - **Signature (2026-11-24)** : les 23 claims de `WN-SRC-0854` et `0855` ont été signés par le responsable. Le constat par conteneur, en lecture seule, compte 23 claims `VALIDE`, un seul signataire et 23 actes de décision au journal.
+  - **Étiquetage (2026-11-24)** : la liste préparée par la session au dossier privé, sous la délégation permanente (`D-325` §5), a été collée dans l'atelier par le responsable lui-même. Le constat par conteneur trouve les 23 claims au besoin 2, conformes à la liste (12 en préanalytique et contexte, 8 en interprétations, 3 en population), et 23 actes d'étiquetage au journal. Les signatures sont inchangées.
+  - **Ingestion du 2026-11-25** : `WN-SRC-0856` (lot `LOT_166_2026-11-25`), une étude d'intervalles de référence sous CC BY 4.0, sur le PDF fourni par le responsable et l'accord du 2026-11-23. Seuls les passages sur le zinc sont repris : 7 passages et 13 claims. Trois envois, chacun dans son conteneur, tous en 200. Constat en lecture seule : 13 claims en attente, aucun prescriptif, 14 liens, rien au-delà de `0856`. Le contrôle de construction a été joué avant l'envoi : zéro problème.
+  - **Effet sur les manques du zinc** :
+    - R5 : la nouvelle source propose un moment de prélèvement de référence ; ses claims attendent la signature ;
+    - contrôle de population : des intervalles par sexe et par âge sont désormais en attente de signature ;
+    - une discordance possible entre sources du corpus sur les limites inférieures de référence est à signaler, sans la résoudre (DC-30) ; le détail est au dossier privé ;
+    - R6 reste couvert en partie seulement : aucun délai n'est sourcé.
+  - **Suite** : signature des 13 claims par le responsable, puis leur étiquetage, puis, avec l'accord du responsable, la décision du marqueur zinc.
