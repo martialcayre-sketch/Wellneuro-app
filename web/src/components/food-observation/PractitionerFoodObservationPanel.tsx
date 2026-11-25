@@ -634,8 +634,10 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           {/* Sous le nom du dossier (h1) : l'onglet titre en h2, ses panneaux en
-              h3 (Q2 a ; PRA-6e). Mention de version du prototype retirée (Q9 a, [[D-488]]). */}
-          <h2 className="font-display text-3xl font-bold text-foreground">Trajectoire alimentaire</h2>
+              h3 (Q2 a ; PRA-6e). Mention de version du prototype retirée (Q9 a, [[D-488]]).
+              Corps du titre de phase du poste (text-xl), jamais plus grand que
+              le h1 (PRA-6o, question 20261125-1757-d). */}
+          <h2 className="font-display text-xl font-bold text-foreground">Trajectoire alimentaire</h2>
         </div>
         <Link href={`/dashboard/patients/${encodeURIComponent(idPatient)}`} className="inline-flex min-h-11 items-center text-sm text-muted-foreground hover:underline">
           ← Retour fiche patient
