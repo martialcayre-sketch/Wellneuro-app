@@ -25,7 +25,8 @@ registre des textes (§2), amendements AM-1, AM-2, AM-6 ; artefact
 | Texte accepté et inscrit : T-33 ([[D-488]]) ; T-34 refusé | PAT-5 |
 | Prototype de la famille validé à l'étape 3 (si Q-E2-4 (a)) | PAT-2 à PAT-6 |
 | Décor inscrit (DOC-2, [[D-481]] §1 bis) et primitive `LienDecor` mergée (COM-1) | tout lot qui pose un décor, ornement d'état vide compris : PAT-2, PAT-3b, PAT-5, et tout autre lot qui orne un état vide réel ; sans eux, le lot livre sans décor (PAT-3b attend) |
-| Prototype PAT-3 révisé avec la signature du hub, revalidé ([[D-481]] §4) | PAT-3b |
+| Prototype PAT-3 révisé avec la signature du hub, revalidé ([[D-481]] §4) — fait le 2026-11-25 (DOC-21) | PAT-3b |
+| Emplacement du hub ouvert dans `LienDecor` (COM-2) | PAT-3b |
 
 Sans AM-1, le rail patient reste toujours déplié ([[D-460]] §4) et PAT-1 se
 réduit à l'habillage ; sans AM-2, les onglets et « Autres espaces » restent
@@ -147,6 +148,11 @@ principale ([[D-481]] §1 bis). Le prototype PAT-3 est révisé puis revalidé
 avant le lot ([[D-481]] §4). **Réception** : la première action reste
 visible sans défilement au téléphone ; l'ornement est absent de
 l'accessibilité et de l'impression ; aucun texte neuf.
+Revalidé le 2026-11-25 (complément DOC-21 de [[D-481]]) : variante C,
+`quiet-sweep.svg` en bandeau en tête de la carte « Mon parcours », bord à
+bord, 52 px de haut au téléphone et 64 px au bureau, recadré. Le lot suit
+COM-2 et inclut le constat de l'en-tête de U10 laissé ouvert par PAT-7
+(`pat7-constat-partiel.md`, `pat7-forme-transverse.md`).
 
 ### PAT-4 — Questionnaires et agendas
 
