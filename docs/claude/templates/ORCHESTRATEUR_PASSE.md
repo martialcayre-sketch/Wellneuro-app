@@ -107,8 +107,9 @@ main et ne la discute pas.
      un brouillon, et une sortie du brouillon après « prête » fait réécrire
      par CodeRabbit son avis : c'est une parole qui suspend le merge
      (`D-546`). Avant « prête », la passe vérifie que la PR n'est plus en
-     brouillon (`gh api repos/{owner}/{repo}/pulls/<N> --jq .draft` rend
-     `false`) ;
+     brouillon : `gh api repos/martialcayre-sketch/Wellneuro-app/pulls/<N>
+     --jq .draft` rend `false` (dépôt écrit en toutes lettres : en cloud,
+     `{owner}/{repo}` peut ne pas se résoudre) ;
    - `node scripts/wn-attendre-ci.mjs <N>`, puis
      `node scripts/wn-revue-pr-agent.mjs <N>` : `0` seul vaut ;
    - un verdict pour chaque commentaire ; « prête @<sha> » sur la PR ; ligne
