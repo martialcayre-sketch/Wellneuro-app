@@ -129,6 +129,32 @@ describe('EvolutionPanel', () => {
     expect(screen.getByText('75')).toBeTruthy();
   });
 
+  it('unités mêlées pour seul motif : jamais « aucun motif connu » sous la mention des unités', async () => {
+    repondre(
+      { status: 200, corps: { ok: true, planche } },
+      {
+        status: 200,
+        corps: {
+          ...biologie,
+          series: [
+            {
+              analyteCode: 'VITD',
+              motifs: ['unites_differentes'],
+              points: [
+                { idResultat: 'v1', valeur: '30', unite: 'µg/L', preleveLe: '2026-01-01T08:00:00.000Z' },
+                { idResultat: 'v3', valeur: '32', unite: 'µg/L', preleveLe: '2026-01-15T08:00:00.000Z' },
+                { idResultat: 'v2', valeur: '75', unite: 'nmol/L', preleveLe: '2026-02-01T08:00:00.000Z' },
+              ],
+            },
+          ],
+        },
+      },
+    );
+    render(<EvolutionPanel idPatient="PAT_1" />);
+    expect(await screen.findAllByText('Unités différentes : valeurs non converties.')).toHaveLength(2);
+    expect(screen.queryByText(/Aucun motif connu de non-comparabilité/)).toBeNull();
+  });
+
   it('aucune flèche, aucun pourcentage ni mot qui qualifie dans le rendu', async () => {
     const { container } = render(<EvolutionPanel idPatient="PAT_1" />);
     await screen.findByRole('table');

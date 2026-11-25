@@ -151,6 +151,9 @@ function PlancheDeLaBiologie({ lignes, masques }: { lignes: LigneBiologie[]; mas
               {ligne.motifs.map((motif) => LIBELLES_MOTIF_NON_COMPARABILITE[motif] ?? motif).join(', ')}.
             </p>
           ) : (
+            // Aux unités mêlées, la mention ci-dessus EST un motif : « aucun
+            // motif connu » la contredirait (remarque PR-Agent sur #2354).
+            !ligne.unitesMelees &&
             ligne.points.length > 1 && (
               // Le silence se lirait « comparable » : la série ne l'est jamais
               // déclarée ([[D-497]] §5, DC-24).
