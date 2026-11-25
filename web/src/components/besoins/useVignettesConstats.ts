@@ -18,9 +18,14 @@ export type VignettesParBesoin = Readonly<Record<number, VignetteConstat>>;
 export function useVignettesConstats(idPatient: string, actif: boolean, relecture = 0): VignettesParBesoin | null {
   const [vignettes, setVignettes] = useState<VignettesParBesoin | null>(null);
 
+  // Un autre dossier (ou un drapeau éteint) ne montre jamais la vignette du précédent,
+  // même un instant. Une RELECTURE, elle, garde l'ancienne valeur jusqu'à la réponse :
+  // le tableau ne saute pas après un geste.
   useEffect(() => {
-    // Un autre dossier ne montre jamais la vignette du précédent, même un instant.
     setVignettes(null);
+  }, [idPatient, actif]);
+
+  useEffect(() => {
     if (!actif) return;
     // Un changement de dossier ou de drapeau abandonne la lecture en vol : seule
     // la dernière s'applique.

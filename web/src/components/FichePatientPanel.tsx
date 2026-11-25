@@ -3216,7 +3216,7 @@ export function FichePatientPanel({
       {/* ------------------------------ Onglets in-fiche ------------------- */}
       <div role="tabpanel" id="panneau-besoins" aria-labelledby="onglet-besoins" hidden={ongletActif !== 'besoins'}>
         {ongletActif === 'besoins' && (
-          <DetailBesoinsPanel idPatient={idPatient} enteteMasquee emailPatient={emailPatientAffiche} vignettesActives={constatBesoinActif} relectureVignettes={relectureVignettes} />
+          <DetailBesoinsPanel idPatient={idPatient} enteteMasquee emailPatient={emailPatientAffiche} vignettesActives={constatBesoinActif} vignettesLues={constatBesoinActif ? vignettesConstats : undefined} />
         )}
         {/* Le panneau du constat dit le verdict, le motif et la note : un état que seul le
             praticien lit. En mode consultation, l'écran est partagé avec le patient : le

@@ -58,8 +58,9 @@ besoin 2 (D-554) est exclue.
 - Hors lot, geste du responsable : table de familles de D-554 §10 et migration « familles concernées » (vue du besoin 2).
 - À arbitrer par le responsable : l'écart à D-550 §3.1 (axes « B1 » à « B12 », 1004-b) et le masquage du panneau du
   constat en consultation n'ont pas d'amendement de décision ; D-553 §3 ne nomme que le bloc de la vue du besoin 2.
-- P2 ouverts de la revue : la lecture des vignettes se lance au montage de la fiche (tiroir fermé), donc une ligne de
-  journal d'accès de plus par visite ; un geste sur un constat relit les deux lecteurs (deux lignes de journal).
+- P2 de la revue, traités : la fiche lit les vignettes UNE fois et les passe à l'onglet (un seul accès journalisé) ; une
+  relecture après un geste garde l'ancienne vignette jusqu'à la réponse. Reste : la lecture se lance au montage de la
+  fiche, tiroir fermé (une ligne de journal par visite, drapeau allumé).
 - Le drapeau `WN_CONSTAT_BESOIN` reste éteint jusqu'à la fin des douze besoins : la vignette n'a donc pas encore
   été vue sur un dossier réel.
 - Restes de D-548 §3 (BMS-10, DASS-21, Karasek, R-SOM-01, table regroupée) : sur ordre seulement.

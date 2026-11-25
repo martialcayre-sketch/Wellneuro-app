@@ -574,6 +574,34 @@ describe('DetailBesoinsPanel — vignette du constat du praticien (D-551)', () =
     await waitFor(() => expect(screen.queryByText(/constat du praticien/)).toBeNull());
   });
 
+  it('une relecture garde l’ancienne vignette jusqu’à la réponse : le tableau ne saute pas', async () => {
+    let rendreSecond!: (v: Reponse) => void;
+    const second = new Promise<Reponse>(r => { rendreSecond = r; });
+    const lecteur = vi.fn()
+      .mockResolvedValueOnce(serveur({ 2: { verdict: 'a_soutenir', aRelire: false } }))
+      .mockReturnValueOnce(second);
+    vi.stubGlobal('fetch', vi.fn(async (url: string) =>
+      String(url).includes(ROUTE_VIGNETTES) ? lecteur() : { ok: true, json: async () => avecCompte }));
+    const { rerender } = render(<DetailBesoinsPanel idPatient="PAT_SEED_01" vignettesActives relectureVignettes={0} />);
+    expect(await screen.findByText('constat du praticien : à soutenir')).toBeTruthy();
+    rerender(<DetailBesoinsPanel idPatient="PAT_SEED_01" vignettesActives relectureVignettes={1} />);
+    await waitFor(() => expect(lecteur).toHaveBeenCalledTimes(2));
+    // La relecture est en vol : l'ancien verdict est encore là.
+    expect(screen.getByText('constat du praticien : à soutenir')).toBeTruthy();
+    rendreSecond(serveur({ 2: { verdict: 'non_retenu', aRelire: false } }));
+    expect(await screen.findByText('constat du praticien : non retenu')).toBeTruthy();
+  });
+
+  it('des vignettes déjà lues par la fiche s’affichent sans nouvelle lecture (un seul accès journalisé)', async () => {
+    const fetchMock = routeur(serveur({ 2: { verdict: 'sans_objet', aRelire: false } }));
+    vi.stubGlobal('fetch', fetchMock);
+    render(
+      <DetailBesoinsPanel idPatient="PAT_SEED_01" vignettesActives vignettesLues={{ 2: { verdict: 'a_soutenir', aRelire: true } }} />,
+    );
+    expect(await screen.findByText('constat du praticien : à soutenir — à relire')).toBeTruthy();
+    expect(fetchMock.mock.calls.some(([u]) => String(u).includes(ROUTE_VIGNETTES))).toBe(false);
+  });
+
   it('un autre dossier ne montre pas, même un instant, la vignette du précédent', async () => {
     let rendreSecond!: (v: Reponse) => void;
     const second = new Promise<Reponse>(r => { rendreSecond = r; });

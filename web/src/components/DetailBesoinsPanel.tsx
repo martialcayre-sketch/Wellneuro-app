@@ -8,7 +8,7 @@ import { donneesRadarBesoins, estMesure, LIBELLE_NON_MESURE } from '@/components
 import { DetailEcartDecision, DetailMotifNonMesure } from '@/components/patient-cockpit/DetailMotifNonMesure';
 import { DetailProvenance } from '@/components/patient-cockpit/DetailProvenance';
 import { VignetteConstatBesoin } from '@/components/besoins/VignetteConstatBesoin';
-import { useVignettesConstats } from '@/components/besoins/useVignettesConstats';
+import { useVignettesConstats, type VignettesParBesoin } from '@/components/besoins/useVignettesConstats';
 import { MENTION_RADAR_NON_INDICE, mentionBesoinsMesures } from '@/lib/equilibre/natureIndiceGlobal';
 import { cleBesoin, grouperBesoinsParStrate } from '@/lib/praticien/ordreBesoins';
 import {
@@ -34,6 +34,7 @@ export function DetailBesoinsPanel({
   emailPatient,
   vignettesActives = false,
   relectureVignettes = 0,
+  vignettesLues,
 }: {
   idPatient: string;
   enteteMasquee?: boolean;
@@ -41,6 +42,8 @@ export function DetailBesoinsPanel({
   vignettesActives?: boolean;
   /** Compteur de la fiche, incrémenté après un geste sur un constat. */
   relectureVignettes?: number;
+  /** Les vignettes déjà lues par la fiche : une seule lecture, un seul accès journalisé. Absent, la vue lit. */
+  vignettesLues?: VignettesParBesoin | null;
 }) {
   const [data, setData] = useState<BesoinsApiResponse | null>(null);
   // Mode consultation de la fiche ([[D-354]] §2-3) : ni pourcentage, ni contour
@@ -49,7 +52,8 @@ export function DetailBesoinsPanel({
   const chiffresMasques = useChiffresMasques();
   // Le constat du praticien sur un besoin sans score, en vignette ([[D-551]]) :
   // hors du total et du compte, derrière `WN_CONSTAT_BESOIN`.
-  const vignettes = useVignettesConstats(idPatient, vignettesActives, relectureVignettes);
+  const vignettesPropres = useVignettesConstats(idPatient, vignettesActives && vignettesLues === undefined, relectureVignettes);
+  const vignettes = vignettesLues === undefined ? vignettesPropres : vignettesLues;
   const [loading, setLoading] = useState(true);
   const { titreRef, boutonRef, relire } = useFocusApresRelecture();
 

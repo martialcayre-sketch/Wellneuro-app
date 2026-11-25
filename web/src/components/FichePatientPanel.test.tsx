@@ -3576,6 +3576,15 @@ describe('FichePatientPanel — mode consultation sans chiffre (D-354)', () => {
     expect(tiroir.textContent).toContain('40%');
   });
 
+  it('vignette du constat : la fiche lit les vignettes UNE fois, onglet et tiroir confondus (un seul accès journalisé)', async () => {
+    await rendreFicheAvecVignette();
+    fireEvent.click(within(onglets()).getByRole('tab', { name: 'Les 12 besoins' }));
+    expect(await screen.findByText('constat du praticien : à soutenir')).toBeTruthy();
+    const appels = (globalThis.fetch as unknown as ReturnType<typeof vi.fn>).mock.calls
+      .filter(([u]) => String(u).includes('/api/praticien/besoins/vignettes'));
+    expect(appels).toHaveLength(1);
+  });
+
   it('vignette du constat (D-551, D-553) : en consultation, la mention neutre à la place du verdict', async () => {
     await rendreFicheAvecVignette();
     activer();
