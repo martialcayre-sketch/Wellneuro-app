@@ -3613,13 +3613,14 @@ describe('FichePatientPanel — mode consultation sans chiffre (D-354)', () => {
   const quitter = () => fireEvent.click(screen.getByRole('button', { name: 'Quitter' }));
   const onglets = () => screen.getByRole('tablist', { name: 'Vues de la fiche patient' });
 
-  it('seuls le cockpit et les 12 besoins restent ; quitter rend les six onglets (§4)', async () => {
+  // Sept onglets depuis « Évolution » (OF-2), masqué lui aussi ([[D-560]] §2).
+  it('seuls le cockpit et les 12 besoins restent ; quitter rend les sept onglets (§4)', async () => {
     await rendreFiche();
-    expect(within(onglets()).getAllByRole('tab')).toHaveLength(6);
+    expect(within(onglets()).getAllByRole('tab')).toHaveLength(7);
     activer();
     expect(within(onglets()).getAllByRole('tab').map(t => t.textContent)).toEqual(['Poste de pilotage', 'Les 12 besoins']);
     quitter();
-    expect(within(onglets()).getAllByRole('tab')).toHaveLength(6);
+    expect(within(onglets()).getAllByRole('tab')).toHaveLength(7);
   });
 
   it('activé depuis un onglet masqué, ramène au cockpit et n’y retourne pas en quittant (§8)', async () => {

@@ -166,13 +166,14 @@ test.describe('Mode consultation — aucun chiffre à l’écran partagé (D-354
   test('onglets : seuls le cockpit et les 12 besoins restent ; activé depuis un onglet masqué, ramène au cockpit', async ({ page }) => {
     await ouvrirFiche(page, 'trajectoire');
     const onglets = page.getByRole('tablist', { name: 'Vues de la fiche patient' });
-    await expect(onglets.getByRole('tab')).toHaveCount(6);
+    // Sept onglets depuis « Évolution » (OF-2), masqué lui aussi (D-560 §2).
+    await expect(onglets.getByRole('tab')).toHaveCount(7);
     await activer(page);
     await expect(onglets.getByRole('tab')).toHaveText(['Poste de pilotage', 'Les 12 besoins']);
     await expect(onglets.getByRole('tab', { name: 'Poste de pilotage' })).toHaveAttribute('aria-selected', 'true');
     // Sans retour mémorisé (§8).
     await quitter(page);
-    await expect(onglets.getByRole('tab')).toHaveCount(6);
+    await expect(onglets.getByRole('tab')).toHaveCount(7);
     await expect(onglets.getByRole('tab', { name: 'Poste de pilotage' })).toHaveAttribute('aria-selected', 'true');
   });
 
