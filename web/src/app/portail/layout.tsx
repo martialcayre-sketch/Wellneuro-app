@@ -117,7 +117,7 @@ export default async function PortailLayout({ children }: { children: ReactNode 
       {/* Rail ([[D-447]] §6) : dès 1 024 px, sur ses pages, le rail et le
           `main` passent en deux colonnes ; ailleurs, le `main` seul. */}
       {rail ? <CadreRailMonEspace>{contenu}</CadreRailMonEspace> : contenu}
-      <footer className="py-4 px-4 text-center text-xs text-muted-foreground/70 space-y-1 print:hidden">
+      <footer className="py-4 px-4 text-center text-xs text-muted-foreground space-y-1 print:hidden">
         <p>
           Cet espace ne constitue pas un diagnostic médical. Vos informations sont transmises à votre praticien,
           qui ne les lit pas en temps réel.

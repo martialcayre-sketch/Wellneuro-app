@@ -70,7 +70,7 @@ export function FicheRemiseLecture({ token, idRemise }: { token: string; idRemis
             <p key={mention} className="mt-3 text-base text-foreground">{mention}</p>
           ))}
           {pause && (
-            <div role="status" className="mt-3">
+            <div role="status" className="mt-3 rounded border border-border bg-lien-sand px-4 py-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-foreground">En pause</p>
               <p className="mt-1 text-base text-foreground">{pause}</p>
             </div>

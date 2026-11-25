@@ -24,6 +24,18 @@ function rendre(courante: JourneyStep['id'], signaux: Partial<SignauxFrise> = {}
 const libelle = (el: Element) => (el.textContent ?? '').replace(/ \((étape actuelle|terminée)\)$/, '');
 
 describe('FriseEtapesNavigable ([[D-423]] §8)', () => {
+  // Refonte Lien, PAT-7m (F6 a, rattaché le 2026-11-25) : au téléphone, six
+  // étapes visibles en 3 × 2, sans liaison ; la ligne reliée dès 768 px.
+  it('se pose en 3 × 2 sous 768 px, liaisons masquées, ligne au-delà', () => {
+    const nav = rendre(4);
+    const liste = within(nav).getByRole('list');
+    expect(liste.className).toMatch(/(^| )grid-cols-3( |$)/);
+    expect(liste.className).toContain('md:flex');
+    const liaisons = liste.querySelectorAll('li > span[aria-hidden="true"]');
+    expect(liaisons).toHaveLength(5);
+    liaisons.forEach(l => expect(l.className).toMatch(/(^| )hidden( |$).*md:block/));
+  });
+
   it('une nav nommée, les six étapes dans l’ordre, libellés inchangés, sans rang', () => {
     const nav = rendre(4);
     const items = within(nav).getAllByRole('listitem');

@@ -250,7 +250,7 @@ export function GenericQuestionnaire({
     return (
       <PatientCard className="space-y-6">
         <div>
-          <p className="text-xs text-muted-foreground/70">Résumé avant transmission</p>
+          <p className="text-xs text-muted-foreground">Résumé avant transmission</p>
           <h2
             ref={summaryTitleRef}
             tabIndex={-1}
@@ -336,7 +336,7 @@ export function GenericQuestionnaire({
     <PatientCard as="form" onSubmit={handleNext} className="space-y-6">
       {/* En-tête */}
       <div>
-        <div className="flex justify-between items-center mb-2 text-xs text-muted-foreground/70">
+        <div className="flex justify-between items-center mb-2 text-xs text-muted-foreground">
           <span>Partie {currentSection + 1} / {pageCount}</span>
           <span aria-live={isMicroBatch ? 'polite' : undefined}>{avancement}</span>
         </div>
@@ -363,7 +363,7 @@ export function GenericQuestionnaire({
           <p className="text-sm text-muted-foreground mt-1">{questionnaire.instructions}</p>
         )}
         {section.titre && <p className="text-sm font-semibold text-primary mt-3">{section.titre}</p>}
-        {section.description && <p className="text-xs text-muted-foreground/70 mt-0.5">{section.description}</p>}
+        {section.description && <p className="text-xs text-muted-foreground mt-0.5">{section.description}</p>}
         {isMicroBatch && (
           <h3
             ref={batchTitleRef}
@@ -448,7 +448,7 @@ export function GenericQuestionnaire({
           Réinitialiser ce questionnaire
         </PatientButton>
       </div>
-      <p className="text-xs text-muted-foreground/70">Ce brouillon est conservé uniquement sur cet appareil.</p>
+      <p className="text-xs text-muted-foreground">Ce brouillon est conservé uniquement sur cet appareil.</p>
 
       <PatientConfirmDialog
         open={confirmDialog === 'reset'}

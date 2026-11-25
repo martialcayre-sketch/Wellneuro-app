@@ -122,7 +122,7 @@ export function PlaintesForm({ assignation, email, onDone }: {
       <div>
         <PatientPageHeader as="h2" title={assignation.titre} />
         <p className="text-sm text-muted-foreground mb-2">Évaluez chaque dimension de 1 (pas de gêne) à 10 (gêne maximale).</p>
-        <p className="text-xs font-medium text-muted-foreground/70">{`Étape ${page + 1} sur ${PAGES.length}`}</p>
+        <p className="text-xs font-medium text-muted-foreground">{`Étape ${page + 1} sur ${PAGES.length}`}</p>
       </div>
       {assignation.notes && (
         <div className="px-4 py-3 bg-primary/10 rounded-lg text-sm text-primary">
@@ -144,7 +144,7 @@ export function PlaintesForm({ assignation, email, onDone }: {
             aria-valuetext={`${values[p.key]} sur 10`}
             className="w-full accent-primary"
           />
-          <div className="flex justify-between text-xs text-muted-foreground/70 mt-0.5">
+          <div className="flex justify-between text-xs text-muted-foreground mt-0.5">
             <span>1 — Pas de gêne</span><span>10 — Gêne maximale</span>
           </div>
         </div>
@@ -182,7 +182,7 @@ export function PlaintesForm({ assignation, email, onDone }: {
           Réinitialiser ce questionnaire
         </PatientButton>
       </div>
-      <p className="text-xs text-muted-foreground/70">Ce brouillon est conservé uniquement sur cet appareil.</p>
+      <p className="text-xs text-muted-foreground">Ce brouillon est conservé uniquement sur cet appareil.</p>
 
       <PatientConfirmDialog
         open={confirmDialog === 'reset'}

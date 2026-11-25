@@ -52,7 +52,7 @@ export const STATE_CLASSES: Record<JourneyStepState, { dot: string; label: strin
     dot: 'border-[3px] border-primary bg-surface',
     label: 'text-foreground font-semibold',
   },
-  upcoming: { dot: 'border border-control-border bg-muted', label: 'text-muted-foreground/70' },
+  upcoming: { dot: 'border border-control-border bg-muted', label: 'text-muted-foreground' },
 };
 
 export function PatientJourneyProgress({ steps }: { steps: JourneyStep[] }) {

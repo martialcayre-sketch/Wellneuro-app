@@ -36,7 +36,7 @@ function Frise({ trajectoire }: { trajectoire: { date: string }[] }) {
           />
         ))}
       </div>
-      <div className="flex justify-between text-xs text-muted-foreground/70 px-1 mt-1">
+      <div className="flex justify-between text-xs text-muted-foreground px-1 mt-1">
         <span>Début</span>
         <span>Aujourd&apos;hui</span>
       </div>

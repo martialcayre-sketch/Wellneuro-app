@@ -601,17 +601,17 @@ export function PatientFoodObservationPanel({ idPatient }: { idPatient: string |
           </div>
         ) : episode?.content.regime === 'calibrage' ? (
           <div data-testid="ja-patient-calibrage">
-            <PatientInlineMessage tone="info">
+            <p className="rounded border border-border bg-lien-sand px-4 py-3 text-base text-foreground">
               Aucune action n’a encore été décidée en consultation. Décrivez quelques journées :
               elles aideront à choisir ce qui vous conviendra.
-            </PatientInlineMessage>
+            </p>
           </div>
         ) : (
           <div data-testid="ja-patient-sans-cycle">
-            <PatientInlineMessage tone="info">
+            <p className="rounded border border-border bg-lien-sand px-4 py-3 text-base text-foreground">
               Aucune action n’a encore été décidée en consultation. Vous pouvez noter ce que vous
               observez : ces notes restent sur cet appareil.
-            </PatientInlineMessage>
+            </p>
           </div>
         )
       )}
@@ -619,18 +619,12 @@ export function PatientFoodObservationPanel({ idPatient }: { idPatient: string |
       {decisionLoading ? (
         <PatientInlineMessage tone="info">Mise à jour de la décision praticien en cours…</PatientInlineMessage>
       ) : decision ? (
-        <PatientCard padding="sm" className="space-y-2 border-primary/20" data-testid="ja-patient-decision-active">
+        <div className="space-y-2 rounded-lg border border-muted bg-muted p-5 shadow-card" data-testid="ja-patient-decision-active">
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Décision active du praticien</p>
           <p className="text-sm text-foreground">{decision.feedbackPatient}</p>
           <p className="text-xs text-muted-foreground">Ajustement de la décision&nbsp;: {decision.deltaDecision}</p>
-        </PatientCard>
+        </div>
       ) : null}
-
-      <div className="flex justify-end">
-        <PatientButton data-testid="ja-patient-reset-local" variant="danger-text" onClick={resetLocalDraft}>
-          Réinitialiser le brouillon local
-        </PatientButton>
-      </div>
 
       {/* La saisie n'ouvre qu'une fois le cycle résolu — plans et solutions
           compris : saisis avant, ils seraient rattachés à un identifiant hors
@@ -639,20 +633,6 @@ export function PatientFoodObservationPanel({ idPatient }: { idPatient: string |
         <PatientInlineMessage tone="info">Chargement de votre carnet…</PatientInlineMessage>
       ) : (
       <>
-      <div data-testid="ja-patient-question-jour">
-        <PatientCard padding="sm" className="space-y-3 border-primary/20">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Question du jour</p>
-          <p className="text-sm text-foreground">
-            Cette semaine, qu’est-ce qui a le plus aidé (ou freiné) votre action alimentaire&nbsp;?
-          </p>
-          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-            <PatientButton variant="ghost" className="w-full sm:w-auto" onClick={() => addPlan(1)}>Plan minimal 1 jour</PatientButton>
-            <PatientButton variant="ghost" className="w-full sm:w-auto" onClick={() => addPlan(3)}>Plan minimal 3 jours</PatientButton>
-            <PatientButton variant="ghost" className="w-full sm:w-auto" onClick={() => addPlan(7)}>Plan minimal 7 jours</PatientButton>
-          </div>
-        </PatientCard>
-      </div>
-
       {/* Bilan de calibrage (lot 3) : la journée repère répond à une autre
           question que la trace d'essai — à quoi ressemble une journée — et ne
           s'affiche qu'en régime `calibrage`. En régime essai, le carnet reste
@@ -660,9 +640,9 @@ export function PatientFoodObservationPanel({ idPatient }: { idPatient: string |
       {episode?.content.regime === 'calibrage' && (
         <div data-testid="ja-patient-journee">
           <PatientCard className="space-y-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            <h2 className="text-base font-semibold text-foreground">
               Décrire la journée d’aujourd’hui
-            </p>
+            </h2>
 
             <PatientField label="Quel genre de journée était-ce ?">
               <select
@@ -745,8 +725,21 @@ export function PatientFoodObservationPanel({ idPatient }: { idPatient: string |
         </div>
       )}
 
+      {/* Refonte Lien, PAT-7m (F7 a) : la question du jour et la trace dans une
+          seule carte, séparées d'un filet (planche PAT-4, U22). */}
       <div data-testid="ja-patient-formulaire-trace">
         <PatientCard className="space-y-4">
+        <div data-testid="ja-patient-question-jour" className="space-y-3 border-b border-border pb-4">
+          <h2 className="text-base font-semibold text-foreground">Question du jour</h2>
+          <p className="text-sm text-foreground">
+            Cette semaine, qu’est-ce qui a le plus aidé (ou freiné) votre action alimentaire&nbsp;?
+          </p>
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+            <PatientButton variant="ghost" className="w-full sm:w-auto" onClick={() => addPlan(1)}>Plan minimal 1 jour</PatientButton>
+            <PatientButton variant="ghost" className="w-full sm:w-auto" onClick={() => addPlan(3)}>Plan minimal 3 jours</PatientButton>
+            <PatientButton variant="ghost" className="w-full sm:w-auto" onClick={() => addPlan(7)}>Plan minimal 7 jours</PatientButton>
+          </div>
+        </div>
         <PatientField label="Budget d’attention (traces par semaine)">
           <select
             data-testid="ja-patient-budget"
@@ -882,7 +875,7 @@ export function PatientFoodObservationPanel({ idPatient }: { idPatient: string |
 
       <div data-testid="ja-patient-couverture">
         <PatientCard padding="sm" className="space-y-2">
-          <p className="text-sm text-muted-foreground">Couverture de la semaine</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Couverture de la semaine</p>
           <p className="text-sm font-medium text-foreground">{couverture}</p>
         </PatientCard>
       </div>
@@ -890,9 +883,9 @@ export function PatientFoodObservationPanel({ idPatient }: { idPatient: string |
       {episode && (
         <div data-testid="ja-patient-transmission">
           <PatientCard padding="sm" className="space-y-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            <h2 className="text-base font-semibold text-foreground">
               Partager avec mon praticien
-            </p>
+            </h2>
             <p className="text-sm text-muted-foreground">
               Vos notes restent sur cet appareil tant que vous ne les transmettez pas.
             </p>
@@ -918,7 +911,7 @@ export function PatientFoodObservationPanel({ idPatient }: { idPatient: string |
 
       <div data-testid="ja-patient-solutions">
         <PatientCard padding="sm" className="space-y-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Solutions qui marchent pour moi</p>
+          <h2 className="text-base font-semibold text-foreground">Solutions qui marchent pour moi</h2>
           <div className="flex flex-col gap-2 sm:flex-row">
             <input
               data-testid="ja-patient-solution-input"
@@ -947,7 +940,7 @@ export function PatientFoodObservationPanel({ idPatient }: { idPatient: string |
 
       <div data-testid="ja-patient-historique">
         <PatientCard padding="sm" className="space-y-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Historique local</p>
+          <h2 className="text-base font-semibold text-foreground">Historique local</h2>
           {traces.length === 0 && pauses.length === 0 && plans.length === 0 ? (
             <p className="text-xs text-muted-foreground">Pas encore d’élément enregistré.</p>
           ) : (
@@ -972,6 +965,14 @@ export function PatientFoodObservationPanel({ idPatient }: { idPatient: string |
             </div>
           )}
         </PatientCard>
+      </div>
+
+      {/* Refonte Lien, PAT-7m (F7 a) : en bas, comme la planche ; le rouge du
+          geste destructeur reste (décision « F1a à F7a »). */}
+      <div className="flex justify-start">
+        <PatientButton data-testid="ja-patient-reset-local" variant="danger-text" onClick={resetLocalDraft}>
+          Réinitialiser le brouillon local
+        </PatientButton>
       </div>
     </div>
   );

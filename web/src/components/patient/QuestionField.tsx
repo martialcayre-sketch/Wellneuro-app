@@ -87,7 +87,7 @@ export function QuestionField({ question, value, onChange, displaySelectAsRadioC
           />
           {question.unit && <span className="text-sm text-muted-foreground">{question.unit}</span>}
           {question.min !== undefined && question.max !== undefined && (
-            <span className="text-xs text-muted-foreground/70">({question.min}–{question.max})</span>
+            <span className="text-xs text-muted-foreground">({question.min}–{question.max})</span>
           )}
         </div>
       )}
