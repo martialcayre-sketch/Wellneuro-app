@@ -110,6 +110,9 @@ commit de bot gèle malgré tout le run, la réparation est la même.
 
 - **Toujours recomparer** le `head=` du SNAPSHOT de `wn-attendre-ci` à la tête
   réelle de la PR : un vert peut porter sur un commit qui n'est plus la tête.
+  Depuis la branche de la PR (ou avec `--sha`), le script attend lui-même
+  cette tête avant tout verdict ; hors de cette branche, la comparaison reste
+  à faire.
 - **Réparer en poussant un commit réel** sous le compte du dépôt — jamais un
   commit vide, jamais en relançant le merge à l'aveugle, jamais en relançant le
   CI.

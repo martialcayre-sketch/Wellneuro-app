@@ -48,9 +48,18 @@ refait à la main sur #553. Une règle oubliée deux fois devient exécutable.
 | `0` | les checks **obligatoires** ont tourné et sont verts | annoncer la PR prête |
 | `1` | un check obligatoire a échoué | lire le log, corriger |
 | `2` | un check obligatoire **n'a pas tourné** — absent, gelé en `action_required`, ou run **annulé** (`concurrency`) sans remplaçant | le script nomme **toutes** les causes applicables ; ne pas merger |
-| `3` | délai dépassé sans conclusion | expirer n'est pas réussir |
+| `3` | délai dépassé sans conclusion — check en cours, check absent qui attend un job **encore en cours** du commit de tête (job et étape nommés : `verify` attend ses `needs`), ou PR qui ne porte pas encore la tête attendue | expirer n'est pas réussir. Job en cours : relancer l'attente seule, sans pousser (un job resté `queued` se vérifie à la main). Tête non portée : vérifier que le commit est poussé (`git ls-remote origin`) |
 | `4` | **indéterminé** — PR illisible ou mergée, `gh` muet, ou liste des checks obligatoires illisible | aucun verdict ; ne pas merger |
 | `5` | les checks sont verts mais la PR est **en conflit** | ce vert porte sur un commit qui n'est pas le résultat fusionné |
+
+**Tête attendue** (2026-11-25) : lancé depuis la branche de la PR, le script
+attend que GitHub porte le HEAD local avant tout verdict — ailleurs, `--sha
+<sha>` le demande. Une attente lancée avec le `push` ne juge donc plus
+l'ancienne tête (#1338 : `2` CONFLICTING sur un commit déjà remplacé). Atteinte,
+ou dépassée par un commit qui en descend (poussée pendant l'attente, commit de
+tiers), elle tombe et la tête GitHub refait foi. Une PR de fourche n'est jamais
+« la branche locale ». Sans l'un ni l'autre (copie principale sur `main`), la
+tête que porte GitHub fait foi.
 
 **`0` est le seul code qui autorise à annoncer une PR prête.** Les cinq autres
 disent, chacun à sa façon, qu'on ne peut pas l'affirmer — y compris `4`, qui
