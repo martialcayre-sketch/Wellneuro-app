@@ -387,6 +387,9 @@ export class PluginLicencesTierces {
             for (const r of refus) {
               compilation.errors.push(new WebpackError(`${NOM_PLUGIN} : ${r}. Le fichier de mentions serait incomplet.`));
             }
+            // Le fichier d'un build précédent ne reste pas servi depuis
+            // `public/` : il décrirait un autre bundle que celui-ci.
+            fs.rmSync(sortie, { force: true });
             return;
           }
           const horsDuGraphe = {

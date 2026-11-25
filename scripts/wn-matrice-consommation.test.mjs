@@ -763,6 +763,23 @@ test('sur CE dépôt : tout arbitrage désigne une source réelle, et toute dorm
   );
 });
 
+test('sur CE dépôt : la table des signaux de sécurité est recensée, consommée, sous son verrou de signature', () => {
+  // Dette du plan (§8) : signée depuis D-099, c'était la seule table clinique
+  // signée absente de l'inventaire. Sa garde n'est pas un drapeau mais son
+  // verrou auto-portant ; la ligne doit le montrer, pas rendre « — ».
+  const rapport = construireRapport(RACINE_DEPOT);
+  const ligne = rapport.lignes.find((l) => l.id === 'signaux-securite-anamnese');
+  assert.ok(ligne, 'la table des signaux de sécurité doit être déclarée dans SOURCES_DE_SAVOIR');
+  assert.equal(ligne.module, 'web/src/lib/clinical/safetySignalsV1.ts');
+  assert.equal(ligne.consommee, true, 'la table a des appelants : elle ne doit pas ressortir dormante');
+  assert.ok(
+    ligne.surfaces.some((s) => s.chemin === 'web/src/app/api/praticien/adressage/courrier/route.ts'),
+    'la route du courrier d’adressage lit la table directement',
+  );
+  assert.deepEqual(ligne.verrousDonnee, ['validationExterne']);
+  assert.deepEqual(ligne.drapeaux, []);
+});
+
 test("le script n'ouvre aucune connexion base et n'écrit rien hors --markdown", () => {
   const source = fs.readFileSync(SCRIPT, 'utf8');
   assert.doesNotMatch(source, /\bpsql\b|@prisma\/client|new Pool\(/, 'aucune lecture de base : CLAUDE.md la réserve à l’outil MCP Supabase');
