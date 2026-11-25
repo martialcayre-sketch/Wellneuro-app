@@ -18,9 +18,11 @@ export type VignettesParBesoin = Readonly<Record<number, VignetteConstat>>;
 export function useVignettesConstats(idPatient: string, actif: boolean, relecture = 0): VignettesParBesoin | null {
   const [vignettes, setVignettes] = useState<VignettesParBesoin | null>(null);
 
-  // Un autre dossier (ou un drapeau éteint) ne montre jamais la vignette du précédent,
-  // même un instant. Une RELECTURE, elle, garde l'ancienne valeur jusqu'à la réponse :
-  // le tableau ne saute pas après un geste.
+  // Un autre dossier (ou un drapeau éteint) vide l'état. Le vidage passe par un effet,
+  // donc après le premier rendu : ce que tient la garantie « jamais la vignette du dossier
+  // précédent » est que la fiche est REMONTÉE à chaque dossier (`key={idPatient}` dans
+  // `app/dashboard/patients/[idPatient]/page.tsx`), pas ce hook seul. Une RELECTURE, elle,
+  // garde l'ancienne valeur jusqu'à la réponse : le tableau ne saute pas après un geste.
   useEffect(() => {
     setVignettes(null);
   }, [idPatient, actif]);

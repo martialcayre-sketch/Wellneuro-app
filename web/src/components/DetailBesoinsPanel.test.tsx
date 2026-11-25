@@ -602,7 +602,7 @@ describe('DetailBesoinsPanel — vignette du constat du praticien (D-551)', () =
     expect(fetchMock.mock.calls.some(([u]) => String(u).includes(ROUTE_VIGNETTES))).toBe(false);
   });
 
-  it('un autre dossier ne montre pas, même un instant, la vignette du précédent', async () => {
+  it('un autre dossier ne garde pas la vignette du précédent : l’état est vidé, la réponse tardive du premier est écartée', async () => {
     let rendreSecond!: (v: Reponse) => void;
     const second = new Promise<Reponse>(r => { rendreSecond = r; });
     const fetchMock = vi.fn(async (url: string): Promise<Reponse> => {
