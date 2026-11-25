@@ -241,7 +241,14 @@ async function redigerLibelle(termeId, outils) {
         { role: 'user', content: messageCorrectionLibelle(libelle, termes) },
       ];
       const premier = libelle;
-      libelle = libelleDe(await redigerTexte(anthropic, consignes.redaction, message, suite));
+      const corrigee = await redigerTexte(anthropic, consignes.redaction, message, suite);
+      try {
+        libelle = libelleDe(corrigee);
+      } catch (erreur) {
+        // Une réponse corrigée illisible garde aussi sa trace (PR-Agent, §17).
+        const fichier = await ecrire(termeId, h, 'revue', { etape: 'registre D-535, correction unique', termes, premier, illisible: erreurSansTexte(erreur) });
+        return { id: termeId, issue: 'echec', motif: 'correction_illisible', fichier };
+      }
       const restants = termesHorsRegistre(libelle);
       // Le rapport de la correction garde les deux libellés, qu'elle aboutisse ou non (§17).
       const rapport = { etape: 'registre D-535, correction unique', termes, premier, redige: libelle, restants };

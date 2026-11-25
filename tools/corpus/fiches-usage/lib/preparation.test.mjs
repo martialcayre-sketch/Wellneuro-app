@@ -296,6 +296,8 @@ test('câblage v13 : le registre du code juge l\'hypothèse avant la contre-lect
   // Les deux libellés sont gardés hors dépôt, que la correction aboutisse ou non (Codex, §17).
   assert.match(corps, /const rapport = \{ etape: 'registre D-535, correction unique', termes, premier, redige: libelle, restants \};/);
   assert.match(corps, /await ecrire\(termeId, h, 'correction', rapport\);/);
+  // Une réponse corrigée illisible écrit aussi son rapport, avec le premier libellé (PR-Agent).
+  assert.match(corps, /illisible: erreurSansTexte\(erreur\) \}\);\n\s*return \{ id: termeId, issue: 'echec', motif: 'correction_illisible', fichier \};/);
   // Le garde ne vise que les hypothèses (D-535 : la liste ne vise pas les populations).
   assert.match(corps, /if \(nature === 'hypothese'\) \{/);
 });
