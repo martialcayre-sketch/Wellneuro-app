@@ -7,4 +7,4 @@
 - §19 : en « precautions », fiche sécurité « oui », une condition propre à une spécialité nommée s'écrit attribuée au
   RCP avec toutes ses restrictions, sans posologie ; une interaction attribuée nomme ses principes actifs, avec son
   délai entre prises.
-- `fiche-usage-v14+c8717862be389cad`. Aucun texte de fiche dans le dépôt ; aucune base touchée.
+- `fiche-usage-v14+5806971f1d0beb37`. Aucun texte de fiche dans le dépôt ; aucune base touchée.

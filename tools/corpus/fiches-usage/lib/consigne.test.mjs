@@ -341,6 +341,8 @@ test('v14 : test d\'« interpretations », mots de fréquence et de référence,
   for (const t of [r, c]) {
     assert.match(t, /« régulièrement », « chaque jour »/);
     assert.match(t, /« proche des »/);
+    // PR-Agent (#2360) : l'exception « sans valeur chiffrée » ne couvre pas ces deux familles.
+    assert.match(t, /exception ne couvre ni un mot de fréquence ni un apport situé par rapport à une valeur de référence, qui restent des quantités de prise/);
   }
   assert.match(r, /Dans « surveillance_arret » surtout, une phrase qui dit un contrôle biologique utile, conseillé, fréquent ou habituel présente un usage/);
   assert.match(c, /« precautions » comprise, et « surveillance_arret » aussi \(un contrôle biologique dit utile, conseillé, fréquent ou habituel est un usage\)/);

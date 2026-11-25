@@ -115,7 +115,9 @@ Les DÉSIGNATIONS APPROUVÉES servent seulement à nommer (voir plus bas).
   Une mention de dose ou d'apport sans valeur chiffrée (« à doses élevées »,
   l'absence d'apport conseillé) n'est pas une quantité de prise : elle se
   restitue telle que son claim la porte, comme une condition ou une limite
-  de son fait. Toute autre valeur chiffrée, ou en cas de doute sur une
+  de son fait. Cette exception ne couvre ni un mot de fréquence ni un
+  apport situé par rapport à une valeur de référence, qui restent des
+  quantités de prise comme dit juste avant. Toute autre valeur chiffrée, ou en cas de doute sur une
   valeur chiffrée (par exemple une teneur maximale recommandée pour un
   produit), ne s'écrit pas.
   Ces règles ne visent pas une valeur ni une unité reprise telle quelle

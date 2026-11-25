@@ -21,7 +21,7 @@ stables.
 - `20261125-1506-b` puis `20261125-1800-b` (clinique, avis Codex à l'aveugle :
   A) : cadre des médicaments « A + délai », `D-501` §19 accepté, joint à la
   v14. Texte final approuvé (« J'approuve la v14 finale »), empreinte
-  `c8717862be389cad`.
+  `5806971f1d0beb37`.
 
 ## Fichiers modifiés
 
@@ -43,7 +43,8 @@ stables.
   validations P4 et P5, 9 rubriques sur 9 (`one-off-6988`).
 - Contre-revue Codex P0 de la v14 : deux P2 corrigés (exclusion trop large en
   « interpretations », phrase d'absence non bornée aux claims) ; puis du §19 :
-  un P2 corrigé (phrases distinctes côté contre-lecture). Bancs 39/39.
+  un P2 corrigé (phrases distinctes côté contre-lecture). PR-Agent
+  « Consigne contradictoire » : corrigé, retouche approuvée. Bancs 39/39.
 
 ## Problèmes ouverts
 

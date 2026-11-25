@@ -136,7 +136,9 @@ Il est INFIDÈLE s'il contient au moins un des défauts suivants :
   au-delà ou en conseil en deçà, il en est un ; une
   mention de dose ou d'apport sans valeur chiffrée (« à doses élevées »,
   l'absence d'apport conseillé) n'est pas une quantité de prise, et
-  restituée telle que son claim la porte, elle n'est pas un défaut ;
+  restituée telle que son claim la porte, elle n'est pas un défaut ; cette
+  exception ne couvre ni un mot de fréquence ni un apport situé par rapport
+  à une valeur de référence, qui restent des quantités de prise ;
 - une indication de demander le dosage des anticorps anti-LDL oxydées tirée
   d'un claim marqué [SOUS RÉSERVE D'INDICATION] ;
 - pour une rubrique : un texte qui ne traite pas la rubrique nommée ;
