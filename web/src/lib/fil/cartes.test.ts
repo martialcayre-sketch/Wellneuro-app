@@ -129,7 +129,7 @@ describe('resumeFil', () => {
         { idCheckin: 'CHK_1', idPatient: 'P-SOPHIE', soumisLe: new Date('2026-07-14T08:00:00') },
       ],
       assignations: [
-        { idAssignation: 'ASG_1', idPatient: 'P-MICHEL', titre: 'Mode de vie', dateLimite: '2026-07-01', statut: 'En attente', statutReponses: 'non_rempli' },
+        { idAssignation: 'ASG_1', idPatient: 'P-MICHEL', titre: 'Mode de vie', dateLimite: '2026-07-01', statut: 'En attente', idQuestionnaire: 'Q_TEST' },
       ],
       activites: [],
       noms: NOMS,
@@ -272,10 +272,10 @@ describe('cartesAssignationsEnRetard', () => {
   it('ne retient que les assignations non complétées dont la limite est dépassée', () => {
     const cartes = cartesAssignationsEnRetard(
       [
-        { idAssignation: 'ASG_1', idPatient: 'P-MICHEL', titre: 'Mode de vie SIIN', dateLimite: '2026-07-10', statut: 'En attente', statutReponses: 'non_rempli' },
-        { idAssignation: 'ASG_2', idPatient: 'P-SOPHIE', titre: 'Plaintes', dateLimite: '2026-07-10', statut: 'Complété', statutReponses: 'non_rempli' },
-        { idAssignation: 'ASG_3', idPatient: 'P-JENNIFER', titre: 'Alimentaire', dateLimite: '2026-07-20', statut: 'En attente', statutReponses: 'non_rempli' },
-        { idAssignation: 'ASG_4', idPatient: 'P-JENNIFER', titre: 'DNSM', dateLimite: null, statut: 'En attente', statutReponses: 'non_rempli' },
+        { idAssignation: 'ASG_1', idPatient: 'P-MICHEL', titre: 'Mode de vie SIIN', dateLimite: '2026-07-10', statut: 'En attente', idQuestionnaire: 'Q_TEST' },
+        { idAssignation: 'ASG_2', idPatient: 'P-SOPHIE', titre: 'Plaintes', dateLimite: '2026-07-10', statut: 'Complété', idQuestionnaire: 'Q_TEST' },
+        { idAssignation: 'ASG_3', idPatient: 'P-JENNIFER', titre: 'Alimentaire', dateLimite: '2026-07-20', statut: 'En attente', idQuestionnaire: 'Q_TEST' },
+        { idAssignation: 'ASG_4', idPatient: 'P-JENNIFER', titre: 'DNSM', dateLimite: null, statut: 'En attente', idQuestionnaire: 'Q_TEST' },
       ],
       NOMS,
       MAINTENANT,
@@ -286,20 +286,20 @@ describe('cartesAssignationsEnRetard', () => {
     expect(cartes[0].href).toBe('/dashboard/patients/P-MICHEL');
   });
 
-  // LE GESTE DE LA CARTE EN DÉPEND ([[D-414]] §1) : le statut des réponses
-  // descend tel que la base le porte, jamais réduit à un booléen.
-  it('porte le statut des réponses de l’assignation', () => {
+  // LE GESTE « RELANCER » ([[D-562]] §6) : l'identifiant le porte, sauf
+  // pour l'agenda du sommeil, qui se relance depuis son panneau (§5).
+  it('porte l’identifiant du geste, sauf sur l’agenda du sommeil', () => {
     const cartes = cartesAssignationsEnRetard(
       [
-        { idAssignation: 'ASG_6', idPatient: 'P-MICHEL', titre: 'Q', dateLimite: '2026-07-10', statut: 'En attente', statutReponses: 'deverrouille' },
-        { idAssignation: 'ASG_7', idPatient: 'P-SOPHIE', titre: 'Q', dateLimite: '2026-07-11', statut: 'En attente', statutReponses: 'non_rempli' },
+        { idAssignation: 'ASG_6', idPatient: 'P-MICHEL', titre: 'Q', dateLimite: '2026-07-10', statut: 'En attente', idQuestionnaire: 'Q_INF_03' },
+        { idAssignation: 'ASG_7', idPatient: 'P-SOPHIE', titre: 'Agenda', dateLimite: '2026-07-11', statut: 'En attente', idQuestionnaire: 'Q_SOM_09' },
       ],
       NOMS,
       MAINTENANT,
     );
-    expect(cartes.map(c => [c.idAssignation, c.statutReponses])).toEqual([
-      ['ASG_6', 'deverrouille'],
-      ['ASG_7', 'non_rempli'],
+    expect(cartes.map(c => [c.cle, c.idAssignation])).toEqual([
+      ['assignation_en_retard:ASG_6', 'ASG_6'],
+      ['assignation_en_retard:ASG_7', undefined],
     ]);
   });
 
@@ -308,8 +308,8 @@ describe('cartesAssignationsEnRetard', () => {
   it('écarte une assignation annulée, même échue et non remplie', () => {
     const cartes = cartesAssignationsEnRetard(
       [
-        { idAssignation: 'ASG_8', idPatient: 'P-MICHEL', titre: 'Q', dateLimite: '2026-07-10', statut: 'Annulée', statutReponses: 'non_rempli' },
-        { idAssignation: 'ASG_11', idPatient: 'P-SOPHIE', titre: 'Q', dateLimite: '2026-07-10', statut: 'En attente', statutReponses: 'non_rempli' },
+        { idAssignation: 'ASG_8', idPatient: 'P-MICHEL', titre: 'Q', dateLimite: '2026-07-10', statut: 'Annulée', idQuestionnaire: 'Q_TEST' },
+        { idAssignation: 'ASG_11', idPatient: 'P-SOPHIE', titre: 'Q', dateLimite: '2026-07-10', statut: 'En attente', idQuestionnaire: 'Q_TEST' },
       ],
       NOMS,
       MAINTENANT,
@@ -317,24 +317,19 @@ describe('cartesAssignationsEnRetard', () => {
     expect(cartes.map(c => c.idAssignation)).toEqual(['ASG_11']);
   });
 
-  it('ne porte pas le statut des réponses d’un suivi clos', () => {
+  // UN SUIVI CLOS GARDE LE BOUTON : le serveur le refuse sans rien écrire.
+  it('porte l’identifiant du geste même sur un suivi clos', () => {
     const cartes = cartesAssignationsEnRetard(
-      [
-        { idAssignation: 'ASG_9', idPatient: 'P-MICHEL', titre: 'Q', dateLimite: '2026-07-10', statut: 'En attente', statutReponses: 'non_rempli', suiviClos: true },
-        { idAssignation: 'ASG_10', idPatient: 'P-SOPHIE', titre: 'Q', dateLimite: '2026-07-11', statut: 'En attente', statutReponses: 'non_rempli', suiviClos: false },
-      ],
+      [{ idAssignation: 'ASG_9', idPatient: 'P-MICHEL', titre: 'Q', dateLimite: '2026-07-10', statut: 'En attente', idQuestionnaire: 'Q_INF_03', suiviClos: true }],
       NOMS,
       MAINTENANT,
     );
-    expect(cartes.map(c => [c.idAssignation, c.statutReponses])).toEqual([
-      ['ASG_9', undefined],
-      ['ASG_10', 'non_rempli'],
-    ]);
+    expect(cartes.map(c => c.idAssignation)).toEqual(['ASG_9']);
   });
 
   it('ignore les dates limites invalides', () => {
     const cartes = cartesAssignationsEnRetard(
-      [{ idAssignation: 'ASG_5', idPatient: 'P-MICHEL', titre: 'Q', dateLimite: 'hier', statut: 'En attente', statutReponses: 'non_rempli' }],
+      [{ idAssignation: 'ASG_5', idPatient: 'P-MICHEL', titre: 'Q', dateLimite: 'hier', statut: 'En attente', idQuestionnaire: 'Q_TEST' }],
       NOMS,
       MAINTENANT,
     );
@@ -393,7 +388,7 @@ describe('construireFil', () => {
       lectures: [{ idPatient: 'P-MICHEL', derniereLecture: new Date('2026-07-15T08:00:00') }],
       jalons: [{ idCheckin: 'CHK_1', idPatient: 'P-SOPHIE', soumisLe: new Date('2026-07-14T08:00:00') }],
       assignations: [
-        { idAssignation: 'ASG_6', idPatient: 'P-MICHEL', titre: 'Mode de vie', dateLimite: '2026-07-01', statut: 'En attente', statutReponses: 'non_rempli' },
+        { idAssignation: 'ASG_6', idPatient: 'P-MICHEL', titre: 'Mode de vie', dateLimite: '2026-07-01', statut: 'En attente', idQuestionnaire: 'Q_TEST' },
       ],
       activites: [{ idPatient: 'P-SOPHIE', derniereReponse: new Date('2025-08-01T08:00:00') }],
       noms: NOMS,
@@ -433,7 +428,7 @@ describe('identité des cartes (clé)', () => {
     const entree = {
       syntheses: [{ idSynthese: 'SYN_9', idPatient: 'P-JENNIFER', dateGeneration: new Date('2026-07-14T09:00:00') }],
       assignations: [
-        { idAssignation: 'ASG_9', idPatient: 'P-MICHEL', titre: 'Mode de vie', dateLimite: '2026-07-01', statut: 'En attente', statutReponses: 'non_rempli' },
+        { idAssignation: 'ASG_9', idPatient: 'P-MICHEL', titre: 'Mode de vie', dateLimite: '2026-07-01', statut: 'En attente', idQuestionnaire: 'Q_TEST' },
       ],
       activites: [{ idPatient: 'P-SOPHIE', derniereReponse: new Date('2025-08-01T08:00:00') }],
       noms: NOMS,
@@ -454,7 +449,7 @@ describe('identité des cartes (clé)', () => {
       syntheses: [{ idSynthese: 'SYN_9', idPatient: 'P-JENNIFER', dateGeneration: new Date('2026-07-14T09:00:00') }],
       jalons: [{ idCheckin: 'CHK_9', idPatient: 'P-SOPHIE', soumisLe: new Date('2026-07-14T08:00:00') }],
       assignations: [
-        { idAssignation: 'ASG_9', idPatient: 'P-MICHEL', titre: 'Mode de vie', dateLimite: '2026-07-01', statut: 'En attente', statutReponses: 'non_rempli' },
+        { idAssignation: 'ASG_9', idPatient: 'P-MICHEL', titre: 'Mode de vie', dateLimite: '2026-07-01', statut: 'En attente', idQuestionnaire: 'Q_TEST' },
       ],
       activites: [{ idPatient: 'P-SOPHIE', derniereReponse: new Date('2025-08-01T08:00:00') }],
       noms: NOMS,

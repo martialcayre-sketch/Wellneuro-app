@@ -130,12 +130,24 @@ test.describe('Portail — rail latéral', () => {
       await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
       const numero = page.getByRole('contentinfo').getByRole('link', { name: '3114' });
       await expect(numero).toBeVisible();
-      const recouvert = await numero.evaluate(el => {
-        const r = el.getBoundingClientRect();
-        const dessus = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
-        return !(dessus === el || el.contains(dessus));
-      });
-      expect(recouvert).toBe(false);
+      // Mesure répétée jusqu'à stabilité : une lecture unique, juste après
+      // `scrollTo`, rougissait au hasard en CI (cinq fois le 2026-11-25) quand
+      // défilement et mise en page n'étaient pas encore posés. L'interdit ne
+      // change pas : à la fin, rien ne recouvre le numéro. En cas d'échec, le
+      // message nomme ce qui le recouvre.
+      await expect
+        .poll(
+          () =>
+            numero.evaluate(el => {
+              const r = el.getBoundingClientRect();
+              const dessus = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+              if (dessus === el || (dessus !== null && el.contains(dessus))) return '';
+              if (dessus === null) return 'hors de la fenêtre';
+              return `${dessus.tagName.toLowerCase()} ${String(dessus.getAttribute('class') ?? '').slice(0, 80)}`.trim();
+            }),
+          { message: 'le numéro du pied d’urgence est recouvert' },
+        )
+        .toBe('');
       await page.evaluate(() => window.scrollTo(0, 0));
       await page.keyboard.press(browserName === 'webkit' ? 'Alt+Tab' : 'Tab');
       await expect(page.getByRole('link', { name: 'Aller au contenu' })).toBeFocused();

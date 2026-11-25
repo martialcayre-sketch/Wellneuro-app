@@ -140,7 +140,7 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
       }),
       prisma.assignation.findMany({
         where: { statut: { not: 'Complété' }, dateLimite: { not: null } },
-        select: { idAssignation: true, idPatient: true, titre: true, dateLimite: true, statut: true, statutReponses: true },
+        select: { idAssignation: true, idPatient: true, titre: true, dateLimite: true, statut: true, idQuestionnaire: true },
       }),
       prisma.questionnaireReponse.groupBy({
         by: ['idPatient'],

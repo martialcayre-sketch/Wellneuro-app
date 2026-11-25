@@ -8,6 +8,11 @@ import type { MeteoAdhesionApiResponse } from '@/app/api/praticien/meteo-adhesio
 import { indexCarteImminente, resumeFil, type CarteFil, type TypeCarteFil } from '@/lib/fil/cartes';
 import { grouperLuesParLecture, type GroupeLecture } from '@/lib/fil/lectureCartes';
 import { libelleTemporel } from '@/lib/fil/horodatage';
+import {
+  MESSAGE_RELANCE_SANS_REPONSE,
+  messageResultatRelance,
+  type ResultatRelance,
+} from '@/lib/praticien/relanceEcheance';
 import type { EtatMeteoAdhesion } from '@/lib/protocol/adhesion';
 import { BadgeMeteo } from '@/components/meteo/BadgeMeteo';
 import { TRAIT_ICONE } from '@/components/ui/icone';
@@ -44,10 +49,6 @@ const TYPE_CARTE: Record<TypeCarteFil, { libelle: string; icon: LucideIcon }> = 
   geste_objectif: { libelle: 'Réponse du patient', icon: MessageSquare },
 };
 
-/** Le seul `statut_reponses` qui rouvre une assignation échue — le même que
- *  `deciderRelanceAssignation` lit côté serveur. */
-const REPONSES_DEVERROUILLEES = 'deverrouille';
-
 /** Grille timeline de la maquette : heure | pastille | carte. Partagée entre
  * carte active et carte écartée pour que l'axe vertical ne « saute » pas.
  *
@@ -61,69 +62,34 @@ const GRILLE_TIMELINE =
 const CARTE_TIMELINE = 'max-[319px]:col-span-full';
 
 /**
- * RAPPELER AU PATIENT UN QUESTIONNAIRE EN RETARD — depuis la carte qui
- * constate le retard, et nulle part ailleurs.
+ * RELANCER LE PATIENT DEPUIS LA CARTE QUI CONSTATE LE RETARD ([[D-562]] §6) —
+ * le même geste que la fiche-trajectoire, sans dialogue, comme le rappel
+ * qu'il remplace.
  *
- * POURQUOI ICI. La carte « Échéance dépassée » est le seul endroit du produit
- * où le retard est établi ; la route refuse d'ailleurs tout rappel avant
- * l'échéance. Offrir le geste sur une liste d'assignations ferait voir un
- * bouton là où le serveur dira non.
+ * CE QUE FAIT LE CLIC. Un e-mail au patient, qui couvre tous les envois échus
+ * du dossier ([[D-399]] §3), et, s'il est parti, une nouvelle date limite au
+ * jour de la relance plus 7 jours (§1). Passé l'échéance, il n'y a plus de
+ * « Débloquer » d'abord : la nouvelle date rouvre l'envoi (§3, amende
+ * [[D-404]] §1).
  *
- * LE MESSAGE DU SERVEUR EST AFFICHÉ TEL QUEL, succès comme refus. Les refus de
- * `deciderRelanceAssignation` sont écrits pour être lus par un praticien — « un
- * rappel est déjà parti il y a moins de 3 jours », « l'échéance n'est pas encore
- * passée ». Les remplacer par un message générique retirerait la seule chose
- * qu'ils apportent : la raison.
+ * LE MESSAGE DU SERVEUR EST AFFICHÉ TEL QUEL quand il refuse : il dit la
+ * raison (« un rappel est déjà parti il y a moins de 3 jours »…). Un 200 se
+ * lit par son statut (`messageResultatRelance`) : « Relance envoyée » ne se
+ * dit que d'un e-mail parti.
  *
- * IL NE DISPARAÎT PAS APRÈS L'ENVOI, et la carte ne bouge pas : le rappel
- * n'écrit rien dans le dossier, donc rien n'a changé de ce que la carte
- * constate. Le questionnaire est toujours en retard — c'est le patient qui a
- * la main, pas nous.
- *
- * DÉBLOQUER D'ABORD ([[D-414]] §1). Passé l'échéance, seul un questionnaire
- * déverrouillé se rappelle : le serveur refuse les autres (`echeance_expiree`,
- * [[D-404]]). Sur ces cartes, le bouton est « Débloquer » — la route du
- * dossier (`PATCH /api/praticien/assignations`), sans confirmation, comme dans
- * le dossier, échéance inchangée. Après le déblocage, la carte reste et le
- * MÊME bouton devient « Rappeler » : deux gestes distincts, car débloquer ne
- * prévient pas le patient. Le même élément garde le focus au clavier.
- *
- * SANS STATUT (réponse d'un serveur antérieur), le geste reste « Rappeler » :
- * le serveur dit non s'il le faut, l'écran n'écrit rien qu'il ne sache pas.
+ * LA CARTE RESTE JUSQU'AU PROCHAIN CHARGEMENT, avec son message : la date a
+ * bougé, et le Fil recalculé ne la montrera plus avant la nouvelle échéance
+ * (§7). Le même élément garde le focus au clavier.
  */
 function BoutonRelance({
   idAssignation,
   titre,
-  statutReponses,
 }: {
   idAssignation: string;
   titre: string;
-  statutReponses: string | undefined;
 }) {
   const [enCours, setEnCours] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const [aDebloquer, setADebloquer] = useState(
-    statutReponses !== undefined && statutReponses !== REPONSES_DEVERROUILLEES,
-  );
-
-  const debloquer = useCallback(async () => {
-    setEnCours(true);
-    setMessage(null);
-    try {
-      const reponse = await fetch('/api/praticien/assignations', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idAssignation }),
-      });
-      const charge = (await reponse.json()) as { success?: boolean; error?: string };
-      if (charge.success) setADebloquer(false);
-      else setMessage(charge.error ?? 'Déblocage impossible.');
-    } catch {
-      setMessage('Déblocage impossible : le serveur n’a pas répondu.');
-    } finally {
-      setEnCours(false);
-    }
-  }, [idAssignation]);
 
   const relancer = useCallback(async () => {
     setEnCours(true);
@@ -134,33 +100,9 @@ function BoutonRelance({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ idAssignation }),
       });
-      const charge = (await reponse.json()) as {
-        ok?: boolean;
-        error?: string;
-        statut?: string;
-        questionnaires?: number;
-      };
-      // UN E-MAIL PEUT EN COUVRIR PLUSIEURS ([[D-399]]) : le dire, sans quoi le
-      // refus de cadence des autres cartes du dossier paraîtrait inexpliqué.
-      // SEULEMENT S'IL EST PARTI : en échec, les autres cartes restent
-      // rappelables, et la phrase affirmerait un fait faux.
-      //
-      // UN 200 N'EST PAS UN ENVOI ([[D-404]]) : la route rend 200 avec le
-      // statut de la trace. « Rappel envoyé. » ne se dit que de « Envoye ».
-      const nombre = charge.questionnaires ?? 1;
-      setMessage(
-        !charge.ok
-          ? charge.error ?? 'Rappel impossible.'
-          : charge.statut === 'Erreur'
-            ? 'Rappel non parti : l’envoi a échoué. Vous pouvez réessayer.'
-            : charge.statut === 'Non_envoye'
-              ? 'Rappel non parti : l’envoi d’e-mails n’est pas configuré.'
-              : nombre > 1 && charge.statut === 'Envoye'
-                ? `Rappel envoyé. Il couvre les ${nombre} questionnaires en retard de ce dossier.`
-                : 'Rappel envoyé.',
-      );
+      setMessage(messageResultatRelance((await reponse.json()) as ResultatRelance));
     } catch {
-      setMessage('Rappel impossible : le serveur n’a pas répondu.');
+      setMessage(MESSAGE_RELANCE_SANS_REPONSE);
     } finally {
       setEnCours(false);
     }
@@ -170,16 +112,12 @@ function BoutonRelance({
     <>
       <button
         type="button"
-        onClick={() => void (aDebloquer ? debloquer() : relancer())}
+        onClick={() => void relancer()}
         disabled={enCours}
-        aria-label={
-          aDebloquer
-            ? `Débloquer le questionnaire en retard — ${titre}`
-            : `Rappeler au patient le questionnaire en retard — ${titre}`
-        }
+        aria-label={`Relancer le patient — ${titre}`}
         className="inline-flex min-h-11 items-center rounded-lg border border-border bg-surface px-3 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
       >
-        {aDebloquer ? (enCours ? 'Déblocage…' : 'Débloquer') : enCours ? 'Envoi…' : 'Rappeler'}
+        {enCours ? 'Relance…' : 'Relancer'}
       </button>
       {/* `role="status"` et non `alert` : un refus de cadence n'est pas une
           erreur, c'est une réponse. Le lecteur d'écran l'annonce sans
@@ -284,11 +222,7 @@ function CarteDuFil({
               {carte.actionLabel} →
             </Link>
             {carte.type === 'assignation_en_retard' && carte.idAssignation && (
-              <BoutonRelance
-                idAssignation={carte.idAssignation}
-                titre={carte.titre}
-                statutReponses={carte.statutReponses}
-              />
+              <BoutonRelance idAssignation={carte.idAssignation} titre={carte.titre} />
             )}
             <span className="inline-flex min-h-[30px] items-center gap-1 rounded-full border border-border bg-muted px-3 py-0.5 text-13 text-muted-foreground">
               <span>Pourquoi maintenant :</span>

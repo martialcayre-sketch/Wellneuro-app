@@ -9,6 +9,7 @@ import type { DecisionCard } from '@/lib/clinical-engine/types';
 import { MESSAGE_DOSSIER_CLOS } from '@/lib/patient/cycleDeVie';
 import { reinitialiserReplisFiche } from './patient-cockpit/replisFiche';
 import { TEXTE_ENQUETE_ALIMENTAIRE_INCOMPLETE } from '@/lib/scoring/enqueteAlimentaireIncomplete';
+import { dateLimiteAffichee, nouvelleDateLimiteRelance } from '@/lib/praticien/relanceEcheance';
 
 // La fiche MÉMORISE l'onglet et la phase en localStorage (par patient) : sans
 // purge entre les cas, un test qui navigue vers « Trajectoire » ferait
@@ -152,7 +153,7 @@ type Options = {
   //   empêche de confirmer l'ancre, et celui qui a motivé ce compte ;
   // - `tronque` : la route plafonne, le dossier porte plus de lignes ;
   // - `filtreIgnore` : serveur qui n'écho pas l'absence de filtre.
-  envois?: 'defaut' | 'rideauIncomplet' | 'tronque' | 'filtreIgnore' | 'peremption' | 'aucun';
+  envois?: 'defaut' | 'rideauIncomplet' | 'tronque' | 'filtreIgnore' | 'peremption' | 'relance' | 'aucun';
   // Verdict du rideau T0 servi par la checklist du cockpit, branche
   // `proposal_required` seulement. ABSENT par défaut : la route ne le
   // calcule qu'en visant une ancre, et son absence doit rester testable.
@@ -553,6 +554,19 @@ const ENVOIS_PEREMPTION = [
 ];
 
 /**
+ * RELANCER ([[D-562]]) : deux envois échus du rideau, un agenda du sommeil
+ * échu (pas de bouton, §5), un envoi dont l'échéance est à venir (pas de
+ * bouton, §2) et un envoi sans échéance (jamais en souffrance).
+ */
+const ENVOIS_RELANCE = [
+  envoi('Q_INF_03', 'En attente', 30, 'DNST SIIN', { dateLimite: '2026-01-01' }),
+  envoi('Q_ALI_01', 'En attente', 30, 'Enquête alimentaire SIIN', { dateLimite: '2026-01-01' }),
+  envoi('Q_SOM_09', 'En attente', 30, 'Agenda du sommeil — 21 nuits', { dateLimite: '2026-01-01' }),
+  envoi('Q_STR_03', 'En attente', 5, 'Questionnaire de stress de Cungi', { dateLimite: '2099-01-01' }),
+  envoi('Q_NEU_11', 'En attente', 5, 'HAD — Anxiété et dépression'),
+];
+
+/**
  * LE DOSSIER ADMINISTRATIF servi par `GET /api/praticien/patients?idPatient=`.
  *
  * SANS LUI, LES BANCS VALIDAIENT UN ÉCRAN D'ERREUR (constat du 2026-09-17). La
@@ -805,6 +819,10 @@ function stubFetch(options: Options = {}) {
     if (url.includes('/api/praticien/assignations/annulation')) {
       return ok({ ok: true });
     }
+    // La route de relance ([[D-562]]) : un e-mail parti, deux envois couverts.
+    if (url.includes('/api/praticien/assignations/relance')) {
+      return ok({ ok: true, statut: 'Envoye', questionnaires: 2, nouvelleDateLimite: '2026-12-20' });
+    }
     if (url.includes('/api/praticien/patients')) {
       const scenario = options.patients ?? 'defaut';
       if (scenario === 'erreur') {
@@ -843,6 +861,8 @@ function stubFetch(options: Options = {}) {
           ? ENVOIS_RIDEAU_INCOMPLET
           : scenarioEnvois === 'peremption'
             ? ENVOIS_PEREMPTION
+            : scenarioEnvois === 'relance'
+              ? ENVOIS_RELANCE
             : scenarioEnvois === 'aucun'
               ? []
               : ENVOIS_RIDEAU_COMPLET;
@@ -3227,6 +3247,131 @@ describe('FichePatientPanel — annuler un envoi, et le signaler périmé', () =
     fireEvent.click(await screen.findByRole('button', { name: /Annuler l’assignation|Confirmer/ }));
 
     expect(await screen.findByText(/porte déjà une passation/)).toBeTruthy();
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RELANCER UN ENVOI ÉCHU DEPUIS LA FICHE ([[D-562]], textes T-81 à T-90 de
+// [[D-488]] DOC-20).
+// ─────────────────────────────────────────────────────────────────────────────
+describe('FichePatientPanel — relancer un envoi échu', () => {
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  it('n’offre « Relancer » qu’aux envois échus, hors agenda du sommeil', async () => {
+    await rendreFiche({ phaseDemandee: 'donnees', envois: 'relance' });
+
+    const boutons = await screen.findAllByRole('button', { name: /^Relancer le patient — / });
+    const lignes = boutons.map(b => b.closest('li')?.textContent ?? '');
+    expect(lignes).toHaveLength(2);
+    expect(lignes[0]).toContain('Q_INF_03');
+    expect(lignes[1]).toContain('Q_ALI_01');
+    expect(boutons[0].getAttribute('aria-label')).toBe('Relancer le patient — DNST SIIN');
+    expect(boutons[0].textContent).toBe('Relancer');
+    // Le badge dit pourquoi : les trois échus, agenda compris ; ni l'échéance
+    // à venir ni l'envoi sans échéance.
+    expect(screen.getAllByText('échéance dépassée le 01/01/2026')).toHaveLength(3);
+    expect(screen.getByText(/Relancer, c’est rappeler au patient les envois échus de ce dossier par un seul/))
+      .toBeTruthy();
+  });
+
+  it('aucun envoi échu : ni bouton ni phrase', async () => {
+    await rendreFiche({ phaseDemandee: 'donnees', envois: 'rideauIncomplet' });
+
+    await screen.findAllByRole('button', { name: 'Annuler l’envoi' });
+    expect(screen.queryByRole('button', { name: /^Relancer le patient/ })).toBeNull();
+    expect(screen.queryByText(/Relancer, c’est rappeler/)).toBeNull();
+  });
+
+  it('confirme en listant les envois couverts, poste la relance, dit le résultat et relit', async () => {
+    const fetchMock = await rendreFiche({ phaseDemandee: 'donnees', envois: 'relance' });
+    const avant = urlsPatients(fetchMock).length;
+
+    fireEvent.click((await screen.findAllByRole('button', { name: /^Relancer le patient — / }))[1]);
+    const dialogue = await screen.findByRole('dialog');
+    expect(within(dialogue).getByText('Relancer le patient ?')).toBeTruthy();
+    expect(within(dialogue).getByText(
+      `Un e-mail de rappel part au patient. La date limite de ces envois passe au ${dateLimiteAffichee(nouvelleDateLimiteRelance(new Date()))} :`,
+    )).toBeTruthy();
+    expect(within(dialogue).getAllByRole('listitem').map(li => li.textContent))
+      .toEqual(['DNST SIIN', 'Enquête alimentaire SIIN']);
+    expect(within(dialogue).getByText(/L’e-mail ne nomme pas les questionnaires/)).toBeTruthy();
+    fireEvent.click(within(dialogue).getByRole('button', { name: 'Relancer' }));
+
+    await waitFor(() => {
+      const appel = (fetchMock.mock.calls as unknown[][]).find(c => String(c[0]).includes('/api/praticien/assignations/relance'));
+      expect(JSON.parse(String((appel?.[1] as { body?: string } | undefined)?.body))).toEqual({ idAssignation: 'ASG_Q_ALI_01_En attente' });
+    });
+    expect(await screen.findByText(
+      'Relance envoyée. Elle couvre les 2 envois échus de ce dossier ; nouvelle date limite : 20/12/2026.',
+    )).toBeTruthy();
+    await waitFor(() => expect(urlsPatients(fetchMock).length).toBeGreaterThan(avant));
+  });
+
+  // La relecture démonte le bouton « Relancer » (la ligne n'est plus échue) :
+  // le focus, rendu par le dialogue à ce bouton, irait à `body`. Il va au
+  // message du résultat.
+  it('après la relecture, le focus va au message du résultat', async () => {
+    const base = stubFetch({ envois: 'relance' });
+    let relancee = false;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: unknown, init?: unknown) => {
+        const reponse = await (base as (i: unknown, n?: unknown) => Promise<{ json: () => Promise<unknown> }>)(input, init);
+        if (String(input).includes('/api/praticien/assignations/relance')) {
+          relancee = true;
+          return reponse;
+        }
+        if (!relancee) return reponse;
+        const corps = (await reponse.json()) as { assignations?: { dateLimite?: string | null }[] };
+        const decale = Array.isArray(corps.assignations)
+          ? { ...corps, assignations: corps.assignations.map(a => (a.dateLimite ? { ...a, dateLimite: '2099-12-31' } : a)) }
+          : corps;
+        return { ...reponse, json: () => Promise.resolve(decale) };
+      }),
+    );
+    render(
+      <C5FeatureProvider enabled={false}>
+        <FichePatientPanel idPatient="PAT001" phaseDemandee="donnees" />
+      </C5FeatureProvider>,
+    );
+
+    fireEvent.click((await screen.findAllByRole('button', { name: /^Relancer le patient — / }))[0]);
+    fireEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Relancer' }));
+
+    const message = await screen.findByText(/^Relance envoyée\./);
+    await waitFor(() => expect(screen.queryAllByRole('button', { name: /^Relancer le patient — / })).toHaveLength(0));
+    await waitFor(() => expect(document.activeElement).toBe(message));
+  });
+
+  it('un refus de la route s’affiche dans le dialogue, tel quel', async () => {
+    const base = stubFetch({ envois: 'relance' });
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((input: unknown) => {
+        if (String(input).includes('/api/praticien/assignations/relance')) {
+          return Promise.resolve({
+            ok: false,
+            status: 429,
+            json: () => Promise.resolve({ ok: false, reason: 'cadence', error: 'Un rappel est déjà parti il y a moins de 3 jours.' }),
+          });
+        }
+        return base(input);
+      }),
+    );
+    render(
+      <C5FeatureProvider enabled={false}>
+        <FichePatientPanel idPatient="PAT001" phaseDemandee="donnees" />
+      </C5FeatureProvider>,
+    );
+
+    fireEvent.click((await screen.findAllByRole('button', { name: /^Relancer le patient — / }))[0]);
+    fireEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Relancer' }));
+
+    expect(await screen.findByRole('alert')).toBeTruthy();
+    expect(screen.getByText('Un rappel est déjà parti il y a moins de 3 jours.')).toBeTruthy();
   });
 });
 

@@ -1,4 +1,5 @@
 import { JOURS_ENTRE_RELANCES } from '@/lib/agenda-sommeil/relanceEmail';
+import { AGENDA_SOMMEIL_ID } from '@/lib/agenda-sommeil/types';
 
 /**
  * RELANCER UN QUESTIONNAIRE QUI N'EST PAS REVENU — et dire pourquoi on ne le
@@ -33,9 +34,9 @@ const STATUT_ANNULEE = 'Annulée';
 /** Le refus d'une annulée, partagé par la relance et le déblocage
  *  (`PATCH /api/praticien/assignations`, [[D-422]] §2) : une seule phrase. */
 export const MESSAGE_ASSIGNATION_ANNULEE = 'Cette assignation est annulée : vous ne l’attendez plus.';
-/** Le seul `statut_reponses` qui rouvre une assignation échue : le
- *  déverrouillage du praticien (`PUT /api/praticien/assignations`). */
-const REPONSES_DEVERROUILLEES = 'deverrouille';
+// La nouvelle échéance d'une relance ([[D-562]] §1) vit dans un module sans
+// dépendance serveur, que la fiche lit aussi pour l'annoncer.
+export { JOURS_NOUVELLE_ECHEANCE_RELANCE, nouvelleDateLimiteRelance } from './relanceEcheance';
 
 const MS_PAR_JOUR = 24 * 60 * 60 * 1000;
 
@@ -44,7 +45,7 @@ export type RefusRelanceAssignation =
   | 'assignation_annulee'
   | 'sans_echeance'
   | 'echeance_non_depassee'
-  | 'echeance_expiree'
+  | 'agenda_sommeil'
   | 'cadence';
 
 export type DecisionRelanceAssignation =
@@ -54,8 +55,8 @@ export type DecisionRelanceAssignation =
 export type EntreeRelanceAssignation = {
   /** Le statut tel que la base le porte, jamais un booléen dérivé. */
   statut: string;
-  /** `assignations.statut_reponses`, tel que la base le porte. */
-  statutReponses: string;
+  /** L'instrument : l'agenda du sommeil a sa propre relance ([[D-562]] §5). */
+  idQuestionnaire: string;
   /** `AAAA-MM-JJ` — la forme exacte de `assignations.date_limite`, ou `null`. */
   dateLimite: string | null;
   /** Les relances déjà tracées pour CETTE assignation, dans un ordre non
@@ -117,33 +118,19 @@ export function deciderRelanceAssignation(
   if (entree.statut === STATUT_ANNULEE) {
     return { ok: false, raison: 'assignation_annulee', possibleLe: null };
   }
+  // L'AGENDA DU SOMMEIL SE RELANCE AILLEURS ([[D-562]] §5) : par nuit
+  // manquante, depuis son panneau — jamais par ce rappel, ni seul ni groupé.
+  if (entree.idQuestionnaire === AGENDA_SOMMEIL_ID) {
+    return { ok: false, raison: 'agenda_sommeil', possibleLe: null };
+  }
 
   const limite = minuitDe(entree.dateLimite);
   if (limite === null) return { ok: false, raison: 'sans_echeance', possibleLe: null };
 
-  // DÉPASSÉE = LE JOUR D'APRÈS, jamais « l'instant d'après minuit le jour
-  // même » : la date annonce une journée entière au patient, et le relancer à
-  // 00 h 01 du jour dit lui reprocherait un retard qu'il n'a pas encore.
-  //
-  // LE LENDEMAIN PAR LE CALENDRIER, PAS MINUIT + 24 H ([[D-414]] §2) : le jour
-  // du passage à l'heure d'hiver dure 25 h, et minuit + 24 h tombait à 23 h le
-  // jour dit — une heure avant que le portail ne dise « Expiré »
-  // (`isDeadlineExpired`, 23:59:59.999 locale). Le lendemain minuit local est
-  // l'instant qui suit cette borne.
-  const depasseeLe = new Date(limite);
-  depasseeLe.setDate(depasseeLe.getDate() + 1);
-  if (entree.maintenant.getTime() < depasseeLe.getTime()) {
-    return { ok: false, raison: 'echeance_non_depassee', possibleLe: depasseeLe };
-  }
-
-  // ÉCHUE = EXPIRÉE, SAUF DÉVERROUILLAGE ([[D-404]]). Passé le jour dit, le
-  // portail affiche « Expiré » et la soumission rend 410 (`patient/submit`) :
-  // rappeler ce questionnaire enverrait le patient vers une porte fermée. Le
-  // refus ne déverrouille rien — la route n'écrit toujours rien au dossier.
-  if (entree.statutReponses !== REPONSES_DEVERROUILLEES) {
-    return { ok: false, raison: 'echeance_expiree', possibleLe: null };
-  }
-
+  // LA CADENCE AVANT L'ÉCHÉANCE ([[D-562]] §1) : une relance partie repousse
+  // la date, si bien qu'un second clic trouverait une échéance « non
+  // passée ». Le refus qui dit vrai est « un rappel est déjà parti » — et il
+  // ne dépend plus de l'instant où la première relance a écrit sa date.
   // LE PLUS RÉCENT, pas le premier trouvé : l'appelant n'est pas tenu de trier,
   // et se fier à son ordre ferait dépendre une garde de cadence d'un `orderBy`
   // qu'une lecture voisine pourrait changer sans le savoir.
@@ -160,6 +147,25 @@ export function deciderRelanceAssignation(
       return { ok: false, raison: 'cadence', possibleLe };
     }
   }
+
+  // DÉPASSÉE = LE JOUR D'APRÈS, jamais « l'instant d'après minuit le jour
+  // même » : la date annonce une journée entière au patient, et le relancer à
+  // 00 h 01 du jour dit lui reprocherait un retard qu'il n'a pas encore.
+  //
+  // LE LENDEMAIN PAR LE CALENDRIER, PAS MINUIT + 24 H ([[D-414]] §2) : le jour
+  // du passage à l'heure d'hiver dure 25 h, et minuit + 24 h tombait à 23 h le
+  // jour dit — une heure avant que le portail ne dise « Expiré »
+  // (`isDeadlineExpired`, 23:59:59.999 locale). Le lendemain minuit local est
+  // l'instant qui suit cette borne.
+  const depasseeLe = new Date(limite);
+  depasseeLe.setDate(depasseeLe.getDate() + 1);
+  if (entree.maintenant.getTime() < depasseeLe.getTime()) {
+    return { ok: false, raison: 'echeance_non_depassee', possibleLe: depasseeLe };
+  }
+
+  // ÉCHUE NE VEUT PLUS DIRE « À DÉBLOQUER D'ABORD » ([[D-562]] §3, amende
+  // [[D-404]] §1) : la relance repousse la date limite, ce qui rouvre
+  // l'envoi — le portail et la soumission ne refusent qu'une date passée.
 
   return { ok: true };
 }
