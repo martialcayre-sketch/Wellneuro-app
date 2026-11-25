@@ -97,6 +97,9 @@ const LECTEURS_PUBLIES = [
   // drapeau de l'étage, le fil et le verrou de clé d'une ligne citée en
   // pièce — aucune valeur lue (2026-10-23).
   'web/src/app/api/praticien/besoins/constats/route.ts',
+  // La vignette de ce constat ([[D-551]], J3-12f) : le même drapeau de l'étage, pour
+  // la même lecture du dossier — aucune valeur lue (2026-11-25).
+  'web/src/app/api/praticien/besoins/vignettes/route.ts',
   'web/src/lib/constats-besoin/ecriture.ts',
   'web/src/lib/constats-besoin/lecture.ts',
   // L'export PDF du dossier ([[D-519]]) : les mesures qui font foi, la

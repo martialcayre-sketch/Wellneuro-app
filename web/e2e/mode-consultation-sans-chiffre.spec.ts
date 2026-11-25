@@ -98,7 +98,39 @@ const REPONSES = {
   ],
 };
 
-async function ouvrirFiche(page: Page, onglet?: string) {
+// La vignette du constat du praticien ([[D-551]], [[D-553]] §5) : le drapeau
+// `WN_CONSTAT_BESOIN` est forcé allumé pour ce banc seulement (`playwright.config.ts`).
+// Le besoin 2 est « non mesuré » dans ces fixtures ; son verdict est la SENTINELLE.
+const VERDICT_SENTINELLE = 'à soutenir';
+const LIGNE_VIGNETTE = `constat du praticien : ${VERDICT_SENTINELLE}`;
+const VIGNETTES_SENTINELLE = { ok: true, vignettes: { 2: { verdict: 'a_soutenir', aRelire: false } } };
+const VIGNETTES_AUCUNE = { ok: true, vignettes: {} };
+// Le panneau du constat (D-347), sous le tableau de l'onglet « Les 12 besoins » : il dit le
+// verdict et la note, un état que seul le praticien lit — remplacé par la mention en consultation.
+const NOTE_SENTINELLE = 'Note sentinelle du constat';
+const CONSTATS_SENTINELLE = {
+  ok: true,
+  offerts: [{ besoin: 2, libelle: 'Besoin 2', avecScore: false }],
+  aujourdhui: '2026-11-25',
+  besoins: [{
+    besoin: 2,
+    tete: {
+      id: 'c1', acte: 'pose', besoin: 2, verdict: 'a_soutenir', motif: null, note: NOTE_SENTINELLE, aRevoirLe: null,
+      praticienEmail: 'praticien@wellneuro.fr', acteLe: '2026-11-20T09:00:00.000Z', pieces: [],
+    },
+    aRelire: [],
+    historique: [],
+  }],
+  citables: [],
+};
+
+async function ouvrirFiche(page: Page, onglet?: string, vignettes: unknown = VIGNETTES_AUCUNE, constats: unknown = null) {
+  if (constats !== null) {
+    await page.route('**/api/praticien/besoins/constats?**', route =>
+      route.fulfill({ contentType: 'application/json', body: JSON.stringify(constats) }));
+  }
+  await page.route('**/api/praticien/besoins/vignettes?**', route =>
+    route.fulfill({ contentType: 'application/json', body: JSON.stringify(vignettes) }));
   await page.route('**/api/praticien/equilibre?**', route =>
     route.fulfill({ contentType: 'application/json', body: JSON.stringify(EQUILIBRE) }));
   await page.route('**/api/praticien/besoins?**', route =>
@@ -218,11 +250,75 @@ test.describe('Mode consultation — aucun chiffre à l’écran partagé (D-354
 
     await activer(page);
     await expect(page.getByRole('tab', { name: 'Les 12 besoins' })).toHaveAttribute('aria-selected', 'true');
-    await expect(panneau.getByText(MENTION)).toHaveCount(3);
+    // Trois mentions des besoins, plus celle qui remplace le panneau du constat (drapeau forcé allumé).
+    await expect(panneau.getByText(MENTION)).toHaveCount(4);
     expect(await panneau.innerText()).not.toMatch(/\d+\s*%/);
     await expect(panneau.locator('.recharts-radar')).toHaveCount(0);
     // La structure reste (§3) : les douze axes, et les non mesurés nommés.
     await expect(panneau.locator('.recharts-polar-angle-axis tspan', { hasText: 'non mesuré' })).toHaveCount(10);
+  });
+
+  // D-553 §5 : contrôle positif hors du mode, puis absence du verdict dans le mode,
+  // dans chacun des deux emplacements (l'onglet et le tiroir), au clic et au clavier.
+  test('vignette du constat, onglet « Les 12 besoins » : le verdict hors du mode, la mention dans le mode', async ({ page }) => {
+    await ouvrirFiche(page, 'besoins', VIGNETTES_SENTINELLE, CONSTATS_SENTINELLE);
+    const panneau = page.locator('#panneau-besoins');
+    await expect(panneau).toContainText(LIGNE_VIGNETTE);
+    // Contrôle positif du panneau du constat : sa note est à l'écran hors du mode.
+    await expect(panneau).toContainText(NOTE_SENTINELLE);
+    // Le besoin reste « non mesuré » : la vignette ne le remplace pas.
+    await expect(panneau.locator('tr', { hasText: 'Besoin 2' })).toContainText('non mesuré');
+
+    await activer(page);
+    await expect(panneau.locator('[data-vignette-constat-besoin="2"]')).toHaveText(MENTION);
+    const texte = await panneau.innerText();
+    expect(texte).not.toContain(VERDICT_SENTINELLE);
+    expect(texte).not.toContain('constat du praticien');
+    // Le panneau du constat ne dit plus ni sa note, ni son verdict, ni l'e-mail du praticien.
+    expect(texte).not.toContain(NOTE_SENTINELLE);
+    expect(texte).not.toContain('praticien@wellneuro.fr');
+    // Et sortir du mode rend le verdict.
+    await quitter(page);
+    await expect(panneau).toContainText(LIGNE_VIGNETTE);
+  });
+
+  test('vignette du constat, tiroir des 12 besoins : le verdict hors du mode, la mention dans le mode', async ({ page }) => {
+    await ouvrirFiche(page, undefined, VIGNETTES_SENTINELLE);
+    let panneau = await tiroir(page, /Les 12 besoins/);
+    await expect(panneau).toContainText(LIGNE_VIGNETTE);
+    await fermer(page);
+
+    await activer(page);
+    panneau = await tiroir(page, /Les 12 besoins/);
+    await expect(panneau.locator('[data-vignette-constat-besoin="2"]')).toHaveText(MENTION);
+    const texte = await panneau.innerText();
+    expect(texte).not.toContain(VERDICT_SENTINELLE);
+    expect(texte).not.toContain('constat du praticien');
+  });
+
+  test('vignette du constat, au clavier : activer le mode par Entrée masque le verdict de l’onglet', async ({ page }) => {
+    await ouvrirFiche(page, 'besoins', VIGNETTES_SENTINELLE);
+    const panneau = page.locator('#panneau-besoins');
+    await expect(panneau).toContainText(LIGNE_VIGNETTE);
+    await page.getByRole('button', { name: 'Mode consultation' }).focus();
+    await page.keyboard.press('Enter');
+    await expect(page.getByRole('button', { name: 'Quitter' })).toBeVisible();
+    await expect(panneau.locator('[data-vignette-constat-besoin="2"]')).toHaveText(MENTION);
+    expect(await panneau.innerText()).not.toContain(VERDICT_SENTINELLE);
+    expect(await panneau.innerText()).not.toContain(NOTE_SENTINELLE);
+  });
+
+  test('vignette du constat, au clavier : le mode activé par Entrée, le tiroir ouvert par Entrée, la mention à la place du verdict', async ({ page }) => {
+    await ouvrirFiche(page, undefined, VIGNETTES_SENTINELLE);
+    await page.getByRole('button', { name: 'Mode consultation' }).focus();
+    await page.keyboard.press('Enter');
+    await expect(page.getByRole('button', { name: 'Quitter' })).toBeVisible();
+    await page.getByRole('button', { name: /Les 12 besoins/ }).first().focus();
+    await page.keyboard.press('Enter');
+    const panneau = page.getByRole('dialog');
+    await expect(panneau).toBeVisible();
+    await expect(panneau.locator('[data-vignette-constat-besoin="2"]')).toHaveText(MENTION);
+    expect(await panneau.innerText()).not.toContain(VERDICT_SENTINELLE);
   });
 
   test('balayage : aucun pourcentage visible sur l’écran partagé, sur chaque phase du cockpit', async ({ page }) => {

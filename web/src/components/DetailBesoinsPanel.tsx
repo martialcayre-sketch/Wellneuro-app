@@ -4,10 +4,12 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import type { BesoinDetail, BesoinsApiResponse } from '@/app/api/praticien/besoins/route';
 import { ScoreRadar } from '@/components/ui/ScoreRadar';
-import { donneesRadarBesoins, LIBELLE_NON_MESURE } from '@/components/ui/scoreRadarPoints';
+import { donneesRadarBesoins, estMesure, LIBELLE_NON_MESURE } from '@/components/ui/scoreRadarPoints';
 import { DetailEcartDecision, DetailMotifNonMesure } from '@/components/patient-cockpit/DetailMotifNonMesure';
 import { DetailProvenance } from '@/components/patient-cockpit/DetailProvenance';
-import { mentionBesoinsMesures } from '@/lib/equilibre/natureIndiceGlobal';
+import { VignetteConstatBesoin } from '@/components/besoins/VignetteConstatBesoin';
+import { useVignettesConstats, type VignettesParBesoin } from '@/components/besoins/useVignettesConstats';
+import { MENTION_RADAR_NON_INDICE, mentionBesoinsMesures } from '@/lib/equilibre/natureIndiceGlobal';
 import { cleBesoin, grouperBesoinsParStrate } from '@/lib/praticien/ordreBesoins';
 import {
   fusionnerProvenances,
@@ -23,20 +25,35 @@ import { useFocusApresRelecture } from '@/components/ui/useFocusApresRelecture';
 // dupliqué est alors masqué. Route pleine page inchangée par défaut.
 // `emailPatient` : celui du patient affiché, passé par la fiche — il ouvre
 // « Compléter la mesure » dans le motif ([[D-352]] §2) ; absent, le motif seul.
+// `vignettesActives` : le drapeau `WN_CONSTAT_BESOIN`, lu au serveur par la page
+// et passé par la fiche ([[D-551]] §2) ; éteint ou absent, aucune vignette et
+// aucune requête.
 export function DetailBesoinsPanel({
   idPatient,
   enteteMasquee = false,
   emailPatient,
+  vignettesActives = false,
+  relectureVignettes = 0,
+  vignettesLues,
 }: {
   idPatient: string;
   enteteMasquee?: boolean;
   emailPatient?: string;
+  vignettesActives?: boolean;
+  /** Compteur de la fiche, incrémenté après un geste sur un constat. */
+  relectureVignettes?: number;
+  /** Les vignettes déjà lues par la fiche : une seule lecture, un seul accès journalisé. Absent, la vue lit. */
+  vignettesLues?: VignettesParBesoin | null;
 }) {
   const [data, setData] = useState<BesoinsApiResponse | null>(null);
   // Mode consultation de la fiche ([[D-354]] §2-3) : ni pourcentage, ni contour
   // du radar — le polygone dit les valeurs par sa forme ; ses axes restent.
   // Hors fiche : toujours `false`.
   const chiffresMasques = useChiffresMasques();
+  // Le constat du praticien sur un besoin sans score, en vignette ([[D-551]]) :
+  // hors du total et du compte, derrière `WN_CONSTAT_BESOIN`.
+  const vignettesPropres = useVignettesConstats(idPatient, vignettesActives && vignettesLues === undefined, relectureVignettes);
+  const vignettes = vignettesLues === undefined ? vignettesPropres : vignettesLues;
   const [loading, setLoading] = useState(true);
   const { titreRef, boutonRef, relire } = useFocusApresRelecture();
 
@@ -134,6 +151,12 @@ export function DetailBesoinsPanel({
         <div className="flex flex-col gap-1">
           <ScoreRadar data={radarData} valeursMasquees={chiffresMasques} />
           {chiffresMasques && <ValeurMasquee className="text-center text-sm" />}
+          {/* Le radar décrit, besoin par besoin : sa surface n'est pas l'indice
+              global ([[D-550]] §2.4). Dite là où une surface est tracée — en
+              mode consultation le contour est masqué ([[D-354]] §2). */}
+          {!chiffresMasques && radarData.some(d => estMesure(d.value)) && (
+            <p className="text-center text-xs text-muted-foreground">{MENTION_RADAR_NON_INDICE}</p>
+          )}
           {!chiffresMasques && provenanceRadar && (
             <DetailProvenance objet="ensemble des valeurs du tableau" lignes={lignesProvenance(provenanceRadar)} />
           )}
@@ -173,6 +196,9 @@ export function DetailBesoinsPanel({
                             {b.motifNonMesure && b.motifNonMesure.length > 0 && (
                               <DetailMotifNonMesure besoin={cle} motifs={b.motifNonMesure} emailPatient={emailPatient} />
                             )}
+                            {/* Le constat du praticien, en mots, hors total et hors
+                                compte ([[D-551]] §1). */}
+                            {vignettes?.[b.id] && <VignetteConstatBesoin besoin={b.id} vignette={vignettes[b.id]} />}
                           </>
                         ) : !provenanceEtablie(b.provenance) ? (
                           /* Sans provenance, pas de chiffre ([[D-333]] §2 règle 1,

@@ -123,6 +123,11 @@ const IMPORTEURS_ADMIS = [
   // (tête, annulation) et son verrou de clé — aucune valeur lue ; par
   // l'entrée publiée, quatrième lecteur hors biologie (2026-10-23).
   'web/src/app/api/praticien/besoins/constats/route.ts',
+  // La vignette de ce constat ([[D-551]], J3-12f) : même lecture du dossier que la
+  // route ci-dessus, donc le même drapeau de l'étage des résultats (la citation
+  // d'une pièce de biologie conditionne le « à relire ») — aucune valeur lue, rien
+  // d'autre que le verdict et « à relire » ne sort (2026-11-25).
+  'web/src/app/api/praticien/besoins/vignettes/route.ts',
   'web/src/lib/constats-besoin/ecriture.ts',
   'web/src/lib/constats-besoin/lecture.ts',
   // L'export PDF du dossier ([[D-519]]) : les mesures qui font foi, la

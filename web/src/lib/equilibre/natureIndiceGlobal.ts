@@ -59,6 +59,15 @@ export const MENTION_NATURE_INDICE_GLOBAL = 'Repère de suivi, pas un score clin
 export const MENTION_MOYENNE_BESOINS_MESURES = 'Moyenne des besoins mesurés, égale par besoin';
 
 /**
+ * Sous le radar de la fiche du praticien ([[D-550]] §2.4) : le radar reste
+ * DESCRIPTIF et ne laisse pas croire que sa surface est l'indice global. Texte
+ * validé mot pour mot par le responsable (2026-11-25, question 1000-b). Servi
+ * seulement quand un contour est tracé : ni en mode consultation, où il est masqué
+ * ([[D-354]] §2), ni sans aucun besoin mesuré, où rien n'est tracé.
+ */
+export const MENTION_RADAR_NON_INDICE = 'La surface du radar n’est pas l’indice global.';
+
+/**
  * CE SUR QUOI LE TOTAL EST ÉTABLI — [[D-329]] §3, audit de D-312 (section 10).
  *
  * Les besoins non mesurés sortent de la moyenne, et les strates vides de la

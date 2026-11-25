@@ -23,6 +23,12 @@ export function estMesure(value: unknown): value is number {
  * Les points du radar, un par besoin, dans l'ordre reçu. La couverture
  * absente reste absente (`null`) : c'est le radar qui en fait un trou. Une
  * couverture sans provenance établie aussi, avec son propre libellé d'axe.
+ *
+ * L'axe porte le code du besoin, « B1 » à « B12 » ([[D-550]] §3.1, arbitrage du
+ * 2026-11-25, question 1004-b) : les libellés praticien réels, jusqu'à 43
+ * caractères, sont coupés par le cadre du radar à 390 px comme à 320 px. Le
+ * libellé complet se lit dans la ligne « Bn · libellé » du tableau voisin, que
+ * `DetailBesoinsPanel.test.tsx` lie axe par axe.
  */
 export function donneesRadarBesoins(
   besoins: readonly Pick<BesoinDetail, 'id' | 'couverture' | 'provenance'>[],
