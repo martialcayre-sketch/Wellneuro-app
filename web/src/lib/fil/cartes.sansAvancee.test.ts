@@ -286,6 +286,51 @@ describe('cartesSansAvancee — affichage, clé et plafond (D-440 §5)', () => {
     expect(avant[0].carte.cle).not.toBe(apres[0].carte.cle);
     expect(apres[0].carte.cle).toBe(`sans_avancee:P-MICHEL:${ilYa(40).toISOString()}`);
   });
+  // [[D-562]] §7 (amende [[D-440]] §1) : un envoi relancé ne compte pas tant
+  // que sa nouvelle date limite n'est pas dépassée ; il revient ensuite.
+  it('situation 3 : un envoi relancé ne compte pas avant sa nouvelle échéance', () => {
+    const base = { aDesReponses: false, pas: {} };
+    const relanceEnCours = { dateAssignation: ilYa(60), dateLimite: '2026-11-11', relancee: true };
+    // Tous relancés : la carte se lève.
+    expect(produire([dossier('P-MICHEL', { ...base, questionnairesSansReponse: [relanceEnCours] })])).toEqual([]);
+    // Le jour même de la nouvelle date, l'envoi est encore attendu.
+    expect(produire([dossier('P-MICHEL', {
+      ...base, questionnairesSansReponse: [{ ...relanceEnCours, dateLimite: '2026-11-04' }],
+    })])).toEqual([]);
+    // Un autre envoi non relancé garde la carte, ancrée sur lui.
+    const [r] = produire([dossier('P-MICHEL', {
+      ...base, questionnairesSansReponse: [relanceEnCours, { dateAssignation: ilYa(40), dateLimite: null }],
+    })]);
+    expect(r.carte.cle).toBe(`sans_avancee:P-MICHEL:${ilYa(40).toISOString()}`);
+  });
+
+  it('situation 3 : la nouvelle échéance passée, l’envoi relancé revient, ancré comme avant', () => {
+    const base = { aDesReponses: false, pas: {} };
+    const [r] = produire([dossier('P-MICHEL', {
+      ...base, questionnairesSansReponse: [{ dateAssignation: ilYa(60), dateLimite: '2026-11-03', relancee: true }],
+    })]);
+    expect(r.carte.cle).toBe(`sans_avancee:P-MICHEL:${ilYa(60).toISOString()}`);
+  });
+
+  // Une échéance à venir ne suffit pas : seule une relance partie lève la carte.
+  it('situation 3 : une échéance à venir sans relance garde la carte', () => {
+    const base = { aDesReponses: false, pas: {} };
+    const [r] = produire([dossier('P-MICHEL', {
+      ...base, questionnairesSansReponse: [{ dateAssignation: ilYa(60), dateLimite: '2026-11-11' }],
+    })]);
+    expect(r.situation).toBe(3);
+  });
+
+  // La relance n'est pas un pas du parcours ([[D-440]] §2) : les situations 1
+  // et 2 ne la lisent pas.
+  it('situation 1 : une relance ne lève pas la carte de l’étape', () => {
+    const [r] = produire([dossier('P-SOPHIE', {
+      questionnairesSansReponse: [{ dateAssignation: ilYa(60), dateLimite: '2026-11-11', relancee: true }],
+    })]);
+    expect(r.situation).toBe(1);
+    // … et sa phrase compte l'envoi relancé, comme avant ([[D-562]] §7).
+    expect(r.carte.pourquoi).toContain('1 questionnaire assigné reste sans réponse');
+  });
 });
 
 describe('ligneCeQuiRetientT0 (D-440 §7)', () => {

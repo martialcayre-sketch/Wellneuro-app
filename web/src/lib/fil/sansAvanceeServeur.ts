@@ -11,6 +11,8 @@
 import { prisma } from '@/lib/prisma';
 import { filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
 import { preconditionsT0PourPatient } from '@/lib/clinical-engine/preconditionsT0Prisma';
+import { TYPES_CORRESPONDANCE_PATIENT } from '@/lib/correspondance/patient';
+import { SEPARATEUR_ASSIGNATIONS } from '@/lib/praticien/relanceAssignation';
 import type { DossierParcoursRow, QuestionnaireSansReponseRow } from './cartes';
 
 /** Statuts d'assignation qui ne sont plus attendus ([[D-422]] §1) ou déjà rendus. */
@@ -56,6 +58,7 @@ export async function lireDossiersParcours(
     livrets,
     diffusions,
     rendezVous,
+    relances,
   ] = await Promise.all([
     prisma.questionnaireReponse.groupBy({ by: ['idPatient'], where: dansLesDossiers, _max: { dateReponse: true } }),
     prisma.assignation.findMany({
@@ -94,6 +97,13 @@ export async function lireDossiersParcours(
       where: { ...dansLesDossiers, statut: 'planifie', dateHeure: { gt: maintenant } },
       _count: { _all: true },
     }),
+    // LES RAPPELS PARTIS ([[D-562]] §7) : `Envoye` seul — un échec n'a rien
+    // dit au patient, et la date n'a pas bougé. La trace porte les envois
+    // couverts, séparés par une virgule ([[D-399]]).
+    prisma.correspondancePatient.findMany({
+      where: { ...dansLesDossiers, type: TYPES_CORRESPONDANCE_PATIENT.relanceQuestionnaire, statut: 'Envoye' },
+      select: { referenceId: true },
+    }),
   ]);
 
   const derniereReponse = parPatient(reponses, r => r._max.dateReponse);
@@ -109,6 +119,9 @@ export async function lireDossiersParcours(
   const diffuses = new Set(diffusions.map(d => d.idPatient));
   const avecRendezVous = new Set(rendezVous.map(r => r.idPatient));
   const repondues = new Set(assignationsRepondues.map(a => a.idAssignation));
+  const relancees = new Set(
+    relances.flatMap(r => (r.referenceId ?? '').split(SEPARATEUR_ASSIGNATIONS)).filter(Boolean),
+  );
 
   // Une annulée n'est ni un pas (§2) ni un questionnaire attendu (§4).
   const derniereAssignation = new Map<string, Date>();
@@ -119,7 +132,11 @@ export async function lireDossiersParcours(
     if (!connue || a.dateAssignation.getTime() > connue.getTime()) derniereAssignation.set(a.idPatient, a.dateAssignation);
     if (a.statut === STATUT_COMPLETE || repondues.has(a.idAssignation)) continue;
     const liste = sansReponse.get(a.idPatient) ?? [];
-    liste.push({ dateAssignation: a.dateAssignation, dateLimite: a.dateLimite });
+    liste.push({
+      dateAssignation: a.dateAssignation,
+      dateLimite: a.dateLimite,
+      relancee: relancees.has(a.idAssignation),
+    });
     sansReponse.set(a.idPatient, liste);
   }
 

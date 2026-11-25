@@ -396,7 +396,7 @@ describe('FilDuJour — la trace d’une carte lue, et « Remettre »', () => {
 // rien pour le déclencher. Ces bancs tiennent le geste ET ce qu'il affiche —
 // un refus de cadence n'est pas une panne, c'est une réponse, et la perdre
 // retirerait la seule chose que ces refus apportent : la raison.
-describe('FilDuJour — rappeler un questionnaire en retard', () => {
+describe('FilDuJour — relancer un questionnaire en retard ([[D-562]] §6)', () => {
   beforeEach(() => vi.clearAllMocks());
 
   /** Le Fil, la Météo, et la relance — trois routes, trois réponses. */
@@ -423,54 +423,53 @@ describe('FilDuJour — rappeler un questionnaire en retard', () => {
     return poste;
   }
 
-  it('poste le rappel sur l’assignation de la carte, et dit qu’il est parti', async () => {
-    const poste = stubAvecRelance(async () => ({ ok: true, statut: 'Envoye' }));
+  it('poste la relance sur l’assignation de la carte, et dit la nouvelle date', async () => {
+    const poste = stubAvecRelance(async () => ({ ok: true, statut: 'Envoye', questionnaires: 1, nouvelleDateLimite: '2026-12-20' }));
     render(<FilDuJour />);
 
-    const bouton = await screen.findByRole('button', { name: /Rappeler au patient/i });
+    const bouton = await screen.findByRole('button', { name: /Relancer le patient/i });
     fireEvent.click(bouton);
 
-    await waitFor(() => expect(screen.getByText('Rappel envoyé.')).toBeTruthy());
+    await waitFor(() => expect(screen.getByText('Relance envoyée. Nouvelle date limite : 20/12/2026.')).toBeTruthy());
     const appel = poste.mock.calls.find(([url]) => String(url).includes('assignations/relance'));
     expect(JSON.parse(String((appel?.[1] as { body?: string })?.body))).toEqual({ idAssignation: 'ASG_1' });
   });
 
   // [[D-399]] : un e-mail couvre les questionnaires rappelables du dossier. Le
   // dire, sans quoi le refus de cadence des autres cartes paraîtrait inexpliqué.
-  it('dit qu’un rappel groupé couvre plusieurs questionnaires', async () => {
-    stubAvecRelance(async () => ({ ok: true, statut: 'Envoye', questionnaires: 3 }));
+  it('dit qu’une relance groupée couvre plusieurs envois', async () => {
+    stubAvecRelance(async () => ({ ok: true, statut: 'Envoye', questionnaires: 3, nouvelleDateLimite: '2026-12-20' }));
     render(<FilDuJour />);
 
-    fireEvent.click(await screen.findByRole('button', { name: /Rappeler au patient/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /Relancer le patient/i }));
 
     await waitFor(() =>
-      expect(screen.getByText('Rappel envoyé. Il couvre les 3 questionnaires en retard de ce dossier.')).toBeTruthy(),
+      expect(screen.getByText('Relance envoyée. Elle couvre les 3 envois échus de ce dossier ; nouvelle date limite : 20/12/2026.')).toBeTruthy(),
     );
   });
 
   // [[D-404]] : la route rend 200 avec le statut de la trace. Un rappel en
   // échec ou sans messagerie n'est pas « envoyé » — textes validés mot pour mot.
-  it('dit qu’un rappel en échec n’est pas parti, et qu’on peut réessayer', async () => {
+  it('dit qu’une relance en échec n’est pas partie, et que rien n’a changé', async () => {
     stubAvecRelance(async () => ({ ok: true, statut: 'Erreur', questionnaires: 3 }));
     render(<FilDuJour />);
 
-    fireEvent.click(await screen.findByRole('button', { name: /Rappeler au patient/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /Relancer le patient/i }));
 
     await waitFor(() =>
-      expect(screen.getByText('Rappel non parti : l’envoi a échoué. Vous pouvez réessayer.')).toBeTruthy());
-    expect(screen.queryByText(/Rappel envoyé/)).toBeNull();
-    expect(screen.queryByText(/Il couvre les 3 questionnaires/)).toBeNull();
+      expect(screen.getByText('Relance non partie : l’envoi a échoué. Rien n’a changé ; vous pouvez réessayer.')).toBeTruthy());
+    expect(screen.queryByText(/Relance envoyée/)).toBeNull();
   });
 
-  it('dit qu’un rappel n’est pas parti quand l’envoi d’e-mails n’est pas configuré', async () => {
+  it('dit qu’une relance n’est pas partie quand l’envoi d’e-mails n’est pas configuré', async () => {
     stubAvecRelance(async () => ({ ok: true, statut: 'Non_envoye', questionnaires: 1 }));
     render(<FilDuJour />);
 
-    fireEvent.click(await screen.findByRole('button', { name: /Rappeler au patient/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /Relancer le patient/i }));
 
     await waitFor(() =>
-      expect(screen.getByText('Rappel non parti : l’envoi d’e-mails n’est pas configuré.')).toBeTruthy());
-    expect(screen.queryByText(/Rappel envoyé/)).toBeNull();
+      expect(screen.getByText('Relance non partie : l’envoi d’e-mails n’est pas configuré. Rien n’a changé.')).toBeTruthy());
+    expect(screen.queryByText(/Relance envoyée/)).toBeNull();
   });
 
   // LE MESSAGE DU SERVEUR EST AFFICHÉ TEL QUEL : « un rappel est déjà parti il y
@@ -483,7 +482,7 @@ describe('FilDuJour — rappeler un questionnaire en retard', () => {
     }));
     render(<FilDuJour />);
 
-    fireEvent.click(await screen.findByRole('button', { name: /Rappeler au patient/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /Relancer le patient/i }));
 
     await waitFor(() =>
       expect(screen.getByText('Un rappel est déjà parti il y a moins de 3 jours.')).toBeTruthy());
@@ -501,121 +500,31 @@ describe('FilDuJour — rappeler un questionnaire en retard', () => {
     render(<FilDuJour />);
 
     await screen.findByText('Questionnaire en retard');
-    expect(screen.queryByRole('button', { name: /Rappeler au patient/i })).toBeNull();
-  });
-});
-
-// ── DÉBLOQUER, PUIS RAPPELER ([[D-414]] §1) ─────────────────────────────────
-//
-// Passé l'échéance, le serveur refuse de rappeler un questionnaire non
-// déverrouillé ([[D-404]]). La carte offre donc d'abord le déblocage — la
-// route du dossier, sans confirmation —, puis le rappel : deux gestes, car
-// débloquer ne prévient pas le patient.
-describe('FilDuJour — débloquer un questionnaire échu', () => {
-  beforeEach(() => vi.clearAllMocks());
-
-  function stubAvecDeblocage(
-    statutReponses: string,
-    deblocage: () => Promise<unknown>,
-    relance: () => Promise<unknown> = async () => ({ ok: true, statut: 'Envoye' }),
-  ) {
-    const poste = vi.fn(async (url: string, options?: { method?: string }) => {
-      if (url.includes('meteo-adhesion')) {
-        return { json: async () => ({ ok: true, determinees: [], nbIndeterminees: 0 }) } as unknown as Response;
-      }
-      if (url.includes('assignations/relance')) {
-        return { json: relance } as unknown as Response;
-      }
-      if (url.endsWith('/api/praticien/assignations')) {
-        expect(options?.method).toBe('PATCH');
-        return { json: deblocage } as unknown as Response;
-      }
-      return {
-        ok: true,
-        json: async () => ({
-          ok: true,
-          cartes: [carte({ idAssignation: 'ASG_1', statutReponses })],
-          refusees: [],
-          lues: [],
-        }),
-      } as unknown as Response;
-    });
-    vi.stubGlobal('fetch', poste);
-    return poste;
-  }
-
-  const appels = (poste: ReturnType<typeof vi.fn>, fin: string) =>
-    poste.mock.calls.filter(([url]) => String(url).endsWith(fin));
-
-  it('offre « Débloquer » à la place de « Rappeler » tant que le questionnaire n’est pas déverrouillé', async () => {
-    for (const statutReponses of ['non_rempli', 'verrouille', 'modification_demandee']) {
-      stubAvecDeblocage(statutReponses, async () => ({ success: true }));
-      render(<FilDuJour />);
-      expect(await screen.findByRole('button', { name: /Débloquer le questionnaire en retard/i })).toBeTruthy();
-      expect(screen.queryByRole('button', { name: /Rappeler au patient/i })).toBeNull();
-      cleanup();
-    }
+    expect(screen.queryByRole('button', { name: /Relancer le patient/i })).toBeNull();
   });
 
-  it('débloque l’assignation de la carte, sans rien rappeler, puis le même bouton devient « Rappeler »', async () => {
-    let resoudre: (v: unknown) => void = () => {};
-    const poste = stubAvecDeblocage('non_rempli', () => new Promise(r => { resoudre = r; }));
+  // [[D-562]] §3 : plus de « Débloquer » d'abord — la nouvelle date rouvre
+  // l'envoi. Un clic relance, et seule la route de relance est appelée.
+  it('ne propose plus « Débloquer » : un clic relance directement', async () => {
+    const poste = stubAvecRelance(async () => ({ ok: true, statut: 'Envoye', questionnaires: 1, nouvelleDateLimite: '2026-12-20' }));
     render(<FilDuJour />);
 
-    const bouton = await screen.findByRole('button', { name: /Débloquer le questionnaire en retard/i });
+    const bouton = await screen.findByRole('button', { name: /Relancer le patient/i });
+    expect(bouton.textContent).toBe('Relancer');
+    expect(screen.queryByRole('button', { name: /Débloquer/i })).toBeNull();
     fireEvent.click(bouton);
-    await waitFor(() => expect(bouton.textContent).toBe('Déblocage…'));
-    resoudre({ success: true });
 
-    await waitFor(() => expect(bouton.textContent).toBe('Rappeler'));
-    expect(bouton.getAttribute('aria-label')).toMatch(/^Rappeler au patient/);
-    // La carte reste : seul le geste a changé.
-    expect(screen.getByText('Questionnaire en retard')).toBeTruthy();
-    const [deblocage] = appels(poste, '/api/praticien/assignations');
-    expect(JSON.parse(String((deblocage?.[1] as { body?: string })?.body))).toEqual({ idAssignation: 'ASG_1' });
-    // Débloquer ne prévient pas le patient : aucun rappel n'est parti.
-    expect(appels(poste, '/api/praticien/assignations/relance')).toHaveLength(0);
-
-    fireEvent.click(bouton);
-    await waitFor(() => expect(screen.getByText('Rappel envoyé.')).toBeTruthy());
-    expect(appels(poste, '/api/praticien/assignations/relance')).toHaveLength(1);
-    expect(appels(poste, '/api/praticien/assignations')).toHaveLength(1);
+    await waitFor(() => expect(screen.getByText('Relance envoyée. Nouvelle date limite : 20/12/2026.')).toBeTruthy());
+    expect(poste.mock.calls.some(([, options]) => (options as { method?: string } | undefined)?.method === 'PATCH')).toBe(false);
   });
 
-  it('un refus du déblocage s’affiche tel quel, et le bouton reste « Débloquer »', async () => {
-    const poste = stubAvecDeblocage('non_rempli', async () => ({
-      success: false,
-      reason: 'not_found',
-      error: 'Assignation introuvable.',
-    }));
+  it('dit qu’une relance sans réponse du serveur n’a pas eu lieu', async () => {
+    stubAvecRelance(async () => { throw new Error('réseau'); });
     render(<FilDuJour />);
 
-    fireEvent.click(await screen.findByRole('button', { name: /Débloquer le questionnaire en retard/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /Relancer le patient/i }));
 
-    await waitFor(() => expect(screen.getByText('Assignation introuvable.')).toBeTruthy());
-    expect(screen.getByRole('button', { name: /Débloquer le questionnaire en retard/i }).textContent).toBe('Débloquer');
-    expect(appels(poste, '/api/praticien/assignations/relance')).toHaveLength(0);
-  });
-
-  it('dit qu’un déblocage sans réponse du serveur n’a pas eu lieu', async () => {
-    stubAvecDeblocage('non_rempli', async () => { throw new Error('réseau'); });
-    render(<FilDuJour />);
-
-    fireEvent.click(await screen.findByRole('button', { name: /Débloquer le questionnaire en retard/i }));
-
-    await waitFor(() =>
-      expect(screen.getByText('Déblocage impossible : le serveur n’a pas répondu.')).toBeTruthy());
-    expect(screen.getByRole('button', { name: /Débloquer le questionnaire en retard/i }).textContent).toBe('Débloquer');
-  });
-
-  it('un questionnaire déjà déverrouillé se rappelle directement', async () => {
-    const poste = stubAvecDeblocage('deverrouille', async () => ({ success: true }));
-    render(<FilDuJour />);
-
-    fireEvent.click(await screen.findByRole('button', { name: /Rappeler au patient/i }));
-
-    await waitFor(() => expect(screen.getByText('Rappel envoyé.')).toBeTruthy());
-    expect(appels(poste, '/api/praticien/assignations')).toHaveLength(0);
+    await waitFor(() => expect(screen.getByText('Relance impossible : le serveur n’a pas répondu.')).toBeTruthy());
   });
 });
 

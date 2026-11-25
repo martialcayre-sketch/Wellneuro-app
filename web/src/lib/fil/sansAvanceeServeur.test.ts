@@ -16,6 +16,7 @@ const { prisma, preconditionsT0PourPatient } = vi.hoisted(() => ({
     bookletEnvoi: { groupBy: vi.fn() },
     protocolDiffusionApproval: { groupBy: vi.fn() },
     rendezVous: { groupBy: vi.fn() },
+    correspondancePatient: { findMany: vi.fn() },
   },
   preconditionsT0PourPatient: vi.fn(),
 }));
@@ -110,10 +111,27 @@ describe('lireDossiersParcours', () => {
     const { dossiers } = await lireDossiersParcours('p@wellneuro.fr', MAINTENANT);
     expect(dossiers[0].pas.assignation).toEqual(d('2026-08-03'));
     expect(dossiers[0].questionnairesSansReponse).toEqual([
-      { dateAssignation: d('2026-08-03'), dateLimite: '2026-08-20' },
+      { dateAssignation: d('2026-08-03'), dateLimite: '2026-08-20', relancee: false },
     ]);
     expect(dossiers[0].aDesReponses).toBe(false);
     expect(dossiers[0].t0ConsigneLe).toBeNull();
+  });
+
+  // [[D-562]] §7 : un envoi couvert par un rappel PARTI est marqué relancé —
+  // seul ou dans un rappel groupé. Un échec ne compte pas.
+  it('marque relancés les envois couverts par un rappel parti, groupé compris', async () => {
+    prisma.assignation.findMany.mockResolvedValue([
+      { idAssignation: 'A-1', idPatient: 'P-SOPHIE', dateAssignation: d('2026-08-01'), dateLimite: '2026-11-08', statut: 'En attente' },
+      { idAssignation: 'A-2', idPatient: 'P-SOPHIE', dateAssignation: d('2026-08-02'), dateLimite: '2026-11-08', statut: 'En attente' },
+      { idAssignation: 'A-3', idPatient: 'P-SOPHIE', dateAssignation: d('2026-08-03'), dateLimite: '2026-09-01', statut: 'En attente' },
+    ]);
+    prisma.correspondancePatient.findMany.mockResolvedValue([{ referenceId: 'A-1,A-2' }, { referenceId: null }]);
+
+    const { dossiers } = await lireDossiersParcours('p@wellneuro.fr', MAINTENANT);
+    expect(prisma.correspondancePatient.findMany.mock.calls[0][0].where).toEqual({
+      idPatient: { in: ['P-SOPHIE'] }, type: 'relance_questionnaire', statut: 'Envoye',
+    });
+    expect(dossiers[0].questionnairesSansReponse.map(q => q.relancee)).toEqual([true, true, false]);
   });
 });
 

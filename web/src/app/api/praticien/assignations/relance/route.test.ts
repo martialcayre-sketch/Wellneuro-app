@@ -16,7 +16,7 @@ const {
   prisma: {
     $transaction: vi.fn(),
     $executeRaw: vi.fn(),
-    assignation: { findUnique: vi.fn(), findMany: vi.fn() },
+    assignation: { findUnique: vi.fn(), findMany: vi.fn(), updateMany: vi.fn() },
     patient: { findUnique: vi.fn() },
     correspondancePatient: { findMany: vi.fn(), create: vi.fn(), update: vi.fn() },
   },
@@ -42,6 +42,7 @@ vi.mock('@/lib/correspondance/registreGabarits', async (importOriginal) => {
 });
 
 import { POST } from './route';
+import { nouvelleDateLimiteRelance } from '@/lib/praticien/relanceEcheance';
 import { MARQUE_ENVOI_EN_COURS } from '@/lib/correspondance/reservation';
 import {
   MESSAGE_DOSSIER_CLOS,
@@ -70,13 +71,13 @@ describe('/api/praticien/assignations/relance', () => {
     getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
     verifierAppartenancePatient.mockResolvedValue('ok');
     prisma.assignation.findUnique.mockResolvedValue({
-      idPatient: 'PAT_TEST', statut: 'En attente', statutReponses: 'deverrouille', dateLimite: DEMAIN_DU_RETARD,
+      idPatient: 'PAT_TEST', statut: 'En attente', idQuestionnaire: 'Q_INF_03', dateLimite: DEMAIN_DU_RETARD,
     });
     prisma.patient.findUnique.mockResolvedValue({
       actif: true, suiviClotureLe: null, email: 'patient@example.test',
     });
     prisma.assignation.findMany.mockResolvedValue([
-      { idAssignation: 'ASS_1', statut: 'En attente', statutReponses: 'deverrouille', dateLimite: DEMAIN_DU_RETARD },
+      { idAssignation: 'ASS_1', statut: 'En attente', idQuestionnaire: 'Q_INF_03', dateLimite: DEMAIN_DU_RETARD },
     ]);
     prisma.correspondancePatient.findMany.mockResolvedValue([]);
     // La transaction joue son corps sur le même client : le verrou, la
@@ -87,6 +88,7 @@ describe('/api/praticien/assignations/relance', () => {
     prisma.$executeRaw.mockResolvedValue(1);
     prisma.correspondancePatient.create.mockResolvedValue({ id: 'RES_1' });
     prisma.correspondancePatient.update.mockResolvedValue({});
+    prisma.assignation.updateMany.mockResolvedValue({ count: 1 });
     sendMail.mockResolvedValue({});
   });
 
@@ -113,7 +115,7 @@ describe('/api/praticien/assignations/relance', () => {
     expect((await POST(requete({ idAssignation: 'ASS_1' }))).status).toBe(403);
   });
 
-  it('réserve le rappel puis le solde, sans rien écrire dans le dossier', async () => {
+  it('réserve le rappel puis le solde ; rien de parti, rien d’écrit dans le dossier', async () => {
     const res = await POST(requete({ idAssignation: 'ASS_1' }));
 
     expect(res.status).toBe(200);
@@ -138,6 +140,15 @@ describe('/api/praticien/assignations/relance', () => {
       data: { statut: 'Non_envoye', erreurCourte: null },
     });
     expect(journaliserCorrespondancePatient).not.toHaveBeenCalled();
+    // [[D-562]] §1 : la date ne reste repoussée que si l'e-mail est parti.
+    // Posée sous le verrou, elle est rendue à sa valeur d'avant — seulement
+    // là où elle porte encore celle de la relance.
+    const nouvelle = nouvelleDateLimiteRelance(new Date());
+    expect(prisma.assignation.updateMany).toHaveBeenCalledTimes(2);
+    expect(prisma.assignation.updateMany).toHaveBeenLastCalledWith({
+      where: { idAssignation: 'ASS_1', dateLimite: nouvelle, statut: { notIn: ['Complété', 'Annulée'] } },
+      data: { dateLimite: DEMAIN_DU_RETARD },
+    });
   });
 
   it('le verrou du dossier est pris AVANT la lecture de la cadence', async () => {
@@ -159,11 +170,11 @@ describe('/api/praticien/assignations/relance', () => {
   it('un seul e-mail pour les questionnaires rappelables du dossier ([[D-399]])', async () => {
     vi.stubEnv('SMTP_URL', 'smtp://test');
     prisma.assignation.findMany.mockResolvedValueOnce([
-      { idAssignation: 'ASS_1', statut: 'En attente', statutReponses: 'deverrouille', dateLimite: DEMAIN_DU_RETARD },
-      { idAssignation: 'ASS_2', statut: 'En attente', statutReponses: 'deverrouille', dateLimite: DEMAIN_DU_RETARD },
-      { idAssignation: 'ASS_3', statut: 'Complété', statutReponses: 'deverrouille', dateLimite: DEMAIN_DU_RETARD },
-      { idAssignation: 'ASS_4', statut: 'En attente', statutReponses: 'deverrouille', dateLimite: DEMAIN_DU_RETARD },
-      { idAssignation: 'ASS_5', statut: 'En attente', statutReponses: 'deverrouille', dateLimite: null },
+      { idAssignation: 'ASS_1', statut: 'En attente', idQuestionnaire: 'Q_INF_03', dateLimite: DEMAIN_DU_RETARD },
+      { idAssignation: 'ASS_2', statut: 'En attente', idQuestionnaire: 'Q_INF_03', dateLimite: DEMAIN_DU_RETARD },
+      { idAssignation: 'ASS_3', statut: 'Complété', idQuestionnaire: 'Q_INF_03', dateLimite: DEMAIN_DU_RETARD },
+      { idAssignation: 'ASS_4', statut: 'En attente', idQuestionnaire: 'Q_INF_03', dateLimite: DEMAIN_DU_RETARD },
+      { idAssignation: 'ASS_5', statut: 'En attente', idQuestionnaire: 'Q_INF_03', dateLimite: null },
     ]);
     // ASS_4 a été rappelée il y a une heure, par un rappel groupé.
     prisma.correspondancePatient.findMany.mockResolvedValueOnce([
@@ -171,8 +182,20 @@ describe('/api/praticien/assignations/relance', () => {
     ]);
     const res = await POST(requete({ idAssignation: 'ASS_1' }));
 
-    expect(await res.json()).toMatchObject({ ok: true, statut: 'Envoye', questionnaires: 2 });
+    const nouvelle = nouvelleDateLimiteRelance(new Date());
+    expect(await res.json()).toMatchObject({ ok: true, statut: 'Envoye', questionnaires: 2, nouvelleDateLimite: nouvelle });
     expect(sendMail).toHaveBeenCalledTimes(1);
+    // [[D-562]] §1 et §4 : e-mail parti, la date des envois couverts — et
+    // d'eux seuls — passe au jour de la relance plus 7 jours, sous condition.
+    expect(prisma.assignation.updateMany).toHaveBeenCalledWith({
+      where: { idAssignation: { in: ['ASS_1', 'ASS_2'] }, statut: { notIn: ['Complété', 'Annulée'] } },
+      data: { dateLimite: nouvelle },
+    });
+    // Écrite SOUS LE VERROU, avant l'e-mail : un e-mail parti ne peut plus
+    // laisser une date inchangée. Aucune restauration après un envoi parti.
+    expect(prisma.assignation.updateMany).toHaveBeenCalledTimes(1);
+    expect(prisma.assignation.updateMany.mock.invocationCallOrder[0])
+      .toBeLessThan(sendMail.mock.invocationCallOrder[0]);
     expect(sendMail.mock.calls[0][0].subject).toBe('Des questionnaires vous attendent toujours — Wellneuro');
     expect(prisma.correspondancePatient.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
@@ -188,12 +211,56 @@ describe('/api/praticien/assignations/relance', () => {
     });
   });
 
-  it('un rappel seul garde son gabarit et son échéance', async () => {
+  it('un rappel seul garde son gabarit et annonce la nouvelle échéance', async () => {
     vi.stubEnv('SMTP_URL', 'smtp://test');
     await POST(requete({ idAssignation: 'ASS_1' }));
 
     expect(sendMail.mock.calls[0][0].subject).toBe('Un questionnaire vous attend toujours — Wellneuro');
-    expect(sendMail.mock.calls[0][0].text).toContain('À compléter avant le : 2026-01-01');
+    expect(sendMail.mock.calls[0][0].text).toContain(`À compléter avant le : ${nouvelleDateLimiteRelance(new Date())}`);
+    expect(sendMail.mock.calls[0][0].text).not.toContain('2026-01-01');
+  });
+
+  it('un envoi en échec ne repousse aucune date ([[D-562]] §1)', async () => {
+    vi.stubEnv('SMTP_URL', 'smtp://test');
+    sendMail.mockRejectedValueOnce(new Error('smtp'));
+    const res = await POST(requete({ idAssignation: 'ASS_1' }));
+
+    const corps = await res.json();
+    expect(corps).toMatchObject({ ok: true, statut: 'Erreur' });
+    expect(corps.nouvelleDateLimite).toBeUndefined();
+    expect(prisma.assignation.updateMany).toHaveBeenLastCalledWith({
+      where: { idAssignation: 'ASS_1', dateLimite: nouvelleDateLimiteRelance(new Date()), statut: { notIn: ['Complété', 'Annulée'] } },
+      data: { dateLimite: DEMAIN_DU_RETARD },
+    });
+  });
+
+  // Contre-revue Codex (P1) : une restauration qui lève n'arrête pas les
+  // suivantes, et la réponse ne dit plus « Rien n'a changé ».
+  it('une restauration qui lève : les autres envois sont restaurés, la réponse est l’erreur serveur', async () => {
+    vi.stubEnv('SMTP_URL', 'smtp://test');
+    prisma.assignation.findMany.mockResolvedValueOnce([
+      { idAssignation: 'ASS_1', statut: 'En attente', idQuestionnaire: 'Q_INF_03', dateLimite: DEMAIN_DU_RETARD },
+      { idAssignation: 'ASS_2', statut: 'En attente', idQuestionnaire: 'Q_INF_03', dateLimite: DEMAIN_DU_RETARD },
+    ]);
+    sendMail.mockRejectedValueOnce(new Error('smtp'));
+    prisma.assignation.updateMany
+      .mockResolvedValueOnce({ count: 2 })
+      .mockRejectedValueOnce(new Error('base indisponible'))
+      .mockResolvedValueOnce({ count: 1 });
+    const erreurConsole = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const res = await POST(requete({ idAssignation: 'ASS_1' }));
+
+    expect(res.status).toBe(500);
+    const corps = await res.json();
+    expect(corps).toMatchObject({ ok: false, error: 'Erreur serveur.' });
+    expect(corps.nouvelleDateLimite).toBeUndefined();
+    expect(prisma.assignation.updateMany).toHaveBeenCalledTimes(3);
+    expect(prisma.assignation.updateMany).toHaveBeenLastCalledWith({
+      where: { idAssignation: 'ASS_2', dateLimite: nouvelleDateLimiteRelance(new Date()), statut: { notIn: ['Complété', 'Annulée'] } },
+      data: { dateLimite: DEMAIN_DU_RETARD },
+    });
+    expect(erreurConsole).toHaveBeenCalled();
+    erreurConsole.mockRestore();
   });
 
   // [[D-398]] §1 (Q4) : rendu hors du bloc, le gabarit qui lève remontait en
@@ -216,10 +283,10 @@ describe('/api/praticien/assignations/relance', () => {
 
   it('refuse 409 une assignation sans échéance, en le disant', async () => {
     prisma.assignation.findUnique.mockResolvedValueOnce({
-      idPatient: 'PAT_TEST', statut: 'En attente', statutReponses: 'deverrouille', dateLimite: null,
+      idPatient: 'PAT_TEST', statut: 'En attente', idQuestionnaire: 'Q_INF_03', dateLimite: null,
     });
     prisma.assignation.findMany.mockResolvedValueOnce([
-      { idAssignation: 'ASS_1', statut: 'En attente', statutReponses: 'deverrouille', dateLimite: null },
+      { idAssignation: 'ASS_1', statut: 'En attente', idQuestionnaire: 'Q_INF_03', dateLimite: null },
     ]);
     const res = await POST(requete({ idAssignation: 'ASS_1' }));
 
@@ -245,8 +312,8 @@ describe('/api/praticien/assignations/relance', () => {
 
   it('la carte cliquée est jugée sur sa lecture sous le verrou : rendue entre-temps, rien ne part', async () => {
     prisma.assignation.findMany.mockResolvedValueOnce([
-      { idAssignation: 'ASS_1', statut: 'Complété', statutReponses: 'deverrouille', dateLimite: DEMAIN_DU_RETARD },
-      { idAssignation: 'ASS_2', statut: 'En attente', statutReponses: 'deverrouille', dateLimite: DEMAIN_DU_RETARD },
+      { idAssignation: 'ASS_1', statut: 'Complété', idQuestionnaire: 'Q_INF_03', dateLimite: DEMAIN_DU_RETARD },
+      { idAssignation: 'ASS_2', statut: 'En attente', idQuestionnaire: 'Q_INF_03', dateLimite: DEMAIN_DU_RETARD },
     ]);
     const res = await POST(requete({ idAssignation: 'ASS_1' }));
 
@@ -255,30 +322,38 @@ describe('/api/praticien/assignations/relance', () => {
     expect(prisma.correspondancePatient.create).not.toHaveBeenCalled();
   });
 
-  // ÉCHUE ET NON DÉVERROUILLÉE ([[D-404]]) : le portail l'affiche « Expiré »
-  // et la soumission rend 410. Le rappel est refusé, rien n'est réservé, rien
-  // n'est écrit au dossier — et le rappel groupé laisse ces cartes de côté.
-  it('refuse 409 le rappel d’un questionnaire échu non déverrouillé', async () => {
+  // [[D-562]] §3 : échue et non déverrouillée, elle se relance — la nouvelle
+  // date la rouvre. Le statut des réponses n'entre plus dans la décision.
+  it('relance un questionnaire échu non déverrouillé', async () => {
+    vi.stubEnv('SMTP_URL', 'smtp://test');
+    const res = await POST(requete({ idAssignation: 'ASS_1' }));
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ ok: true, statut: 'Envoye', questionnaires: 1 });
+    expect(prisma.assignation.updateMany).toHaveBeenCalledTimes(1);
+  });
+
+  // [[D-562]] §5 : l'agenda du sommeil se relance depuis son panneau (T-93).
+  it('refuse 409 l’agenda du sommeil, sans rien réserver', async () => {
     prisma.assignation.findMany.mockResolvedValueOnce([
-      { idAssignation: 'ASS_1', statut: 'En attente', statutReponses: 'non_rempli', dateLimite: DEMAIN_DU_RETARD },
+      { idAssignation: 'ASS_1', idQuestionnaire: 'Q_SOM_09', statut: 'En attente', dateLimite: DEMAIN_DU_RETARD },
     ]);
     const res = await POST(requete({ idAssignation: 'ASS_1' }));
 
     expect(res.status).toBe(409);
     expect(await res.json()).toMatchObject({
-      reason: 'echeance_expiree',
-      error: 'Ce questionnaire a expiré : déverrouillez-le avant de le rappeler.',
+      reason: 'agenda_sommeil',
+      error: 'L’agenda du sommeil se relance depuis son panneau, « Agendas du sommeil en cours ».',
     });
     expect(prisma.correspondancePatient.create).not.toHaveBeenCalled();
     expect(sendMail).not.toHaveBeenCalled();
   });
 
-  it('le rappel groupé ne couvre que les questionnaires déverrouillés ([[D-404]])', async () => {
+  it('le rappel groupé laisse l’agenda du sommeil de côté', async () => {
     prisma.assignation.findMany.mockResolvedValueOnce([
-      { idAssignation: 'ASS_1', statut: 'En attente', statutReponses: 'deverrouille', dateLimite: DEMAIN_DU_RETARD },
-      { idAssignation: 'ASS_2', statut: 'En attente', statutReponses: 'non_rempli', dateLimite: DEMAIN_DU_RETARD },
-      { idAssignation: 'ASS_3', statut: 'En attente', statutReponses: 'modification_demandee', dateLimite: DEMAIN_DU_RETARD },
-      { idAssignation: 'ASS_4', statut: 'En attente', statutReponses: 'deverrouille', dateLimite: DEMAIN_DU_RETARD },
+      { idAssignation: 'ASS_1', idQuestionnaire: 'Q_INF_03', statut: 'En attente', dateLimite: DEMAIN_DU_RETARD },
+      { idAssignation: 'ASS_2', idQuestionnaire: 'Q_SOM_09', statut: 'En attente', dateLimite: DEMAIN_DU_RETARD },
+      { idAssignation: 'ASS_4', idQuestionnaire: 'Q_MOD_01', statut: 'En attente', dateLimite: DEMAIN_DU_RETARD },
     ]);
     const res = await POST(requete({ idAssignation: 'ASS_1' }));
 

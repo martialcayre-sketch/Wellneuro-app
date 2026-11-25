@@ -62,6 +62,17 @@ import { estAnnulable } from '@/lib/praticien/annulabilite';
 import { anciennete, envoiPerime, JOURS_PEREMPTION_ENVOI } from '@/lib/assignations/peremption';
 import { MESSAGE_DOSSIER_CLOS } from '@/lib/patient/cycleDeVie';
 import { AnnulationAssignationDialog } from '@/components/ui/AnnulationAssignationDialog';
+import { RelanceEnvoisDialog } from '@/components/patient-cockpit/RelanceEnvoisDialog';
+import { focusPerdu } from '@/components/ui/useFocusApresRelecture';
+import { isDeadlineExpired } from '@/lib/patient-access';
+import { AGENDA_SOMMEIL_ID } from '@/lib/agenda-sommeil/types';
+import {
+  MESSAGE_RELANCE_SANS_REPONSE,
+  dateLimiteAffichee,
+  messageResultatRelance,
+  nouvelleDateLimiteRelance,
+  type ResultatRelance,
+} from '@/lib/praticien/relanceEcheance';
 import type { AnnulationAssignationResponse } from '@/app/api/praticien/assignations/annulation/route';
 import type { ScoreSubScore } from '@/lib/scoring/types';
 import type { Trajectoire } from '@/lib/protocol/trajectoire';
@@ -694,6 +705,23 @@ export function FichePatientPanel({
   >(null);
   const [annulationEnCours, setAnnulationEnCours] = useState(false);
   const [erreurAnnulation, setErreurAnnulation] = useState<string | null>(null);
+  // RELANCER UN ENVOI ÉCHU ([[D-562]]) : la ligne cliquée nomme l'envoi que la
+  // route relit sous verrou ; le dialogue liste tous les échus que le clic
+  // couvrira (§4). Le résultat s'écrit sous la ligne cliquée.
+  const [relanceCible, setRelanceCible] = useState<string | null>(null);
+  const [relanceEnCours, setRelanceEnCours] = useState(false);
+  const [erreurRelance, setErreurRelance] = useState<string | null>(null);
+  const [resultatRelance, setResultatRelance] = useState<{ idAssignation: string; message: string } | null>(null);
+  // LE FOCUS APRÈS UNE RELANCE : le dialogue rend le focus au bouton
+  // « Relancer », que la relecture démonte aussitôt (la ligne n'est plus
+  // échue). Il retombait sur `body`. S'il est perdu, il va au message du
+  // résultat, rendu focusable par programme — aucun texte neuf.
+  const resultatRelanceRef = useRef<HTMLSpanElement | null>(null);
+  useEffect(() => {
+    if (resultatRelance && resultatRelanceRef.current && focusPerdu(resultatRelanceRef.current)) {
+      resultatRelanceRef.current.focus();
+    }
+  }, [resultatRelance]);
   const [deverrouillageId, setDeverrouillageId] = useState<string | null>(null);
   // Le refus du déblocage, tel que la route l'écrit ([[D-422]] §2) : sans lui,
   // un suivi clos ou une annulée laissaient le bouton revenir sans rien dire.
@@ -1288,6 +1316,37 @@ export function FichePatientPanel({
     }
   }, [annulationCible, chargerPassations]);
 
+  const confirmerRelance = useCallback(async () => {
+    if (!relanceCible) return;
+    setRelanceEnCours(true);
+    setErreurRelance(null);
+    try {
+      const reponse = await fetch('/api/praticien/assignations/relance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idAssignation: relanceCible }),
+      });
+      const payload = (await reponse.json()) as ResultatRelance;
+      // UN REFUS RESTE DANS LE DIALOGUE, tel que le serveur l'écrit : il dit
+      // la raison, et rien n'est parti.
+      if (!payload.ok) {
+        setErreurRelance(payload.error ?? MESSAGE_RELANCE_SANS_REPONSE);
+        return;
+      }
+      const cible = relanceCible;
+      setRelanceCible(null);
+      setResultatRelance(null);
+      // La date a pu bouger : relire, pour que la ligne cesse de se dire échue.
+      // Le message vient APRÈS la relecture, pour que le focus le trouve.
+      await chargerPassations();
+      setResultatRelance({ idAssignation: cible, message: messageResultatRelance(payload) });
+    } catch {
+      setErreurRelance(MESSAGE_RELANCE_SANS_REPONSE);
+    } finally {
+      setRelanceEnCours(false);
+    }
+  }, [relanceCible, chargerPassations]);
+
   /**
    * Le compte des envois, et ce qui de leur attente bloque l'ancre.
    *
@@ -1307,6 +1366,11 @@ export function FichePatientPanel({
       // est une condition DURE de `preconditionsT0`. Les autres retardent une
       // lecture, pas une décision.
       rideauEnAttente: enAttente.filter(a => estDuRideauT0(a.idQuestionnaire)),
+      // EN SOUFFRANCE = ÉCHÉANCE DÉPASSÉE ([[D-562]] §2), même borne que le
+      // portail et la route : le lendemain de la date limite. L'agenda du
+      // sommeil se relance depuis son panneau (§5).
+      relancables: enAttente.filter(a =>
+        isDeadlineExpired(a.dateLimite) && a.idQuestionnaire !== AGENDA_SOMMEIL_ID),
     };
   }, [passations]);
 
@@ -2332,6 +2396,8 @@ export function FichePatientPanel({
                       statutReponses: a.statutReponses,
                       aPassation: a.aPassation,
                     });
+                    const echu = isDeadlineExpired(a.dateLimite);
+                    const relancable = envois.relancables.some(r => r.idAssignation === a.idAssignation);
                     return (
                       <li
                         key={a.idAssignation}
@@ -2344,6 +2410,22 @@ export function FichePatientPanel({
                         <span className="text-xs text-muted-foreground">{anciennete(a.dateAssignation)}</span>
                         {duRideau && <Badge variant="warning">rideau T0 — bloque l’ancre</Badge>}
                         {perime && <Badge variant="danger">sans retour au-delà de {JOURS_PEREMPTION_ENVOI} jours</Badge>}
+                        {echu && a.dateLimite && (
+                          <Badge variant="warning">échéance dépassée le {dateLimiteAffichee(a.dateLimite)}</Badge>
+                        )}
+                        {relancable && (
+                          <button
+                            type="button"
+                            aria-label={`Relancer le patient — ${a.titre}`}
+                            onClick={() => {
+                              setErreurRelance(null);
+                              setRelanceCible(a.idAssignation);
+                            }}
+                            className="min-h-9 shrink-0 rounded-lg border border-accent px-3 py-1 text-xs font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                          >
+                            Relancer
+                          </button>
+                        )}
                         {annulable && (
                           <button
                             type="button"
@@ -2361,6 +2443,16 @@ export function FichePatientPanel({
                             Annuler l’envoi
                           </button>
                         )}
+                        {resultatRelance?.idAssignation === a.idAssignation && (
+                          <span
+                            ref={resultatRelanceRef}
+                            tabIndex={-1}
+                            role="status"
+                            className="w-full text-xs text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                          >
+                            {resultatRelance.message}
+                          </span>
+                        )}
                       </li>
                     );
                   })}
@@ -2377,6 +2469,14 @@ export function FichePatientPanel({
                 <p className="mt-2 text-xs text-muted-foreground">
                   Annuler un envoi, c’est dire « je ne l’attends plus » : il sort des conditions
                   de confirmation de l’ancre. Rien n’est effacé, et l’envoi reste réassignable.
+                </p>
+              )}
+              {/* CE QUE « RELANCER » COUVRE, écrit à côté du geste ([[D-562]]
+                  §4) : un clic sur une ligne relance tous les échus du dossier. */}
+              {envois.relancables.length > 0 && (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Relancer, c’est rappeler au patient les envois échus de ce dossier par un seul
+                  e-mail, et leur donner une nouvelle date limite, 7 jours plus tard.
                 </p>
               )}
             </div>
@@ -3378,6 +3478,20 @@ export function FichePatientPanel({
     {/* Montée au niveau de la fiche, hors du panneau de phase : Radix portale
         vers `document.body`, et la modale doit survivre à un changement de
         phase pendant qu'elle est ouverte. */}
+    <RelanceEnvoisDialog
+      open={relanceCible !== null}
+      onOpenChange={ouvert => {
+        if (!ouvert && !relanceEnCours) {
+          setRelanceCible(null);
+          setErreurRelance(null);
+        }
+      }}
+      titres={envois.relancables.map(a => a.titre)}
+      nouvelleDate={dateLimiteAffichee(nouvelleDateLimiteRelance(new Date()))}
+      onConfirm={() => void confirmerRelance()}
+      enCours={relanceEnCours}
+      erreur={erreurRelance}
+    />
     <AnnulationAssignationDialog
       titreQuestionnaire={annulationCible?.titre ?? ''}
       emailPatient={annulationCible?.emailPatient ?? ''}
