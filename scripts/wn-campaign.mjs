@@ -90,8 +90,13 @@ function isDoneStatus(value) {
 function isAbandonedStatus(value) {
   return normalizeStatus(value).startsWith("abandon");
 }
+// Même lecture que `isTransferredStatus` de wn-campaign-audit.mjs (arbitrage du
+// 2026-11-25) : un lot « transféré » est fermé, il n'est ni fait ni abandonné.
+function isTransferredStatus(value) {
+  return /^transferee?s?(?![a-z])/.test(normalizeStatus(value));
+}
 function isClosedStatus(value) {
-  return isDoneStatus(value) || isAbandonedStatus(value);
+  return isDoneStatus(value) || isAbandonedStatus(value) || isTransferredStatus(value);
 }
 function slugify(value) {
   return value

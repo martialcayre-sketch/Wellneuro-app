@@ -36,9 +36,18 @@ function normalize(value) {
     .trim();
 }
 
+// « transféré » (et ses accords) ferme un lot parti ailleurs — arbitrage du
+// 2026-11-25, fin du contournement « abandonné… TRANSFÉRÉ » vu sous D-109. Le
+// mot seul, en tête : « transférer », « transfert prévu » ou « non transféré »
+// restent ouverts. Même lecture dans `isClosedStatus` de wn-campaign.mjs.
+function isTransferredStatus(low) {
+  return /^transferee?s?(?![a-z])/.test(low);
+}
+
 function isClosedStatus(value) {
   const low = normalize(value);
-  return low.startsWith("termine") || low.startsWith("livre") || low.startsWith("abandon") || low.startsWith("fait");
+  return low.startsWith("termine") || low.startsWith("livre") || low.startsWith("abandon") || low.startsWith("fait")
+    || isTransferredStatus(low);
 }
 
 function isInFlightStatus(value) {
