@@ -41,6 +41,7 @@
 import { randomBytes } from 'node:crypto';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import pg from 'pg';
+import { nouvelleDateLimiteRelance } from '@/lib/praticien/relanceEcheance';
 
 const URL_BASE = process.env.DATABASE_URL ?? '';
 const BASE_ANNONCEE = process.env.WN_RESERVATION_ENVOI_BANC_BASE ?? '';
@@ -326,26 +327,26 @@ describe.skipIf(!ACTIF)('réservation avant l’envoi — base réelle ([[D-398]
     expect(sendMail).toHaveBeenCalledTimes(1);
   });
 
-  it('rappel : une échue non déverrouillée est refusée, et le groupe la laisse de côté ([[D-404]])', async () => {
+  // [[D-562]] §1, §3 et §4 : une échue non déverrouillée se relance ; le
+  // groupe la couvre ; l'e-mail parti, la date des deux passe au jour de la
+  // relance plus 7 jours, et le statut des réponses ne bouge pas.
+  it('rappel : une échue non déverrouillée se relance, et la date des envois couverts passe à J+7', async () => {
     const idPatient = await dossier();
     const ouverte = await assignationEnRetard(idPatient, 1);
     const expiree = await assignationEnRetard(idPatient, 2, 'non_rempli');
     const url = 'http://localhost/api/praticien/assignations/relance';
 
-    const refus = await relance(requete(url, { idAssignation: expiree }));
-    expect(refus.status).toBe(409);
-    expect(await refus.json()).toMatchObject({ reason: 'echeance_expiree' });
-    expect(await lignesJournal(idPatient, 'relance_questionnaire')).toEqual([]);
-
-    const servie = await relance(requete(url, { idAssignation: ouverte }));
-    expect(await servie.json()).toMatchObject({ ok: true, statut: 'Envoye', questionnaires: 1 });
-    expect((await lignesJournal(idPatient, 'relance_questionnaire')).map(l => l.reference_id)).toEqual([ouverte]);
-    // La route n'écrit rien au dossier : l'expirée reste fermée.
+    const servie = await relance(requete(url, { idAssignation: expiree }));
+    const nouvelle = nouvelleDateLimiteRelance(new Date());
+    expect(await servie.json()).toMatchObject({ ok: true, statut: 'Envoye', questionnaires: 2, nouvelleDateLimite: nouvelle });
     const { rows } = await observateur.query(
-      'SELECT statut_reponses FROM assignations WHERE id_assignation = $1',
-      [expiree],
+      'SELECT id_assignation, date_limite, statut_reponses FROM assignations WHERE id_assignation = ANY($1) ORDER BY id_assignation',
+      [[ouverte, expiree]],
     );
-    expect(rows[0].statut_reponses).toBe('non_rempli');
+    expect(rows).toEqual([
+      { id_assignation: ouverte, date_limite: nouvelle, statut_reponses: 'deverrouille' },
+      { id_assignation: expiree, date_limite: nouvelle, statut_reponses: 'non_rempli' },
+    ]);
     expect(sendMail).toHaveBeenCalledTimes(1);
   });
 
@@ -358,6 +359,9 @@ describe.skipIf(!ACTIF)('réservation avant l’envoi — base réelle ([[D-398]
     expect(await (await relance(requete(url, { idAssignation: a }))).json()).toMatchObject({ statut: 'Erreur' });
     vi.stubEnv('SMTP_URL', '');
     expect(await (await relance(requete(url, { idAssignation: a }))).json()).toMatchObject({ statut: 'Non_envoye' });
+    // [[D-562]] §1 : rien de parti, aucune date ne bouge.
+    const { rows: avant } = await observateur.query('SELECT date_limite FROM assignations WHERE id_assignation = $1', [a]);
+    expect(avant[0].date_limite).toBe('2026-01-01');
     vi.stubEnv('SMTP_URL', 'smtp://banc@localhost:1025');
 
     const res = await relance(requete(url, { idAssignation: a }));

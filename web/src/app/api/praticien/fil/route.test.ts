@@ -192,12 +192,14 @@ describe('GET /api/praticien/fil', () => {
   // « …:undefined » : toutes les cartes d'un même type se confondraient, et un
   // refus persisté en emporterait d'autres. Le contrat se vérifie ici, à
   // l'endroit où il peut être cassé par inadvertance.
-  // [[D-414]] §1 : un suivi clos garde sa carte de retard, mais sans le statut
-  // qui ferait offrir « Débloquer » — la route de rappel le refuse déjà.
-  it('carte en retard : statut des réponses servi au suivi ouvert, retenu au suivi clos', async () => {
+  // [[D-562]] §5 et §6 : la carte de retard porte le geste « Relancer » par
+  // son identifiant, suivi clos compris (la route le refuse) ; l'agenda du
+  // sommeil n'en porte pas — l'instrument doit donc être lu.
+  it('carte en retard : identifiant du geste, sauf sur l’agenda du sommeil', async () => {
     prisma.assignation.findMany.mockResolvedValue([
-      { idAssignation: 'ASG_OUVERT', idPatient: 'PAT_SOPHIE', titre: 'Q', dateLimite: '2026-01-10', statut: 'En attente', statutReponses: 'non_rempli' },
-      { idAssignation: 'ASG_CLOS', idPatient: 'PAT_MICHEL', titre: 'Q', dateLimite: '2026-01-11', statut: 'En attente', statutReponses: 'non_rempli' },
+      { idAssignation: 'ASG_OUVERT', idPatient: 'PAT_SOPHIE', titre: 'Q', dateLimite: '2026-01-10', statut: 'En attente', idQuestionnaire: 'Q_INF_03' },
+      { idAssignation: 'ASG_CLOS', idPatient: 'PAT_MICHEL', titre: 'Q', dateLimite: '2026-01-11', statut: 'En attente', idQuestionnaire: 'Q_INF_03' },
+      { idAssignation: 'ASG_AGENDA', idPatient: 'PAT_SOPHIE', titre: 'Agenda', dateLimite: '2026-01-12', statut: 'En attente', idQuestionnaire: 'Q_SOM_09' },
     ]);
     prisma.patient.findMany.mockResolvedValue([
       { idPatient: 'PAT_SOPHIE', prenom: 'Sophie', nom: 'Nicola', suiviClotureLe: null },
@@ -206,11 +208,15 @@ describe('GET /api/praticien/fil', () => {
     const payload = await (await GET()).json();
     const retards = payload.cartes
       .filter((c: { type: string }) => c.type === 'assignation_en_retard')
-      .map((c: { idAssignation: string; statutReponses?: string }) => [c.idAssignation, c.statutReponses ?? null]);
+      .map((c: { cle: string; idAssignation?: string }) => [c.cle, c.idAssignation ?? null]);
     expect(retards).toEqual([
-      ['ASG_OUVERT', 'non_rempli'],
-      ['ASG_CLOS', null],
+      ['assignation_en_retard:ASG_OUVERT', 'ASG_OUVERT'],
+      ['assignation_en_retard:ASG_CLOS', 'ASG_CLOS'],
+      ['assignation_en_retard:ASG_AGENDA', null],
     ]);
+    expect(prisma.assignation.findMany.mock.calls.some(
+      (appel: unknown[]) => (appel[0] as { select?: Record<string, boolean> } | undefined)?.select?.idQuestionnaire === true,
+    )).toBe(true);
   });
 
   it('chaque requête du Fil sélectionne l’identifiant de sa ligne source', async () => {
@@ -443,7 +449,7 @@ describe('GET /api/praticien/fil', () => {
       sansAvancee.lireDossiersParcours.mockResolvedValueOnce({ dossiers: [dossier('PAT_SOPHIE')], noms });
       sansAvancee.ceQuiRetientT0.mockResolvedValueOnce(new Map([['PAT_SOPHIE', ['Anamnèse consignée']]]));
       prisma.assignation.findMany.mockResolvedValue([
-        { idAssignation: 'ASG_J', idPatient: 'PAT_JENNIFER', titre: 'Q', dateLimite: '2026-01-10', statut: 'En attente', statutReponses: 'non_rempli' },
+        { idAssignation: 'ASG_J', idPatient: 'PAT_JENNIFER', titre: 'Q', dateLimite: '2026-01-10', statut: 'En attente', idQuestionnaire: 'Q_TEST' },
       ]);
       prisma.questionnaireReponse.groupBy.mockResolvedValue([
         { idPatient: 'PAT_MICHEL', _max: { dateReponse: ilYa(400) }, _min: { dateReponse: ilYa(400) } },

@@ -21,6 +21,7 @@ import {
   SEPARATEUR_ASSIGNATIONS,
   deciderRelanceAssignation,
   envoisDeLAssignation,
+  nouvelleDateLimiteRelance,
   type RefusRelanceAssignation,
 } from '@/lib/praticien/relanceAssignation';
 
@@ -33,11 +34,13 @@ import {
  * second rideau garde pourtant le `T0` ([[D-158]]) : un questionnaire qui ne
  * revient pas immobilise la trajectoire entière, en silence, des deux côtés.
  *
- * CETTE ROUTE N'ÉCRIT RIEN DANS LE DOSSIER. Ni assignation, ni réponse, ni
- * statut : elle renvoie un courrier, et trace ce courrier. C'est ce qui la
- * distingue du contournement qui consiste à ré-assigner le même questionnaire
- * pour déclencher un e-mail — se servir d'un geste clinique comme d'un
- * transport, et laisser deux assignations là où le patient n'en attend qu'une.
+ * CETTE ROUTE N'ÉCRIT DANS LE DOSSIER QUE LA DATE LIMITE ([[D-562]] §1). Ni
+ * assignation, ni réponse, ni statut : elle renvoie un courrier, le trace,
+ * et, s'il est PARTI, repousse la date limite des envois couverts au jour de
+ * la relance plus 7 jours — ce qui les rouvre. C'est ce qui la distingue du
+ * contournement qui consiste à ré-assigner le même questionnaire pour
+ * déclencher un e-mail — se servir d'un geste clinique comme d'un transport,
+ * et laisser deux assignations là où le patient n'en attend qu'une.
  *
  * LA CADENCE ET L'ÉCHÉANCE SONT OPPOSABLES CÔTÉ SERVEUR, pas seulement
  * annoncées à l'écran : le dépôt a déjà connu une interdiction qui ne vivait
@@ -51,7 +54,9 @@ const TAILLE_CORPS_MAX_OCTETS = 8 * 1024;
 
 export type RelanceAssignationApiResponse =
   // `questionnaires` : le nombre d'assignations que l'e-mail couvre ([[D-399]]).
-  | { ok: true; statut: string; questionnaires: number }
+  // `nouvelleDateLimite` (`AAAA-MM-JJ`) : présente si et seulement si l'e-mail
+  // est parti, seul cas où la date a bougé ([[D-562]] §1).
+  | { ok: true; statut: string; questionnaires: number; nouvelleDateLimite?: string }
   | { ok: false; reason: string; error: string; possibleLe?: string };
 
 const MESSAGES_REFUS: Record<RefusRelanceAssignation, string> = {
@@ -61,7 +66,8 @@ const MESSAGES_REFUS: Record<RefusRelanceAssignation, string> = {
     'Cette assignation ne porte aucune échéance. Un rappel sans date ne dirait rien de plus que l’invitation.',
   echeance_non_depassee:
     'L’échéance n’est pas encore passée. Relancer avant le terme qu’on a donné revient à le retirer.',
-  echeance_expiree: 'Ce questionnaire a expiré : déverrouillez-le avant de le rappeler.',
+  // T-94 ([[D-488]] DOC-20, [[D-562]] §5).
+  agenda_sommeil: 'L’agenda du sommeil se relance depuis son panneau, « Agendas du sommeil en cours ».',
   cadence: `Un rappel est déjà parti il y a moins de ${JOURS_ENTRE_RELANCES_ASSIGNATION} jours.`,
 };
 
@@ -109,7 +115,7 @@ export async function POST(req: Request): Promise<NextResponse<RelanceAssignatio
     // dossier au nom duquel on parle.
     const assignation = await prisma.assignation.findUnique({
       where: { idAssignation },
-      select: { idPatient: true, statut: true, statutReponses: true, dateLimite: true },
+      select: { idPatient: true, idQuestionnaire: true, statut: true, dateLimite: true },
     });
     if (!assignation) return echec('not_found', 'Assignation introuvable.', 404);
 
@@ -142,16 +148,25 @@ export async function POST(req: Request): Promise<NextResponse<RelanceAssignatio
     // UN SEUL E-MAIL POUR LE DOSSIER ([[D-399]]) : le rappel d'une carte
     // couvre TOUTES les assignations du dossier rappelables à cet instant —
     // quatre cartes rappelées l'une après l'autre envoyaient quatre e-mails en
-    // cinq secondes. Le groupe ne couvre que les échues DÉVERROUILLÉES
-    // ([[D-404]]) : la décision refuse les autres. La cadence reste PAR
-    // ASSIGNATION : un questionnaire rappelé hier n'empêche pas d'en rappeler
-    // un autre, et une carte déjà couverte reçoit le refus de cadence.
+    // cinq secondes. Le groupe couvre les échues que la décision accepte,
+    // déverrouillées ou non ([[D-562]] §3), hors agenda du sommeil (§5). La
+    // cadence reste PAR ASSIGNATION : un questionnaire rappelé hier n'empêche
+    // pas d'en rappeler un autre, et une carte déjà couverte reçoit le refus
+    // de cadence.
+    //
+    // LA NOUVELLE DATE S'ÉCRIT SOUS LE MÊME VERROU, avec la réservation
+    // ([[D-562]] §1). Écrite après l'envoi, une écriture qui échouait laissait
+    // un patient prévenu « à compléter avant le J+7 » devant un portail
+    // « Expiré », et la cadence interdisait de recommencer pendant 3 jours. La
+    // date est donc posée d'abord, l'ancienne gardée, et RESTAURÉE si l'e-mail
+    // ne part pas : au bout du compte, elle n'a bougé que si l'e-mail est parti.
     const maintenant = new Date();
+    const nouvelleDateLimite = nouvelleDateLimiteRelance(maintenant);
     const issue = await prisma.$transaction(async tx => {
       await verrouillerEnvois(tx, `${TYPES_CORRESPONDANCE_PATIENT.relanceQuestionnaire}:${assignation.idPatient}`);
       const assignationsDossier = await tx.assignation.findMany({
         where: { idPatient: assignation.idPatient },
-        select: { idAssignation: true, statut: true, statutReponses: true, dateLimite: true },
+        select: { idAssignation: true, idQuestionnaire: true, statut: true, dateLimite: true },
         orderBy: { idAssignation: 'asc' },
       });
       // LES SEULS RAPPELS PARTIS, ou en partance ([[D-399]]) : un échec, une
@@ -166,11 +181,11 @@ export async function POST(req: Request): Promise<NextResponse<RelanceAssignatio
         select: { enregistreLe: true, referenceId: true },
       });
       const decider = (
-        a: { idAssignation: string; statut: string; statutReponses: string; dateLimite: string | null },
+        a: { idAssignation: string; idQuestionnaire: string; statut: string; dateLimite: string | null },
       ) =>
         deciderRelanceAssignation({
           statut: a.statut,
-          statutReponses: a.statutReponses,
+          idQuestionnaire: a.idQuestionnaire,
           dateLimite: a.dateLimite,
           envoisPrecedents: envoisDeLAssignation(envois, a.idAssignation),
           // L'INSTANT EST POSÉ ICI, jamais dans le module.
@@ -202,7 +217,14 @@ export async function POST(req: Request): Promise<NextResponse<RelanceAssignatio
         }),
         select: { id: true },
       });
-      return { sorte: 'reservee', reservation: id, couvertes, email: patient.email } as const;
+      await tx.assignation.updateMany({
+        where: { idAssignation: { in: couvertes }, statut: { notIn: [STATUT_RENDUE, STATUT_ANNULEE] } },
+        data: { dateLimite: nouvelleDateLimite },
+      });
+      const anciennesDates = assignationsDossier
+        .filter(a => couvertes.includes(a.idAssignation))
+        .map(a => ({ idAssignation: a.idAssignation, dateLimite: a.dateLimite }));
+      return { sorte: 'reservee', reservation: id, couvertes, anciennesDates, email: patient.email } as const;
     });
 
     if (issue.sorte === 'refus') {
@@ -219,14 +241,38 @@ export async function POST(req: Request): Promise<NextResponse<RelanceAssignatio
       return echec('sans_email', 'Ce dossier ne porte pas d’adresse e-mail.', 409);
     }
 
+    // LA DATE ANNONCÉE EST LA NOUVELLE : l'e-mail à un seul envoi la porte
+    // (segment `dateLimite`), et c'est elle qui vaut si l'e-mail part.
     const statut = await envoyerRappel(
       issue.reservation,
       issue.couvertes.length,
       issue.email,
-      assignation.dateLimite,
+      nouvelleDateLimite,
     );
+    // RIEN DE PARTI, RIEN DE CHANGÉ ([[D-562]] §1) : un échec ou une
+    // messagerie absente n'ont rien dit au patient, et chaque envoi couvert
+    // retrouve sa date d'avant — seulement s'il porte encore celle que la
+    // relance a posée. Une restauration qui échoue laisse une date repoussée
+    // sans e-mail : l'envoi reste ouvert, et la réservation soldée en échec
+    // ne compte pas dans la cadence, si bien qu'un nouveau clic est possible.
+    if (statut !== 'Envoye') {
+      try {
+        for (const { idAssignation: id, dateLimite } of issue.anciennesDates) {
+          await prisma.assignation.updateMany({
+            where: { idAssignation: id, dateLimite: nouvelleDateLimite },
+            data: { dateLimite },
+          });
+        }
+      } catch (erreur) {
+        console.error('[relance] restauration des dates après un envoi non parti :', erreur instanceof Error ? erreur.message : String(erreur));
+      }
+      return NextResponse.json<RelanceAssignationApiResponse>(
+        { ok: true, statut, questionnaires: issue.couvertes.length },
+        { status: 200 },
+      );
+    }
     return NextResponse.json<RelanceAssignationApiResponse>(
-      { ok: true, statut, questionnaires: issue.couvertes.length },
+      { ok: true, statut, questionnaires: issue.couvertes.length, nouvelleDateLimite },
       { status: 200 },
     );
   } catch {
@@ -234,6 +280,8 @@ export async function POST(req: Request): Promise<NextResponse<RelanceAssignatio
   }
 }
 
+const STATUT_RENDUE = 'Complété';
+const STATUT_ANNULEE = 'Annulée';
 const OBJET_RAPPEL = 'Rappel — un questionnaire attend toujours';
 const OBJET_RAPPEL_GROUPE = 'Rappel — des questionnaires attendent toujours';
 

@@ -6,6 +6,7 @@
  * explicite — proposition, jamais capture (décision A6, REGISTRE_FRONTIERES).
  */
 
+import { AGENDA_SOMMEIL_ID } from '@/lib/agenda-sommeil/types';
 import { bornesJourParis, formatHeureParis } from './fuseau';
 import { lienFilVersFiche } from './lectureCartes';
 import { filtrerPassationsExploitables } from '@/lib/scoring/validite';
@@ -105,13 +106,6 @@ export type CarteFil = {
    */
   idAssignation?: string;
   /**
-   * `assignations.statut_reponses`, tel que la base le porte —
-   * `assignation_en_retard` SEULEMENT ([[D-414]] §1). Il choisit le geste de
-   * la carte : passé l'échéance, seul un questionnaire déverrouillé se
-   * rappelle (`deciderRelanceAssignation`) ; les autres se débloquent d'abord.
-   */
-  statutReponses?: string;
-  /**
    * La ligne « Ce qui retient le T0 : » — `sans_avancee` en situation 1
    * SEULEMENT ([[D-440]] §7). Absente quand aucune condition dure ne manque.
    */
@@ -154,7 +148,8 @@ export type AssignationRow = {
   titre: string;
   dateLimite: string | null;
   statut: string;
-  statutReponses: string;
+  /** L'instrument : l'agenda du sommeil ne se relance pas d'ici ([[D-562]] §5). */
+  idQuestionnaire: string;
   /** Suivi clôturé : l'assignation paraît, mais aucun geste n'y écrit
    *  ([[D-414]] §1). Absent = suivi ouvert. */
   suiviClos?: boolean;
@@ -941,12 +936,11 @@ export function cartesAssignationsEnRetard(
         href: `/dashboard/patients/${a.idPatient}`,
         actionLabel: 'Ouvrir la fiche',
         cle: cleCarte('assignation_en_retard', a.idAssignation),
-        idAssignation: a.idAssignation,
-        // UN SUIVI CLOS NE SE DÉBLOQUE PAS ([[D-414]] §1, [[D-422]] §2) : il
-        // n'accepte plus d'envoi (`accepteNouvelEnvoi`). Sans statut, la carte
-        // garde « Rappeler », que le serveur refuse (`dossier_cloture`) sans
-        // rien écrire — comme avant.
-        statutReponses: a.suiviClos ? undefined : a.statutReponses,
+        // LE GESTE « RELANCER » ([[D-562]] §6) : l'identifiant le porte. Sans
+        // lui, pas de bouton — c'est le cas de l'agenda du sommeil, qui se
+        // relance depuis son panneau (§5). Un suivi clos garde le bouton, que
+        // le serveur refuse (`dossier_cloture`) sans rien écrire — comme avant.
+        ...(a.idQuestionnaire === AGENDA_SOMMEIL_ID ? {} : { idAssignation: a.idAssignation }),
       };
     });
 }
@@ -1016,7 +1010,28 @@ export const SOURCES_PAS_DU_PARCOURS = [
 export type SourcePasDuParcours = (typeof SOURCES_PAS_DU_PARCOURS)[number];
 
 /** Une assignation ni annulée ni complétée, sans aucune réponse rattachée. */
-export type QuestionnaireSansReponseRow = { dateAssignation: Date; dateLimite: string | null };
+export type QuestionnaireSansReponseRow = {
+  dateAssignation: Date;
+  dateLimite: string | null;
+  /** Au moins un rappel PARTI (`Envoye`) l'a couvert ([[D-562]] §7). Absent = non. */
+  relancee?: boolean;
+};
+
+/**
+ * RELANCÉ ET PAS ENCORE ÉCHU ([[D-562]] §7, amende [[D-440]] §1) : la relance
+ * a donné une nouvelle date limite, et le patient a jusque-là. Cet envoi ne
+ * compte pas parmi les questionnaires sans réponse tant que la date n'est pas
+ * dépassée — même lecture de l'échéance que la carte du retard. La relance
+ * n'est pas un pas du parcours ([[D-440]] §2) : seule la situation 3 la lit.
+ */
+function relanceEnCours(q: QuestionnaireSansReponseRow, maintenant: Date): boolean {
+  if (!q.relancee) return false;
+  const limite = parseDateLimite(q.dateLimite);
+  if (limite === null) return false;
+  const debutJour = new Date(maintenant);
+  debutJour.setHours(0, 0, 0, 0);
+  return limite >= debutJour;
+}
 
 /** Un dossier du praticien, tel que la carte « Sans avancée » le lit. */
 export type DossierParcoursRow = {
@@ -1118,7 +1133,7 @@ export function cartesSansAvancee(
     const etapeSilencieuse =
       situationEtape !== null && dernierPas !== null && silenceDepasseSeuil(dernierPas, maintenant);
 
-    const ouverts = d.questionnairesSansReponse;
+    const ouverts = d.questionnairesSansReponse.filter(q => !relanceEnCours(q, maintenant));
     let plusAncien: Date | null = null;
     for (const q of ouverts) {
       if (!plusAncien || q.dateAssignation.getTime() < plusAncien.getTime()) plusAncien = q.dateAssignation;
