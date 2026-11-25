@@ -204,6 +204,15 @@ export default defineConfig({
       // jamais atteint. Il se pose ICI et pas dans le spec — `process.env` d'un
       // spec ne vaut que pour le code Node du test, pas pour le serveur Next.
       WN_AGENDA_ALI: 'true',
+      // La vignette du constat du praticien sur un besoin sans score ([[D-551]] §2,
+      // [[D-553]] §5) : le drapeau `WN_CONSTAT_BESOIN` n'est PAS posé en production ;
+      // ici il est FORCÉ ALLUMÉ pour le serveur d'essai, donc pour TOUTES les specs — la
+      // page du dossier le lit au rendu serveur et le passe à la fiche. Seul le banc du
+      // mode consultation en juge l'effet : il fixe les réponses des routes `vignettes` et
+      // `constats`. Ailleurs, sous l'onglet « Besoins », le panneau du constat est monté et
+      // les deux routes répondent « aucun constat » sur la base d'essai (et journalisent
+      // l'accès) : rien de plus ne s'affiche.
+      WN_CONSTAT_BESOIN: 'true',
       // Alliance 6.0-A — les trois surfaces patient du dossier à deux voix.
       // Elles ne sont PAS posées en production : ici l'E2E n'aligne pas un état
       // réel, il ouvre la seule position dans laquelle ces écrans existent. Les

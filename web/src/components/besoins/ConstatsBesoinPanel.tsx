@@ -331,7 +331,9 @@ function Acte({ acte }: { acte: ActeDecrit }) {
   );
 }
 
-export function ConstatsBesoinPanel({ idPatient }: { idPatient: string }) {
+// `onActe` : dit à la fiche qu'un constat a été posé, remplacé ou retiré, ou qu'un geste
+// périmé a fait relire les constats — la vignette du tableau voisin ([[D-551]]) se relit.
+export function ConstatsBesoinPanel({ idPatient, onActe }: { idPatient: string; onActe?: () => void }) {
   const [donnees, setDonnees] = useState<Donnees | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
   const [geste, setGeste] = useState<Geste | null>(null);
@@ -424,11 +426,13 @@ export function ConstatsBesoinPanel({ idPatient }: { idPatient: string }) {
                       setGeste(null);
                       setAvis(null);
                       void charger();
+                      onActe?.();
                     }}
                     onPerime={message => {
                       setGeste(null);
                       setAvis(`${message} Les constats ont été relus.`);
                       void charger();
+                      onActe?.();
                     }}
                     onFermer={() => setGeste(null)}
                   />

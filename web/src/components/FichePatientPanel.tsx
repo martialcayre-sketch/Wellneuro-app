@@ -119,6 +119,8 @@ import { ConstatsParcoursPanel } from '@/components/biologie/ConstatsParcoursPan
 import { PhysioTraitementsPanel } from '@/components/physio-traitements/PhysioTraitementsPanel';
 import { DecisionsParcoursPanel } from '@/components/decisions-parcours/DecisionsParcoursPanel';
 import { ConstatsBesoinPanel } from '@/components/besoins/ConstatsBesoinPanel';
+import { VignetteConstatBesoin } from '@/components/besoins/VignetteConstatBesoin';
+import { useVignettesConstats } from '@/components/besoins/useVignettesConstats';
 import { PropositionBilanSection } from '@/components/biologie/PropositionBilanSection';
 import { CeQuiComptePanel } from '@/components/patient-cockpit/CeQuiComptePanel';
 import { AgendaSommeilPraticienPanel } from '@/components/agenda-sommeil/AgendaSommeilPraticienPanel';
@@ -638,6 +640,11 @@ export function FichePatientPanel({
   const [assignationsEchues, setAssignationsEchues] = useState<PatientsApiResponse['assignations']>([]);
   const [etatEchues, setEtatEchues] = useState<'chargement' | 'chargees' | 'erreur'>('chargement');
   const generationEchues = useRef(0);
+  // La vignette du constat du praticien sur un besoin sans score, au tiroir des 12
+  // besoins ([[D-551]] §1) : lue hors du rendu, derrière `WN_CONSTAT_BESOIN` ;
+  // drapeau éteint, aucune requête.
+  const [relectureVignettes, setRelectureVignettes] = useState(0);
+  const vignettesConstats = useVignettesConstats(idPatient, constatBesoinActif, relectureVignettes);
   /*
    * ── « 9 REÇUS » NE DISAIT PAS « SUR COMBIEN » ─────────────────────────────
    *
@@ -1599,6 +1606,11 @@ export function FichePatientPanel({
                             motifs={p.motifNonMesure}
                             emailPatient={emailPatientAffiche}
                           />
+                        )}
+                        {/* Le constat du praticien, en mots, hors total et hors
+                            compte ; masqué en consultation ([[D-551]], [[D-553]]). */}
+                        {vignettesConstats?.[p.besoin] && (
+                          <VignetteConstatBesoin besoin={p.besoin} vignette={vignettesConstats[p.besoin]} />
                         )}
                       </>
                     ) : !provenanceEtablie(p.provenance) ? (
@@ -3204,9 +3216,14 @@ export function FichePatientPanel({
       {/* ------------------------------ Onglets in-fiche ------------------- */}
       <div role="tabpanel" id="panneau-besoins" aria-labelledby="onglet-besoins" hidden={ongletActif !== 'besoins'}>
         {ongletActif === 'besoins' && (
-          <DetailBesoinsPanel idPatient={idPatient} enteteMasquee emailPatient={emailPatientAffiche} />
+          <DetailBesoinsPanel idPatient={idPatient} enteteMasquee emailPatient={emailPatientAffiche} vignettesActives={constatBesoinActif} relectureVignettes={relectureVignettes} />
         )}
-        {ongletActif === 'besoins' && constatBesoinActif && <ConstatsBesoinPanel idPatient={idPatient} />}
+        {/* Le panneau du constat dit le verdict, le motif et la note : un état que seul le
+            praticien lit. En mode consultation, l'écran est partagé avec le patient : le
+            bloc est remplacé par la mention neutre, comme la vignette ([[D-553]] §1, §3). */}
+        {ongletActif === 'besoins' && constatBesoinActif && (modeConsultationActif
+          ? <ValeurMasquee className="mt-4 block" />
+          : <ConstatsBesoinPanel idPatient={idPatient} onActe={() => setRelectureVignettes(n => n + 1)} />)}
       </div>
 
       <div role="tabpanel" id="panneau-alimentation" aria-labelledby="onglet-alimentation" hidden={ongletActif !== 'alimentation'}>

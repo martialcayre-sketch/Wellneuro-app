@@ -26,6 +26,12 @@ const ACCES_ADMIS = [
   'web/src/lib/constats-besoin/lecture.ts',
   // L'écran du praticien, sous l'onglet « Besoins » : affiche les constats, offre les gestes.
   'web/src/components/besoins/ConstatsBesoinPanel.tsx',
+  // La vignette du constat sur un besoin sans score ([[D-551]] §1, J3-12f) : le
+  // verdict en mots, rien d'autre (ni motif, ni note, ni pièce). Premier
+  // consommateur déclaré : la fiche du besoin et la vue d'équilibre du praticien.
+  // Même garde que le panneau (drapeau, session, appartenance, journal d'accès).
+  // Le banc `vignetteConstat.guard.test.ts` épingle qui importe la vignette.
+  'web/src/app/api/praticien/besoins/vignettes/route.ts',
   // Effacement du dossier : supprime, ne lit pas.
   'web/src/lib/patient/effacement.ts',
 ];

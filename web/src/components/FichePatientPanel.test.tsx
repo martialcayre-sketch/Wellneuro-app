@@ -3526,6 +3526,95 @@ describe('FichePatientPanel — mode consultation sans chiffre (D-354)', () => {
     expect(tiroir.textContent).not.toContain('WN-CL-0654-001');
   });
 
+  // La vignette du constat du praticien ([[D-551]]) : le drapeau `WN_CONSTAT_BESOIN`
+  // est FORCÉ ALLUMÉ ICI, en test seulement (`constatBesoinActif`, D-551 §2). Sous le
+  // mode consultation, un verdict du praticien est une lecture que l'écran partagé ne
+  // sert pas (D-553 §2) : la mention neutre prend sa place.
+  const NOTE_CONSTAT = 'Note sentinelle du constat';
+  const CONSTATS_DU_DOSSIER = {
+    ok: true,
+    offerts: [{ besoin: 2, libelle: 'Ancrage du matin', avecScore: false }],
+    aujourdhui: '2026-11-25',
+    besoins: [{
+      besoin: 2,
+      tete: {
+        id: 'c1', acte: 'pose', besoin: 2, verdict: 'a_soutenir', motif: null, note: NOTE_CONSTAT, aRevoirLe: null,
+        praticienEmail: 'praticien@wellneuro.fr', acteLe: '2026-11-20T09:00:00.000Z', pieces: [],
+      },
+      aRelire: [],
+      historique: [],
+    }],
+    citables: [],
+  };
+
+  async function rendreFicheAvecVignette() {
+    const base = stubFetch({});
+    vi.stubGlobal('fetch', vi.fn((input: unknown, init?: unknown) => {
+      if (String(input).includes('/api/praticien/besoins/constats')) {
+        return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(CONSTATS_DU_DOSSIER) });
+      }
+      if (String(input).includes('/api/praticien/besoins/vignettes')) {
+        return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({ ok: true, vignettes: { 2: { verdict: 'a_soutenir', aRelire: false } } }) });
+      }
+      return (base as unknown as (i: unknown, n?: unknown) => unknown)(input, init);
+    }));
+    render(
+      <C5FeatureProvider enabled={false}>
+        <FichePatientPanel idPatient="PAT001" constatBesoinActif />
+      </C5FeatureProvider>,
+    );
+    await waitFor(() => expect(screen.getAllByText('Sophie Nicola').length).toBeGreaterThan(0));
+  }
+
+  it('vignette du constat (D-551) : hors consultation, le verdict se lit sous le tiret du besoin sans score, et le besoin reste non mesuré', async () => {
+    await rendreFicheAvecVignette();
+    fireEvent.click(screen.getByRole('button', { name: /Les 12 besoins/i }));
+    const tiroir = await screen.findByRole('dialog');
+    const vignette = await within(tiroir).findByText('constat du praticien : à soutenir');
+    expect(vignette.closest('tr')?.textContent).toContain('B2 · Ancrage du matin');
+    expect(within(tiroir).getByRole('cell', { name: /^—/ })).toBeTruthy();
+    expect(tiroir.textContent).toContain('40%');
+  });
+
+  it('vignette du constat (D-551, D-553) : en consultation, la mention neutre à la place du verdict', async () => {
+    await rendreFicheAvecVignette();
+    activer();
+    fireEvent.click(screen.getByRole('button', { name: /Les 12 besoins/i }));
+    const tiroir = await screen.findByRole('dialog');
+    await waitFor(() => expect(tiroir.querySelector('[data-vignette-constat-besoin="2"]')).not.toBeNull());
+    expect(tiroir.querySelector('[data-vignette-constat-besoin="2"]')?.textContent).toBe(MENTION);
+    expect(tiroir.textContent).not.toContain('à soutenir');
+    expect(tiroir.textContent).not.toContain('constat du praticien');
+    // Le pourcentage du besoin mesuré reste masqué, comme avant la vignette.
+    expect(tiroir.textContent).not.toContain('40%');
+  });
+
+  // Le panneau du constat dit le verdict, le motif et la note : un état que seul le
+  // praticien lit, sous l'onglet « Les 12 besoins » qui reste ouvert en consultation.
+  it('panneau du constat (D-347 §6, D-553) : visible hors consultation, remplacé par la mention en consultation', async () => {
+    await rendreFicheAvecVignette();
+    fireEvent.click(within(onglets()).getByRole('tab', { name: 'Les 12 besoins' }));
+    // Contrôle positif : hors du mode, la note et le verdict du constat sont à l'écran.
+    expect(await screen.findByText(NOTE_CONSTAT)).toBeTruthy();
+    expect(screen.getByText('à soutenir', { selector: 'span' })).toBeTruthy();
+
+    activer();
+    const panneau = document.getElementById('panneau-besoins') as HTMLElement;
+    await waitFor(() => expect(screen.queryByText(NOTE_CONSTAT)).toBeNull());
+    expect(panneau.textContent).not.toContain(NOTE_CONSTAT);
+    expect(panneau.textContent).not.toContain('praticien@wellneuro.fr');
+    expect(within(panneau).queryByRole('button', { name: /Retirer le constat|Remplacer le constat|Poser un constat/ })).toBeNull();
+    expect(within(panneau).getAllByText(MENTION).length).toBeGreaterThan(0);
+  });
+
+  it('vignette du constat (D-551 §2) : drapeau éteint, aucune requête vers la route et aucune vignette', async () => {
+    const fetchMock = await rendreFiche();
+    fireEvent.click(screen.getByRole('button', { name: /Les 12 besoins/i }));
+    const tiroir = await screen.findByRole('dialog');
+    expect(tiroir.textContent).not.toContain('constat du praticien');
+    expect(fetchMock.mock.calls.some(([u]) => String(u).includes('/api/praticien/besoins/vignettes'))).toBe(false);
+  });
+
   it('objets cliniques : indice global, réserve et momentum masqués, « Non mesuré » intact (§2)', async () => {
     await rendreFiche({ momentum: 'avecProvenance' });
     activer();

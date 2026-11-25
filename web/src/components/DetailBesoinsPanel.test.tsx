@@ -2,11 +2,22 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { CATALOGUE_DEFINITIONS, IDS_ASSIGNABLES } from '@/lib/bibliotheque';
+import { ChiffresMasquesProvider } from '@/components/patient-cockpit/ChiffresMasques';
+import { BESOINS } from '@/lib/equilibre/constants';
+import { MENTION_RADAR_NON_INDICE } from '@/lib/equilibre/natureIndiceGlobal';
 import { DetailBesoinsPanel } from './DetailBesoinsPanel';
 
 // Le radar (recharts) n'est pas l'objet de ce banc : seul le tableau voisin
-// est jugé.
-vi.mock('@/components/ui/ScoreRadar', () => ({ ScoreRadar: () => null }));
+// est jugé. Le mock garde les propriétés reçues, pour juger ce qu'on lui donne
+// à tracer (ordre des axes, trou nommé, masque du contour).
+type ProprietesRadar = { data: { axe: string; value: number | null }[]; valeursMasquees?: boolean };
+const radar = vi.hoisted(() => ({ dernier: null as null | ProprietesRadar }));
+vi.mock('@/components/ui/ScoreRadar', () => ({
+  ScoreRadar: (props: ProprietesRadar) => {
+    radar.dernier = props;
+    return null;
+  },
+}));
 
 const provenance = (id: string, date: string) => ({
   sources: [{ idQuestionnaire: id, dateReponse: date }],
@@ -386,5 +397,243 @@ describe('DetailBesoinsPanel — compte et « Compléter la mesure » (D-352)', 
     await screen.findByRole('table');
     expect(screen.queryByText('Compléter la mesure')).toBeNull();
     expect(screen.queryByRole('button', { name: 'Ajouter à la file d’envoi' })).toBeNull();
+  });
+});
+
+// LE RADAR DE LA FICHE ([[D-550]], J3-12f) : douze axes, un par besoin, dans
+// l'ordre fixe du guide ; un besoin non mesuré garde son axe, sans valeur ; le
+// compte « n besoins mesurés sur 12 » reste dit ; une mention rappelle que la
+// surface n'est pas l'indice global. Les conditions déjà servies (§2.1, §2.2) sont
+// CONSTATÉES ici, pas supposées (§5).
+describe('DetailBesoinsPanel — radar descriptif (D-550)', () => {
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+    radar.dernier = null;
+  });
+
+  const avecCompte = { ...reponse, besoinsMesures: 2, besoinsTotal: 12 };
+
+  it('§2.1 et §2.2 : un axe par besoin dans l’ordre fixe, et le non mesuré garde son axe, sans valeur', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => avecCompte })));
+    render(<DetailBesoinsPanel idPatient="PAT_SEED_01" />);
+    await screen.findByRole('table');
+    // Reçu dans l'ordre 3, 2, 1 : le radar suit l'ordre fixe, groupé par strate (Corps puis Ancrage).
+    expect(radar.dernier?.data.map(d => d.axe)).toEqual(['B1', 'B3', 'B2']);
+    // B2 n'est pas mesuré : son axe reste, avec `null` — jamais un zéro (D-301).
+    expect(radar.dernier?.data.find(d => d.axe === 'B2')?.value).toBeNull();
+    expect(radar.dernier?.data.find(d => d.axe === 'B1')?.value).toBe(40);
+  });
+
+  // D-550 §3.1 se lit comme SATISFAIT par le tableau voisin (arbitrage 1004-b) : les
+  // axes du radar sont « Bn » parce que les libellés praticien, trop longs, sont coupés
+  // à 390 px. Sans ce lien axe par axe, la lecture ne tient plus.
+  it('§3.1 : chaque axe « Bn » du radar a sa ligne « Bn · libellé » dans le tableau voisin, pour les douze besoins', async () => {
+    const douze = {
+      ...reponse,
+      besoinsMesures: 12,
+      besoinsTotal: 12,
+      besoins: BESOINS.map(b => ({
+        id: b.id, libellePraticien: b.libellePraticien, strate: b.strate, couverture: 50, niveauPreuve: 'A', sources: [],
+        provenance: provenance('Q_TEST', '2026-10-10T08:00:00.000Z'),
+      })),
+    };
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => douze })));
+    render(<DetailBesoinsPanel idPatient="PAT_SEED_01" />);
+    const tableau = await screen.findByRole('table');
+    const axes = radar.dernier?.data.map(d => d.axe) ?? [];
+    expect(axes).toHaveLength(12);
+    const lignes = within(tableau).getAllByRole('row').map(r => r.querySelector('td')?.textContent ?? '');
+    for (const b of BESOINS) {
+      expect(axes).toContain(`B${b.id}`);
+      expect(lignes).toContain(`B${b.id} · ${b.libellePraticien}`);
+    }
+  });
+
+  it('§2.4 : sans aucun besoin mesuré, aucun contour n’est tracé et la mention ne s’affiche pas', async () => {
+    const aucun = {
+      ...reponse,
+      besoinsMesures: 0,
+      besoinsTotal: 12,
+      besoins: reponse.besoins.map(b => ({ ...b, couverture: null, provenance: null })),
+    };
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => aucun })));
+    render(<DetailBesoinsPanel idPatient="PAT_SEED_01" />);
+    await screen.findByRole('table');
+    expect(screen.queryByText(MENTION_RADAR_NON_INDICE)).toBeNull();
+  });
+
+  it('§2.3 : le compte des besoins mesurés est dit, au mot près', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => avecCompte })));
+    render(<DetailBesoinsPanel idPatient="PAT_SEED_01" />);
+    expect(await screen.findByText('Calculé sur 2 besoins mesurés sur 12')).toBeTruthy();
+  });
+
+  it('§2.4 : la mention dit que la surface n’est pas l’indice global, au mot près', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => avecCompte })));
+    render(<DetailBesoinsPanel idPatient="PAT_SEED_01" />);
+    expect(await screen.findByText('La surface du radar n’est pas l’indice global.')).toBeTruthy();
+    expect(MENTION_RADAR_NON_INDICE).toBe('La surface du radar n’est pas l’indice global.');
+  });
+
+  it('en mode consultation : le contour est masqué, la mention n’a rien à qualifier, les axes et le non mesuré restent', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => avecCompte })));
+    render(
+      <ChiffresMasquesProvider masques>
+        <DetailBesoinsPanel idPatient="PAT_SEED_01" />
+      </ChiffresMasquesProvider>,
+    );
+    await screen.findByRole('table');
+    expect(radar.dernier?.valeursMasquees).toBe(true);
+    expect(screen.queryByText(MENTION_RADAR_NON_INDICE)).toBeNull();
+    expect(radar.dernier?.data.map(d => d.axe)).toEqual(['B1', 'B3', 'B2']);
+    expect(screen.getAllByRole('cell', { name: 'non mesuré' })).toHaveLength(1);
+  });
+
+  it('aucune surface par strate : un en-tête de strate ne porte que son nom, ni moyenne ni chiffre (D-550 §3.2)', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => avecCompte })));
+    render(<DetailBesoinsPanel idPatient="PAT_SEED_01" />);
+    const tableau = await screen.findByRole('table');
+    for (const g of within(tableau).getAllByRole('rowheader')) expect(g.textContent).not.toMatch(/\d/);
+  });
+});
+
+// LA VIGNETTE DU CONSTAT SUR UN BESOIN SANS SCORE ([[D-551]], J3-12f) : sous le
+// « non mesuré » ou le « hors score » du besoin, le verdict du praticien en mots.
+// Derrière `WN_CONSTAT_BESOIN` — le drapeau est forcé allumé ICI, en test seulement
+// ([[D-551]] §2). Hors du total et du compte ; masquée en consultation ([[D-553]]).
+describe('DetailBesoinsPanel — vignette du constat du praticien (D-551)', () => {
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  const avecCompte = { ...reponse, besoinsMesures: 2, besoinsTotal: 12 };
+  const ROUTE_VIGNETTES = '/api/praticien/besoins/vignettes';
+  type Reponse = { ok: boolean; status?: number; json: () => Promise<unknown> };
+
+  /** Le routeur de requêtes : les besoins, et la route de la vignette. */
+  function routeur(vignettes: Reponse) {
+    return vi.fn(async (url: string): Promise<Reponse> =>
+      String(url).includes(ROUTE_VIGNETTES) ? vignettes : { ok: true, json: async () => avecCompte });
+  }
+  const serveur = (vignettes: Record<number, { verdict: string; aRelire: boolean }>): Reponse => ({
+    ok: true,
+    status: 200,
+    json: async () => ({ ok: true, vignettes }),
+  });
+
+  it('drapeau éteint (défaut) : aucune vignette, et la route n’est même pas appelée', async () => {
+    const fetchMock = routeur(serveur({ 2: { verdict: 'a_soutenir', aRelire: false } }));
+    vi.stubGlobal('fetch', fetchMock);
+    render(<DetailBesoinsPanel idPatient="PAT_SEED_01" />);
+    await screen.findByRole('table');
+    expect(screen.queryByText(/constat du praticien/)).toBeNull();
+    expect(fetchMock.mock.calls.some(([u]) => String(u).includes(ROUTE_VIGNETTES))).toBe(false);
+  });
+
+  it('drapeau allumé : le verdict du besoin 2 se lit en mots, sous son « non mesuré », sans nombre', async () => {
+    vi.stubGlobal('fetch', routeur(serveur({ 2: { verdict: 'a_soutenir', aRelire: false } })));
+    render(<DetailBesoinsPanel idPatient="PAT_SEED_01" vignettesActives />);
+    const vignette = await screen.findByText('constat du praticien : à soutenir');
+    expect(vignette.textContent).not.toMatch(/\d/);
+    // Dans la ligne du besoin 2, et pas ailleurs ; le besoin reste « non mesuré ».
+    expect(vignette.closest('tr')?.textContent).toContain('B2 · Ancrage du matin');
+    expect(screen.getAllByRole('cell', { name: /non mesuré/ })).toHaveLength(1);
+    expect(screen.getAllByText(/constat du praticien/)).toHaveLength(1);
+  });
+
+  it('hors du total et du compte : le compte et le radar sont ceux de la route, inchangés', async () => {
+    vi.stubGlobal('fetch', routeur(serveur({ 2: { verdict: 'non_retenu', aRelire: false } })));
+    render(<DetailBesoinsPanel idPatient="PAT_SEED_01" vignettesActives />);
+    await screen.findByText('constat du praticien : non retenu');
+    expect(screen.getByText('Calculé sur 2 besoins mesurés sur 12')).toBeTruthy();
+    expect(radar.dernier?.data.find(d => d.axe === 'B2')?.value).toBeNull();
+  });
+
+  it('une vignette servie pour un besoin MESURÉ (conteneur fautif) ne s’affiche pas : seule la branche « non mesuré » la porte', async () => {
+    vi.stubGlobal('fetch', routeur(serveur({ 1: { verdict: 'a_soutenir', aRelire: false }, 3: { verdict: 'non_retenu', aRelire: false } })));
+    render(<DetailBesoinsPanel idPatient="PAT_SEED_01" vignettesActives />);
+    await screen.findByRole('table');
+    await waitFor(() => expect(globalThis.fetch).toHaveBeenCalledTimes(2));
+    expect(screen.queryByText(/constat du praticien/)).toBeNull();
+  });
+
+  it('un geste sur un constat relance la lecture : le nouveau verdict remplace l’ancien, un retrait fait disparaître la vignette', async () => {
+    const lecteur = vi.fn()
+      .mockResolvedValueOnce(serveur({ 2: { verdict: 'a_soutenir', aRelire: false } }))
+      .mockResolvedValueOnce(serveur({ 2: { verdict: 'non_retenu', aRelire: false } }))
+      .mockResolvedValue(serveur({}));
+    vi.stubGlobal('fetch', vi.fn(async (url: string) =>
+      String(url).includes(ROUTE_VIGNETTES) ? lecteur() : { ok: true, json: async () => avecCompte }));
+    const { rerender } = render(<DetailBesoinsPanel idPatient="PAT_SEED_01" vignettesActives relectureVignettes={0} />);
+    expect(await screen.findByText('constat du praticien : à soutenir')).toBeTruthy();
+    rerender(<DetailBesoinsPanel idPatient="PAT_SEED_01" vignettesActives relectureVignettes={1} />);
+    expect(await screen.findByText('constat du praticien : non retenu')).toBeTruthy();
+    rerender(<DetailBesoinsPanel idPatient="PAT_SEED_01" vignettesActives relectureVignettes={2} />);
+    await waitFor(() => expect(screen.queryByText(/constat du praticien/)).toBeNull());
+  });
+
+  it('un autre dossier ne montre pas, même un instant, la vignette du précédent', async () => {
+    let rendreSecond!: (v: Reponse) => void;
+    const second = new Promise<Reponse>(r => { rendreSecond = r; });
+    const fetchMock = vi.fn(async (url: string): Promise<Reponse> => {
+      if (!String(url).includes(ROUTE_VIGNETTES)) return { ok: true, json: async () => avecCompte };
+      return String(url).includes('PAT_B') ? second : serveur({ 2: { verdict: 'a_soutenir', aRelire: false } });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const { rerender } = render(<DetailBesoinsPanel idPatient="PAT_A" vignettesActives />);
+    expect(await screen.findByText('constat du praticien : à soutenir')).toBeTruthy();
+    rerender(<DetailBesoinsPanel idPatient="PAT_B" vignettesActives />);
+    await waitFor(() => expect(screen.queryByText(/constat du praticien/)).toBeNull());
+    rendreSecond(serveur({ 2: { verdict: 'sans_objet', aRelire: false } }));
+    expect(await screen.findByText('constat du praticien : sans objet')).toBeTruthy();
+  });
+
+  it('un constat à relire garde sa vignette, avec la mention', async () => {
+    vi.stubGlobal('fetch', routeur(serveur({ 2: { verdict: 'sans_objet', aRelire: true } })));
+    render(<DetailBesoinsPanel idPatient="PAT_SEED_01" vignettesActives />);
+    expect(await screen.findByText('constat du praticien : sans objet — à relire')).toBeTruthy();
+  });
+
+  it('en mode consultation : la mention neutre à la place du verdict', async () => {
+    vi.stubGlobal('fetch', routeur(serveur({ 2: { verdict: 'a_soutenir', aRelire: false } })));
+    render(
+      <ChiffresMasquesProvider masques>
+        <DetailBesoinsPanel idPatient="PAT_SEED_01" vignettesActives />
+      </ChiffresMasquesProvider>,
+    );
+    await screen.findByRole('table');
+    await waitFor(() => expect(document.querySelector('[data-vignette-constat-besoin="2"]')).not.toBeNull());
+    const ligne = document.querySelector('[data-vignette-constat-besoin="2"]') as HTMLElement;
+    expect(ligne.textContent).toBe('masqué en mode consultation');
+    expect(document.body.textContent).not.toContain('à soutenir');
+    expect(document.body.textContent).not.toContain('constat du praticien');
+  });
+
+  it('une lecture en échec : aucune vignette, aucun message d’erreur, le tableau intact', async () => {
+    const fetchMock = routeur({ ok: false, status: 503, json: async () => ({ ok: false, reason: 'constat_besoin_desactive' }) });
+    vi.stubGlobal('fetch', fetchMock);
+    render(<DetailBesoinsPanel idPatient="PAT_SEED_01" vignettesActives />);
+    await screen.findByRole('table');
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    expect(screen.queryByText(/constat du praticien/)).toBeNull();
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.getAllByRole('cell', { name: /non mesuré/ })).toHaveLength(1);
+  });
+
+  it('aucun mot de jugement sur l’état du patient, aucune couleur d’état dans la vignette (D-551 §5)', async () => {
+    for (const verdict of ['a_soutenir', 'non_retenu', 'non_evaluable', 'sans_objet']) {
+      vi.stubGlobal('fetch', routeur(serveur({ 2: { verdict, aRelire: true } })));
+      const { unmount } = render(<DetailBesoinsPanel idPatient="PAT_SEED_01" vignettesActives />);
+      const vignette = await waitFor(() => {
+        const el = document.querySelector('[data-vignette-constat-besoin="2"]');
+        if (!el) throw new Error('vignette absente');
+        return el as HTMLElement;
+      });
+      expect(vignette.textContent).not.toMatch(/satisfait|couvert|déficit|carence|normal|anormal/i);
+      expect(vignette.className).not.toMatch(/status-|danger|warning|success|green|red|amber/);
+      unmount();
+    }
   });
 });
