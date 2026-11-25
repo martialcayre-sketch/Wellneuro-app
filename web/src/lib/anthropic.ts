@@ -402,7 +402,22 @@ export const CLAUDE_MODEL = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6';
 // d'indications biologiques que le responsable a suspendues pour relecture.
 // Textes validés mot pour mot par le responsable. Bump assumé et déclaré : une
 // synthèse rédigée sous v38 ne connaissait pas cette ligne du bloc.
-export const VERSION_PROMPT_SYNTHESE = 'synthese-v39';
+// v41 (H95 part B, [[D-559]] §3, qui amende [[D-557]] §2 ; arbitrages
+// `20261124-0800-b-h95`, `0801-b-h95` (A), `0802-b-h95`, `20261125-1105-b-h95`
+// (A), `1106-b-h95` (A), `1107-b-h95` (A), `1108-b-h95` (B)) : dans la section
+// « Résultats de biologie », après le paragraphe de D-545 §5 qui ne change pas,
+// les trois paragraphes de D-557 §2, chacun suivi du texte de D-559 §3 de même
+// rang, puis le texte 4 de D-559 en paragraphe neuf. Un examen non déclaré n'est
+// désigné que comme « un bilan » ; une demande d'examen déclarée se rappelle
+// comme une demande ; un résultat rapporté par l'anamnèse n'est repris nulle
+// part ; un diagnostic déclaré est repris sans statut ajouté ; un état que seule
+// la biologie établit reste une hypothèse, y compris nommé par un questionnaire.
+// Textes validés mot pour mot par le responsable le 2026-11-24 et le 2026-11-25,
+// servis après le verdict conforme de l'évaluation de l'appel principal seul
+// (D-559 §4). `synthese-v40` n'a jamais été servie (#2322 fermée) et son numéro
+// n'est pas repris. Comme v39, v41 vaut drapeau posé ou non. Bump assumé et
+// déclaré.
+export const VERSION_PROMPT_SYNTHESE = 'synthese-v41';
 // v3 (LOT-01 étape 4) : la sortie du modèle est lue par `analyserSortieSynthese`
 // — schéma fermé, énumérations contrôlées, rejet + une relance. La forme du JSON
 // est inchangée ; ce qui change est qu'une sortie non conforme n'est plus servie
@@ -688,6 +703,14 @@ Si le bloc est absent, n'en parle pas.
 ## Résultats de biologie
 
 Les résultats de biologie enregistrés au dossier ne te sont pas transmis : ils sont restitués au praticien à part, hors de toi. N'en suppose aucun, n'en parle dans aucun champ, et n'en conclus pas qu'aucun bilan n'a été fait. La réception d'un bilan est dite au patient par le code, pas par toi. Tu peux rappeler qu'un examen a été déclaré dans l'anamnèse, en le présentant comme une déclaration, sans en déduire de résultat ni de conclusion biologique ; une question d'entretien peut y revenir, en rappelant qu'il a été déclaré et sans supposer aucun résultat. Ne présente jamais comme fait un examen que l'anamnèse ne déclare pas, et ne laisse jamais entendre qu'un résultat est connu. Tu peux aussi mentionner qu'un dosage biologique serait nécessaire pour conclure, dans les limites posées plus haut. Nommer un nutriment ou une analyse n'est pas en parler comme d'un résultat.
+
+Un diagnostic, une suspicion, un traitement ou un suivi déclarés ne déclarent aucun examen : n'en déduis pas qu'un bilan a été fait. Dans aucun champ, question ou point de vigilance compris, ne suppose fait un examen que l'anamnèse ne déclare pas : ne parle ni du « dernier » bilan, ni de sa date, ni de ses résultats, et ne le dis pas déclaré. Une question d'entretien peut demander s'il a été fait, sans rien en supposer. Cela vaut quel que soit le mot. Hors de la question qui demande s'il a été fait, un bilan « récent », « actuel », « à jour » ou « de base », ses « valeurs », son contenu ou l'historique des explorations le supposent fait autant que le « dernier », et « le bilan », « votre bilan » ou « son bilan » le supposent existant : écris « un bilan ». Ne fais suivre cette question d'aucune mention de son origine : ni « déclaré », ni « selon le patient », ni « à programmer ». Un examen demandé, que l'anamnèse déclare comme tel, se rappelle comme une demande, sans le dire fait.
+
+Un résultat de biologie que rapporte l'anamnèse n'est pas un résultat transmis : ne le reprends dans aucun champ, et n'en fais l'argument d'aucun axe, d'aucune hypothèse ni d'aucune priorité ; tu peux seulement rappeler que l'examen a été déclaré. Un diagnostic déclaré reste un antécédent déclaré, que tu peux reprendre comme tel. Le rappel d'un examen déclaré se limite à l'examen : ne dis pas ce qu'il aurait montré, pas même au conditionnel, comme une déclaration du patient, comme un antécédent ou pour dire qu'il reste à vérifier. Un diagnostic déclaré se reprend fidèlement comme diagnostic déclaré, sans lui ajouter d'état que l'anamnèse ne déclare pas, ni son équilibre, ni son contrôle, ni son évolution : si un tel état paraît en cause, c'est une hypothèse à confirmer.
+
+Ne présente jamais comme établi, à partir de symptômes ou de scores, un état que seule la biologie permet d'établir : présente-le comme une hypothèse à confirmer. Cela vaut aussi pour les mots : rapporte un symptôme dans les termes de l'anamnèse, sans le renommer d'un état que seule la biologie établit, pas même en le disant déclaré. Un état que seule la biologie permet d'établir et que nomme le libellé d'interprétation d'un questionnaire se rapporte à ce questionnaire et se dit comme une hypothèse, au conditionnel ou avec une réserve (« le questionnaire évoque un possible… », « suggère ») : n'écris jamais qu'un questionnaire l'objective, le montre, l'établit, ni qu'il « signale » ou « décrit » cet état sans réserve.
+
+Dans narratif_patient, si un bilan biologique paraît utile, dis-le comme une possibilité que le praticien appréciera, sans supposer qu'il existe, par exemple : « votre praticien pourra confronter ces ressentis à un bilan biologique ».
 
 ## Consignes de réponse
 

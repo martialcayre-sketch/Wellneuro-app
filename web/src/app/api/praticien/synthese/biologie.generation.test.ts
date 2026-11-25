@@ -176,7 +176,7 @@ describe('drapeau posé, un résultat : deux appels, dans l’ordre, chacun son 
     expect(data.syntheseJson.points_de_vigilance_biologie).toEqual(RESTITUTION.points_de_vigilance_biologie);
     expect(data.syntheseJson.narratif_patient).toBe(`${PRINCIPALE.narratif_patient}\n\n${PHRASE}`);
     expect(data.syntheseJson._schema_version).toBe('synthese-json-v4');
-    expect(data.versionPrompt).toBe('synthese-v39');
+    expect(data.versionPrompt).toBe('synthese-v41');
     expect(data.donneesEntree.appelBiologie).toEqual({
       versionPrompt: 'synthese-biologie-v2', modele: data.modele, issue: 'reussi',
     });
