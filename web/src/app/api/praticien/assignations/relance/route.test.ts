@@ -146,7 +146,7 @@ describe('/api/praticien/assignations/relance', () => {
     const nouvelle = nouvelleDateLimiteRelance(new Date());
     expect(prisma.assignation.updateMany).toHaveBeenCalledTimes(2);
     expect(prisma.assignation.updateMany).toHaveBeenLastCalledWith({
-      where: { idAssignation: 'ASS_1', dateLimite: nouvelle },
+      where: { idAssignation: 'ASS_1', dateLimite: nouvelle, statut: { notIn: ['Complété', 'Annulée'] } },
       data: { dateLimite: DEMAIN_DU_RETARD },
     });
   });
@@ -229,7 +229,7 @@ describe('/api/praticien/assignations/relance', () => {
     expect(corps).toMatchObject({ ok: true, statut: 'Erreur' });
     expect(corps.nouvelleDateLimite).toBeUndefined();
     expect(prisma.assignation.updateMany).toHaveBeenLastCalledWith({
-      where: { idAssignation: 'ASS_1', dateLimite: nouvelleDateLimiteRelance(new Date()) },
+      where: { idAssignation: 'ASS_1', dateLimite: nouvelleDateLimiteRelance(new Date()), statut: { notIn: ['Complété', 'Annulée'] } },
       data: { dateLimite: DEMAIN_DU_RETARD },
     });
   });
@@ -256,7 +256,7 @@ describe('/api/praticien/assignations/relance', () => {
     expect(corps.nouvelleDateLimite).toBeUndefined();
     expect(prisma.assignation.updateMany).toHaveBeenCalledTimes(3);
     expect(prisma.assignation.updateMany).toHaveBeenLastCalledWith({
-      where: { idAssignation: 'ASS_2', dateLimite: nouvelleDateLimiteRelance(new Date()) },
+      where: { idAssignation: 'ASS_2', dateLimite: nouvelleDateLimiteRelance(new Date()), statut: { notIn: ['Complété', 'Annulée'] } },
       data: { dateLimite: DEMAIN_DU_RETARD },
     });
     expect(erreurConsole).toHaveBeenCalled();

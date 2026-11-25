@@ -8,7 +8,11 @@
   responsable (`D-518` : patch, avance, réapplication). La seconde a
   renuméroté, après le lot D-561, DOC-19 en DOC-20 et T-80…T-93 en
   T-81…T-94, sans changer un mot.
-- Un seul commit de lot, poussé avec la PR ; rien d'autre en cours.
+- PR #2350. Elle porte trois commits : le lot, le correctif du P1 Codex, et
+  les correctifs de la revue `wn-reviewer` de la tête.
+- `origin/main` (8c86fed7) a été fusionné dans la branche après les deux
+  premiers commits, sur arbitrage du responsable (`D-518`). Aucun fichier
+  n'était commun avec le lot.
 
 ## Objectif
 
@@ -50,6 +54,15 @@ Demande du responsable sur la fiche-trajectoire d'un dossier de test (phase
     serveur exclut pour cadence (voir « Problèmes ouverts »). Le message de
     résultat donne le nombre réellement couvert, et la ligne exclue garde
     son badge et son bouton après relecture.
+- Revue PR-Agent partielle (diff compressé) ; `wn-reviewer` sur la tête
+  8270450a la remplace (`D-448`) : GO, sans P0 ni P1. Ses constats :
+  - P2-1 corrigé : la relance ne retire un envoi que de la situation 3. La
+    phrase des situations 1 et 2 compte tous les envois, comme sur `main`
+    (D-562 §7), et un banc la vérifie.
+  - P2-2 corrigé : la restauration ne touche plus un envoi rendu ou annulé
+    entre-temps.
+  - P2-3 accepté comme risque résiduel (double panne SMTP puis base).
+  - P2-4 corrigé : un banc vérifie le focus au message après relecture.
 - Écartés :
   - relance sans nouvelle date : elle ne levait pas l'alerte (Codex Q1-A) ;
   - bouton sur l'agenda du sommeil : sa relance par nuit manquante reste

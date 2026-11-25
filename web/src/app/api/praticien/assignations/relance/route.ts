@@ -260,7 +260,12 @@ export async function POST(req: Request): Promise<NextResponse<RelanceAssignatio
       for (const { idAssignation: id, dateLimite } of issue.anciennesDates) {
         try {
           await prisma.assignation.updateMany({
-            where: { idAssignation: id, dateLimite: nouvelleDateLimite },
+            // Un envoi rendu entre-temps garde la date qu'il porte.
+            where: {
+              idAssignation: id,
+              dateLimite: nouvelleDateLimite,
+              statut: { notIn: [STATUT_RENDUE, STATUT_ANNULEE] },
+            },
             data: { dateLimite },
           });
         } catch (erreur) {

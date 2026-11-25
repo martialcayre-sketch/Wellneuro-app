@@ -3310,6 +3310,42 @@ describe('FichePatientPanel — relancer un envoi échu', () => {
     await waitFor(() => expect(urlsPatients(fetchMock).length).toBeGreaterThan(avant));
   });
 
+  // La relecture démonte le bouton « Relancer » (la ligne n'est plus échue) :
+  // le focus, rendu par le dialogue à ce bouton, irait à `body`. Il va au
+  // message du résultat.
+  it('après la relecture, le focus va au message du résultat', async () => {
+    const base = stubFetch({ envois: 'relance' });
+    let relancee = false;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: unknown, init?: unknown) => {
+        const reponse = await (base as (i: unknown, n?: unknown) => Promise<{ json: () => Promise<unknown> }>)(input, init);
+        if (String(input).includes('/api/praticien/assignations/relance')) {
+          relancee = true;
+          return reponse;
+        }
+        if (!relancee) return reponse;
+        const corps = (await reponse.json()) as { assignations?: { dateLimite?: string | null }[] };
+        const decale = Array.isArray(corps.assignations)
+          ? { ...corps, assignations: corps.assignations.map(a => (a.dateLimite ? { ...a, dateLimite: '2099-12-31' } : a)) }
+          : corps;
+        return { ...reponse, json: () => Promise.resolve(decale) };
+      }),
+    );
+    render(
+      <C5FeatureProvider enabled={false}>
+        <FichePatientPanel idPatient="PAT001" phaseDemandee="donnees" />
+      </C5FeatureProvider>,
+    );
+
+    fireEvent.click((await screen.findAllByRole('button', { name: /^Relancer le patient — / }))[0]);
+    fireEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Relancer' }));
+
+    const message = await screen.findByText(/^Relance envoyée\./);
+    await waitFor(() => expect(screen.queryAllByRole('button', { name: /^Relancer le patient — / })).toHaveLength(0));
+    await waitFor(() => expect(document.activeElement).toBe(message));
+  });
+
   it('un refus de la route s’affiche dans le dialogue, tel quel', async () => {
     const base = stubFetch({ envois: 'relance' });
     vi.stubGlobal(

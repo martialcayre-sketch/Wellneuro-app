@@ -1133,11 +1133,21 @@ export function cartesSansAvancee(
     const etapeSilencieuse =
       situationEtape !== null && dernierPas !== null && silenceDepasseSeuil(dernierPas, maintenant);
 
-    const ouverts = d.questionnairesSansReponse.filter(q => !relanceEnCours(q, maintenant));
-    let plusAncien: Date | null = null;
-    for (const q of ouverts) {
-      if (!plusAncien || q.dateAssignation.getTime() < plusAncien.getTime()) plusAncien = q.dateAssignation;
-    }
+    // [[D-562]] §7 : la relance ne retire un envoi que de la SITUATION 3. Les
+    // situations 1 et 2, et la phrase qu'elles ajoutent, lisent tous les
+    // envois sans réponse, comme avant.
+    const tous = d.questionnairesSansReponse;
+    const ouverts = tous.filter(q => !relanceEnCours(q, maintenant));
+    const plusAncienDe = (liste: QuestionnaireSansReponseRow[]): Date | null => {
+      let plus: Date | null = null;
+      for (const q of liste) {
+        if (!plus || q.dateAssignation.getTime() < plus.getTime()) plus = q.dateAssignation;
+      }
+      return plus;
+    };
+    const plusAncienTous = plusAncienDe(tous);
+    const tousSilencieux = plusAncienTous !== null && silenceDepasseSeuil(plusAncienTous, maintenant);
+    const plusAncien = plusAncienDe(ouverts);
     const questionnairesSilencieux = plusAncien !== null && silenceDepasseSeuil(plusAncien, maintenant);
 
     let situation: SituationSansAvancee;
@@ -1152,8 +1162,8 @@ export function cartesSansAvancee(
       if (situation === 2 && d.t0ConsigneLe) {
         morceaux.push(`Le T0 a été consigné le ${formatDateFr(d.t0ConsigneLe)}.`);
       }
-      if (questionnairesSilencieux && plusAncien) {
-        morceaux.push(`${phraseQuestionnaires(ouverts.length, plusAncien)}.`);
+      if (tousSilencieux && plusAncienTous) {
+        morceaux.push(`${phraseQuestionnaires(tous.length, plusAncienTous)}.`);
       }
       pourquoi = morceaux.join(' ');
     } else if (questionnairesSilencieux && plusAncien) {

@@ -328,6 +328,8 @@ describe('cartesSansAvancee — affichage, clé et plafond (D-440 §5)', () => {
       questionnairesSansReponse: [{ dateAssignation: ilYa(60), dateLimite: '2026-11-11', relancee: true }],
     })]);
     expect(r.situation).toBe(1);
+    // … et sa phrase compte l'envoi relancé, comme avant ([[D-562]] §7).
+    expect(r.carte.pourquoi).toContain('1 questionnaire assigné reste sans réponse');
   });
 });
 
