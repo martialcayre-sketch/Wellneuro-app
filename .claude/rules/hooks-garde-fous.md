@@ -194,6 +194,23 @@ l'édition, jamais par l'absence du marqueur — un marqueur manquant signifie
   la première session n'est pas prévenue ; un processus nommé autrement que `claude` (installation par npm)
   n'est pas vu ; l'intégrateur reçoit aussi l'avertissement.
 
+**Crochets en retard** (autonomie-pieges-restes, partie 17). Les lanceurs (ci-dessous) exécutent les gardes de la
+racine de LANCEMENT : une session lancée dans la copie principale puis passée en worktree garde ceux de la copie
+principale, et ses réglages et agents aussi. Si cette copie n'a pas encore un changement de `.claude/hooks/`,
+`.claude/settings.json` ou `.claude/agents/` qu'`origin/main` porte, le garde de fraîcheur ne le voyait pas (il juge la
+branche du répertoire courant). Au démarrage, après le fetch, `git-freshness.mjs` importe sous `try`
+`crochets-en-retard.mjs` : quand la copie des crochets n'est pas celle du répertoire courant, il liste les fichiers de
+crochets changés par `origin/main` depuis sa base commune avec la tête de cette copie et que son arbre de travail n'a
+pas tels quels, puis avertit en les nommant, avec le remède (avance par l'intégrateur, `D-373` §2, ou session relancée
+à la racine de son worktree). **Jamais un refus** : la session n'y est pour rien. Une copie en avance sur `main`, ou qui
+porte déjà son contenu (branche mergée par squash), n'est pas en retard. **Quand il parle** : au premier démarrage, le
+répertoire courant est la racine de lancement, donc la copie des crochets ; il se tait, et le constat de fraîcheur de
+cette copie dit déjà qu'elle ne contient pas `origin/main`. Il parle aux démarrages suivants (`/clear`, `/compact`,
+reprise) dont le répertoire est le worktree où la session est entrée, jamais dans le lot même qui fait
+`EnterWorktree`. Couvrir ce lot demanderait un crochet `PostToolUse` sur `EnterWorktree`, donc toucher `settings.json`.
+Autres limites : une avance de `main` en cours de session ne se voit qu'au démarrage suivant ; une copie antérieure
+à ce module se tait, par construction.
+
 **Lanceur fermé.** Chaque garde bloquant est lancé par une ligne qui cherche le
 script sous `$CLAUDE_PROJECT_DIR`, puis sous la racine Git du répertoire
 courant, et sort en **code 2** s'il ne le trouve nulle part ou si `node` est
