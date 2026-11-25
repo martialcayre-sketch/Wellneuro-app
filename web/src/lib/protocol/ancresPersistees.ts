@@ -56,6 +56,58 @@ export async function lireAncresPersistees(
 }
 
 /**
+ * Un épisode confirmé — ancre ou jalon de mesure — avec les passations que
+ * le praticien y a retenues (`includedResponseIds` du payload, `D-118`).
+ */
+export type EpisodePersiste = AncrePersistee & {
+  versionScore: string | null;
+  idsReponsesIncluses: string[];
+};
+
+/**
+ * Les passations retenues, lues dans le payload. Un payload sans liste, ou
+ * dont la liste porte autre chose que des chaînes, ne rend que ce qui est
+ * lisible : rien n'est deviné.
+ */
+export function idsReponsesIncluses(payload: unknown): string[] {
+  const liste =
+    payload && typeof payload === 'object' && !Array.isArray(payload)
+      ? (payload as { includedResponseIds?: unknown }).includedResponseIds
+      : undefined;
+  if (!Array.isArray(liste)) return [];
+  return [...new Set(liste.filter((id): id is string => typeof id === 'string' && id.length > 0))];
+}
+
+/**
+ * LE LECTEUR D'ÉPISODE DE LA PLANCHE « ÉVOLUTION » (OF-2, [[D-560]] §1).
+ *
+ * Toutes les lignes d'épisode du dossier — ancres ET jalons de mesure —,
+ * dans l'ordre de confirmation, chacune avec ses passations retenues. Une
+ * ligne dont le jalon n'est ni une ancre ni une mesure est écartée, comme à la
+ * trajectoire. L'ordre est celui des dates : la planche juxtapose des
+ * colonnes datées, elle n'identifie pas de cycle — et ne départage pas une
+ * discordance d'ordre (`DC-30`), que la trajectoire signale.
+ *
+ * `avantOuA` a le sens qu'il a dans `lireAncresPersistees`.
+ */
+export async function lireEpisodesPersistes(
+  idPatient: string,
+  avantOuA?: Date | null,
+): Promise<EpisodePersiste[]> {
+  const lignes = await prisma.assessmentEpisode.findMany({
+    where: {
+      idPatient,
+      ...(avantOuA ? { confirmedAt: { lte: avantOuA } } : {}),
+    },
+    orderBy: [{ confirmedAt: 'asc' }, { id: 'asc' }],
+    select: { id: true, cycleId: true, confirmedAt: true, milestone: true, versionScore: true, payload: true },
+  });
+  return lignes
+    .filter((ligne) => estJalonMomentum(ligne.milestone))
+    .map(({ payload, ...ligne }) => ({ ...ligne, idsReponsesIncluses: idsReponsesIncluses(payload) }));
+}
+
+/**
  * L'ancre du cycle COURANT — celle du rang le plus haut, ou `null` si le
  * dossier n'en porte aucune. C'est elle qui ancre les fenêtres de jalon, et
  * plus jamais « la plus récemment confirmée ».

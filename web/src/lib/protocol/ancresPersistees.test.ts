@@ -5,7 +5,13 @@ const { prisma } = vi.hoisted(() => ({
 }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
 
-import { ancreCourante, lireAncresPersistees, refusAncreNonRecevable } from './ancresPersistees';
+import {
+  ancreCourante,
+  idsReponsesIncluses,
+  lireAncresPersistees,
+  lireEpisodesPersistes,
+  refusAncreNonRecevable,
+} from './ancresPersistees';
 
 // Ce que ce banc défend (`D-113`) : cinq routes lisaient « l'ancre du cycle »
 // par `where: { milestone: 'T0' }` + « la plus récente ». Les deux moitiés sont
@@ -74,6 +80,61 @@ describe('lireAncresPersistees', () => {
   it('sans aucune ancre, le cycle courant est `null` — jamais un premier cycle supposé', async () => {
     prisma.assessmentEpisode.findMany.mockResolvedValue([]);
     expect(ancreCourante(await lireAncresPersistees('PAT_1'))).toBeNull();
+  });
+});
+
+// LE LECTEUR D'ÉPISODE DE LA PLANCHE « ÉVOLUTION » (OF-2, `D-560` §1).
+describe('lireEpisodesPersistes', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  const episode = (id: string, milestone: string, iso: string, payload: unknown) => ({
+    id,
+    cycleId: 'c1',
+    confirmedAt: new Date(iso),
+    milestone,
+    versionScore: 'v1',
+    payload,
+  });
+
+  it('rend ancres ET jalons de mesure, dans l’ordre de confirmation, avec leurs passations retenues', async () => {
+    prisma.assessmentEpisode.findMany.mockResolvedValue([
+      episode('a', 'T0', '2026-01-01T00:00:00.000Z', { includedResponseIds: ['r1', 'r2'] }),
+      episode('j', 'J21', '2026-01-25T00:00:00.000Z', { includedResponseIds: ['r3'] }),
+      // Ni ancre ni mesure : écartée, comme à la trajectoire.
+      episode('x', 'J7', '2026-01-28T00:00:00.000Z', { includedResponseIds: ['r4'] }),
+    ]);
+
+    const episodes = await lireEpisodesPersistes('PAT_1');
+
+    expect(prisma.assessmentEpisode.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { idPatient: 'PAT_1' }, orderBy: [{ confirmedAt: 'asc' }, { id: 'asc' }] }),
+    );
+    expect(episodes.map((e) => [e.milestone, e.idsReponsesIncluses])).toEqual([
+      ['T0', ['r1', 'r2']],
+      ['J21', ['r3']],
+    ]);
+    expect(episodes[0]).not.toHaveProperty('payload');
+    expect(episodes[0].versionScore).toBe('v1');
+  });
+
+  it('borne la lecture à une date quand l’appelant lit un état passé', async () => {
+    prisma.assessmentEpisode.findMany.mockResolvedValue([]);
+    await lireEpisodesPersistes('PAT_1', new Date('2026-02-01T00:00:00.000Z'));
+    expect(prisma.assessmentEpisode.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { idPatient: 'PAT_1', confirmedAt: { lte: new Date('2026-02-01T00:00:00.000Z') } },
+      }),
+    );
+  });
+});
+
+describe('idsReponsesIncluses', () => {
+  it('ne rend que ce qui est lisible, sans doublon — rien n’est deviné', () => {
+    expect(idsReponsesIncluses({ includedResponseIds: ['r1', 'r1', 2, '', null, 'r2'] })).toEqual(['r1', 'r2']);
+    expect(idsReponsesIncluses({})).toEqual([]);
+    expect(idsReponsesIncluses(null)).toEqual([]);
+    expect(idsReponsesIncluses(['r1'])).toEqual([]);
+    expect(idsReponsesIncluses({ includedResponseIds: 'r1' })).toEqual([]);
   });
 });
 

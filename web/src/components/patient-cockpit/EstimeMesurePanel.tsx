@@ -123,7 +123,9 @@ type SerieAffichee = {
   motifs: string[];
 };
 
-const LIBELLES_MOTIF_NON_COMPARABILITE: Record<string, string> = {
+// Exportés : l'onglet « Évolution » (OF-2) dit les mêmes motifs, avec les
+// mêmes mots — deux listes dériveraient.
+export const LIBELLES_MOTIF_NON_COMPARABILITE: Record<string, string> = {
   point_unique: 'point unique',
   unites_differentes: 'unités différentes',
   laboratoire_non_identifie: 'laboratoire non identifié',

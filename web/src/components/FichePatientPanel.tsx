@@ -113,6 +113,7 @@ import { ComprehensionPanel } from '@/components/patient-cockpit/ComprehensionPa
 import { DocumentsRemisPanel } from '@/components/patient-cockpit/DocumentsRemisPanel';
 import { DocumentsDeposesPanel } from '@/components/patient-cockpit/DocumentsDeposesPanel';
 import { TrajectoirePanel } from '@/components/patient-cockpit/TrajectoirePanel';
+import { EvolutionPanel } from '@/components/patient-cockpit/EvolutionPanel';
 import { ComparaisonPassationsPanel } from '@/components/patient-cockpit/ComparaisonPassationsPanel';
 import type { ComparaisonsPassations } from '@/lib/scoring/comparaisonPassations';
 import { EstimeMesurePanel } from '@/components/patient-cockpit/EstimeMesurePanel';
@@ -279,12 +280,14 @@ const ONGLETS: { id: OngletFiche; libelle: string }[] = [
   { id: 'besoins', libelle: 'Les 12 besoins' },
   { id: 'alimentation', libelle: 'Alimentation' },
   { id: 'trajectoire', libelle: 'Trajectoire' },
+  { id: 'evolution', libelle: 'Évolution' },
   { id: 'biologie', libelle: 'Biologie' },
   { id: 'correspondance', libelle: 'Correspondance' },
 ];
 
 // En mode consultation, seuls ces deux onglets restent ([[D-354]] §4) :
-// Alimentation, Trajectoire, Biologie et Correspondance sont masqués.
+// Alimentation, Trajectoire, Évolution, Biologie et Correspondance sont
+// masqués — l'évolution chiffrée y est refusée ([[D-560]] §2).
 const ONGLETS_CONSULTATION: readonly OngletFiche[] = ['cockpit', 'besoins'];
 
 // LA LISTE VIT DANS `lib/praticien/ongletsFiche.ts`, pas ici : la page serveur
@@ -3306,6 +3309,20 @@ export function FichePatientPanel({
               besoinsVisesPraticien={etatRuntime?.besoinsVisesPrioriteLibre}
             />
           ))}
+      </div>
+
+      {/* ONGLET « ÉVOLUTION » (OF-2, [[D-560]]) : passations par jalon et
+          biologie à la date de prélèvement, côte à côte, sans écart. Monté à
+          l'activation seulement : ses lectures journalisent l'accès. */}
+      <div
+        role="tabpanel"
+        id="panneau-evolution"
+        aria-labelledby="onglet-evolution"
+        hidden={ongletActif !== 'evolution'}
+        tabIndex={0}
+        className="lg:h-[calc(100dvh-11.75rem)] lg:min-h-[420px] lg:overflow-y-auto"
+      >
+        {ongletActif === 'evolution' && <EvolutionPanel idPatient={idPatient} />}
       </div>
 
       {/* ONGLET « BIOLOGIE » ([[D-308]] §1, plan F57) : comptes rendus, état de
