@@ -306,6 +306,18 @@ async function alerteConcurrentes(toplevel) {
   }
 }
 
+// Crochets exécutés depuis une copie en retard sur `origin/main`
+// (autonomie-pieges-restes, partie 17) : un avertissement, jamais un verdict.
+// Appelé après le fetch, pour juger le `main` courant. Même régime d'import.
+async function alerteRetard(toplevel) {
+  try {
+    const { alerteCrochetsEnRetard } = await import("./crochets-en-retard.mjs");
+    return alerteCrochetsEnRetard({ toplevel });
+  } catch {
+    return null;
+  }
+}
+
 if (event === "SessionStart") {
   const racine = git(["rev-parse", "--show-toplevel"]);
   if (racine.status !== 0) {
@@ -316,6 +328,8 @@ if (event === "SessionStart") {
   if (alerte) process.stdout.write(alerte);
 
   const { constat, fetchOk, verifiedAt } = evaluer({ forcerFetch: true });
+  const retard = await alerteRetard(racine.stdout.trim());
+  if (retard) process.stdout.write(retard);
 
   if (!fetchOk && verifiedAt === null) {
     process.stdout.write("Freshness Git non vérifiée : `git fetch origin main` a échoué et aucune vérification n'a jamais abouti. Aucune édition avant résolution.\n");
