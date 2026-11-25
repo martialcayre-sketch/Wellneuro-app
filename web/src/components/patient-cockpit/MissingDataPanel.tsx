@@ -76,6 +76,22 @@ function libelleClaimSource(
  * apparu sans son état — et l'escalade est précisément ce que `DC-55` demande
  * de rendre visible, puisqu'elle est une issue de la politique et non un échec.
  */
+/**
+ * LA VERSION DE SCORING INCONNUE NE S'AFFICHE PAS ICI — [[D-561]] §1.
+ *
+ * L'adaptateur pose `scoreVersion: null` pour TOUTE réponse
+ * (`runtimeFromPrisma.ts`) : la carte se répétait une fois par questionnaire,
+ * sur tous les dossiers, et aucun geste du praticien ne la levait. Elle est
+ * dite une fois, dans « Détail des réponses » (T-80). Le moteur la produit
+ * toujours : son identifiant reste dans l'empreinte de la carte de décision.
+ */
+export const LIGNE_VERSION_SCORING_NON_CONSERVEE =
+  'Version de calcul non conservée : l’application n’enregistre pas encore la version de scoring de chaque réponse. Cela vaut pour toutes les réponses et ne demande aucune action.';
+
+export function estVersionScoringInconnue(finding: MissingDataFinding): boolean {
+  return finding.findingId.endsWith(':score_version_unknown');
+}
+
 const ETAT_PAR_STATUT = {
   ouverte: 'non résolue',
   escaladee_praticien: 'escaladée — arbitrage praticien attendu',
@@ -112,21 +128,22 @@ export function MissingDataPanel({
    */
   arbitragesConflits?: ArbitrageAuCockpit[];
 }) {
+  const missingDataAffichees = missingData === null ? null : missingData.filter(f => !estVersionScoringInconnue(f));
   return (
     <section aria-labelledby="missing-data-title">
       <h3 id="missing-data-title" className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
         Données manquantes
       </h3>
       <div className="flex flex-col gap-3">
-        {missingData === null ? (
+        {missingDataAffichees === null ? (
           <div className="rounded-xl border border-border bg-surface p-4 text-base text-muted-foreground">
             Données manquantes non évaluées. Une revue clinique doit être préparée par le praticien.
           </div>
-        ) : missingData.length === 0 ? (
+        ) : missingDataAffichees.length === 0 ? (
           <div className="rounded-xl border border-border bg-surface p-4 text-base text-muted-foreground">
             Aucune donnée manquante qualifiée à ce stade.
           </div>
-        ) : missingData.map(finding => (
+        ) : missingDataAffichees.map(finding => (
           <article key={finding.findingId} className="rounded-xl border border-border bg-surface p-4">
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-sm font-medium text-foreground">Ce que nous ne savons pas encore</span>
