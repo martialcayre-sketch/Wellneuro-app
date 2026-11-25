@@ -46,6 +46,7 @@ dit « ce qui est lu sur ce chemin », pas « ce qui suffit à le fermer ».
 | Rayon de corpus « stress » → notebook 03 — Stress et burnout | `web/src/app/api/praticien/corpus/rayons/route.ts` (route-api) | Claims validés servis pour ce rayon. | WN_RECHERCHE_CORPUS_ENABLED | — | non | — |
 | Registre sanitaire des sources — vue par notebook | `web/src/app/api/praticien/corpus/claims/route.ts` (route-api)<br>`web/src/app/api/praticien/corpus/claims/sources/route.ts` (route-api)<br>+ 2 indirecte(s) | Quelles sources bibliographiques adossent un rayon de corpus. | — | — | non | — |
 | Résolution des intentions et compositions (lecture des compléments) | `web/src/app/api/praticien/regles/previsualisation/route.ts` (route-api)<br>+ 22 indirecte(s) | Quels ingrédients une fiche contient réellement, et à quelle dose. | WN_C4_ENABLED | — | non | — |
+| Table des signaux de sécurité d’anamnèse (12 signaux signés, 2 rangs) | `web/src/app/api/praticien/adressage/courrier/route.ts` (route-api)<br>+ 10 indirecte(s) | Quel signal d’alerte déclaré à l’anamnèse appelle un adressage dont le report est le risque : constat de sécurité au cockpit praticien et courrier d’adressage. | — | validationExterne | oui | — |
 
-25 source(s) recensée(s), dont **0 dormante(s)**.
+26 source(s) recensée(s), dont **0 dormante(s)**.
 

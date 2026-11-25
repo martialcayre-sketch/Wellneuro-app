@@ -167,6 +167,22 @@ export const SOURCES_DE_SAVOIR = [
     decisionProduite: 'Constat de contradiction entre instruments, affiché au cockpit praticien (table non signée : rien ne sort).',
   },
   {
+    // DÉCLARÉE APRÈS COUP (dette du plan, §8) : signée depuis [[D-099]] et
+    // consommée depuis, elle était la seule table clinique signée que la
+    // matrice ne recensait pas. Déclaration d'inventaire pure : rien n'est
+    // changé dans la table ni dans ses appelants.
+    //
+    // La garde est dans le module même (`tableSignauxSecuriteSignee`, verrou
+    // auto-portant) ; aucun drapeau. Verrou fermé, elle n'éteint pas la
+    // surface : le producteur dit que la cotation n'est pas signée.
+    id: 'signaux-securite-anamnese',
+    libelle: 'Table des signaux de sécurité d’anamnèse (12 signaux signés, 2 rangs)',
+    module: 'web/src/lib/clinical/safetySignalsV1.ts',
+    symboles: ['SAFETY_SIGNALS_V1', 'SAFETY_SIGNALS_METADATA'],
+    modulesGardes: [{ chemin: 'web/src/lib/clinical/safetySignalsV1.ts', noms: ['tableSignauxSecuriteSignee'] }],
+    decisionProduite: 'Quel signal d’alerte déclaré à l’anamnèse appelle un adressage dont le report est le risque : constat de sécurité au cockpit praticien et courrier d’adressage.',
+  },
+  {
     id: 'corpus-clinique-synthese',
     libelle: 'Corpus clinique de synthèse V1',
     module: 'web/src/lib/clinical/corpusSyntheseV1.ts',
