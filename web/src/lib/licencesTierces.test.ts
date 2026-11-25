@@ -204,6 +204,15 @@ describe('PluginLicencesTierces sur une vraie compilation webpack', () => {
     expect(fs.existsSync(sortie)).toBe(false);
   });
 
+  it("retire au refus le fichier d'un build précédent : il ne reste pas servi depuis public/", async () => {
+    const sortie = path.join(racine, 'public-perime', 'licences-tierces.txt');
+    fs.mkdirSync(path.dirname(sortie), { recursive: true });
+    fs.writeFileSync(sortie, 'mentions d’un build précédent\n');
+    const erreurs = await compiler('src/muet.js', sortie);
+    expect(erreurs.map((e) => e.message).join('\n')).toMatch(/sans licence lisible/);
+    expect(fs.existsSync(sortie)).toBe(false);
+  });
+
   it('rougit le build si un composant déclaré hors du graphe est introuvable', async () => {
     const sortie = path.join(racine, 'public-runtime', 'licences-tierces.txt');
     const erreurs = await compiler('src/app.js', sortie, { horsGraphe: [path.join(racine, 'pas-de-runtime')] });
