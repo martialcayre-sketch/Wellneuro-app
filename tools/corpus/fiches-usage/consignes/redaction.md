@@ -277,7 +277,9 @@ tiret à la place d'une espace n'y changent rien, et un mot qui contient l'un
 d'eux tombe sous lui : « déficitaire », « excessif », « élevée », mais aussi
 « relevé ». Ces termes ne s'y écrivent pas, même quand les claims les
 emploient : le libellé se reformule en gardant le nutriment et le sens bas
-que décrivent les claims. Cette liste ne vise pas le libellé d'une
+que décrivent les claims. Avant de répondre, relis ton libellé mot par mot
+contre cette liste. Si l'outil te signale ensuite un terme écarté, reformule
+une seule fois, sans lui. Cette liste ne vise pas le libellé d'une
 population. Réponds par un seul objet JSON, sans texte autour :
 
 {"libelle": "<texte>"}

@@ -42,6 +42,7 @@ import {
   lireReponseLibelle,
   lireVerdictContreLecture,
   messageContreLecture,
+  messageCorrectionLibelle,
   messageRedactionFiche,
   messageRedactionLibelle,
   requeteRedaction,
@@ -56,6 +57,7 @@ const { FICHES_USAGE_BESOIN2_V1, FICHES_USAGE_BESOIN2_SHA256, ficheDeLaStructure
 const { lireBrouillonVersionUsage, lireBrouillonLibelle } = await import('@/lib/fiches-usage/contrat');
 const { controlerVersionContreStructure, controlerLibelleContreStructure } = await import('@/lib/fiches-usage/controle');
 const { natureDuTerme } = await import('@/lib/fiches-usage/vocabulaire');
+const { termesHorsRegistre } = await import('@/lib/fiches-usage/registreLibelleHypothese');
 const { CLAIMS_SOUS_RESERVE_INDICATION } = await import('@/lib/fiches-usage/reserveIndication');
 const { verifierDc03 } = await import('@/lib/bio-parcours/verifierDc03');
 
@@ -86,11 +88,13 @@ function lireArguments() {
   };
 }
 
-async function redigerTexte(anthropic, consigne, message) {
+async function redigerTexte(anthropic, consigne, message, suite = []) {
   // Streaming imposé par le SDK au-delà d'environ 16 000 jetons de sortie ; on
-  // n'en attend que le message final.
-  const rep = await anthropic.messages.stream(requeteRedaction(MODELE_REDACTION, consigne, message)).finalMessage();
+  // n'en attend que le message final. `suite` : le tour de correction d'un
+  // libellé (v13), qui renvoie la réponse entière, réflexion comprise.
+  const rep = await anthropic.messages.stream(requeteRedaction(MODELE_REDACTION, consigne, message, suite)).finalMessage();
   return {
+    contenu: rep.content,
     texte: rep.content.filter(b => b.type === 'text').map(b => b.text).join('\n'),
     arret: rep.stop_reason,
     jetonsSortie: rep.usage?.output_tokens,
@@ -219,9 +223,36 @@ async function redigerLibelle(termeId, outils) {
   const message = messageRedactionLibelle(termeId, nature, fiches, cites);
   console.log(`${termeId} : ${fiches.length} fiche(s) citante(s), ${cites.length} claim(s).`);
 
-  const reponse = lireReponseLibelle((await redigerTexte(anthropic, consignes.redaction, message)).texte);
-  if (typeof reponse?.libelle !== 'string' || !/\S/u.test(reponse.libelle)) throw new ErreurOutil(`${termeId} : réponse sans « libelle ».`);
-  const libelle = reponse.libelle.trim();
+  const libelleDe = brute => {
+    const reponse = lireReponseLibelle(brute.texte);
+    if (typeof reponse?.libelle !== 'string' || !/\S/u.test(reponse.libelle)) throw new ErreurOutil(`${termeId} : réponse sans « libelle ».`);
+    return reponse.libelle.trim();
+  };
+  const premiere = await redigerTexte(anthropic, consignes.redaction, message);
+  let libelle = libelleDe(premiere);
+  // v13 ([[D-501]] §17) : le registre du code ([[D-535]]) juge le libellé d'une
+  // hypothèse AVANT la contre-lecture. Un terme écarté vaut UNE correction,
+  // dans la même passe ; s'il reste, la passe échoue sans contre-lecture.
+  if (nature === 'hypothese') {
+    const termes = termesHorsRegistre(libelle);
+    if (termes.length > 0) {
+      const suite = [
+        { role: 'assistant', content: premiere.contenu },
+        { role: 'user', content: messageCorrectionLibelle(libelle, termes) },
+      ];
+      const premier = libelle;
+      libelle = libelleDe(await redigerTexte(anthropic, consignes.redaction, message, suite));
+      const restants = termesHorsRegistre(libelle);
+      // Le rapport de la correction garde les deux libellés, qu'elle aboutisse ou non (§17).
+      const rapport = { etape: 'registre D-535, correction unique', termes, premier, redige: libelle, restants };
+      if (restants.length > 0) {
+        const fichier = await ecrire(termeId, h, 'revue', rapport);
+        return { id: termeId, issue: 'echec', motif: 'registre_d535', fichier };
+      }
+      await ecrire(termeId, h, 'correction', rapport);
+      console.log(`  ${termeId} : correction unique demandée (registre D-535), reformulé.`);
+    }
+  }
   const verdict = await contreLire(openai, consignes.contreLecture, {
     nature: `libellé du terme ${termeId} (${nature})`,
     texte: libelle,
