@@ -1,4 +1,4 @@
-// La consigne « fiche-usage-v12 » est épinglée : un octet changé sans bump de
+// La consigne « fiche-usage-v13 » est épinglée : un octet changé sans bump de
 // version rougit ici, et l'outil refuse de tourner ([[D-314]] §4).
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -314,4 +314,13 @@ test('v12 : les douze termes de D-535, des deux côtés, égaux au registre du c
   assert.match(redaction.replace(/\s+/g, ' '), /le libellé se reformule en gardant le nutriment et le sens bas que décrivent les claims/);
   assert.match(contreLecture.replace(/\s+/g, ' '), /n'est pas infidèle pour cela, s'il garde le nutriment et le sens bas qu'ils décrivent/);
   assert.match(contreLecture.replace(/\s+/g, ' '), /un nom qui contient l'un des douze termes écartés, même dérivé ou contenu dans un autre mot/);
+});
+
+// v13 ([[D-501]] §17) : le rédacteur relit son libellé contre la liste, et
+// l'outil lui signale un terme écarté resté ; une seule correction.
+test('v13 : relecture du libellé contre la liste et correction unique, côté rédaction', () => {
+  const { redaction } = lireConsignes();
+  const enLigne = redaction.replace(/\s+/g, ' ');
+  assert.match(enLigne, /Avant de répondre, relis ton libellé mot par mot contre cette liste\./);
+  assert.match(enLigne, /Si l'outil te signale ensuite un terme écarté, reformule une seule fois, sans lui\./);
 });

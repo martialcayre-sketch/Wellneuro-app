@@ -17,7 +17,10 @@ import {
   lireReponseLibelle,
   MARQUE_RESERVE,
   messageContreLecture,
+  messageCorrectionLibelle,
   messageRedactionFiche,
+  messageRedactionLibelle,
+  RAPPEL_LIBELLE_HYPOTHESE,
   requeteRedaction,
   rubriquesRedigees,
   sourcesDc03,
@@ -198,6 +201,29 @@ test('la requête de rédaction : 64 000 jetons de sortie, raisonnement adaptati
     system: 'CONSIGNE',
     messages: [{ role: 'user', content: 'MESSAGE' }],
   });
+  // v13 : le tour de correction d'un libellé suit le message, dans l'ordre.
+  const suite = [{ role: 'assistant', content: [{ type: 'text', text: 'R' }] }, { role: 'user', content: 'CORRECTION' }];
+  assert.deepEqual(requeteRedaction('modele-x', 'CONSIGNE', 'MESSAGE', suite).messages, [{ role: 'user', content: 'MESSAGE' }, ...suite]);
+});
+
+test('v13 : le rappel suit les claims d\'une hypothèse, jamais ceux d\'une population', () => {
+  const cites = claimsDeLaFiche(FICHE, CLAIMS);
+  const hyp = messageRedactionLibelle('HYP_SYNTH', 'hypothese', ['FU_SYNTH_A'], cites);
+  assert.ok(hyp.endsWith(`\n\n${RAPPEL_LIBELLE_HYPOTHESE}`), 'le rappel est la fin du message');
+  assert.ok(hyp.indexOf('Claim synthétique.') < hyp.indexOf(RAPPEL_LIBELLE_HYPOTHESE));
+  assert.ok(!messageRedactionLibelle('POP_SYNTH', 'population', ['FU_SYNTH_A'], cites).includes(RAPPEL_LIBELLE_HYPOTHESE));
+  // Le rappel renvoie à la liste de la consigne, il ne la recopie pas.
+  for (const terme of ['normal', 'déficit', 'carence', 'syndrome']) assert.ok(!RAPPEL_LIBELLE_HYPOTHESE.includes(`« ${terme} »`));
+});
+
+test('v13 : la correction unique cite le libellé et les termes trouvés, et redemande l\'objet JSON', () => {
+  const m = messageCorrectionLibelle('État synthétique déficitaire', ['déficit']);
+  assert.match(m, /« État synthétique déficitaire »/);
+  assert.match(m, /le terme écarté « déficit »/);
+  assert.match(m, /une seule fois/);
+  assert.ok(m.endsWith('{"libelle": "<texte>"}'));
+  assert.match(messageCorrectionLibelle('X', ['déficit', 'carence']), /les termes écartés « déficit », « carence »/);
+  assert.throws(() => messageCorrectionLibelle('X', []), /sans terme/);
 });
 
 test('une contre-lecture INACHEVÉE est un échec technique qui garde sa cause (essai v9, POLY P6)', () => {
@@ -230,7 +256,7 @@ test('câblage : rediger.mjs passe le plafond de contre-lecture et lit le verdic
 
 test('câblage : rediger.mjs envoie requeteRedaction en streaming, sans autre appel au rédacteur', async () => {
   const source = await readFile(new URL('../rediger.mjs', import.meta.url), 'utf8');
-  assert.match(source, /anthropic\.messages\.stream\(requeteRedaction\(MODELE_REDACTION, consigne, message\)\)\.finalMessage\(\)/);
+  assert.match(source, /anthropic\.messages\.stream\(requeteRedaction\(MODELE_REDACTION, consigne, message, suite\)\)\.finalMessage\(\)/);
   assert.doesNotMatch(source, /messages\.create\(/);
   assert.doesNotMatch(source, /max_tokens:/);
 });
@@ -254,4 +280,24 @@ test('les sources DC-03 sont exactement ce que le rédacteur a reçu', () => {
   const cites = claimsDeLaFiche(FICHE, CLAIMS);
   const m = messageRedactionFiche(FICHE, cites);
   assert.deepEqual(sourcesDc03(m, cites), [m, 'Claim synthétique.']);
+});
+
+test('câblage v13 : le registre du code juge l\'hypothèse avant la contre-lecture, une correction au plus', async () => {
+  const source = await readFile(new URL('../rediger.mjs', import.meta.url), 'utf8');
+  assert.match(source, /await import\('@\/lib\/fiches-usage\/registreLibelleHypothese'\)/);
+  const corps = source.slice(source.indexOf('async function redigerLibelle'), source.indexOf('async function main'));
+  // Un seul tour de correction : deux appels au rédacteur au plus, et le
+  // garde rejoué sur la réponse corrigée avant toute contre-lecture.
+  assert.equal(corps.match(/redigerTexte\(/g).length, 2);
+  assert.equal(corps.match(/termesHorsRegistre\(/g).length, 2);
+  assert.ok(corps.indexOf("motif: 'registre_d535'") < corps.indexOf('contreLire('));
+  // La réponse entière (réflexion comprise) revient au rédacteur, pas son seul texte.
+  assert.match(corps, /\{ role: 'assistant', content: premiere\.contenu \}/);
+  // Les deux libellés sont gardés hors dépôt, que la correction aboutisse ou non (Codex, §17).
+  assert.match(corps, /const rapport = \{ etape: 'registre D-535, correction unique', termes, premier, redige: libelle, restants \};/);
+  assert.match(corps, /await ecrire\(termeId, h, 'correction', rapport\);/);
+  // Une réponse corrigée illisible écrit aussi son rapport, avec le premier libellé (PR-Agent).
+  assert.match(corps, /illisible: erreurSansTexte\(erreur\) \}\);\n\s*return \{ id: termeId, issue: 'echec', motif: 'correction_illisible', fichier \};/);
+  // Le garde ne vise que les hypothèses (D-535 : la liste ne vise pas les populations).
+  assert.match(corps, /if \(nature === 'hypothese'\) \{/);
 });

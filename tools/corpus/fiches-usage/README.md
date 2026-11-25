@@ -83,7 +83,7 @@ rejoué rend `BROUILLON_INCHANGE`.
 
 ## La consigne versionnée
 
-`versionConsigne` vaut `fiche-usage-v12+<empreinte des deux consignes>`,
+`versionConsigne` vaut `fiche-usage-v13+<empreinte des deux consignes>`,
 épinglée dans `lib/consigne.mjs` et gardée par `lib/consigne.test.mjs`.
 
 Depuis la v2 (`D-501`), le message d'une fiche porte ses cinq axes signés,
@@ -176,6 +176,15 @@ les tient `web/src/lib/fiches-usage/registreLibelleHypothese.ts` : un mot qui
 en contient un tombe sous lui, et le libellé se reformule en gardant le
 nutriment et le sens bas. La liste ne vise pas les populations. Le banc v12
 relit le registre du code : un terme ajouté ou retiré d'un seul côté rougit.
+
+Depuis la v13 (`D-501` §17), le rédacteur relit son libellé contre la liste
+avant de répondre, et le message d'une hypothèse se termine par ce rappel,
+après les claims. Surtout, l'outil applique au libellé d'une hypothèse le
+registre du code (`termesHorsRegistre`, `D-535`) **avant** la contre-lecture :
+un terme écarté vaut une seule demande de correction, dans la même passe, avec
+la réponse entière du rédacteur (réflexion comprise) ; si le terme reste, la
+passe échoue (`registre_d535`) sans appel au contre-lecteur. Les populations
+ne passent pas par ce garde.
 
 ## Ce que l'outil ne voit pas
 
