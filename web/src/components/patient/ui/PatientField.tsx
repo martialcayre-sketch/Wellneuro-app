@@ -58,7 +58,7 @@ export function PatientField({
     <>
       {label}
       {requis && ' *'}
-      {suffixe && <span className="text-muted-foreground/70 font-normal"> ({suffixe})</span>}
+      {suffixe && <span className="text-muted-foreground font-normal"> ({suffixe})</span>}
     </>
   );
   // Libellé de la planche : 15 px, graisse 500, couleur du texte.

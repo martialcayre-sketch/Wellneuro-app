@@ -33,7 +33,7 @@ import { AvantDeCommencer } from '@/components/patient/trust/AvantDeCommencer';
 import { AccueilConditions } from '@/components/patient/trust/ConditionsUtilisation';
 import { DateNaissanceEcran, EcranCircuitMineur } from '@/components/patient/DateNaissanceEcran';
 import type { StatutAge, TrancheMineur } from '@/lib/patient/gardeAge';
-import { DocumentTrust } from '@/components/patient/trust/DocumentTrust';
+import { DocumentTrust, LigneVersion } from '@/components/patient/trust/DocumentTrust';
 import { getDocumentCourant } from '@/lib/trust/contenus/registre';
 import {
   BOUTON_VERS_SITUATION,
@@ -221,9 +221,11 @@ function ConsentScreen({ token, email, onAccepted }: { token: string; email: str
     <PatientCard>
       <PatientPageHeader title="Votre consentement au suivi" />
       {/* Zone de lecture posée sur sable (prototype PAT-2) ; le texte du
-          consentement ne change pas. */}
-      <div className="mt-2 rounded bg-lien-sand p-4">
-        <DocumentTrust document={getDocumentCourant('consentement_suivi')} />
+          consentement ne change pas. La ligne de version, sous le titre et
+          hors du bloc sable (PAT-7m, F7 a). */}
+      <LigneVersion document={getDocumentCourant('consentement_suivi')} className="mt-1" />
+      <div className="mt-4 rounded bg-lien-sand p-4">
+        <DocumentTrust document={getDocumentCourant('consentement_suivi')} versionAilleurs />
       </div>
       <label className="flex min-h-11 items-start gap-3 mt-6 cursor-pointer">
         <input type="checkbox" checked={checked} onChange={e => setChecked(e.target.checked)} className="mt-1 accent-primary" />
@@ -347,7 +349,9 @@ function FicheForm({ token, idPatient, email, onDone }: {
       {error && <PatientInlineMessage tone="error">{error}</PatientInlineMessage>}
       {sessionExpiree && <div><LienReconnexion /></div>}
       {/* Q6b : « restent conservées » seulement si la dernière écriture a réussi. */}
-      <SaveStatusIndicator savedAt={savedAt} error={savedAt ? saveError : undefined} textes={TEXTES_BROUILLON_ENTREE} />
+      <div role="status">
+        <SaveStatusIndicator savedAt={savedAt} error={savedAt ? saveError : undefined} textes={TEXTES_BROUILLON_ENTREE} />
+      </div>
 
       <div className="flex gap-3">
         {sectionIndex > 0 && (
@@ -597,7 +601,7 @@ function AnamneseForm({ token, idPatient, email, motifInitial, onDone }: {
 
       <fieldset className="space-y-4">
         <legend className="text-sm font-semibold text-foreground">{section.titre}</legend>
-        {section.description && <p className="text-xs text-muted-foreground/70 -mt-2">{section.description}</p>}
+        {section.description && <p className="text-xs text-muted-foreground -mt-2">{section.description}</p>}
         {section.id === SECTION_ANAMNESE_SIGNAUX && <EncartUrgenceSuicide />}
 
         {(section.champs ?? []).map(champ => (
@@ -619,14 +623,14 @@ function AnamneseForm({ token, idPatient, email, motifInitial, onDone }: {
           <div key={groupe.id} className="space-y-3">
             <div>
               <p className="text-sm font-medium text-foreground">{groupe.label}</p>
-              {groupe.description && <p className="text-xs text-muted-foreground/70">{groupe.description}</p>}
+              {groupe.description && <p className="text-xs text-muted-foreground">{groupe.description}</p>}
             </div>
             {entrees(groupe.id).map((entree, index) => (
               <div key={index} className="rounded-lg border border-border p-3 space-y-2">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {groupe.champs.map(champ => (
                     <div key={champ.id}>
-                      <label htmlFor={`anamnese-${groupe.id}-${index}-${champ.id}`} className="block text-xs text-muted-foreground/70 mb-1">{champ.label}</label>
+                      <label htmlFor={`anamnese-${groupe.id}-${index}-${champ.id}`} className="block text-xs text-muted-foreground mb-1">{champ.label}</label>
                       <input
                         id={`anamnese-${groupe.id}-${index}-${champ.id}`}
                         type="text"
@@ -653,7 +657,9 @@ function AnamneseForm({ token, idPatient, email, motifInitial, onDone }: {
       {error && <PatientInlineMessage tone="error">{error}</PatientInlineMessage>}
       {sessionExpiree && <div><LienReconnexion /></div>}
       {/* Q6b : « restent conservées » seulement si la dernière écriture a réussi. */}
-      <SaveStatusIndicator savedAt={savedAt} error={savedAt ? saveError : undefined} textes={TEXTES_BROUILLON_ENTREE} />
+      <div role="status">
+        <SaveStatusIndicator savedAt={savedAt} error={savedAt ? saveError : undefined} textes={TEXTES_BROUILLON_ENTREE} />
+      </div>
 
       <div className="flex gap-3">
         {sectionIndex > 0 && (
@@ -686,7 +692,7 @@ function DoneScreen({ token, premiereAssignation }: { token: string; premiereAss
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
         </svg>
       </div>
-      <h1 className="font-display text-xl font-bold text-foreground mb-2">Merci !</h1>
+      <h1 className="font-display text-2xl font-bold leading-tight text-foreground mb-2">Merci !</h1>
       <p className="text-muted-foreground text-sm leading-relaxed mb-6">
         Vos renseignements ont bien été transmis à votre praticien.<br />
         {premiereAssignation

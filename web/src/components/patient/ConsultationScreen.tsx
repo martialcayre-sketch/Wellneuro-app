@@ -110,7 +110,7 @@ export function ConsultationScreen({ idAssignation, statutReponses, onVoirEquili
           </PatientRegionAccuse>
           {!demandeEnvoyee && (
             <div className="space-y-2 text-left">
-              <label htmlFor={idCommentaire} className="block text-sm text-muted-foreground">Précisez ce que vous souhaitez corriger <span className="text-muted-foreground/70">(facultatif)</span></label>
+              <label htmlFor={idCommentaire} className="block text-sm text-muted-foreground">Précisez ce que vous souhaitez corriger <span className="text-muted-foreground">(facultatif)</span></label>
               <textarea
                 id={idCommentaire}
                 value={commentaire}

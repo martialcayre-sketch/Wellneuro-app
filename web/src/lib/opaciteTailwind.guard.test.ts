@@ -46,7 +46,9 @@ const GEL: Record<string, number> = {
   'border-border/60': 15,
   'border-border/70': 1,
   'text-muted-foreground/60': 2,
-  'text-muted-foreground/70': 18,
+  // 18 → 1 : PAT-7m (F7 a) a remis en pleine teinte les repères du portail patient ;
+  // reste la page de connexion praticien.
+  'text-muted-foreground/70': 1,
   'text-primary-foreground/80': 1,
 };
 

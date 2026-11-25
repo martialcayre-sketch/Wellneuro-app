@@ -29,6 +29,12 @@ describe('PatientJourneyProgress', () => {
   // Refonte Lien, PAT-3 (prototype validé le 2026-11-11) : l'étape courante en
   // anneau pétrole remplace le halo cuivré codé en dur (renvoi de la revue de
   // COM-0) ; l'étape à venir bordée `control-border`.
+  // Refonte Lien, PAT-7m (F7 a) : l'étape à venir en `muted-foreground` plein
+  // (5,84:1) ; le `/70` tombait à 3,08:1, sous le seuil de 4,5:1.
+  it('étape à venir lisible, sans transparence', () => {
+    expect(STATE_CLASSES.upcoming.label).toBe('text-muted-foreground');
+  });
+
   it('étape courante en anneau pétrole, sans couleur codée en dur', () => {
     expect(STATE_CLASSES.current.dot).toMatch(/\bborder-primary\b/);
     expect(STATE_CLASSES.current.dot).not.toMatch(/shadow-\[|rgba\(|bg-accent/);

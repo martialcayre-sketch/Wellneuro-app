@@ -81,7 +81,7 @@ export function AvantDeCommencer({ token, onDone }: { token: string; onDone: () 
 
   const progression = (
     // Repère d'entrée gardé ([[D-333]] §1, famille 1, précision du
-    // 2026-11-12), en surtitre du prototype PAT-2.
+    // 2026-11-12), en surtitre du prototype PAT-2 : au-dessus du titre (PAT-7m).
     <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground" aria-live="polite">
       Étape {ecran + 1} sur 4
     </p>
@@ -90,8 +90,8 @@ export function AvantDeCommencer({ token, onDone }: { token: string; onDone: () 
   if (ecran === 0) {
     return (
       <PatientCard className="space-y-4">
-        <PatientPageHeader title="Bienvenue dans votre espace Wellneuro" />
         {progression}
+        <PatientPageHeader title="Bienvenue dans votre espace Wellneuro" />
         <div className="space-y-3 text-sm text-muted-foreground leading-relaxed">
           <p>
             Wellneuro est un espace sécurisé de préparation et de suivi de votre accompagnement en
@@ -119,8 +119,8 @@ export function AvantDeCommencer({ token, onDone }: { token: string; onDone: () 
   if (ecran === 1) {
     return (
       <PatientCard className="space-y-4">
-        <PatientPageHeader title="Un outil d’accompagnement, pas un service d’urgence" />
         {progression}
+        <PatientPageHeader title="Un outil d’accompagnement, pas un service d’urgence" />
         <div className="space-y-3 text-sm text-muted-foreground leading-relaxed">
           <p>
             Wellneuro aide à organiser vos réponses, à mieux comprendre les facteurs qui peuvent
@@ -150,8 +150,8 @@ export function AvantDeCommencer({ token, onDone }: { token: string; onDone: () 
   if (ecran === 2) {
     return (
       <PatientCard className="space-y-4">
-        <PatientPageHeader title="Vos informations et leur utilisation" />
         {progression}
+        <PatientPageHeader title="Vos informations et leur utilisation" />
         <div className="space-y-3 text-sm text-muted-foreground leading-relaxed">
           <p>
             Nous recueillons uniquement les informations nécessaires à votre accompagnement et à son
@@ -205,8 +205,8 @@ export function AvantDeCommencer({ token, onDone }: { token: string; onDone: () 
 
   return (
     <PatientCard className="space-y-4">
-      <PatientPageHeader title="Avant de commencer" />
       {progression}
+      <PatientPageHeader title="Avant de commencer" />
       <div className="space-y-3">
         {LIBELLES.map((libelle, index) => (
           <label key={libelle} className="flex min-h-11 items-start gap-3 cursor-pointer">

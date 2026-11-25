@@ -173,7 +173,9 @@ export function ComprehensionView() {
           </PatientInlineMessage>
         ) : (
           <>
-            <div className="space-y-2">
+            {/* Refonte Lien, PAT-7m (F7 a) : la synthèse sur le fond de la voix
+                du praticien, comme au dossier à deux voix. */}
+            <div className="space-y-2 rounded border border-border bg-voice-practitioner p-4 print:border-0 print:bg-transparent print:p-0">
               {dateLisible(synthese.redigeeLe ?? synthese.publieeLe) && (
                 <p className="text-xs text-muted-foreground">
                   Écrit le {dateLisible(synthese.redigeeLe ?? synthese.publieeLe)}

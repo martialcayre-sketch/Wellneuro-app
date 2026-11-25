@@ -29,10 +29,10 @@ export function CarteFicheRemise({
         <p key={mention} className="mt-2 text-sm text-foreground">{mention}</p>
       ))}
       {pause && (
-        <>
-          <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-foreground">En pause</p>
+        <div className="mt-3 rounded border border-border bg-lien-sand px-4 py-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-foreground">En pause</p>
           <p className="mt-1 text-sm text-foreground">{pause}</p>
-        </>
+        </div>
       )}
       {fiche.etat === 'servie' && (
         <a

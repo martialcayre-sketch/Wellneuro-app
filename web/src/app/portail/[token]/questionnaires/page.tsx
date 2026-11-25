@@ -571,7 +571,7 @@ export default function QuestionnairesHubPage() {
                         {aff.action}
                       </a>
                     ) : (
-                      <span className="text-xs text-muted-foreground/70 shrink-0">Indisponible</span>
+                      <span className="text-xs text-muted-foreground shrink-0">Indisponible</span>
                     )}
                   </div>
                 ))}

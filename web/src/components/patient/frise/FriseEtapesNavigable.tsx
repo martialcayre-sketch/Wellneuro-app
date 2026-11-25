@@ -34,7 +34,7 @@ export function useFriseNavigable(): boolean {
 
 // La puce reste en haut de la cible : `pt-1` la pose à 4 px, son centre à
 // 11 px, sur lequel s'aligne la barre de liaison (`mt-[10px]`, 2 px).
-const CLASSE_ETAPE = 'flex min-h-11 min-w-11 shrink-0 flex-col items-center gap-1.5 rounded-md px-1 pt-1';
+const CLASSE_ETAPE = 'flex min-h-11 min-w-11 flex-col items-center gap-1.5 rounded-md px-1 pt-1 md:shrink-0';
 
 export function FriseEtapesNavigable({ steps, signaux }: { steps: JourneyStep[]; signaux: SignauxFrise }) {
   const idTexte = useId();
@@ -59,8 +59,10 @@ export function FriseEtapesNavigable({ steps, signaux }: { steps: JourneyStep[];
   return (
     <nav aria-label="Étapes de votre parcours">
       {/* `relative` : le `sr-only` reste dans le défilement de la frise, sans
-          faire déborder la page à 390 px. */}
-      <ol ref={refListe} className="relative -mx-1 flex items-start overflow-x-auto px-1 pb-1">
+          faire déborder la page à 390 px. Refonte Lien, PAT-7m (F6 a, rattaché
+          le 2026-11-25) : sous 768 px, les six étapes en 3 × 2, sans liaison ni
+          défilement, comme la frise de l'entrée ; au-delà, la ligne reliée. */}
+      <ol ref={refListe} className="relative -mx-1 grid grid-cols-3 gap-x-1 gap-y-3 px-1 pb-1 md:flex md:items-start md:overflow-x-auto">
         {steps.map((step, index) => {
           const classes = STATE_CLASSES[step.state];
           const cible = cibles[index];
@@ -70,7 +72,7 @@ export function FriseEtapesNavigable({ steps, signaux }: { steps: JourneyStep[];
             <>
               <span className={`inline-block h-3.5 w-3.5 rounded-full ${classes.dot}`} aria-hidden="true" />
               <span
-                className={`whitespace-nowrap text-2xs ${classes.label} ${cliquable ? 'underline underline-offset-2' : ''}`}
+                className={`text-center text-2xs md:whitespace-nowrap ${classes.label} ${cliquable ? 'underline underline-offset-2' : ''}`}
               >
                 {step.label}
                 {step.state === 'current' && <span className="sr-only"> (étape actuelle)</span>}
@@ -111,15 +113,15 @@ export function FriseEtapesNavigable({ steps, signaux }: { steps: JourneyStep[];
           }
 
           return (
-            <li key={step.id} className="flex shrink-0 items-start sm:shrink">
+            <li key={step.id} className="flex min-w-0 justify-center md:shrink md:items-start md:justify-start">
               {etape}
-              {/* Dès `sm`, seule la barre de liaison cède : à côté du rail, à
+              {/* En ligne (dès `md`), seule la barre de liaison cède : à côté du rail, à
                   1 024 px, les six étapes tiennent dans leur colonne, confort
                   112,5 % compris (constat du 2026-11-07). Une base et non une
                   largeur : une largeur fixe entre dans la taille minimale de
                   l'étape, et rien ne céderait. */}
               {index < steps.length - 1 && (
-                <span className="mt-[10px] h-0.5 min-w-4 basis-4 bg-border sm:min-w-2 sm:basis-6" aria-hidden="true" />
+                <span className="mt-[10px] hidden h-0.5 min-w-2 basis-6 bg-border md:block" aria-hidden="true" />
               )}
             </li>
           );

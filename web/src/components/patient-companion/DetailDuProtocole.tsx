@@ -91,7 +91,7 @@ export function DetailDuProtocole({
           {vue.actions.map((action) => (
             <div
               key={action.actionId}
-              className="rounded border border-primary/30 bg-primary/5 px-4 py-3 break-inside-avoid"
+              className={`rounded border border-control-border px-4 py-3 break-inside-avoid ${pauseDe.has(action.actionId) ? 'bg-lien-sand' : 'bg-surface'}`}
             >
               <p className="text-base font-medium text-foreground">{action.title}</p>
               {pauseDe.has(action.actionId) && (
@@ -104,17 +104,17 @@ export function DetailDuProtocole({
                 minimalPlan={action.minimalPlan}
               />
               {pauseDe.get(action.actionId) === 'element' && (
-                <p className="mt-2 text-sm text-foreground border-t border-primary/20 pt-2">{TEXTE_PAUSE_ELEMENT}</p>
+                <p className="mt-2 text-sm text-foreground border-t border-border pt-2">{TEXTE_PAUSE_ELEMENT}</p>
               )}
               {pauseDe.get(action.actionId) === 'avis_rendu' && (
-                <p className="mt-2 text-sm text-foreground border-t border-primary/20 pt-2">{TEXTE_PAUSE_AVIS_RENDU}</p>
+                <p className="mt-2 text-sm text-foreground border-t border-border pt-2">{TEXTE_PAUSE_AVIS_RENDU}</p>
               )}
               {/* UNE INTERVENTION NON FERME NE SE LIT JAMAIS COMME UN CONSEIL.
                   La phrase vient du contrat, jamais de la cible d'attente du
                   praticien : « ferritine » est son vocabulaire, « votre bilan »
                   celui du patient (`D-056`, arbitrage 5). */}
               {action.attente && (
-                <p className="mt-2 text-sm text-foreground/80 border-t border-primary/20 pt-2">
+                <p className="mt-2 text-sm text-foreground/80 border-t border-border pt-2">
                   {action.attente}
                 </p>
               )}
@@ -128,7 +128,7 @@ export function DetailDuProtocole({
           regarderont ensemble : le lui cacher faisait du point d'étape une
           évaluation dont lui seul ignorait la règle. */}
       {vue.followUpCriterion && (
-        <div data-detail-protocole="critere" className="rounded border border-border px-4 py-3 break-inside-avoid">
+        <div data-detail-protocole="critere" className="rounded border border-control-border bg-surface px-4 py-3 break-inside-avoid">
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Ce qu’on regardera ensemble à trois semaines
           </p>
@@ -145,7 +145,7 @@ export function DetailDuProtocole({
  */
 export function EncartConduite() {
   return (
-    <section aria-labelledby="encart-conduite-titre" className="rounded border border-border px-4 py-3 space-y-2 break-inside-avoid">
+    <section aria-labelledby="encart-conduite-titre" className="rounded border border-control-border bg-surface px-4 py-3 space-y-2 break-inside-avoid">
       <h3 id="encart-conduite-titre" className="text-sm font-semibold text-foreground">
         {TITRE_ENCART_CONDUITE}
       </h3>

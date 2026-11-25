@@ -13,17 +13,21 @@ export function DocumentTrust({
   document,
   accordeons = false,
   partiesDepliees = [],
+  versionAilleurs = false,
 }: {
   document: VersionDocumentTrust;
   accordeons?: boolean;
   /** Parties d'un document assemblé dont les accordéons s'ouvrent d'office. */
   partiesDepliees?: readonly string[];
+  /**
+   * La page rend elle-même `LigneVersion` hors du document (consentement de
+   * l'entrée, planche PAT-2) : la version reste visible, à un autre endroit.
+   */
+  versionAilleurs?: boolean;
 }) {
   return (
     <div className="space-y-3 [overflow-wrap:anywhere] max-[319px]:hyphens-auto">
-      <p className="text-xs text-muted-foreground">
-        Version {document.version} — publiée le {datePublicationEnLettres(document.publieLe)}
-      </p>
+      {!versionAilleurs && <LigneVersion document={document} />}
       {document.sections.map((section, index) => {
         // Un document assemblé ([[D-292]]) titre chaque partie à sa première section.
         const titrePartie =
@@ -52,6 +56,15 @@ export function DocumentTrust({
         );
       })}
     </div>
+  );
+}
+
+/** La ligne « Version … — publiée le … » d'un document TRUST. */
+export function LigneVersion({ document, className = '' }: { document: VersionDocumentTrust; className?: string }) {
+  return (
+    <p className={`text-xs text-muted-foreground ${className}`.trim()}>
+      Version {document.version} — publiée le {datePublicationEnLettres(document.publieLe)}
+    </p>
   );
 }
 

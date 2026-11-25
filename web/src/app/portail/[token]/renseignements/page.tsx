@@ -25,8 +25,9 @@ export default async function PortailRenseignementsPage({ params }: { params: Pr
       >
         ← Mon parcours
       </Link>
+      {/* Refonte Lien, PAT-7m (F7 a) : le titre au-dessus de la carte. */}
+      <PatientPageHeader title="Ma fiche de renseignements" />
       <PatientCard className="space-y-6">
-        <PatientPageHeader title="Ma fiche de renseignements" />
         <DeclarationsDeLaFiche token={token} />
       </PatientCard>
     </div>
