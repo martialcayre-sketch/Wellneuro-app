@@ -2,8 +2,8 @@
   - **Forme dominante** sous v41 : l'état d'un messager que nomme un libellé d'interprétation, repris à l'indicatif et attribué. La sortie traite l'attribution comme une réserve. Le contrat de sortie lui en donne le gabarit : son exemple d'argument est « Interprétation Y ».
   - **Textes validés mot pour mot** (`20261125-1400-b-h95` à `1403-b-h95`, A chacune) :
     - texte 5 : l'attribution n'est pas une réserve, et un libellé qui nomme un état ne se recopie pas ;
-    - texte 6 : au narratif, un résultat rapporté par l'anamnèse ne se rappelle pas ;
-    - texte 7 : un titre d'axe fondé sur des symptômes reprend les symptômes déclarés ;
+    - texte 6 : un titre d'axe fondé sur des symptômes reprend les symptômes déclarés ;
+    - texte 7 : au narratif, un résultat rapporté par l'anamnèse ne se rappelle pas ;
     - l'exemple d'argument du contrat de sortie devient « Ce que le questionnaire Z évoque, au conditionnel ». Codex retenait de laisser le contrat ; le responsable a retenu de le retoucher.
   - **Lectures de la grille** pour toute cotation suivante : `1333` A, `1334` A, `1335` A. La taille du rejeu est de 75 sorties ([[D-559]] §6, réponse `20261125-1220-b-h95`, C).
   - **Suite** :
