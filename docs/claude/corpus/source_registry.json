@@ -21934,7 +21934,7 @@
     "practitionerReviewRequired": true,
     "lifecycleStatus": "raw",
     "vigilance": "Modérée",
-    "requiredAction": "Texte en accès libre (CC BY 4.0), licence relue dans le PDF de l'éditeur fourni par le responsable le 2026-11-25, sans exclusion de la fouille de textes ni de l'IA (accord d'ingestion du 2026-11-23) ; extraits ciblés sur le zinc ingérés (BP-27 zinc, lot LOT_166_2026-11-25) ; claims en attente de signature",
+    "requiredAction": "Texte en accès libre (CC BY 4.0), licence relue dans le PDF de l'éditeur fourni par le responsable le 2026-11-25, sans exclusion de la fouille de textes ni de l'IA (accord d'ingestion du 2026-11-23) ; extraits ciblés sur le zinc ingérés (BP-27 zinc, lot LOT_166_2026-11-25) ; claims signés par le responsable et étiquetés le 2026-11-25",
     "comment": "Source externe, intervalles de référence de la zincémie par sexe et âge (NHANES, plus de 21 000 sujets), effets du jeûne, de l'heure de ponction, de l'albumine et de la grossesse ; destinée aux laboratoires cliniques. Cible R5 et contrôle de population du rattachement BP-27. Seuls les passages sur le zinc sont ingérés, pas ceux sur le cuivre. Extraits mot pour mot, usage interne ; aucune valeur, borne ni seuil versé au dépôt.",
     "auditDate": "2026-11-25"
   },
