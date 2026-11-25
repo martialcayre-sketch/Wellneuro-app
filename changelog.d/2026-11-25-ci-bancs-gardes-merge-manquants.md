@@ -11,7 +11,8 @@ défaut que l'étape « Gardes de merge et contrôle des registres (bancs) »
 avait fermé pour huit autres bancs (lot `orchestration-3`).
 
 Une étape sœur, placée juste après elle dans le job `controles`, les joue.
-Tous constatés hermétiques : verts sous réseau coupé et sous un
+Tous constatés hermétiques (dépendances injectées, faux `gh` ou arrêt à
+l'usage avant tout appel externe) : verts sous réseau coupé et sous un
 environnement vide sans `gh` dans le `PATH`, sans dépendance npm. La parité
 CI → `check` reste intacte (le banc de parité est vert, et l'écart
 `bancs-outillage-check` \ `ci.yml` est vide). Aucun script ni banc modifié,
