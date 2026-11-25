@@ -1146,7 +1146,8 @@ describe('ProtocolMiniBuilder — le comptage pendant la composition', () => {
     it(`${cas.nom} ⇒ ${cas.attendu ?? 'silence'}`, () => {
       const { container } = composer(cas.brouillon);
       expect(suggestion(container)).toBe(cas.attendu);
-    });
+      // Sept actions saisies une à une : sous la charge de la suite entière, au-delà des 5 s par défaut.
+    }, cas.brouillon.typees + cas.brouillon.vierges >= 7 ? 20_000 : undefined);
   }
 
   // UNE ACTION SANS TYPE MAIS SAISIE COMPTE ([[D-273]] §5, maintenu par
@@ -1206,7 +1207,8 @@ describe('ProtocolMiniBuilder — actions vierges supprimées', () => {
       expect(charge(ui)).toBe(NIVEAU_ATTENDU[typees]);
       // La suggestion n'a pas bougé : rien à reprendre une seconde fois.
       expect(ui.queryByRole('button', { name: 'Reprendre cette charge' })).toBeNull();
-    });
+      // Sept actions saisies une à une : sous la charge de la suite entière, au-delà des 5 s par défaut.
+    }, typees + vierges >= 7 ? 20_000 : undefined);
   }
 });
 
