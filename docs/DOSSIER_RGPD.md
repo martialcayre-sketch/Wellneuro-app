@@ -1362,8 +1362,13 @@ ce qui se passe à trois mois si le second accord n'est pas recueilli.
   « Mixte ») : un seul titulaire suffit pour la première période de trois
   mois, sous les conditions de [[D-537]] §1 ; poursuivre au-delà demande
   l'accord de chaque titulaire. La qualification que [[D-537]] §9 laissait
-  ouverte est tranchée, et la règle transitoire du §5 (les deux titulaires
-  dès l'entrée) prend fin avec J3-mineurs, qui sert ce circuit.
+  ouverte est tranchée. Rien ne s'applique avant la livraison de
+  J3-mineurs : d'ici là, aucun mineur n'est admis, la pause reste en service
+  et la règle transitoire du §5 (les deux titulaires dès l'entrée) demeure.
+  Elle ne prend fin qu'avec J3-mineurs, qui sert ce circuit.
+- Ce que devient l'accompagnement à trois mois sans le second accord est
+  une condition du cadrage de J3-mineurs : aucun lot de code du circuit
+  n'est ouvert avant qu'elle soit tranchée.
 - Les points ouverts vont au cadrage de J3-mineurs (question `-c-3`).
 
 Ces conclusions se réexaminent si les faits changent (« pour l'instant » ;
