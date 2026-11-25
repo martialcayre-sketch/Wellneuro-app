@@ -51,7 +51,8 @@ import { agregerEquilibre } from './score';
 // pas bougé. Une sortie ne se contourne qu'en changeant la sortie.
 
 // ─────────────────────────────────────────────────────────────────────────────
-// REPRIS PAR J3-12f, VAGUE 1 — [[D-547]] §4.4, [[D-548]] : v18/v19.
+// REPRIS PAR J3-12f, VAGUE 1 — [[D-547]] §4.4, [[D-548]] : v18/v19 ; puis besoin 12,
+// [[D-565]] : v20/v21 (le mapping change, la formule ne bouge pas).
 //
 // LE PLAFONNEMENT A DISPARU. Le seuil d'effondrement, le plafond du total, la
 // liste des cinq fondations critiques et les parts 60/20/20 ne sont plus des
@@ -84,7 +85,7 @@ const VALEURS_PAR_VERSION_ANCIENNE: Record<string, { seuil: number; plafond: num
   v17: { seuil: 0.34, plafond: 50 },
 };
 
-describe('plafonnement — retiré en v18/v19, gardé tel quel dans les versions anciennes', () => {
+describe('plafonnement — retiré depuis v18/v19, gardé tel quel dans les versions anciennes', () => {
   it('les constantes du plafonnement ne sont plus exportées', () => {
     const noms = Object.keys(constantes);
     for (const retiree of ['POIDS_STRATE', 'BESOINS_FONDATIONS_CRITIQUES', 'SEUIL_EFFONDREMENT', 'PLAFOND_FONDATION_CRITIQUE']) {
@@ -96,8 +97,8 @@ describe('plafonnement — retiré en v18/v19, gardé tel quel dans les versions
     expect(Object.keys(VALEURS_PAR_VERSION_ANCIENNE)).not.toContain(VERSION_SCORE_EQUILIBRE);
   });
 
-  it('les deux positions du drapeau avancent ensemble : v16 → v18, v17 → v19', () => {
-    expect(['v18', 'v19']).toContain(VERSION_SCORE_EQUILIBRE);
+  it('les deux positions du drapeau avancent ensemble : v18 → v20, v19 → v21', () => {
+    expect(['v20', 'v21']).toContain(VERSION_SCORE_EQUILIBRE);
   });
 
   it('une fondation effondrée ne plafonne plus : la moyenne directe, et aucun champ de plafond', () => {
@@ -179,6 +180,27 @@ const SORTIES_PAR_VERSION: Record<string, Record<string, SortieDeReference>> = {
     frontiereArrondi: { global: 63 },
     unSeulBesoin: { global: 90 },
   },
+  // v20/v21 ([[D-565]], besoin 12) : la formule ne bouge pas, seul le mapping
+  // change — les sorties sont celles de v18/v19, et c'est le registre du mapping
+  // qui garde le changement de source.
+  v20: {
+    pleine: { global: 64 },
+    fondationEffondree: { global: 84 },
+    toutBas: { global: 19 },
+    strateAbsente: { global: 67 },
+    rienDeMesure: { global: null },
+    frontiereArrondi: { global: 63 },
+    unSeulBesoin: { global: 90 },
+  },
+  v21: {
+    pleine: { global: 64 },
+    fondationEffondree: { global: 84 },
+    toutBas: { global: 19 },
+    strateAbsente: { global: 67 },
+    rienDeMesure: { global: null },
+    frontiereArrondi: { global: 63 },
+    unSeulBesoin: { global: 90 },
+  },
 };
 
 function sortieObservee(couvertures: Record<number, number | null>): SortieDeReference {
@@ -208,7 +230,7 @@ describe('formule — une sortie ne change pas sans bump de version', () => {
   }
 
   it('les deux positions du drapeau restent couvertes', () => {
-    expect(Object.keys(SORTIES_PAR_VERSION)).toEqual(expect.arrayContaining(['v18', 'v19']));
+    expect(Object.keys(SORTIES_PAR_VERSION)).toEqual(expect.arrayContaining(['v18', 'v19', 'v20', 'v21']));
   });
 });
 
@@ -302,6 +324,27 @@ const MAPPING_PAR_VERSION: Record<string, string> = {
     + '9:Q_STR_02|-|10..50|inv|-|1 '
     + '10:Q_INF_03|DA|40|inv|-|1,Q_INF_03|NA|40|inv|-|1,Q_INF_03|SE|40|inv|-|1 '
     + '11:- 12:Q_INF_03|ME|40|inv|-|1',
+  // v20/v21 ([[D-565]], besoin 12) : v18/v19 avec UN seul changement — le besoin 12
+  // lit la sous-échelle « Relation aux autres » de `Q_MOD_01` (0..20, plus haut
+  // vaut mieux) au lieu du sous-score `ME` de `Q_INF_03`. Rien d'autre ne bouge.
+  v20:
+    '1:Q_ALI_01|sans:RYTHME_CHRONO|0|dir|-|1 2:- 3:Q_ALI_01|RYTHME_CHRONO|0|dir|-|1 '
+    + '4:Q_GAS_01|-|93|inv|-|1,Q_INF_01|-|96|inv|-|1 '
+    + '5:Q_MOD_01|ACTIVITE_PHYSIQUE|20|dir|mouvement|1,Q_SOM_01|-|21|inv|repos|2,Q_SOM_09|-|100|dir|repos|1,'
+    + 'Q_SOM_02|-|24|inv|repos|1,Q_SOM_07|GEN|4..20|inv|repos|1 '
+    + '6:- 7:- 8:Q_NEU_11|D|21|inv|-|1 '
+    + '9:Q_STR_02|-|10..50|inv|-|1 '
+    + '10:Q_INF_03|DA|40|inv|-|1,Q_INF_03|NA|40|inv|-|1,Q_INF_03|SE|40|inv|-|1 '
+    + '11:- 12:Q_MOD_01|RELATION_AUX_AUTRES|20|dir|-|1',
+  v21:
+    '1:Q_ALI_01|sans:RYTHME_CHRONO|83|dir|-|1 2:- 3:Q_ALI_01|RYTHME_CHRONO|7|dir|-|1 '
+    + '4:Q_GAS_01|-|93|inv|-|1,Q_INF_01|-|96|inv|-|1 '
+    + '5:Q_MOD_01|ACTIVITE_PHYSIQUE|20|dir|mouvement|1,Q_SOM_01|-|21|inv|repos|2,Q_SOM_09|-|100|dir|repos|1,'
+    + 'Q_SOM_02|-|24|inv|repos|1,Q_SOM_07|GEN|4..20|inv|repos|1 '
+    + '6:- 7:- 8:Q_NEU_11|D|21|inv|-|1 '
+    + '9:Q_STR_02|-|10..50|inv|-|1 '
+    + '10:Q_INF_03|DA|40|inv|-|1,Q_INF_03|NA|40|inv|-|1,Q_INF_03|SE|40|inv|-|1 '
+    + '11:- 12:Q_MOD_01|RELATION_AUX_AUTRES|20|dir|-|1',
 };
 
 describe('mapping — une source ne change pas sans bump de version', () => {
@@ -313,15 +356,25 @@ describe('mapping — une source ne change pas sans bump de version', () => {
     expect(empreinteDuMapping()).toBe(MAPPING_PAR_VERSION[VERSION_SCORE_EQUILIBRE]);
   });
 
+  it('le besoin 12 lit `RELATION_AUX_AUTRES` de `Q_MOD_01` et plus `ME` de `Q_INF_03` (D-565)', () => {
+    expect(BESOIN_SOURCES[12]).toEqual([
+      { idQuestionnaire: 'Q_MOD_01', sousScore: 'RELATION_AUX_AUTRES', max: 20, inverser: false },
+    ]);
+    // Le sous-score `ME` n'alimente plus aucun besoin : ni le 10 (DA, NA, SE), ni le 12.
+    const sousScoresLus = Object.values(BESOIN_SOURCES).flat().map(s => `${s.idQuestionnaire}|${s.sousScore ?? '-'}`);
+    expect(sousScoresLus).not.toContain('Q_INF_03|ME');
+  });
+
   it('les deux empreintes diffèrent bien — le drapeau change le mapping', () => {
     // Sans ce cas, recopier v14 dans v15 rendrait le registre vert dans les deux
     // positions tout en cessant de décrire l'une des deux.
     expect(MAPPING_PAR_VERSION.v14).not.toBe(MAPPING_PAR_VERSION.v15);
     expect(MAPPING_PAR_VERSION.v16).not.toBe(MAPPING_PAR_VERSION.v17);
     expect(MAPPING_PAR_VERSION.v18).not.toBe(MAPPING_PAR_VERSION.v19);
+    expect(MAPPING_PAR_VERSION.v20).not.toBe(MAPPING_PAR_VERSION.v21);
   });
 
   it('les deux positions du drapeau restent couvertes', () => {
-    expect(Object.keys(MAPPING_PAR_VERSION)).toEqual(expect.arrayContaining(['v18', 'v19']));
+    expect(Object.keys(MAPPING_PAR_VERSION)).toEqual(expect.arrayContaining(['v18', 'v19', 'v20', 'v21']));
   });
 });

@@ -79,10 +79,18 @@ const NON = { ...POSITIF_HORS_EPISODE, idReponse: 'REP_BDI_NON', scoresJson: { r
 // des besoins 1 et 9, définition du total). Elles entrent dans l'empreinte ; même
 // dérive VOULUE, la même extinction que la version du score — aucune extinction
 // supplémentaire ([[D-548]] §4).
+//
+// Relevées une cinquième fois le 2026-11-25 ([[D-565]], besoin 12) : la version du
+// score passe de v18/v19 à v20/v21 (le besoin 12 lit la sous-échelle « Relation
+// aux autres » de `Q_MOD_01`). Même dérive VOULUE : chaque carte diffusée dérive
+// et son écran protocole s'éteint jusqu'à réapprobation (UN seul changement de
+// version pour les sept dossiers signés, [[D-548]] §4 amendée le 2026-11-25). Les
+// étiquettes `VERSION_MAPPING_BESOINS` et `VERSION_OBJETS_CLINIQUES` montent en v4
+// dans le même lot, sans extinction supplémentaire.
 const EMPREINTE_REFERENCE =
   process.env.WN_ALI_01_SIIN57 === 'true'
-    ? '59e3aeea95e85bf7fb120cff7d4a73f5d01bc909d60d681c411553d4c55c79e8'
-    : '8d960b46e30098e59785691ccb5cde21b02836d7e2378160845b3ce967875030';
+    ? '1e304d0694b5eb1324a95cd102a255a08eeddfb502b8282ef1ab35f673a6f3e9'
+    : '761b120c88560272848de113cbc76c8ae96444fb9efedea64269e8cd101e2d0d';
 
 beforeEach(() => {
   signerTablePriorites();

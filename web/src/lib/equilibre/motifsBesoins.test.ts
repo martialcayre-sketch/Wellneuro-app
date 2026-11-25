@@ -79,6 +79,10 @@ describe('motifsNonMesureBesoin — un motif par étage, jamais pour un besoin m
     ]);
     // Un sous-score partiel (HAD-D, besoin 8) passe par le même motif.
     expect(motifsNonMesureBesoin(8, { Q_NEU_11: { D2: '0' } }, SANS_CONTEXTE)?.[0].motif).toBe('recueil_incomplet');
+    // Besoin 12 (D-565) : la sous-échelle de relation partielle se dit « recueil incomplet » sur `Q_MOD_01`.
+    expect(motifsNonMesureBesoin(12, { Q_MOD_01: { RELATION_AUX_AUTRES_Q001: '0' } }, SANS_CONTEXTE)).toEqual([
+      { motif: 'recueil_incomplet', idsQuestionnaire: ['Q_MOD_01'], dateDernierePassation: null },
+    ]);
   });
 
   it('un besoin mesuré ne reçoit aucun motif, même si une autre de ses sources manque', () => {
@@ -160,7 +164,7 @@ describe('ecartsDecisionBesoin — les routes mesurent, la décision écarte', (
     expect(ecartsDecisionBesoin(10, { Q_INF_03: dnst }, SANS_CONTEXTE)).toEqual([
       { idQuestionnaire: 'Q_INF_03', dateDernierePassation: null },
     ]);
-    // Le besoin 12 lit ME, absent : non mesuré, donc aucun écart.
+    // Le besoin 12 lit `Q_MOD_01` (D-565), absent : non mesuré, donc aucun écart ; `ME` ne l'alimente plus.
     expect(ecartsDecisionBesoin(12, { Q_INF_03: dnst }, SANS_CONTEXTE)).toBeNull();
   });
 

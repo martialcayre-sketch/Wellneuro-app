@@ -25,6 +25,12 @@ describe('questionnairesCiblesPourPriorite', () => {
     expect(cibles.length).toBeGreaterThan(0);
   });
 
+  it('le besoin 12 cible le questionnaire de mode de vie, plus le DNSM (D-565)', () => {
+    expect(questionnairesCiblesPourPriorite([12])).toEqual(
+      ['Q_MOD_01'].filter(qid => IDS_ASSIGNABLES.has(qid)),
+    );
+  });
+
   it('déduplique deux besoins partageant une source', () => {
     // Besoins 1 et 3 lisent tous deux Q_ALI_01 (total et sous-score) : une
     // seule proposition, pas deux boutons pour le même instrument.

@@ -281,7 +281,8 @@ d'un esprit apaisé, capable de prendre du recul sans agitation mentale
 - **Section réécrite sur le dossier de preuve signé** (`D-568`, 2026-11-25, `D-312` §3). Les claims, valeurs et sources sont au dossier privé du besoin 10 ; ici, les mécanismes seulement (`D-251` §4).
 - **Variables d'entrée** : le questionnaire du cabinet (`Q_INF_03`), sous-scores
   dopamine, noradrénaline et sérotonine, niveau B, sans validation
-  psychométrique indépendante ; le sous-score mélatonine est lu au besoin 12.
+  psychométrique indépendante ; le sous-score mélatonine n'alimente plus aucun
+  besoin depuis `D-565` (il était lu au besoin 12).
   Aucune mesure publiée n'est servie ; aucun biomarqueur n'entre au score.
 - **Règle de décision** : aucune. La règle précédente (seuil sur un axe,
   compensation par précurseurs en acides aminés et exercices mentaux) est
@@ -335,7 +336,7 @@ Besoin d'être connecté sainement à soi-même (congruence), aux autres
 - **Références citées** : identifiants au dossier privé ; seuls les claims
   cités par une position signée fondent un constat (`D-565` §5.3).
 - **Population visée et « non évalué »** : `D-565` §4.
-- **Application** : lot de code distinct, un seul changement de version (`D-565` §5.2, `D-548` §4 amendée le 2026-11-25) ; jusqu'à son déploiement le besoin 12 lit `ME`.
+- **Application** : lot de code distinct (2026-11-25), un seul changement de version, v20/v21 (`D-565` §5.2, `D-548` §4 amendée le 2026-11-25) ; le besoin 12 lit la sous-échelle « Relation aux autres » de `Q_MOD_01` dès le déploiement, et `ME` ne l'alimente plus.
 
 ---
 

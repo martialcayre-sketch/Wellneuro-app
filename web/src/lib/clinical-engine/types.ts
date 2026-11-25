@@ -32,7 +32,13 @@ export const VERSION_SCHEMA_CLINICAL_SNAPSHOT = 'c1-clinical-snapshot-v1' as con
 // le même lot — 2 protocoles diffusés, comptés dans l'impact du lot — sans
 // extinction supplémentaire ([[D-548]] §4 : une seule extinction, étiquettes
 // comprises). Aucune de ces étiquettes n'entre dans un périmètre signé.
-export const VERSION_MAPPING_BESOINS = 'besoins-v3' as const;
+// v3 → v4 (2026-11-25, [[D-565]], besoin 12) : la source du besoin 12 devient la
+// sous-échelle « Relation aux autres » de `Q_MOD_01` (niveau B, [[D-424]] §2 et
+// §3), le sous-score `ME` de `Q_INF_03` le quitte. Même motif que v2 → v3 : la
+// laisser à v3 ferait porter deux mappings par une même étiquette. Même coût :
+// elle monte avec `VERSION_SCORE_EQUILIBRE` (v20/v21), dans le même lot, donc sans
+// extinction supplémentaire ([[D-548]] §4 amendée le 2026-11-25).
+export const VERSION_MAPPING_BESOINS = 'besoins-v4' as const;
 // v1 → v2 (2026-08-12, [[D-052]]) : `ConfirmedAssessmentEpisode` gagne
 // `preconditionOverrides`, la trace des conditions souples contournées.
 //
@@ -60,7 +66,10 @@ export const VERSION_MAPPING_BESOINS = 'besoins-v3' as const;
 // le même motif et au même coût (voir ci-dessus : 16 lignes d'épisodes en v2,
 // une seule extinction pour tout le lot). Entre dans `versions.clinicalObjects`
 // du snapshot, donc dans `snapshot.inputHash`.
-export const VERSION_OBJETS_CLINIQUES = 'objets-cliniques-v3' as const;
+// v3 → v4 (2026-11-25, [[D-565]]) : monte avec `VERSION_MAPPING_BESOINS`, pour le
+// même motif, au même coût. Entre dans `versions.clinicalObjects` du snapshot,
+// donc dans `snapshot.inputHash`.
+export const VERSION_OBJETS_CLINIQUES = 'objets-cliniques-v4' as const;
 export const VERSION_CLINICAL_REVIEW = 'c1-clinical-review-v1' as const;
 export const VERSION_DECISION_CARD = 'c1-decision-card-v1' as const;
 export const VERSION_PROTOCOL_DRAFT = 'c1-protocol-draft-v1' as const;
