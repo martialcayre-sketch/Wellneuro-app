@@ -1,4 +1,4 @@
-// La consigne « fiche-usage-v13 » est épinglée : un octet changé sans bump de
+// La consigne « fiche-usage-v14 » est épinglée : un octet changé sans bump de
 // version rougit ici, et l'outil refuse de tourner ([[D-314]] §4).
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -323,4 +323,47 @@ test('v13 : relecture du libellé contre la liste et correction unique, côté r
   const enLigne = redaction.replace(/\s+/g, ' ');
   assert.match(enLigne, /Avant de répondre, relis ton libellé mot par mot contre cette liste\./);
   assert.match(enLigne, /Si l'outil te signale ensuite un terme écarté, reformule une seule fois, sans lui\./);
+});
+
+// v14 ([[D-501]] §18) : trois familles de refus stables du zinc (essai v13 et
+// son rejeu), précisées des deux côtés.
+test('v14 : test d\'« interpretations », mots de fréquence et de référence, réserve en surveillance, des deux côtés', () => {
+  const { redaction, contreLecture } = lireConsignes();
+  const r = redaction.replace(/\s+/g, ' ');
+  const c = contreLecture.replace(/\s+/g, ' ');
+  assert.match(r, /vérifie qu'elle nomme un résultat de l'examen \(une valeur, une baisse, une hausse de l'analyte\) ET ce que ce résultat permet ou interdit de conclure/);
+  assert.match(c, /une phrase qui ne nomme pas à la fois un résultat de l'examen et ce que ce résultat permet ou interdit de conclure est hors de l'objet de la rubrique/);
+  // Codex : la phrase d'absence reste bornée aux claims (aucun ne relie un résultat à une conclusion), des deux côtés,
+  // et aucune liste d'exclusion ne s'ajoute au couple résultat-conclusion.
+  assert.match(r, /La phrase d'absence n'y s'écrit que si aucun claim fourni ne relie un résultat de l'examen à ce qu'il permet ou interdit de conclure ; si l'un le fait, la rubrique le restitue\./);
+  assert.match(c, /la phrase d'absence, quand aucun claim fourni ne relie un résultat de l'examen à une conclusion, n'est pas un défaut/);
+  assert.doesNotMatch(r, /une variation, une limite, une recommandation d'usage/);
+  for (const t of [r, c]) {
+    assert.match(t, /« régulièrement », « chaque jour »/);
+    assert.match(t, /« proche des »/);
+    // PR-Agent (#2360) : l'exception « sans valeur chiffrée » ne couvre pas ces deux familles.
+    assert.match(t, /exception ne couvre ni un mot de fréquence ni un apport situé par rapport à une valeur de référence, qui restent des quantités de prise/);
+  }
+  assert.match(r, /Dans « surveillance_arret » surtout, une phrase qui dit un contrôle biologique utile, conseillé, fréquent ou habituel présente un usage/);
+  assert.match(c, /« precautions » comprise, et « surveillance_arret » aussi \(un contrôle biologique dit utile, conseillé, fréquent ou habituel est un usage\)/);
+});
+
+// v14, §19 de [[D-501]] (20261125-1800-b) : exception des médicaments nommés,
+// en « precautions » seulement, fiche sécurité « oui », des deux côtés.
+test('v14 §19 : exception des médicaments nommés, bornée, et délai d\'interaction, des deux côtés', () => {
+  const { redaction, contreLecture } = lireConsignes();
+  const r = redaction.replace(/\s+/g, ' ');
+  const c = contreLecture.replace(/\s+/g, ' ');
+  assert.match(r, /Exception, dans « precautions » seulement et seulement quand le marqueur sécurité \/ admissibilité est « oui »/);
+  assert.match(c, /ne sont pas des défauts, dans « precautions » seulement et quand le marqueur sécurité \/ admissibilité est « oui »/);
+  for (const t of [r, c]) {
+    assert.match(t, /« Selon le RCP de <spécialité>, … »/);
+    assert.match(t, /\(forme, indication, excipient, population, période\)/);
+    assert.match(t, /délai entre les prises/);
+  }
+  // La règle générale reste : aucun médicament nommé hors de l'exception.
+  assert.match(r, /LES MÉDICAMENTS\. Aucun médicament nommé/);
+  assert.match(r, /Une condition que l'exception des MÉDICAMENTS, ci-dessous, permet d'écrire ne relève pas de ce refus\./);
+  assert.match(c, /sans attribution, privée d'une de ses restrictions, généralisée au nutriment ou à la catégorie « médicaments », accompagnée d'une autre quantité de prise \(dose, durée, fréquence, moment\), ou réunissant dans une même phrase un fait propre à une spécialité et une interaction/);
+  assert.match(r, /Les faits propres à une spécialité et les interactions s'écrivent dans des phrases distinctes\./);
 });

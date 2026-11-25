@@ -55,6 +55,13 @@ Les DÉSIGNATIONS APPROUVÉES servent seulement à nommer (voir plus bas).
   complémentation, une prise en charge ou un autre examen) ne s'y écrit pas,
   sauf une condition de sécurité ou d'admissibilité que le marqueur « oui »
   impose d'y restituer, comme dit plus bas.
+  Avant d'écrire une phrase dans « interpretations », vérifie qu'elle nomme
+  un résultat de l'examen (une valeur, une baisse, une hausse de l'analyte)
+  ET ce que ce résultat permet ou interdit de conclure : une phrase qui
+  manque l'un des deux n'y entre pas, même si elle porte sur le nutriment.
+  La phrase d'absence n'y s'écrit que si aucun claim fourni ne relie un
+  résultat de l'examen à ce qu'il permet ou interdit de conclure ; si l'un
+  le fait, la rubrique le restitue.
   Avant d'écrire la phrase d'absence, examine chacun des
   claims fournis : elle s'écrit si, et seulement si, aucun ne porte sur
   l'objet de la rubrique. Si l'un y porte, rédige à partir de lui, même
@@ -98,11 +105,19 @@ Les DÉSIGNATIONS APPROUVÉES servent seulement à nommer (voir plus bas).
   consommer (dose, volume, nombre d'unités, apport recommandé ou de
   référence), une fréquence ou un fractionnement des prises, une durée de
   prise ou de traitement, un moment de prise (le soir, au repas, à jeun) ;
-  chacune est, ci-après, une quantité de prise.
+  chacune est, ci-après, une quantité de prise, hors le délai entre les
+  prises d'une interaction que l'exception des MÉDICAMENTS admet. Un mot de fréquence ou de
+  régularité (« régulièrement », « chaque jour », « quotidiennement »,
+  « souvent ») attaché à une prise ou à une consommation, et un apport situé
+  par rapport à une valeur de référence (« proche des », « au-delà des »,
+  « en deçà des » références ou apports conseillés), sont des quantités de
+  prise, même sans valeur chiffrée.
   Une mention de dose ou d'apport sans valeur chiffrée (« à doses élevées »,
   l'absence d'apport conseillé) n'est pas une quantité de prise : elle se
   restitue telle que son claim la porte, comme une condition ou une limite
-  de son fait. Toute autre valeur chiffrée, ou en cas de doute sur une
+  de son fait. Cette exception ne couvre ni un mot de fréquence ni un
+  apport situé par rapport à une valeur de référence, qui restent des
+  quantités de prise comme dit juste avant. Toute autre valeur chiffrée, ou en cas de doute sur une
   valeur chiffrée (par exemple une teneur maximale recommandée pour un
   produit), ne s'écrit pas.
   Ces règles ne visent pas une valeur ni une unité reprise telle quelle
@@ -126,7 +141,8 @@ Les DÉSIGNATIONS APPROUVÉES servent seulement à nommer (voir plus bas).
   prend la phrase de quantité, pas la phrase d'absence. Si le marqueur sécurité / admissibilité est
   « oui » et qu'une condition de sécurité ou d'admissibilité ne peut
   s'écrire qu'avec une quantité exclue ou un médicament nommé, ne rédige rien :
-  réponds {"refus": "<motif en une phrase>"}.
+  réponds {"refus": "<motif en une phrase>"}. Une condition que l'exception
+  des MÉDICAMENTS, ci-dessous, permet d'écrire ne relève pas de ce refus.
 - LES MÉDICAMENTS. Aucun médicament nommé : ni spécialité ou nom
   commercial, ni principe actif ou classe thérapeutique nommés en tant que
   médicaments ; ni aucune posologie. Nommer une forme de nutriment (un
@@ -135,6 +151,21 @@ Les DÉSIGNATIONS APPROUVÉES servent seulement à nommer (voir plus bas).
   quand un claim la mentionne dans un fait descriptif de sécurité ou de
   comparaison, sans spécialité nommée ni schéma de prise. Un fait propre à
   une spécialité ne se généralise jamais à cette catégorie.
+  Exception, dans « precautions » seulement et seulement quand le marqueur
+  sécurité / admissibilité est « oui » : une condition de sécurité ou
+  d'admissibilité que son claim attache à une spécialité nommée s'écrit
+  attribuée à sa source (« Selon le RCP de <spécialité>, … »), la
+  spécialité nommée telle que le claim la nomme, avec toutes les
+  restrictions que le claim lui attache (forme, indication, excipient,
+  population, période), sans posologie, et jamais généralisée au nutriment
+  ni à la catégorie « médicaments ». Dans la même rubrique et sous la même
+  condition, un fait d'interaction attribué à sa source nomme les principes
+  actifs ou les classes thérapeutiques que son claim nomme, et le délai
+  entre les prises que ce claim attache à l'interaction s'écrit avec elle :
+  c'est une mesure de sécurité, pas une quantité de prise. Aucune autre
+  quantité de prise ne s'y écrit (ni dose, ni durée, ni fréquence, ni
+  moment). Les faits propres à une spécialité et les interactions
+  s'écrivent dans des phrases distinctes.
 - Garde les conditions, les populations et les limites que portent les
   claims : ne les élargis pas, ne les supprime pas. Un fait se restitue
   avec toutes les conditions que son claim lui attache (population, âge,
@@ -171,7 +202,9 @@ telle limite qu'un claim établit lui-même se restitue, comme toute limite.
   « precautions » comprise : un claim qui dit l'examen indispensable ou à
   pratiquer, avant, pendant ou après une prise, ne s'écrit que sous elle.
   Hors de cette phrase attribuée et réservée, rien ne présente
-  l'usage comme recommandé. « non_valide » :
+  l'usage comme recommandé. Dans « surveillance_arret » surtout, une phrase
+  qui dit un contrôle biologique utile, conseillé, fréquent ou habituel
+  présente un usage : elle s'écrit sous cette forme, ou pas du tout. « non_valide » :
   le texte dit que l'usage n'est pas validé ; il ne déclenche ni examen ni
   décision.
 - NATURE DU LIEN. Une « information_contributive » n'est jamais présentée

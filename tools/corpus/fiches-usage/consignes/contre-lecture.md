@@ -97,14 +97,31 @@ Il est INFIDÈLE s'il contient au moins un des défauts suivants :
   schéma de prise, n'est pas un défaut ; un fait propre à une spécialité
   généralisé à cette catégorie en est un ; nommer une forme de nutriment
   (un sel, un composé) n'est pas, en soi, nommer un médicament, sauf quand
-  elle est nommée en tant que médicament ;
+  elle est nommée en tant que médicament ; ne sont pas des défauts, dans
+  « precautions » seulement et quand le marqueur sécurité / admissibilité
+  est « oui » : une condition de sécurité ou d'admissibilité qu'un claim
+  attache à une spécialité nommée, attribuée à sa source (« Selon le RCP
+  de <spécialité>, … »), avec toutes les restrictions que le claim lui
+  attache (forme, indication, excipient, population, période), sans
+  posologie ; un fait d'interaction attribué à sa source qui nomme les
+  principes actifs ou les classes que son claim nomme, avec le délai entre
+  les prises que ce claim attache à l'interaction ; en sont un : la même
+  chose hors de « precautions » ou d'une fiche dont le marqueur est
+  « oui », sans attribution, privée d'une de ses restrictions, généralisée
+  au nutriment ou à la catégorie « médicaments », accompagnée d'une autre
+  quantité de prise (dose, durée, fréquence, moment), ou réunissant dans
+  une même phrase un fait propre à une spécialité et une interaction ;
 - une quantité à prendre ou à consommer (dose, volume, nombre d'unités,
   apport recommandé ou de référence), une fréquence ou un fractionnement
   des prises, une durée de prise ou de traitement, un moment de prise (le
-  soir, au repas, à jeun), ou toute autre valeur
+  soir, au repas, à jeun), un mot de fréquence ou de régularité attaché à
+  une prise ou à une consommation (« régulièrement », « chaque jour »), un
+  apport situé par rapport à une valeur de référence (« proche des »,
+  « au-delà des » références), ou toute autre valeur
   qui n'est ni une teneur ni un seuil (par exemple une teneur maximale
   recommandée pour un produit), même rapportés par un claim, hors une
-  valeur reprise d'une désignation approuvée comme dit plus haut ; ne sont pas
+  valeur reprise d'une désignation approuvée comme dit plus haut, et hors
+  le délai entre les prises d'une interaction admis plus haut ; ne sont pas
   des défauts une teneur de composition (la quantité d'un nutriment
   effectivement présente dans un aliment, une eau ou un produit) et un
   seuil qui borne une observation ou un risque (la quantité au-delà de
@@ -119,7 +136,9 @@ Il est INFIDÈLE s'il contient au moins un des défauts suivants :
   au-delà ou en conseil en deçà, il en est un ; une
   mention de dose ou d'apport sans valeur chiffrée (« à doses élevées »,
   l'absence d'apport conseillé) n'est pas une quantité de prise, et
-  restituée telle que son claim la porte, elle n'est pas un défaut ;
+  restituée telle que son claim la porte, elle n'est pas un défaut ; cette
+  exception ne couvre ni un mot de fréquence ni un apport situé par rapport
+  à une valeur de référence, qui restent des quantités de prise ;
 - une indication de demander le dosage des anticorps anti-LDL oxydées tirée
   d'un claim marqué [SOUS RÉSERVE D'INDICATION] ;
 - pour une rubrique : un texte qui ne traite pas la rubrique nommée ;
@@ -130,7 +149,9 @@ Il est INFIDÈLE s'il contient au moins un des défauts suivants :
   (« Selon <source>, … »), avec toutes ses conditions, et terminée par
   « , mais cet usage n'est pas établi. » : cette phrase n'est pas un défaut,
   et sans l'attribution ou sans cette réserve, elle en est un, dans toute
-  rubrique, « precautions » comprise ; un usage qui n'est pas dit
+  rubrique, « precautions » comprise, et « surveillance_arret » aussi (un
+  contrôle biologique dit utile, conseillé, fréquent ou habituel est un
+  usage) ; un usage qui n'est pas dit
   non validé, ou qui déclenche un examen ou une décision, alors que le
   statut est « non_valide » (une rubrique qui ne présente aucun usage n'a
   pas à le dire) ; une « information_contributive » présentée
@@ -146,6 +167,11 @@ Il est INFIDÈLE s'il contient au moins un des défauts suivants :
   qualification diagnostique, plutôt qu'un état fonctionnel d'un seul
   nutriment dans le sens bas ; ou un nom qui contient l'un des douze termes
   écartés, même dérivé ou contenu dans un autre mot.
+
+Dans « interpretations », une phrase qui ne nomme pas à la fois un résultat
+de l'examen et ce que ce résultat permet ou interdit de conclure est hors de
+l'objet de la rubrique ; la phrase d'absence, quand aucun claim fourni ne
+relie un résultat de l'examen à une conclusion, n'est pas un défaut.
 
 Un claim porte sur l'objet d'une rubrique quand il en traite le contenu
 même, pas seulement son sujet. Pour « interpretations », il dit ce qu'un
