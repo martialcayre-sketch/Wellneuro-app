@@ -17,7 +17,9 @@ import {
 } from '@/lib/synthese/appelBiologie';
 
 // LES DEUX CONSIGNES DE LA SYNTHÈSE ET LA BIOLOGIE — H95 part B, [[D-539]] §4
-// et §5 (qui amende [[D-513]] §3, §4 et §6), amendés par [[D-545]] §3 et §5.
+// et §5 (qui amende [[D-513]] §3, §4 et §6), amendés par [[D-545]] §3 et §5,
+// complétés par [[D-557]] §2 et [[D-559]] §3 (`synthese-v41`, jamais servie),
+// puis par [[D-563]] §3 et §4 (`synthese-v42`, 2026-11-25).
 // Textes validés mot pour mot par le responsable le 2026-11-18 (D-539) et le
 // 2026-11-19 (D-545) : la section « Résultats de biologie » de `synthese-v38`,
 // ses retouches et son contrat de sortie ; la consigne du second appel,
@@ -25,7 +27,11 @@ import {
 //
 // LE TEXTE ATTENDU SE CONSTRUIT DES DEUX DÉCISIONS : la citation de D-539, où
 // chaque passage remplacé par D-545 est cherché tel quel (une seule fois) et
-// remplacé par la citation de D-545. Rien n'est recopié à la main.
+// remplacé par la citation de D-545 ; puis, pour v41, les trois paragraphes de
+// D-557 §2, chacun suivi du texte de D-559 §3 de même rang, et le texte 4 de
+// D-559 en paragraphe neuf ; pour v42, les textes 5 et 6 de D-563 à la suite
+// du texte 3 de D-559, le texte 7 en puce du narratif et l'exemple du contrat.
+// Rien n'est recopié à la main.
 //
 // CE BANC NE PROUVE PAS QUE LE MODÈLE OBÉIT : il prouve qu'on ne peut plus
 // toucher à ces textes sans le décider. Ce que le modèle écrit se voit par
@@ -35,8 +41,8 @@ const CONSIGNE = SYSTEM_PROMPT_GOUVERNANCE;
 const TITRE_SECTION = '## Résultats de biologie';
 const SECTION_SUIVANTE = '## Consignes de réponse';
 
-const EMPREINTE_SECTION_V38 = '5d07b064de5fc5ed';
-const EMPREINTE_CONTRAT_V37 = '40026cfcb8b22b39';
+const EMPREINTE_SECTION_V42 = '4700b21e4b3b151c';
+const EMPREINTE_CONTRAT_V42 = '7d968ff7f97c6c5c';
 const EMPREINTE_CONSIGNE_BIOLOGIE_V2 = 'a7a0ec27ba117fea';
 const EMPREINTE_RELANCE_BIOLOGIE_V1 = '4e45bd3f269fe124';
 
@@ -45,6 +51,9 @@ function lireDecision(id: string): string[] {
 }
 const D539 = lireDecision('D-539');
 const D545 = lireDecision('D-545');
+const D557 = lireDecision('D-557');
+const D559 = lireDecision('D-559');
+const D563 = lireDecision('D-563');
 
 /** Un bloc cité d'une décision, à partir de sa première ligne, sans ses chevrons (et leur retrait). */
 function citationDe(decision: string[], premiere: string, retrait = ''): string {
@@ -89,6 +98,55 @@ function sectionAttendueV38(): string {
   ]);
 }
 
+/** Les trois paragraphes de [[D-557]] §2, sans retouche. */
+function paragraphesD557(): string[] {
+  const p = citationDe(D557, 'Un diagnostic, une suspicion, un traitement ou un suivi déclarés').split('\n\n');
+  expect(p, 'D-557 §2 : trois paragraphes').toHaveLength(3);
+  return p;
+}
+
+/** Les quatre textes de [[D-559]] §3, sans retouche (citations retirées de deux espaces). */
+function textesD559(): string[] {
+  const t = D559.filter((l) => l.startsWith('  > ')).map((l) => l.slice(4));
+  expect(t, 'D-559 §3 : quatre textes').toHaveLength(4);
+  return t;
+}
+
+/**
+ * v41 ([[D-559]] §3) : après le paragraphe de D-545 §5, qui ne change pas, les
+ * trois paragraphes de D-557 §2, chacun suivi, dans le même paragraphe, du
+ * texte de D-559 de même rang ; puis le texte 4, paragraphe neuf, en fin de section.
+ */
+function sectionAttendueV41(): string {
+  const p = paragraphesD557();
+  const t = textesD559();
+  return [sectionAttendueV38(), `${p[0]} ${t[0]}`, `${p[1]} ${t[1]}`, `${p[2]} ${t[2]}`, t[3]].join('\n\n');
+}
+
+/**
+ * Les textes de [[D-563]] §3 et §4, sans retouche (citations retirées de deux
+ * espaces), dans l'ordre de la décision : texte 5, texte 6, texte 7 (une puce),
+ * puis l'exemple d'argument du contrat de sortie.
+ */
+function textesD563(): { t5: string; t6: string; t7: string; exemple: string } {
+  const t = D563.filter((l) => l.startsWith('  > ')).map((l) => l.slice(4));
+  expect(t, 'D-563 §3 et §4 : trois textes et un exemple').toHaveLength(4);
+  expect(t[2].startsWith('- '), 'D-563 §3 : le texte 7 est une puce').toBe(true);
+  expect(t[3].startsWith('"arguments": '), 'D-563 §4 : la ligne d’exemple du contrat').toBe(true);
+  return { t5: t[0], t6: t[1], t7: t[2], exemple: t[3] };
+}
+
+/**
+ * v42 ([[D-563]] §3) : la section de v41, où les textes 5 puis 6 de D-563
+ * suivent, dans le même paragraphe, le texte 3 de D-559.
+ */
+function sectionAttendueV42(): string {
+  const p = paragraphesD557();
+  const t = textesD559();
+  const { t5, t6 } = textesD563();
+  return [sectionAttendueV38(), `${p[0]} ${t[0]}`, `${p[1]} ${t[1]}`, `${p[2]} ${t[2]} ${t5} ${t6}`, t[3]].join('\n\n');
+}
+
 function consigneBiologieAttendueV2(): string {
   return remplacer(citation('Tu restitues, pour le praticien seul'), [
     [BIO_V1_INTERVALLE, citation545("Ne l'appelle jamais « intervalle de référence ». Cite-le")],
@@ -108,18 +166,41 @@ function empreinte(texte: string): string {
   return createHash('sha256').update(texte).digest('hex').slice(0, 16);
 }
 
-describe('synthese-v38 — la section « Résultats de biologie » (D-539 §5.1, D-545 §5.1)', () => {
-  // v39 (D-543) ne touche pas cette section : elle ajoute une puce aux règles non appliquées.
-  it('la version est synthese-v39', () => {
-    expect(VERSION_PROMPT_SYNTHESE).toBe('synthese-v39');
+describe('synthese-v42 — la section « Résultats de biologie » (D-539 §5.1, D-545 §5.1, D-557 §2, D-559 §3, D-563 §3)', () => {
+  // v39 (D-543) ne touchait pas cette section ; v41 (D-559, jamais servie) y ajoutait les textes de
+  // D-557 §2 et D-559 §3 ; v42 (D-563) y ajoute les textes 5 et 6 à la suite du texte 3 de D-559.
+  it('la version est synthese-v42', () => {
+    expect(VERSION_PROMPT_SYNTHESE).toBe('synthese-v42');
   });
 
-  it('la section est, au caractère près, le texte de D-539 amendé par D-545', () => {
-    expect(section()).toBe(sectionAttendueV38());
+  it('la section est, au caractère près, le texte de D-539 amendé par D-545, suivi des textes de D-557 §2, D-559 §3 et D-563 §3 à leur place', () => {
+    expect(section()).toBe(sectionAttendueV42());
+  });
+
+  it('les textes 5 puis 6 de D-563 suivent, dans le même paragraphe, le texte 3 de D-559 ; la section de v41 n’a pas changé autrement', () => {
+    const t = textesD559();
+    const { t5, t6 } = textesD563();
+    expect(section()).toContain(`${t[2]} ${t5} ${t6}\n\n`);
+    expect(section().replace(` ${t5} ${t6}`, '')).toBe(sectionAttendueV41());
+  });
+
+  it('le paragraphe de D-545 §5 reste intact et en tête ; chaque texte de D-559 suit, dans son paragraphe, celui de D-557 de même rang ; le texte 4 ferme la section', () => {
+    const paragraphes = section().split('\n\n');
+    expect(section().startsWith(`${sectionAttendueV38()}\n\n`)).toBe(true);
+    const p = paragraphesD557();
+    const t = textesD559();
+    const { t5, t6 } = textesD563();
+    const fin = paragraphes.slice(-4);
+    const suites = [t[0], t[1], `${t[2]} ${t5} ${t6}`];
+    for (let i = 0; i < 3; i++) {
+      expect(fin[i].startsWith(p[i]), `paragraphe ${i + 1} : D-557 en tête`).toBe(true);
+      expect(fin[i].endsWith(suites[i]), `paragraphe ${i + 1} : texte ${i + 1} de D-559 à la suite`).toBe(true);
+    }
+    expect(fin[3]).toBe(t[3]);
   });
 
   it('la section est épinglée par empreinte', () => {
-    expect(empreinte(section()), 'section modifiée : le texte a été validé mot pour mot, resoumettre au responsable ; toute modification fait rejouer l’évaluation de D-545 §7').toBe(EMPREINTE_SECTION_V38);
+    expect(empreinte(section()), 'section modifiée : les textes ont été validés mot pour mot, resoumettre au responsable ; toute modification fait rejouer l’appel principal en entier (D-556 §5, D-563 §5)').toBe(EMPREINTE_SECTION_V42);
   });
 
   it('elle suit la section des besoins et précède les consignes de réponse', () => {
@@ -154,9 +235,17 @@ describe('synthese-v38 — les retouches (D-539 §5.2 et §5.3, D-545 §5.2)', (
     expect(puceScores).toBeGreaterThanOrEqual(0);
     expect(ton.indexOf(`${puce}\n`)).toBeGreaterThan(puceScores);
   });
+
+  it('v42 (D-563 §3) : le texte 7 est une puce neuve, juste après celle de D-545 §5 (2), qui ne change pas', () => {
+    const puce = citation545("- N'écris dans narratif_patient aucune valeur");
+    const { t7 } = textesD563();
+    const ton = CONSIGNE.slice(CONSIGNE.indexOf('## Ton du narratif patient'));
+    expect(ton).toContain(`${puce}\n${t7}\n`);
+    expect(CONSIGNE.split(t7)).toHaveLength(2);
+  });
 });
 
-describe('synthese-v38 — le contrat de sortie, inchangé depuis v37, schéma v4 sans les clés biologiques (D-539 §5.4)', () => {
+describe('synthese-v42 — le contrat de sortie, schéma v4 sans les clés biologiques (D-539 §5.4), exemple d’argument de D-563 §4', () => {
   it('le schéma enregistré reste synthese-json-v4', () => {
     expect(VERSION_SCHEMA_SYNTHESE).toBe('synthese-json-v4');
   });
@@ -167,8 +256,14 @@ describe('synthese-v38 — le contrat de sortie, inchangé depuis v37, schéma v
     expect(SYSTEM_PROMPT_CONTRAT_JSON.trimEnd().endsWith('}')).toBe(true);
   });
 
+  it('l’exemple d’argument est celui de D-563 §4, à sa ligne ; l’ancien a disparu', () => {
+    const { exemple } = textesD563();
+    expect(SYSTEM_PROMPT_CONTRAT_JSON).toContain(`\n      ${exemple}\n      "points_a_confirmer": [`);
+    expect(SYSTEM_PROMPT_CONTRAT_JSON).not.toContain('Interprétation Y');
+  });
+
   it('le contrat est épinglé par empreinte', () => {
-    expect(empreinte(SYSTEM_PROMPT_CONTRAT_JSON), 'contrat modifié : le texte a été validé mot pour mot, resoumettre au responsable').toBe(EMPREINTE_CONTRAT_V37);
+    expect(empreinte(SYSTEM_PROMPT_CONTRAT_JSON), 'contrat modifié : le texte a été validé mot pour mot, resoumettre au responsable').toBe(EMPREINTE_CONTRAT_V42);
   });
 });
 
