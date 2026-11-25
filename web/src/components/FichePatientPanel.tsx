@@ -84,6 +84,7 @@ import { CerclesBesoinsCockpit, MENTION_CARTE_LIEE } from '@/components/patient-
 import { cleBesoin, grouperBesoinsParStrate } from '@/lib/praticien/ordreBesoins';
 import { DetailEcartDecision, DetailMotifNonMesure } from '@/components/patient-cockpit/DetailMotifNonMesure';
 import { DetailProvenance } from '@/components/patient-cockpit/DetailProvenance';
+import { LIGNE_VERSION_SCORING_NON_CONSERVEE } from '@/components/patient-cockpit/MissingDataPanel';
 import { Chip } from '@/components/ui/Chip';
 import { SpiraleTrajectoire } from '@/components/ui/SpiraleTrajectoire';
 import { ModeConsultation } from '@/components/ui/ModeConsultation';
@@ -3202,6 +3203,12 @@ export function FichePatientPanel({
                   <div className="mb-3">
                     <ComparaisonPassationsPanel comparaisons={comparaisons} />
                   </div>
+                )}
+                {/* T-80, [[D-561]] §2 : la version de scoring inconnue, dite une
+                    fois ici au lieu d'une carte par réponse dans « Données
+                    manquantes ». */}
+                {!loadingReponses && !echecReponses && reponses.length > 0 && (
+                  <p className="mb-3 px-1 text-sm text-muted-foreground">{LIGNE_VERSION_SCORING_NON_CONSERVEE}</p>
                 )}
                 {tableauReponses}
               </InstrumentTiroir>

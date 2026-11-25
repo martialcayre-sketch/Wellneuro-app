@@ -39,13 +39,13 @@ export const JETONS_SORTIE_REDACTION = 64000;
  * modèle, seule la coupure change. Au-delà d'environ 16 000 jetons de sortie,
  * le SDK impose le streaming (`rediger.mjs` appelle `messages.stream`).
  */
-export function requeteRedaction(modele, consigne, message) {
+export function requeteRedaction(modele, consigne, message, suite = []) {
   return {
     model: modele,
     max_tokens: JETONS_SORTIE_REDACTION,
     thinking: { type: 'adaptive' },
     system: consigne,
-    messages: [{ role: 'user', content: message }],
+    messages: [{ role: 'user', content: message }, ...suite],
   };
 }
 
@@ -249,12 +249,44 @@ export function lireReponseLibelle(texte) {
   }
 }
 
+/**
+ * Le rappel placé APRÈS les claims d'une hypothèse ([[D-501]] §17, v13) : les
+ * claims du besoin 2 parlent de déficit, et deux essais v12 de `HYP_ZINC_1`
+ * ont repris leur mot malgré la consigne. Le rappel renvoie à la liste de la
+ * consigne sans la recopier : la liste n'a qu'un texte, celui que le banc
+ * compare au registre du code.
+ */
+export const RAPPEL_LIBELLE_HYPOTHESE =
+  'AVANT DE RÉPONDRE : relis ton libellé mot par mot contre les douze termes que la consigne écarte du libellé ' +
+  "d'une hypothèse ; s'il en contient un, même dans un autre mot, reformule-le sans lui, en gardant le nutriment " +
+  'et le sens bas que décrivent les claims.';
+
 /** Le message envoyé au rédacteur pour un libellé. */
 export function messageRedactionLibelle(termeId, nature, fichesCitantes, claimsCites) {
   return (
     `MODE : libellé\nTERME : ${termeId}\nNATURE : ${nature === 'hypothese' ? 'hypothèse' : 'population d’usage'}\n` +
     `FICHES QUI LE CITENT : ${fichesCitantes.join(', ') || '(aucune)'}\n\n` +
-    `CLAIMS — SEULE BASE ADMISE :\n${listeDeClaims(claimsCites)}`
+    `CLAIMS — SEULE BASE ADMISE :\n${listeDeClaims(claimsCites)}` +
+    (nature === 'hypothese' ? `\n\n${RAPPEL_LIBELLE_HYPOTHESE}` : '')
+  );
+}
+
+/**
+ * La correction UNIQUE d'un libellé d'hypothèse que le registre du code
+ * ([[D-535]], `termesHorsRegistre`) refuse ([[D-501]] §17, v13) : le
+ * rédacteur reçoit son libellé, les termes trouvés, et la règle de la
+ * consigne. Une seule correction par passe ; si le terme reste, la passe
+ * échoue sans contre-lecture. Ce message ne part qu'au modèle, jamais au
+ * terminal.
+ */
+export function messageCorrectionLibelle(libelle, termes) {
+  if (!Array.isArray(termes) || termes.length === 0) throw new ErreurOutil('correction sans terme écarté.');
+  const liste = termes.map(t => `« ${t} »`).join(', ');
+  return (
+    `Ton libellé « ${libelle} » contient ${termes.length > 1 ? 'les termes écartés' : 'le terme écarté'} ${liste}, ` +
+    "que la consigne refuse dans le libellé d'une hypothèse, même quand les claims l'emploient. " +
+    'Reformule-le une seule fois, sans aucun des douze termes, en gardant le nutriment et le sens bas que décrivent ' +
+    'les claims. Réponds par le seul objet JSON demandé : {"libelle": "<texte>"}'
   );
 }
 

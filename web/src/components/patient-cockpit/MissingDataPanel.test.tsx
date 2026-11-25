@@ -3,8 +3,10 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { MissingDataPanel } from './MissingDataPanel';
+import { estVersionScoringInconnue, MissingDataPanel } from './MissingDataPanel';
 import type { ContradictionAffichee } from '@/lib/clinical/contradictionsService';
+import { adaptRuntimeInputs } from '@/lib/clinical-engine/runtimeFromPrisma';
+import type { MissingDataFinding } from '@/lib/clinical-engine/types';
 
 afterEach(cleanup);
 
@@ -347,5 +349,56 @@ describe('MissingDataPanel — convergences non évaluées (D-495)', () => {
   it('il ne paraît pas autrement', () => {
     render(<MissingDataPanel missingData={[]} discordances={[]} contradictions={[constat]} />);
     expect(screen.queryByText(T5)).toBeNull();
+  });
+});
+
+describe('MissingDataPanel — version de scoring inconnue ([[D-561]])', () => {
+  const carte = (findingId: string, uncertaintyExplanation: string): MissingDataFinding => ({
+    findingId, kind: 'missing_data', confidence: 'à_documenter', priority: null, ruleId: null,
+    uncertaintyExplanation,
+    potentialDecisionImpact: 'Cette absence peut limiter la préparation de la décision et doit être documentée par le praticien.',
+    provenance: { responseIds: ['R1'], needIds: [], clinicalObjectCodes: [] },
+    limitations: [],
+  });
+
+  it('retire les cartes « version de scoring inconnue », garde les autres', () => {
+    render(
+      <MissingDataPanel
+        missingData={[
+          carte('response:R1:score_version_unknown', 'La version de scoring de la réponse est inconnue.'),
+          carte('response:R2:score_version_unknown', 'La version de scoring de la réponse est inconnue.'),
+          carte('need:3:not_measured', 'Ce besoin ne dispose d’aucune mesure exploitable dans le snapshot.'),
+        ]}
+        discordances={[]}
+      />,
+    );
+    expect(screen.queryByText(/version de scoring de la réponse est inconnue/)).toBeNull();
+    expect(screen.getByText(/Ce besoin ne dispose d’aucune mesure exploitable/)).toBeTruthy();
+    expect(screen.getAllByText('Ce que nous ne savons pas encore')).toHaveLength(1);
+  });
+
+  it('seules des cartes de version : le panneau dit qu’il ne reste rien de qualifié', () => {
+    render(
+      <MissingDataPanel
+        missingData={[carte('response:R1:score_version_unknown', 'La version de scoring de la réponse est inconnue.')]}
+        discordances={[]}
+      />,
+    );
+    expect(screen.getByText('Aucune donnée manquante qualifiée à ce stade.')).toBeTruthy();
+  });
+
+  it('la ligne T-80 suit sa cause : l’adaptateur ne lit aucune version de scoring (§3)', () => {
+    // Si ce banc rougit, une version de scoring est désormais lue en base : la
+    // ligne T-80 devient fausse et la carte redevient informative. Retirer la
+    // ligne et le filtre par une nouvelle décision, pas ce banc.
+    const inputs = adaptRuntimeInputs(
+      { idPatient: 'P-FIXTURE', createdAt: new Date('2026-01-01T00:00:00.000Z') },
+      [{ idReponse: 'R1', idQuestionnaire: 'Q_MOD_01', dateReponse: new Date('2026-01-02T00:00:00.000Z'), scoresJson: {} }],
+      null,
+      [],
+    );
+    expect(inputs.responses.map(r => r.scoreVersion)).toEqual([null]);
+    expect(estVersionScoringInconnue(carte('response:R1:score_version_unknown', 'x'))).toBe(true);
+    expect(estVersionScoringInconnue(carte('response:R1:not_calculable', 'x'))).toBe(false);
   });
 });
