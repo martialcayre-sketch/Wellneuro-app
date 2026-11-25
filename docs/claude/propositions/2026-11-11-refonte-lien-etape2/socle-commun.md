@@ -94,6 +94,23 @@ dans les deux artefacts de suivi.
 L'ornement neuf du §1 ter (végétal et connexion) n'entre dans `LienDecor`
 qu'une fois dessiné et validé par le responsable, par un `COM-n` ultérieur.
 
+## COM-2 — Emplacement du hub patient dans `LienDecor`
+
+**Objet.** Ouvrir l'emplacement « Hub patient » ([[D-481]] §1 bis,
+complément DOC-21 du 2026-11-25) : `LienDecor` accepte au hub le seul
+bandeau `ornaments/quiet-sweep.svg`, sur toute la largeur de son parent, à
+la hauteur fixée par l'appelant, recadré sans être étiré.
+
+**Préalable.** DOC-21 accepté (réponses écrites du 2026-11-25).
+
+**Fichiers.** `web/src/components/ui/LienDecor.tsx` et son test. Aucun
+écran ne l'emploie dans ce lot ; PAT-3b le pose.
+
+**Réception.** Le banc de COM-1 couvre le nouvel emplacement (hors de
+l'arbre d'accessibilité, sans pointeur, caché à l'impression, aucun
+mouvement) ; le bandeau est refusé à tout autre emplacement, et tout autre
+élément est refusé au hub.
+
 ## Règles communes aux deux sessions
 
 - Worktree neuf sur `origin/main` fraîchement fetché, un par lot ; jamais le
