@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest';
 
-const { getServerSession, prisma, jourZeroDuCycleCourant } = vi.hoisted(() => ({
+const { getServerSession, prisma, jourZeroDuCycleCourant, lireConstatsBiomarqueursBesoin1 } = vi.hoisted(() => ({
   getServerSession: vi.fn(),
+  lireConstatsBiomarqueursBesoin1: vi.fn(),
   prisma: {
     patient: { findFirst: vi.fn() },
     questionnaireReponse: { findMany: vi.fn() },
@@ -16,6 +17,9 @@ vi.mock('@/lib/auth', () => ({ authOptions: {} }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
 // [[D-397]] : le momentum part de l'ancre du cycle courant et exige son jour 0.
 vi.mock('@/lib/protocol/calendriersPersistes', () => ({ jourZeroDuCycleCourant }));
+// Les deux constats biologiques du besoin 1 ([[D-516]] §5.2) : le service est simulé,
+// le banc ne garde que ce que la ROUTE en fait (à quel besoin, après quelles gardes).
+vi.mock('@/lib/equilibre/constatsBiomarqueursBesoin1Service', () => ({ lireConstatsBiomarqueursBesoin1 }));
 
 // Le plafond des fondations critiques ne se fabrique pas sans une fixture
 // clinique complète : le banc force le seul booléen que la route recopie.
@@ -44,6 +48,7 @@ describe('GET /api/praticien/equilibre', () => {
     prisma.assessmentEpisode.findMany.mockResolvedValue([]);
     jourZeroDuCycleCourant.mockResolvedValue(null);
     getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
+    lireConstatsBiomarqueursBesoin1.mockResolvedValue(null);
     prisma.patient.findFirst.mockResolvedValue({
       idPatient: 'PAT_1',
       prenom: 'Sophie',
@@ -400,6 +405,64 @@ describe('GET /api/praticien/equilibre', () => {
       const texte = JSON.stringify(json.objetsCliniques);
       expect(texte).not.toContain('scoreGlobalAvantPlafond');
       expect(texte).not.toContain('fondationsCritiquesDeclenchees');
+    });
+  });
+  // Les constats biologiques du besoin 1 ([[D-516]] §5.2) : la route les pose sur le
+  // besoin 1 SEUL, et ne les lit qu'après les gardes — session, appartenance au
+  // praticien, journal d'accès. Le service est simulé ; son drapeau et ses lectures
+  // ont leur banc (`constatsBiomarqueursBesoin1Service.test.ts`).
+  describe('constats biologiques du besoin 1', () => {
+    const CONSTAT = {
+      analyteCode: 'BIO_HBA1C',
+      libelle: 'HbA1c',
+      valeur: '5.4',
+      unite: '%',
+      preleveLe: '2026-11-10T08:00:00.000Z',
+      reference: 6.5,
+      lecture: 'sous_reference',
+      lignes: ['ligne fictive'],
+      claims: ['WN-CL-0654-001'],
+    };
+    type Priorites = { priorites: { besoin: number; constatsBiologiques: unknown }[] };
+
+    it('posés sur le besoin 1 seul : les onze autres portent null', async () => {
+      lireConstatsBiomarqueursBesoin1.mockResolvedValue([CONSTAT]);
+      const json = (await (await GET(request())).json()) as Priorites;
+      expect(json.priorites).toHaveLength(12);
+      expect(json.priorites.find(l => l.besoin === 1)?.constatsBiologiques).toEqual([CONSTAT]);
+      for (const ligne of json.priorites.filter(l => l.besoin !== 1)) {
+        expect(ligne.constatsBiologiques).toBeNull();
+      }
+    });
+
+    it('drapeau fermé ou lecture en échec (le service rend null) : null partout, la route répond 200', async () => {
+      lireConstatsBiomarqueursBesoin1.mockResolvedValue(null);
+      const res = await GET(request());
+      expect(res.status).toBe(200);
+      const json = (await res.json()) as Priorites;
+      expect(json.priorites.every(l => l.constatsBiologiques === null)).toBe(true);
+    });
+
+    it('lus pour le dossier de la session, et seulement après le journal d’accès', async () => {
+      await GET(request());
+      expect(lireConstatsBiomarqueursBesoin1).toHaveBeenCalledTimes(1);
+      expect(lireConstatsBiomarqueursBesoin1).toHaveBeenCalledWith('PAT_1');
+      expect(prisma.journalAccesDossier.create.mock.invocationCallOrder[0]).toBeLessThan(
+        lireConstatsBiomarqueursBesoin1.mock.invocationCallOrder[0],
+      );
+    });
+
+    it('jamais lus sans session (401)', async () => {
+      getServerSession.mockResolvedValue(null);
+      await GET(request());
+      expect(lireConstatsBiomarqueursBesoin1).not.toHaveBeenCalled();
+    });
+
+    it('jamais lus pour un patient hors du périmètre du praticien (404)', async () => {
+      prisma.patient.findFirst.mockResolvedValue(null);
+      const res = await GET(request());
+      expect(res.status).toBe(404);
+      expect(lireConstatsBiomarqueursBesoin1).not.toHaveBeenCalled();
     });
   });
 });

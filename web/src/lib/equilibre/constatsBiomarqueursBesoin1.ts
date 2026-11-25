@@ -96,7 +96,7 @@ export type ConstatBiomarqueur = {
   preleveLe: string;
   reference: number;
   lecture: LectureBiomarqueur;
-  /** Phrases à afficher — textes de l'application, à valider par le responsable. */
+  /** Phrases à afficher — textes de l'application, validés par le responsable (20261124-0805-b). */
   lignes: string[];
   /** Les claims qui portent le constat, pour la provenance affichée. */
   claims: string[];

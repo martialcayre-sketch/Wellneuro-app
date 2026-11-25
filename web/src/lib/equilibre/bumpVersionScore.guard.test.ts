@@ -56,10 +56,14 @@ import { agregerEquilibre } from './score';
 // LE PLAFONNEMENT A DISPARU. Le seuil d'effondrement, le plafond du total, la
 // liste des cinq fondations critiques et les parts 60/20/20 ne sont plus des
 // constantes du dépôt, et le total est la MOYENNE DIRECTE, à parts égales, des
-// besoins mesurés. Le banc garde donc deux choses : que RIEN ne plafonne dans la
-// version neuve, et que les versions anciennes GARDENT leur valeur — le registre
-// ci-dessous est conservé, sans être rejoué (la formule qui les produisait n'est
-// plus dans le code), pour qu'une réécriture d'entrée publiée se voie au diff.
+// besoins mesurés. Le banc garde donc que RIEN ne plafonne dans la version neuve.
+// Le registre des versions anciennes ci-dessous est une ARCHIVE, conservée sans
+// être rejouée (la formule qui les produisait n'est plus dans le code) : aucun
+// test n'en garde les valeurs — un test qui compare cette archive à un littéral
+// identique ne pourrait jamais rougir — et sa seule garde est la relecture du
+// diff. Le banc n'en tient que ce que le code vivant permet de vérifier : la
+// version courante n'y figure pas, et les constantes du plafonnement ne sont plus
+// exportées.
 //
 // Les entrées par version restent le patron : changer une sortie, un mapping ou
 // une valeur sans nouvelle étiquette rougit le banc.
@@ -90,15 +94,6 @@ describe('plafonnement — retiré en v18/v19, gardé tel quel dans les versions
 
   it('la version courante n’est PAS une version plafonnée', () => {
     expect(Object.keys(VALEURS_PAR_VERSION_ANCIENNE)).not.toContain(VERSION_SCORE_EQUILIBRE);
-  });
-
-  it('les versions anciennes gardent leur valeur', () => {
-    expect(VALEURS_PAR_VERSION_ANCIENNE).toEqual({
-      v14: { seuil: 0.34, plafond: 50 },
-      v15: { seuil: 0.34, plafond: 50 },
-      v16: { seuil: 0.34, plafond: 50 },
-      v17: { seuil: 0.34, plafond: 50 },
-    });
   });
 
   it('les deux positions du drapeau avancent ensemble : v16 → v18, v17 → v19', () => {
