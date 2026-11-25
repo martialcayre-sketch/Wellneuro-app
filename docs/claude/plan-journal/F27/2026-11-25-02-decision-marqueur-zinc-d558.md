@@ -1,0 +1,9 @@
+- **Mise à jour (2026-11-25, décision du marqueur zinc, D-558 acceptée)** : lot `bp27-cadrage` (file B). Décision seule : pas de code, pas de migration. Forme opaque (`D-251` §4) : identifiants et mécanismes seulement.
+  - **Quatre arbitrages cliniques** du responsable, inscrits à la liste commune avec l'avis de Codex à l'aveugle (D-505) :
+    - `20261125-1045-b` (Q1, B) : la proposition se déclenche sous la limite basse d'une seule source, par sexe et âge ;
+    - `20261125-1046-b` (Q2, A) : prélèvement du matin seul, heure imprimée avant midi ;
+    - `20261125-1047-b` (Q3, A) : abstention sur l'épisode inflammatoire déclaré et sur l'albumine du même compte rendu à la borne citée ou sous elle ; albumine absente, incertitude affichée. Codex recommandait d'exiger l'albumine ; la divergence a été présentée avant la réponse ;
+    - `20261125-1048-b` (Q4, C) : un champ « supplémentation » neuf ; seule « aucune » laisse évaluer.
+  - **`D-558` acceptée** par le responsable le 2026-11-25 (« J'accepte tel quel »), après une contre-revue de Codex : quatre constats P2, trois corrigés, le quatrième (prélèvement de nuit) arbitré « garder avant midi ». Elle amende `D-157` (pour l'évaluateur du zinc seul), `D-497` (champs « catabolisme » et « supplémentation ») et `D-544` §4 (sexe et âge en entrées nommées). Un renvoi daté est posé à la fin de chacune.
+  - **Conséquences acceptées** : un zinc saisi à la main donne toujours l'abstention, faute d'heure ; l'enfant est hors du domaine ; aucune abstention pour l'ancienneté d'ici une décision.
+  - **Suite** : la migration des deux champs de `D-558` §7, en PR seule sous `release-db`, puis le lot de code aux critères de `D-544` §6 et de `D-558` §9. L'ouverture attend aussi le texte validé des fiches `FU_ZINC_P1` et `FU_ZINC_P2`.
