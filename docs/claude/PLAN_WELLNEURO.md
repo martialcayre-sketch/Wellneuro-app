@@ -306,7 +306,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Rang** : 0.
 - **Portes, préalables** : aucun ; lève la porte 2 avec b et g.
 - **Migration, release-db** : non.
-- **Décisions, textes** : lettre a ; textes de `docs/claude/campagnes/2026-10-04-bio-parcours/CAMPAGNE.md:4`, :6, :91-98, `.wn/state.json` et `docs/architecture/bioflow/BIOFLOW_ROADMAP.md:15-21` corrigés ; forme du plan unique à confirmer.
+- **Décisions, textes** : lettre a ; textes de `docs/claude/campagnes/2026-10-04-bio-parcours/CAMPAGNE.md:4`, :6, :91-98 (se lisent sur 09bd86b1), `.wn/state.json` et `docs/architecture/bioflow/BIOFLOW_ROADMAP.md:15-21` corrigés ; forme du plan unique à confirmer.
 - **Critère de fin** : PR mergée, T1 complet vert, BP-07 désigné prochain lot dans l'état du cycle.
 - **Journal** : `docs/claude/plan-journal/F01/` — mises à jour datées, un fichier par mise à jour, jamais réécrit ; lecture : `node scripts/wn-plan-fiche.mjs F01`.
 
@@ -811,7 +811,7 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 - **Identifiant, piste** : BP-07 (LOT-07 de BIO-PARCOURS) ; parcours.
 - **Rang** : 1 ; la signature du responsable M-5 (1/2) au rang 2.
 - **Portes, préalables** : lettre a mergée (porte 2) ; porte 27 à la PR ; contre-revue P0.
-- **Migration, release-db** : non (`docs/claude/campagnes/2026-10-04-bio-parcours/CAMPAGNE.md:117`).
+- **Migration, release-db** : non (`docs/claude/campagnes/2026-10-04-bio-parcours/CAMPAGNE.md:117`, se lit sur 09bd86b1).
 - **Décisions, textes** : aucune D-xxx propre (`docs/claude/campagnes/CADRAGE_BIO_PARCOURS_v3_2026-10-04.md:376`) ; signature claim par claim, de la main du responsable.
 - **Critère de fin** : dossier remis, les signatures du responsable posées ; aucun texte clinique au dépôt.
 - **Journal** : `docs/claude/plan-journal/F02/` — mises à jour datées, un fichier par mise à jour, jamais réécrit ; lecture : `node scripts/wn-plan-fiche.mjs F02`.
@@ -1483,7 +1483,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 #### F06 · BP-11 : constats du praticien
 - **Identifiant, piste** : BP-11 ; parcours.
 - **Rang** : 4 (J2-bio).
-- **Portes, préalables** : BP-09, BP-12a (`docs/claude/campagnes/2026-10-04-bio-parcours/CAMPAGNE.md:126`) ; portes 8 et 9.
+- **Portes, préalables** : BP-09, BP-12a (`docs/claude/campagnes/2026-10-04-bio-parcours/CAMPAGNE.md:126`, se lit sur 09bd86b1) ; portes 8 et 9.
 - **Migration, release-db** : oui ; rang 4, après BP-12a.
 - **Décisions, textes** : D-xxx d'objet ; D-122 précisée ; registre RGPD avant la table (`docs/claude/campagnes/CADRAGE_BIO_PARCOURS_v3_2026-10-04.md:388`).
 - **Critère de fin** : release-db constatée ; contrat négatif ; correction ou annulation rend « à relire ».
@@ -1511,7 +1511,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 #### F15 · BP-03 : série par analyte
 - **Identifiant, piste** : BP-03 ; parcours.
 - **Rang** : 4 proposé [Hypothese] (BP-09 constaté au rang 3).
-- **Portes, préalables** : BP-01 (fait), BP-09 (`docs/claude/campagnes/2026-10-04-bio-parcours/CAMPAGNE.md:122`).
+- **Portes, préalables** : BP-01 (fait), BP-09 (`docs/claude/campagnes/2026-10-04-bio-parcours/CAMPAGNE.md:122`, se lit sur 09bd86b1).
 - **Migration, release-db** : non.
 - **Décisions, textes** : aucune D-xxx propre (`docs/claude/campagnes/CADRAGE_BIO_PARCOURS_v3_2026-10-04.md:381` ne porte qu'une dépendance).
 - **Critère de fin** : série sur les trois fixtures ; aucun delta ; intervalle verbatim de chaque laboratoire, sans conversion (D-157).
@@ -1520,8 +1520,8 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 
 #### F16 · BP-04 : attente typée, analyteCodes sur l'exploration (étape 5 de l'audit)
 - **Identifiant, piste** : BP-04 ; absorbe CB-07 ; parcours et panels.
-- **Rang** : 4 proposé [Hypothese]. Écart avec une lecture antérieure, qui le gèle avec la piste C jusqu'à l'ouverture de ax : BP-16, donc BP-20 et BP-21a, l'attendent (`docs/claude/campagnes/2026-10-04-bio-parcours/CAMPAGNE.md:127`, :129, :136), et le gel bloquerait l'ouverture de l'outil (§4, écarts).
-- **Portes, préalables** : BP-01 (fait), BP-09 (`docs/claude/campagnes/2026-10-04-bio-parcours/CAMPAGNE.md:123`).
+- **Rang** : 4 proposé [Hypothese]. Écart avec une lecture antérieure, qui le gèle avec la piste C jusqu'à l'ouverture de ax : BP-16, donc BP-20 et BP-21a, l'attendent (`docs/claude/campagnes/2026-10-04-bio-parcours/CAMPAGNE.md:127`, :129, :136, se lisent sur 09bd86b1), et le gel bloquerait l'ouverture de l'outil (§4, écarts).
+- **Portes, préalables** : BP-01 (fait), BP-09 (`docs/claude/campagnes/2026-10-04-bio-parcours/CAMPAGNE.md:123`, se lit sur 09bd86b1).
 - **Migration, release-db** : non ; contrat versionné, lecteur tolérant avant l'écrivain.
 - **Décisions, textes** : D-xxx de contrat (D-142) ; D-190 §5 amendée plus tard par BP-18a (`docs/claude/campagnes/CADRAGE_BIO_PARCOURS_v3_2026-10-04.md:382`). BiologyCatalogRef, non livré, se reprend ici sur le patron assertFoodCompassActionRef, non sur celui de SupplementCatalogRef (`docs/claude/campagnes/FILE_ATTENTE.md:80`).
 - **Critère de fin** : bancs d'empreinte V4 et C4 ; attente ancienne lue « non typée ».
@@ -1658,7 +1658,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 #### F17 · BP-16 : boucle d'exploration
 - **Identifiant, piste** : BP-16 ; parcours.
 - **Rang** : 5 proposé [Hypothese].
-- **Portes, préalables** : BP-03, BP-04, BP-11 (`docs/claude/campagnes/2026-10-04-bio-parcours/CAMPAGNE.md:127`).
+- **Portes, préalables** : BP-03, BP-04, BP-11 (`docs/claude/campagnes/2026-10-04-bio-parcours/CAMPAGNE.md:127`, se lit sur 09bd86b1).
 - **Migration, release-db** : non.
 - **Décisions, textes** : table signée motif, question, analytes (`docs/claude/campagnes/CADRAGE_BIO_PARCOURS_v3_2026-10-04.md:389`) ; constante « plafond de questions ouvertes » chiffrée par la D-xxx du responsable avant le lot [Hypothese sur le lot qui la lit] (`docs/DECISIONS.md:1629-1636`).
 - **Critère de fin** : E2E sur fixture ; aucun état sans geste ; aucune valeur lue.
@@ -1667,8 +1667,8 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 #### F20 · BP-05 : contexte de prélèvement typé
 - **Identifiant, piste** : BP-05 (absorbe BP-06) ; parcours.
 - **Rang** : 5 proposé [Hypothese].
-- **Portes, préalables** : BP-00, BP-03 (`docs/claude/campagnes/2026-10-04-bio-parcours/CAMPAGNE.md:124`) ; la demande explicite du responsable ; porte 9.
-- **Migration, release-db** : oui ; au rang 5, après la chaîne de l'outil du même rang (`docs/claude/campagnes/2026-10-04-bio-parcours/CAMPAGNE.md:150` le met en queue).
+- **Portes, préalables** : BP-00, BP-03 (`docs/claude/campagnes/2026-10-04-bio-parcours/CAMPAGNE.md:124`, se lit sur 09bd86b1) ; la demande explicite du responsable ; porte 9.
+- **Migration, release-db** : oui ; au rang 5, après la chaîne de l'outil du même rang (`docs/claude/campagnes/2026-10-04-bio-parcours/CAMPAGNE.md:150`, qui se lit sur 09bd86b1, le met en queue).
 - **Décisions, textes** : D-xxx de forme (DC-46) ; registre avant.
 - **Critère de fin** : contrat négatif par forme ; « inconnu » par défaut.
 - **Journal** : `docs/claude/plan-journal/F20/` — mises à jour datées, un fichier par mise à jour, jamais réécrit ; lecture : `node scripts/wn-plan-fiche.mjs F20`.
@@ -1804,7 +1804,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 #### F18 · BP-20 : suivi factuel, jalon J1
 - **Identifiant, piste** : BP-20 ; parcours.
 - **Rang** : 6 proposé [Hypothese].
-- **Portes, préalables** : BP-15, BP-16 (`docs/claude/campagnes/2026-10-04-bio-parcours/CAMPAGNE.md:129`).
+- **Portes, préalables** : BP-15, BP-16 (`docs/claude/campagnes/2026-10-04-bio-parcours/CAMPAGNE.md:129`, se lit sur 09bd86b1).
 - **Migration, release-db** : non.
 - **Décisions, textes** : D-xxx de suivi ; avertissement d'attribution (DC-39, DC-41).
 - **Critère de fin** : aucune version réécrite sans geste ; E2E ; jalon J1 joué sur les trois fixtures.
@@ -1813,7 +1813,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 #### F21 · BP-24 : conformité
 - **Identifiant, piste** : BP-24 ; parcours.
 - **Rang** : 6 proposé [Hypothese] (il n'attend plus la branche).
-- **Portes, préalables** : BP-13, BP-14, BP-18b, D-265 (`docs/claude/campagnes/2026-10-04-bio-parcours/CAMPAGNE.md:135`) ; porte 13.
+- **Portes, préalables** : BP-13, BP-14, BP-18b, D-265 (`docs/claude/campagnes/2026-10-04-bio-parcours/CAMPAGNE.md:135`, se lit sur 09bd86b1) ; porte 13.
 - **Migration, release-db** : non.
 - **Décisions, textes** : D-xxx de conformité ; pièces datées de la main du responsable, hors dépôt.
 - **Critère de fin** : version TRUST servie avec accusé, constatée dans l'image servie.
@@ -1822,7 +1822,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 #### F27 · BP-27 : évaluateur par marqueur
 - **Identifiant, piste** : BP-27 ; plages par population, discordance signée ; parcours.
 - **Rang** : 6 proposé [Hypothese].
-- **Portes, préalables** : BP-03, BP-05, BP-12a (fiches du marqueur choisi seulement, `20261120-2257-b`), BP-13, BIO-INGEST LOT-07 (fait) (`docs/claude/campagnes/2026-10-04-bio-parcours/CAMPAGNE.md:140`) ; ci ; ligne de registre IA ; porte 5 si un site IA neuf.
+- **Portes, préalables** : BP-03, BP-05, BP-12a (fiches du marqueur choisi seulement, `20261120-2257-b`), BP-13, BIO-INGEST LOT-07 (fait) (`docs/claude/campagnes/2026-10-04-bio-parcours/CAMPAGNE.md:140`, se lit sur 09bd86b1) ; ci ; ligne de registre IA ; porte 5 si un site IA neuf.
 - **Migration, release-db** : oui ; rang 6, après la chaîne de l'outil du rang 5.
 - **Décisions, textes** : une D-xxx par marqueur et par usage, avec ses claims (D-122) ; D-157 amendée marqueur par marqueur ; signatures de la main du responsable.
 - **Critère de fin** : chaque marqueur sous sa D-xxx ; propose sans poser ; drapeau posé sur preuves propres.
@@ -1889,7 +1889,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 #### F19 · BP-08 : indicateurs de processus
 - **Identifiant, piste** : BP-08 ; indicateurs de processus, sans attribution ; parcours.
 - **Rang** : 7 au plus tôt [Hypothese], au fait.
-- **Portes, préalables** : BP-20 ; un cycle réel arrivé au 21e jour (`docs/claude/campagnes/2026-10-04-bio-parcours/CAMPAGNE.md:130`) ; effectif de masquage écrit (F25).
+- **Portes, préalables** : BP-20 ; un cycle réel arrivé au 21e jour (`docs/claude/campagnes/2026-10-04-bio-parcours/CAMPAGNE.md:130`, se lit sur 09bd86b1) ; effectif de masquage écrit (F25).
 - **Migration, release-db** : non.
 - **Décisions, textes** : D-xxx d'indicateurs.
 - **Critère de fin** : agrégats au conteneur, masqués sous l'effectif.
@@ -1898,7 +1898,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 #### F28 · BP-19 : stratégie proposée d'après le dossier
 - **Identifiant, piste** : BP-19 ; parcours.
 - **Rang** : 7 proposé [Hypothese].
-- **Portes, préalables** : BP-13, BP-15, BP-17, BP-20 (`docs/claude/campagnes/2026-10-04-bio-parcours/CAMPAGNE.md:141`) ; consomme BP-27 s'il est ouvert ; ci ; ligne de registre IA.
+- **Portes, préalables** : BP-13, BP-15, BP-17, BP-20 (`docs/claude/campagnes/2026-10-04-bio-parcours/CAMPAGNE.md:141`, se lit sur 09bd86b1) ; consomme BP-27 s'il est ouvert ; ci ; ligne de registre IA.
 - **Migration, release-db** : oui (journal) ; rang 7.
 - **Décisions, textes** : D-xxx du lot ; DC-43 curée ; classement signé (D-093).
 - **Critère de fin** : E2E sur fixture ; aucune proposition sans précautions ; drapeau éteint jusqu'aux preuves.
@@ -1907,14 +1907,14 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 #### F29 · Étage 2 : signaler un résultat préoccupant
 - **Identifiant, piste** : fonction de l'étage assistant ; parcours.
 - **Rang** : 7 proposé [Hypothese], après BP-27.
-- **Portes, préalables** : BP-27 ; ci ; une provenance certifiée pour chaque borne (`docs/claude/campagnes/2026-10-04-bio-parcours/CAMPAGNE.md:142`).
+- **Portes, préalables** : BP-27 ; ci ; une provenance certifiée pour chaque borne (`docs/claude/campagnes/2026-10-04-bio-parcours/CAMPAGNE.md:142`, se lit sur 09bd86b1).
 - **Migration, release-db** : selon.
 - **Décisions, textes** : D-xxx de la fonction ; aucune borne inventée ; la qualification différée ne bloque plus (D-276 §2).
 - **Critère de fin** : bornes sourcées signées ; banc ; drapeau posé sur preuves.
 - **Journal** : `docs/claude/plan-journal/F29/` — mises à jour datées, un fichier par mise à jour, jamais réécrit ; lecture : `node scripts/wn-plan-fiche.mjs F29`.
 
 #### F30 · Marches 2 à 4 du suivi, proposition de bilan d'après le dossier
-- **Identifiant, piste** : fonctions de l'étage assistant, une par lot (`docs/claude/campagnes/2026-10-04-bio-parcours/CAMPAGNE.md:142`) ; parcours.
+- **Identifiant, piste** : fonctions de l'étage assistant, une par lot (`docs/claude/campagnes/2026-10-04-bio-parcours/CAMPAGNE.md:142`, se lit sur 09bd86b1) ; parcours.
 - **Rang** : 7 au plus tôt [Hypothese], selon la fonction.
 - **Portes, préalables** : BP-27 selon le cas ; BP-20 pour les marches ; ci.
 - **Migration, release-db** : selon.
@@ -1954,7 +1954,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 #### F22 · BP-21a : ouverture J1
 - **Identifiant, piste** : BP-21a ; parcours.
 - **Rang** : 7 proposé [Hypothese].
-- **Portes, préalables** : BP-10 (fait), BP-20, BP-26 (fait) (`docs/claude/campagnes/2026-10-04-bio-parcours/CAMPAGNE.md:136`) ; effectif de masquage écrit (F25) ; seuil d'usage réel chiffré par le responsable (D-266 §13-14) ; porte 18.
+- **Portes, préalables** : BP-10 (fait), BP-20, BP-26 (fait) (`docs/claude/campagnes/2026-10-04-bio-parcours/CAMPAGNE.md:136`, se lit sur 09bd86b1) ; effectif de masquage écrit (F25) ; seuil d'usage réel chiffré par le responsable (D-266 §13-14) ; porte 18.
 - **Migration, release-db** : non.
 - **Décisions, textes** : D-xxx d'ouverture J1, critères écrits avant (`docs/claude/campagnes/CADRAGE_BIO_PARCOURS_v3_2026-10-04.md:398`).
 - **Critère de fin** : critères atteints ; épreuve sur les trois fixtures ; contre-revue adverse ; activation constatée sur un vrai dossier avant la suivante.
@@ -1974,7 +1974,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 #### F24 · BP-22 : observation après ouverture
 - **Identifiant, piste** : BP-22 ; parcours.
 - **Rang** : 8 proposé [Hypothese].
-- **Portes, préalables** : BP-21a (`docs/claude/campagnes/2026-10-04-bio-parcours/CAMPAGNE.md:138`) ; porte 9.
+- **Portes, préalables** : BP-21a (`docs/claude/campagnes/2026-10-04-bio-parcours/CAMPAGNE.md:138`, se lit sur 09bd86b1) ; porte 9.
 - **Migration, release-db** : oui ; rang 8, dernière de l'étage outil.
 - **Décisions, textes** : D-xxx du lot ; constante « cadence de revue des sources » chiffrée dans le lot (`docs/DECISIONS.md:1629-1636`).
 - **Critère de fin** : release-db constatée ; signalement tracé ; cadence fixée.
@@ -1994,7 +1994,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 #### F23 · BP-21b : ouverture du protocole personnalisé
 - **Identifiant, piste** : BP-21b (LOT-30 de BIO-PARCOURS, à ne pas confondre avec la porte 30) ; même régime que BP-21a ; parcours.
 - **Rang** : 8 proposé [Hypothese] ; une place dans la file C, non numérotée.
-- **Portes, préalables** : BP-21a, BP-18b, BP-24 (`docs/claude/campagnes/2026-10-04-bio-parcours/CAMPAGNE.md:137`) ; porte 18. La fiche compléments R:ao (F78) s'active après BP-21b, jamais avant ; elle peut être livrée éteinte dès BP-18b (tranché le 2026-11-07, journal de F78).
+- **Portes, préalables** : BP-21a, BP-18b, BP-24 (`docs/claude/campagnes/2026-10-04-bio-parcours/CAMPAGNE.md:137`, se lit sur 09bd86b1) ; porte 18. La fiche compléments R:ao (F78) s'active après BP-21b, jamais avant ; elle peut être livrée éteinte dès BP-18b (tranché le 2026-11-07, journal de F78).
 - **Migration, release-db** : non.
 - **Décisions, textes** : D-xxx d'ouverture, critères écrits avant.
 - **Critère de fin** : critères atteints ; activation constatée avant la suivante.
@@ -2022,7 +2022,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 **File B**
 
 #### F31 · Phase 5 : extension par situation
-- **Identifiant, piste** : B12 et folates, contre-épreuve sommeil sur le besoin 5 (axe curé), puis par situation clinique (`docs/claude/campagnes/2026-10-04-bio-parcours/CAMPAGNE.md:143`) ; parcours.
+- **Identifiant, piste** : B12 et folates, contre-épreuve sommeil sur le besoin 5 (axe curé), puis par situation clinique (`docs/claude/campagnes/2026-10-04-bio-parcours/CAMPAGNE.md:143`, se lit sur 09bd86b1) ; parcours.
 - **Rang** : 9 proposé [Hypothese].
 - **Portes, préalables** : BP-21b.
 - **Migration, release-db** : selon.
@@ -2832,7 +2832,7 @@ Corps des campagnes fermées, dans la même PR : les cases « Done » contradict
 
 | campagne | geste |
 |---|---|
-| `2026-10-04-bio-parcours` | garder `en_pause` et `lot_courant` « aucun » (poser `en_cours` sans fiche courante fait rougir la CI) ; réécrire le texte du statut et `CAMPAGNE.md:91-98` : « reprend par BP-07 (rang 1 du plan) ; lots de sécurité livrés : 10A, 11A, 5A, 8B, D-281 lots 1 et 2 » ; passer `en_cours` dans la PR qui écrit la fiche `lots/LOT-07`. La table `CAMPAGNE.md:104-143` reçoit les lignes livrées ; l'ordre `CAMPAGNE.md:148-150` suit §5. |
+| `2026-10-04-bio-parcours` | garder `en_pause` et `lot_courant` « aucun » (poser `en_cours` sans fiche courante fait rougir la CI) ; réécrire le texte du statut et `CAMPAGNE.md:91-98` : « reprend par BP-07 (rang 1 du plan) ; lots de sécurité livrés : 10A, 11A, 5A, 8B, D-281 lots 1 et 2 » ; passer `en_cours` dans la PR qui écrit la fiche `lots/LOT-07`. La table `CAMPAGNE.md:104-143` reçoit les lignes livrées ; l'ordre `CAMPAGNE.md:148-150` suit §5. Ces numéros de `CAMPAGNE.md` se lisent sur 09bd86b1. |
 | `2026-10-07-agenda-sommeil-adhesion` | LOT-11 : `terminé (2026-10-11, #1399)` ; LOT-12 : `abandonné dans cette campagne, TRANSFÉRÉ le 2026-10-13 au plan (cc, cf)` ; LOT-02 reste courant ; à la clôture du LOT-02, retirer la campagne de `parallel_campaigns` de `.wn/state.json` avant de la poser `terminée` (`scripts/wn-campaign-audit.mjs:240`). |
 | `2026-09-30-bio-ingest` (close) | statut de LOT-05 (`lots/LOT-05-adaptateur-laboratoire.md:4`) : `abandonné dans cette campagne, TRANSFÉRÉ le 2026-10-13 au plan (adaptateur du laboratoire, gelé sous la porte 29)` ; il citait la file supprimée (PR 5) ; `lot_courant` LOT-12 soldé en « aucun » [Hypothese]. |
 
