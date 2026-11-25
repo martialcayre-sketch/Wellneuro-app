@@ -20,6 +20,13 @@
 // `check`**, pas l'inverse. `check` peut légitimement en faire plus (lint,
 // type-check, Vitest…). Dire « une étape ajoutée d'un seul côté » serait donc
 // promettre une propriété que ce banc n'a pas.
+//
+// Une seule exception, bornée, à ce sens unique : la liste
+// `bancs-outillage-check` (web/package.json). Ces bancs-là n'ont rien de
+// propre à `check` — hermétiques, node seul — et un banc ajouté à cette liste
+// sans son câblage CI est un garde que le CI ne joue pas : l'écart que #2337 a
+// dû corriger. Chacun de ses fichiers doit donc figurer dans un `node --test`
+// du CI avant npm. Le reste de `check` n'est pas concerné.
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -159,6 +166,34 @@ export function commandesDeCheck(scripts) {
     .split("&&")
     .map((c) => c.trim().replace(/\.\.\//g, "").replace(/\s+/g, " "))
     .filter((c) => c !== "" && c !== "cd ..");
+}
+
+/** Les fichiers passés à `node --test` dans une liste de commandes. */
+function fichiersDeBancs(commandes) {
+  return commandes
+    .filter((c) => c.startsWith("node --test "))
+    .flatMap((c) => c.split(" ").slice(2).filter((a) => !a.startsWith("-")));
+}
+
+/**
+ * Le sens check → CI, borné à `bancs-outillage-check` : rend les fichiers de
+ * cette liste qu'aucun `node --test` du CI avant npm ne joue. Lu sur la même
+ * dérivation que le sens CI → check (`commandesCiAvantNpm`), pour qu'un banc
+ * câblé après `setup-node`, ou dans un autre job, compte comme absent.
+ */
+export function bancsOutillageHorsCi(scripts, yml) {
+  const segments = developper(scripts, "bancs-outillage-check")
+    .split("&&")
+    .map((c) => c.trim().replace(/\s+/g, " "));
+  // Une forme d'écriture inconnue (préfixe d'environnement, option avant
+  // `--test`…) sortirait ses bancs du contrôle sans bruit : elle est refusée,
+  // pour que la forme ne décide pas de ce qui est contrôlé.
+  const inconnus = segments.filter((c) => c !== "cd .." && !c.startsWith("node --test "));
+  assert.deepEqual(inconnus, [], "`bancs-outillage-check` : seuls `cd ..` et `node --test …` sont lus");
+  const bancs = fichiersDeBancs(segments);
+  assert.ok(bancs.length > 0, "aucun banc lu dans `bancs-outillage-check`");
+  const joues = new Set(fichiersDeBancs(commandesCiAvantNpm(yml)));
+  return bancs.filter((b) => !joues.has(b));
 }
 
 const yml = fs.readFileSync(CI, "utf8");
@@ -360,6 +395,55 @@ test("developper distingue un diamant d'un cycle", () => {
   // Un vrai cycle, lui, reste refusé.
   assert.throws(() => developper({ check: "npm run a", a: "npm run check" }), /cycle de scripts npm/);
   assert.throws(() => developper({ check: "npm run absent" }), /script npm absent/);
+});
+
+// ── Le sens check → CI, borné à `bancs-outillage-check` ─────────────────────
+
+test("chaque banc de `bancs-outillage-check` est joué par le CI avant npm", () => {
+  assert.deepEqual(
+    bancsOutillageHorsCi(scripts, yml),
+    [],
+    "banc listé dans `bancs-outillage-check` sans câblage dans ci.yml — " +
+      "le CI ne le joue pas (l'écart corrigé par #2337)",
+  );
+});
+
+test("contre-épreuve : un banc retiré de ci.yml en mémoire est signalé", () => {
+  // La morsure, jouée sur le CI réel : sans elle, un banc qui ne lirait rien
+  // serait vert sans objet.
+  const premier = /node --test (\S+)/.exec(
+    developper(scripts, "bancs-outillage-check"),
+  )[1];
+  const ampute = yml
+    .split(/\r?\n/)
+    .map((l) => l.split(" ").filter((a) => a !== premier).join(" "))
+    .join("\n");
+  assert.notEqual(ampute, yml, `${premier} introuvable dans ci.yml`);
+  assert.deepEqual(bancsOutillageHorsCi(scripts, ampute), [premier]);
+});
+
+test("un banc câblé après setup-node compte comme absent", () => {
+  const fabrique = { "bancs-outillage-check": "cd .. && node --test scripts/a.test.mjs scripts/b.test.mjs" };
+  const ci = `jobs:
+  controles:
+    steps:
+      - run: node --test scripts/a.test.mjs
+      - uses: actions/setup-node@v4
+      - run: node --test scripts/b.test.mjs
+`;
+  assert.deepEqual(bancsOutillageHorsCi(fabrique, ci), ["scripts/b.test.mjs"]);
+  assert.throws(() => bancsOutillageHorsCi({}, ci), /script npm absent : bancs-outillage-check/);
+});
+
+test("une forme de commande inconnue dans `bancs-outillage-check` est refusée, pas ignorée", () => {
+  const ci = "jobs:\n  controles:\n    steps:\n      - run: node --test scripts/a.test.mjs\n      - uses: actions/setup-node@v4\n";
+  for (const forme of [
+    "FOO=1 node --test scripts/nouveau.test.mjs",
+    "node --import x --test scripts/nouveau.test.mjs",
+  ]) {
+    const fabrique = { "bancs-outillage-check": `cd .. && node --test scripts/a.test.mjs && ${forme}` };
+    assert.throws(() => bancsOutillageHorsCi(fabrique, ci), /seuls `cd \.\.` et `node --test …` sont lus/, forme);
+  }
 });
 
 // La liste des codes de `wn-campaign-audit` vit en DEUX exemplaires — `ci.yml`
