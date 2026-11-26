@@ -55,7 +55,11 @@ const METHODES_CONSOLE = new Set(['error', 'warn', 'log', 'info', 'debug']);
 const NEUTRALISEURS = new Set([
   'classeEtCode', 'signature', 'signatureErreur', 'nomErreur', 'traceErreur', 'messageJournalisable',
 ]);
-const PROPRIETES_FUITE = new Set(['message', 'stack', 'meta', 'cause']);
+// LISTE BLANCHE (focus area « Fuite non détectée » de PR-Agent, #2380) : une
+// liste noire laissait passer `err.toString()` — « Nom: message », le message
+// Prisma compris —, `err.response`, `err.errors`. Seuls la classe et le code
+// sont neutres ; tout autre champ de l'erreur compte comme une fuite.
+const PROPRIETES_NEUTRES = new Set(['name', 'code']);
 const EXEMPTION = /wn-journal-erreur-sur\s*:\s*(.{10,})/;
 
 function fichiersSources(depart: string): string[] {
@@ -102,7 +106,7 @@ function lier(nom: BindingName | undefined, portee: EnPortee): void {
   if (!isObjectBindingPattern(nom)) return;
   for (const element of nom.elements) {
     const cle = element.propertyName ?? element.name;
-    if (isIdentifier(cle) && PROPRIETES_FUITE.has(cle.text) && isIdentifier(element.name)) {
+    if (isIdentifier(cle) && !PROPRIETES_NEUTRES.has(cle.text) && isIdentifier(element.name)) {
       portee.champs.add(element.name.text);
     }
   }
@@ -155,7 +159,7 @@ function presenceNeutre(id: Node): boolean {
   if (estUnNomDeCle(id)) return true;
   const ext = enveloppe(id);
   const parent = ext.parent;
-  if (isPropertyAccessExpression(parent) && parent.expression === ext) return !PROPRIETES_FUITE.has(parent.name.text);
+  if (isPropertyAccessExpression(parent) && parent.expression === ext) return PROPRIETES_NEUTRES.has(parent.name.text);
   if (isBinaryExpression(parent) && parent.left === ext) return parent.operatorToken.kind === SyntaxKind.InstanceOfKeyword;
   if (isTypeOfExpression(parent)) return true;
   if (isCallExpression(parent) && parent.expression !== ext) {
@@ -242,7 +246,7 @@ describe('Cliquet : l’erreur d’un catch ne part pas en clair dans un console
     const marges = Object.entries(gel)
       .filter(([fichier, compte]) => (actuel.get(fichier)?.length ?? 0) < compte)
       .map(([fichier, compte]) => `${fichier} : gelé à ${compte}, mesuré ${actuel.get(fichier)?.length ?? 0}`);
-    expect(marges, 'Réécrire le cliquet : WN_CLIQUET_JOURNAL_ECRIRE=1 (voir l’en-tête du banc).').toEqual([]);
+    expect(marges, 'Réécrire le cliquet : WN_CLIQUET_JOURNAL_ECRIRE=true (voir l’en-tête du banc).').toEqual([]);
   });
 
   it('le détecteur mord sur chaque forme qui recopie, et laisse passer classe et code', () => {
@@ -253,7 +257,8 @@ describe('Cliquet : l’erreur d’un catch ne part pas en clair dans un console
       .toHaveLength(2);
     // Les voisines.
     for (const fuite of ['`${err}`', 'JSON.stringify(err)', '{ err }', '{ e: err }', 'err.stack', 'err.meta', 'err.cause',
-      '(err as Error).message', 'err!.message', 'sanitizeAuditError(err.message)', 'sanitizeAuditError(err)']) {
+      '(err as Error).message', 'err!.message', 'sanitizeAuditError(err.message)', 'sanitizeAuditError(err)',
+      'err.toString()', 'err.response', 'err.errors', 'err.digest']) {
       expect(fautes(`try {} catch (err) { console.warn('x', ${fuite}); }`), fuite).not.toEqual([]);
     }
     expect(fautes('main().catch(err => { console.error(\'x\', err); });')).not.toEqual([]);
@@ -265,6 +270,7 @@ describe('Cliquet : l’erreur d’un catch ne part pas en clair dans un console
     expect(fautes('try {} catch ({ message: m, code }) { console.error(\'x\', m, code); }')).toHaveLength(1);
     expect(fautes('p.catch(({ stack }) => { console.warn(stack); });')).not.toEqual([]);
     expect(fautes('try {} catch ({ name, code }) { console.error(\'x\', name, code); }')).toEqual([]);
+    expect(fautes('try {} catch ({ response }) { console.error(\'x\', response); }')).not.toEqual([]);
     expect(fautes('try {} catch ({ message }) { console.error(\'x\', { message: 1 }); }')).toEqual([]);
     // Ce qui ne recopie rien.
     for (const sur of ['...classeEtCode(err)', 'signature(err)', 'signatureErreur(err)', 'nomErreur(err)',

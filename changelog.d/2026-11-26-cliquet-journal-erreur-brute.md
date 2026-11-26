@@ -14,7 +14,8 @@ converti oblige à abaisser le compte ; le mode de réécriture
 (`WN_CLIQUET_JOURNAL_ECRIRE=true`) refuse toute hausse. Portée : la variable du
 `catch` ou du rappel `.catch()` englobant et ses champs déstructurés
 (`{ message }`), jamais un nom usuel (`reason`, `raison`) ; `console['error']`
-compte comme `console.error`. Limite écrite : une variable intermédiaire
+compte comme `console.error`. Champs de l'erreur en liste blanche : seuls
+`name` et `code` sont neutres (`err.toString()` recopie le message). Limite écrite : une variable intermédiaire
 (`const detail = err.message`) n'est pas suivie.
 Exemption motivée par `// wn-journal-erreur-sur : <motif>` sur la ligne qui
 précède. `logger.*` n'est pas compté (hors de l'option retenue). Aucun site

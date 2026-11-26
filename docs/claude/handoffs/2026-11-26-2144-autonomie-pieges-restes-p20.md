@@ -34,7 +34,7 @@ Comme B, en cliquet ».
     `raison` étaient les faux positifs du relevé.
   - Les neutres sont `classeEtCode`, `signature`, `signatureErreur`, `nomErreur`, `traceErreur`,
     `messageJournalisable`, ainsi que `.name`, `.code`, `instanceof` et `typeof`.
-  - Les propriétés comptées comme fuites sont `message`, `stack`, `meta` et `cause`.
+  - Champs de l’erreur : liste blanche (seconde passe de PR-Agent). Seuls `name` et `code` sont neutres, tout autre champ est une fuite.
   - Exemption motivée : `// wn-journal-erreur-sur : <motif ≥ 10 caractères>` sur la ligne qui précède l'appel.
 - **Verdicts sur les trois focus areas de PR-Agent** (#2380) :
   - « Cliquet relâchable » : **corrigé**. Le mode d'écriture refuse toute hausse et tout fichier absent du gel ;
@@ -47,6 +47,11 @@ Comme B, en cliquet ».
     **Écarté avec motif** : la variable intermédiaire (`const detail = err.message`). La suivre demanderait une
     analyse du flot des valeurs, hors de portée d'un banc d'arbre. La limite est écrite en tête du banc, et la
     revue la garde.
+  - Seconde passe, sur dc2451b7 :
+    - « Consigne obsolète » : **corrigé**. Le message de marge dit `=true`.
+    - « Fuite non détectée » : **corrigé**. L'erreur passe en liste blanche : seuls `name` et `code` sont neutres.
+      `err.toString()`, `.response`, `.errors`, `.digest` et leurs déstructurations comptent comme des fuites.
+      Le compte reste de 151.
 - **Hors périmètre, non fait** :
   - `logger.*`, puisque l'option C ne porte que sur `console` ;
   - le correctif de `sanitizeError` pour les erreurs `PrismaClient*`, proposé à part et non retenu dans la
@@ -70,7 +75,7 @@ Comme B, en cliquet ».
   - M2 : site converti sans abaisser le cliquet ;
   - M3 : `sanitizeAuditError` admise comme neutre. Elle passait d'abord ; j'ai ajouté le témoin
     `sanitizeAuditError(err)` ;
-  - M4 : `meta` retiré des fuites ;
+  - M4 : `toString` admis parmi les champs neutres (après la liste blanche) ;
   - M5 : exemption sans motif minimal ;
   - M6 : portée perdue ;
   - M7 : le mode d'écriture gèle une fuite neuve. Il échoue, et le gel n'est pas réécrit ;
@@ -78,12 +83,24 @@ Comme B, en cliquet ».
   - M9 : champs déstructurés ignorés.
 - Après les deux fusions d'`origin/main` (jusqu'à 32380ddf), le compte est inchangé : 151 sites.
 - Fichiers restaurés après mutation (`cmp`).
-- T1 rapide : code 0. T1 complet : joué avant le commit.
+- T1 rapide : code 0. T1 complet : code 0 sur dc2451b7. Sur la tête finale, il a échoué deux fois, uniquement sur la course `wn-codex-avis` (§6). Joué seul, ce banc passe : 30 sur 30.
 
 ## 6. Problèmes ouverts
 
 - 151 sites à résorber, routes patient d'abord (25). Candidat au carnet de la file D : un lot de conversion vers
-  `classeEtCode`. À chaque conversion, réécrire le cliquet (`WN_CLIQUET_JOURNAL_ECRIRE=1`).
+  `classeEtCode`. À chaque conversion, réécrire le cliquet (`WN_CLIQUET_JOURNAL_ECRIRE=true`).
+- **Banc `scripts/wn-codex-avis.test.mjs:232`** (« dossier temporaire supprimé »). Il a échoué une fois au T1
+  complet, le 2026-11-26 vers 22:15Z : un `wn-codex-hA62vC` d'un autre processus est apparu dans le `tmpdir()`
+  partagé entre les deux lectures du banc. Seul, il passe (30 sur 30).
+  - Le T1 relancé a échoué de la même façon, cette fois sur `wn-codex-p0-test-rELXsH`.
+  - Cause : `.claude/hooks/gate-codex-p0.test.mjs:62` crée des `wn-codex-p0-test-*` dans `tmpdir()` sans les
+    supprimer (près de 7 000 restes). Le filtre de `scripts/wn-codex-avis.test.mjs:220-225` n'écarte que
+    `wn-codex-e2e` et `wn-codex-test`.
+  - Le banc Codex échoue dès qu'une autre session joue ses crochets en même temps. Constaté : une suite
+    d'outillage étrangère en cours, pid 46659.
+  - Correctif probable : écarter le préfixe dans le filtre, et faire nettoyer son dossier par
+    `gate-codex-p0.test.mjs`. C'est un piège du lot, routé au carnet de la file D. Je n'ai rien supprimé ni
+    corrigé ici, pour garder à la PR une seule finalité.
 - Les 33 `logger({ error })` gardent un message tronqué (`sanitizeError`). Cela reste à arbitrer si le
   responsable le souhaite.
 - Toujours hérités : un `mergeable=false` périmé après un changement de tête (à constater) ; `--sha` depuis
