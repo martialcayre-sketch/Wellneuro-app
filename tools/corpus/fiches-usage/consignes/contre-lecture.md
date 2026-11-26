@@ -29,11 +29,17 @@ l'analyte, désignent la mesure : ils sont FIDÈLES et n'ajoutent rien. Tout
 autre terme de mesure ajouté à cette désignation (« taux », « mesure »,
 « évaluation », un nom de méthode, de matrice ou d'unité hors de la
 désignation) est INFIDÈLE dans la « question », même porté par un claim.
+Le verbe « permet-il de » (accordé : « permet-elle de »), suivi de la
+désignation de l'usage décisionnel, est FIDÈLE ; toute autre tournure
+(« peut-il », « aider à », « contribuer à », « dans quelle mesure ») ajoute
+un énoncé et est INFIDÈLE.
 
 La rubrique « population » nomme la seule population d'usage par sa
 désignation approuvée : elle est FIDÈLE même si aucun claim ne porte sur
 cette population. La phrase d'absence n'y est jamais admise : employée
-dans « population », elle est INFIDÈLE.
+dans « population », elle est INFIDÈLE. Elle s'écrit comme cette seule
+désignation suivie d'un point : une formule d'introduction ajoutée
+(« Cette fiche concerne », « La population d'usage est ») est INFIDÈLE.
 
 L'objet de chaque rubrique, pour juger un débordement : question : la
 question d'usage ; population : la population en clair ;
@@ -77,7 +83,10 @@ Il est INFIDÈLE s'il contient au moins un des défauts suivants :
   d'une désignation approuvée, au sein de cette seule désignation employée
   pour nommer, n'en est pas un ;
 - une population élargie ou restreinte par rapport aux claims, ou par
-  rapport à la désignation approuvée de la population d'usage ;
+  rapport à la désignation approuvée de la population d'usage ; un fait
+  restitué avec la population que son claim lui attache, comprise dans la
+  population d'usage, n'est pas une restriction de la désignation : c'est
+  une condition gardée ;
 - une hypothèse nommée qui n'est pas rattachée à la fiche, ou un sens tiré
   d'un identifiant plutôt que de sa désignation ;
 - une désignation employée pour affirmer un fait que les claims n'établissent
@@ -111,6 +120,11 @@ Il est INFIDÈLE s'il contient au moins un des défauts suivants :
   au nutriment ou à la catégorie « médicaments », accompagnée d'une autre
   quantité de prise (dose, durée, fréquence, moment), ou réunissant dans
   une même phrase un fait propre à une spécialité et une interaction ;
+  une consigne sur la posologie, même sans valeur (l'adapter, en tenir
+  compte), est une posologie ; un fait propre à une spécialité nommée qui
+  n'est ni une condition de sécurité ou d'admissibilité ni une interaction
+  (ses effets indésirables, ses surdosages) en est un, et son absence ne
+  tait aucune condition de sécurité ;
 - une quantité à prendre ou à consommer (dose, volume, nombre d'unités,
   apport recommandé ou de référence), une fréquence ou un fractionnement
   des prises, une durée de prise ou de traitement, un moment de prise (le
@@ -171,7 +185,12 @@ Il est INFIDÈLE s'il contient au moins un des défauts suivants :
 Dans « interpretations », une phrase qui ne nomme pas à la fois un résultat
 de l'examen et ce que ce résultat permet ou interdit de conclure est hors de
 l'objet de la rubrique ; la phrase d'absence, quand aucun claim fourni ne
-relie un résultat de l'examen à une conclusion, n'est pas un défaut.
+relie un résultat de l'examen à une conclusion, n'est pas un défaut. Un
+déficit, une carence, un statut ou un apport du nutriment n'est pas un
+résultat de l'examen : seul l'analyte de la fiche en est un. Une phrase qui
+nomme un résultat de l'examen en taisant la limite que son claim lui
+attache (une sensibilité ou une spécificité faibles, des situations où il
+ne permet pas de conclure) affaiblit ce claim.
 
 Un claim porte sur l'objet d'une rubrique quand il en traite le contenu
 même, pas seulement son sujet. Pour « interpretations », il dit ce qu'un
@@ -191,7 +210,9 @@ sa validité, ce qu'il ne permet pas de mesurer ou de conclure, un manque
 de données) porte sur l'objet de « limites ». Une limite de la littérature
 sur un supplément, une option ou un traitement (son efficacité, son absence
 d'effet, la qualité de ses études) n'est pas une limite de l'examen ni de
-son marqueur : elle ne porte pas sur l'objet de « limites ». Un claim porte
+son marqueur : elle ne porte pas sur l'objet de « limites ». Une limite des
+apports de référence (besoins, références nutritionnelles) pour juger un
+statut nutritionnel ne l'est pas non plus. Un claim porte
 sur l'objet de « surveillance_arret » quand il dit quoi surveiller, quand
 ou comment, ou à quel critère arrêter ; un argument de causalité
 (l'évolution d'un effet après l'arrêt puis la reprise d'un produit) n'en
