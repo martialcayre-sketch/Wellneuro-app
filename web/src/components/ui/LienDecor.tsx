@@ -33,6 +33,11 @@
  * n'entre pas, faute d'élément validé. Le hub patient (U10) reçoit le
  * bandeau `quiet-sweep` (variante C du prototype PAT-3 révisé, complément
  * DOC-21 du 2026-11-25 ; micro-lot COM-2).
+ * En portrait, le recadrage centré d'un fond 16:9 ne garde que son centre,
+ * vide : la connexion praticien cale alors `login-calm` en haut à droite, pour
+ * que ses boucles restent en périphérie, au-dessus de la carte (variante B du
+ * prototype PRA-2 décor, responsable, 2026-11-26 ; micro-lot COM-3). Le
+ * paysage ne change pas.
  * Aucun motif (`patterns/`) n'est retenu par [[D-481]].
  */
 
@@ -50,16 +55,24 @@ const ORNEMENTS = {
 } as const satisfies Record<string, Ornement>;
 
 /**
+ * Calage d'un fond en orientation portrait ; sans calage, centré. Classes
+ * écrites en entier pour que Tailwind les produise.
+ */
+const CALAGE_PORTRAIT = { 'haut-droite': 'portrait:bg-right-top' } as const;
+
+/**
  * Les emplacements du §1 bis et les éléments que chacun accepte. Un fond
  * nomme ses fichiers par largeur : `etroit` sous 768 px (point `md`),
- * `large` au-delà.
+ * `large` au-delà ; `portrait`, s'il est nommé, le cale en orientation
+ * portrait, quelle que soit la largeur.
  */
 export const LIEN_DECOR = {
-  /** Connexion praticien (X01), lot PRA-2. */
+  /** Connexion praticien (X01), lot PRA-2 ; calé en haut à droite en portrait (COM-3). */
   'connexion-praticien': {
     nature: 'fond',
     etroit: `${KIT}/backgrounds/login-calm.svg`,
     large: `${KIT}/backgrounds/login-calm.svg`,
+    portrait: 'haut-droite',
   },
   /** Entrée du parcours patient (U01–U09), lot PAT-2 ; pas d'anneaux. */
   'entree-patient': {
@@ -151,7 +164,8 @@ export function LienDecor(props: LienDecorProps) {
 
   if (entree.nature === 'fond') {
     if (props.element !== undefined) return null;
-    const fond = 'absolute inset-0 bg-cover bg-center bg-no-repeat';
+    const calage = 'portrait' in entree ? ` ${CALAGE_PORTRAIT[entree.portrait]}` : '';
+    const fond = `absolute inset-0 bg-cover bg-center bg-no-repeat${calage}`;
     return (
       <span
         aria-hidden="true"
