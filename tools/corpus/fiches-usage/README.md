@@ -83,7 +83,7 @@ rejoué rend `BROUILLON_INCHANGE`.
 
 ## La consigne versionnée
 
-`versionConsigne` vaut `fiche-usage-v14+<empreinte des deux consignes>`,
+`versionConsigne` vaut `fiche-usage-v15+<empreinte des deux consignes>`,
 épinglée dans `lib/consigne.mjs` et gardée par `lib/consigne.test.mjs`.
 
 Depuis la v2 (`D-501`), le message d'une fiche porte ses cinq axes signés,
@@ -199,6 +199,16 @@ fiche dont le marqueur sécurité / admissibilité est « oui », une condition
 propre à une spécialité nommée s'écrit attribuée à sa source avec toutes ses
 restrictions, sans posologie, et une interaction attribuée nomme ses
 principes actifs, avec le délai entre prises qu'elle porte.
+
+La v15 (`D-501` §20) précise, des deux côtés : dans « interpretations »,
+seul l'analyte de la fiche est un résultat de l'examen (pas un déficit ni un
+statut du nutriment), et la limite que le claim attache au résultat s'écrit
+avec lui ; la « question » emploie toujours « permet-il de » suivi de
+l'usage ; la « population » est la seule désignation ; une limite des
+apports de référence n'est pas une limite de l'examen ; l'exception du §19
+exclut aussi une consigne de posologie sans valeur et les effets
+indésirables ou surdosages d'une spécialité nommée. Côté contre-lecture, une
+sous-population gardée du claim n'est pas une restriction de la désignation.
 
 ## Ce que l'outil ne voit pas
 

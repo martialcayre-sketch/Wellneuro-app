@@ -45,7 +45,9 @@ Les DÉSIGNATIONS APPROUVÉES servent seulement à nommer (voir plus bas).
   littérature sur un supplément, une option ou un traitement (son
   efficacité, son absence d'effet, la qualité de ses études) n'est pas une
   limite de l'examen ni de son marqueur : elle ne porte pas sur l'objet de
-  « limites ». Un claim porte sur l'objet de « surveillance_arret » quand il
+  « limites ». Une limite des apports de référence (besoins, références
+  nutritionnelles) pour juger un statut nutritionnel ne l'est pas non plus.
+  Un claim porte sur l'objet de « surveillance_arret » quand il
   dit quoi surveiller, quand ou comment, ou à quel critère arrêter ; un
   argument de causalité (l'évolution d'un effet après l'arrêt puis la
   reprise d'un produit) n'en relève pas. Dans « resultats_consequences », un
@@ -61,7 +63,13 @@ Les DÉSIGNATIONS APPROUVÉES servent seulement à nommer (voir plus bas).
   manque l'un des deux n'y entre pas, même si elle porte sur le nutriment.
   La phrase d'absence n'y s'écrit que si aucun claim fourni ne relie un
   résultat de l'examen à ce qu'il permet ou interdit de conclure ; si l'un
-  le fait, la rubrique le restitue.
+  le fait, la rubrique le restitue. Un déficit, une carence, un statut ou
+  un apport du nutriment n'est pas un résultat de l'examen : seul l'analyte
+  de la fiche (sa valeur, sa baisse, sa hausse) en est un, et une phrase
+  qui ne nomme que l'un d'eux n'entre pas dans « interpretations ». Quand le
+  claim attache à ce résultat une limite (une sensibilité ou une spécificité
+  faibles, des situations où il ne permet pas de conclure), la phrase la
+  porte : c'est ce que le résultat interdit de conclure.
   Avant d'écrire la phrase d'absence, examine chacun des
   claims fournis : elle s'écrit si, et seulement si, aucun ne porte sur
   l'objet de la rubrique. Si l'un y porte, rédige à partir de lui, même
@@ -165,7 +173,12 @@ Les DÉSIGNATIONS APPROUVÉES servent seulement à nommer (voir plus bas).
   c'est une mesure de sécurité, pas une quantité de prise. Aucune autre
   quantité de prise ne s'y écrit (ni dose, ni durée, ni fréquence, ni
   moment). Les faits propres à une spécialité et les interactions
-  s'écrivent dans des phrases distinctes.
+  s'écrivent dans des phrases distinctes. « Sans posologie » exclut aussi
+  une consigne sur la posologie sans valeur (l'adapter, en tenir compte).
+  Un fait propre à une spécialité qui n'est ni une condition de sécurité ou
+  d'admissibilité ni une interaction (ses effets indésirables, ses
+  surdosages) ne relève pas de cette exception et ne s'écrit pas : le taire
+  ne tait aucune condition de sécurité.
 - Garde les conditions, les populations et les limites que portent les
   claims : ne les élargis pas, ne les supprime pas. Un fait se restitue
   avec toutes les conditions que son claim lui attache (population, âge,
@@ -232,7 +245,10 @@ cadre signé, pas des claims.
   les hypothèses, l'analyte et l'usage décisionnel par ces désignations ; la
   rubrique « population » désigne la seule population d'usage, sans
   rappeler l'hypothèse, l'usage ni l'analyte, même si aucun claim ne porte
-  sur cette population : la phrase d'absence ne s'y emploie jamais. Aucune
+  sur cette population : la phrase d'absence ne s'y emploie jamais. Elle
+  s'écrit comme cette seule désignation suivie d'un point, sans formule
+  d'introduction (ni « Cette fiche concerne », ni « La population d'usage
+  est »). Aucune
   n'en élargit ni n'en restreint le sens, et aucune n'y ajoute de
   condition.
 - Elles n'établissent AUCUN fait. Indications, interprétations, conditions,
@@ -254,6 +270,10 @@ de », accordés (« du », « de la », « de l' », « des »), qui désignent
 mesure et n'énoncent aucun fait ; aucun autre terme de
 mesure ne s'y ajoute (ni « taux », ni « mesure », ni « évaluation », ni un
 nom de méthode, de matrice ou d'unité hors de la désignation).
+Le verbe est toujours « permet-il de » (accordé : « permet-elle de »),
+suivi de la désignation de l'usage décisionnel ; aucune autre tournure ne
+s'y emploie (ni « peut-il », ni « aider à », ni « contribuer à », ni
+« dans quelle mesure »), car chacune ajoute un énoncé.
 Quand le statut l'impose, la réserve est toujours présente, et c'est celle
 de ce statut, jamais celle d'un autre. Elle qualifie l'usage : la question
 ne demande pas si l'usage est établi ou validé. Quand la liste ne donne
