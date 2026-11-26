@@ -2,9 +2,10 @@ import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from '
 import path from 'node:path';
 import {
   createSourceFile, getLeadingCommentRanges, isArrowFunction, isAsExpression, isBinaryExpression, isCallExpression,
-  isCatchClause, isExpressionStatement, isFunctionExpression, isIdentifier, isNonNullExpression, isParenthesizedExpression,
-  isPropertyAccessExpression, isPropertyAssignment, isTypeOfExpression, ScriptKind, ScriptTarget, SyntaxKind,
-  type CallExpression, type Node, type SourceFile,
+  isCatchClause, isElementAccessExpression, isExpressionStatement, isFunctionExpression, isIdentifier, isNonNullExpression,
+  isObjectBindingPattern, isParenthesizedExpression, isPropertyAccessExpression, isPropertyAssignment,
+  isStringLiteralLike, isTypeOfExpression, ScriptKind, ScriptTarget, SyntaxKind,
+  type BindingName, type CallExpression, type Node, type SourceFile,
 } from 'typescript';
 import { describe, expect, it } from 'vitest';
 
@@ -35,12 +36,19 @@ import { describe, expect, it } from 'vitest';
 // précède l'appel : `// wn-journal-erreur-sur : <motif d'au moins dix
 // caractères>`. Le motif dit pourquoi le message ne cite aucune valeur.
 //
-// Réécrire le cliquet après une conversion :
-//   WN_CLIQUET_JOURNAL_ECRIRE=1 npx vitest run src/lib/observability/journalErreurBrute.guard.test.ts
+// LIMITE ASSUMÉE (focus area « Contournement possible » de PR-Agent, #2380) :
+// le banc suit l'erreur du `catch`, ses champs déstructurés (`catch ({ message
+// })`) et l'appel écrit `console.error` comme `console['error']` — pas une
+// variable intermédiaire (`const detail = err.message; console.error(detail)`).
+// Suivre le flot des valeurs dépasse un banc d'arbre ; la revue le garde.
+//
+// Réécrire le cliquet après une conversion (le mode d'écriture refuse toute
+// hausse et tout fichier absent du gel : il ne sait qu'abaisser) :
+//   WN_CLIQUET_JOURNAL_ECRIRE=true npx vitest run src/lib/observability/journalErreurBrute.guard.test.ts
 
 const RACINE = path.join(process.cwd(), 'src');
 const CLIQUET = path.join(RACINE, 'lib', 'observability', 'journalErreurBrute.cliquet.json');
-const CONSOLE = /^console\.(?:error|warn|log|info|debug)$/;
+const METHODES_CONSOLE = new Set(['error', 'warn', 'log', 'info', 'debug']);
 // Les aides qui ne rendent que la classe et le code d'une erreur — ou, pour
 // `messageJournalisable`, le message seulement hors Prisma. `sanitizeAuditError`
 // n'y est pas : elle garde le message, masqué en partie seulement.
@@ -82,21 +90,54 @@ function noeuds(racine: Node): Node[] {
   return tous;
 }
 
-/** Les noms qui désignent une erreur À CET ENDROIT : `catch (x)` ou rappel de `.catch(x => …)` englobants. */
-function erreursEnPortee(appel: Node): Set<string> {
-  const noms = new Set<string>();
-  for (let n: Node | undefined = appel.parent; n; n = n.parent) {
-    if (isCatchClause(n) && n.variableDeclaration && isIdentifier(n.variableDeclaration.name)) {
-      noms.add(n.variableDeclaration.name.text);
+type EnPortee = { erreurs: Set<string>; champs: Set<string> };
+
+/** Une liaison d'erreur : le nom entier (`err`), ou les champs qui fuient d'une déstructuration (`{ message }`). */
+function lier(nom: BindingName | undefined, portee: EnPortee): void {
+  if (!nom) return;
+  if (isIdentifier(nom)) {
+    portee.erreurs.add(nom.text);
+    return;
+  }
+  if (!isObjectBindingPattern(nom)) return;
+  for (const element of nom.elements) {
+    const cle = element.propertyName ?? element.name;
+    if (isIdentifier(cle) && PROPRIETES_FUITE.has(cle.text) && isIdentifier(element.name)) {
+      portee.champs.add(element.name.text);
     }
+  }
+}
+
+/** Les noms qui désignent une erreur À CET ENDROIT : `catch (x)` ou rappel de `.catch(x => …)` englobants. */
+function erreursEnPortee(appel: Node): EnPortee {
+  const portee: EnPortee = { erreurs: new Set(), champs: new Set() };
+  for (let n: Node | undefined = appel.parent; n; n = n.parent) {
+    if (isCatchClause(n)) lier(n.variableDeclaration?.name, portee);
     if ((isArrowFunction(n) || isFunctionExpression(n)) && n.parent && isCallExpression(n.parent)
       && isPropertyAccessExpression(n.parent.expression) && n.parent.expression.name.text === 'catch'
       && n.parent.arguments[0] === n) {
-      const premier = n.parameters[0]?.name;
-      if (premier && isIdentifier(premier)) noms.add(premier.text);
+      lier(n.parameters[0]?.name, portee);
     }
   }
-  return noms;
+  return portee;
+}
+
+/** `console.error(…)`, `console . error(…)` ou `console['error'](…)`, lus sur l'arbre et non sur le texte. */
+function estConsole(appel: CallExpression): boolean {
+  const cible = appel.expression;
+  if (isPropertyAccessExpression(cible)) {
+    return isIdentifier(cible.expression) && cible.expression.text === 'console' && METHODES_CONSOLE.has(cible.name.text);
+  }
+  if (isElementAccessExpression(cible)) {
+    return isIdentifier(cible.expression) && cible.expression.text === 'console'
+      && isStringLiteralLike(cible.argumentExpression) && METHODES_CONSOLE.has(cible.argumentExpression.text);
+  }
+  return false;
+}
+
+/** Un nom écrit comme CLÉ (`{ error: … }`, `x.error`), pas comme valeur. */
+function estUnNomDeCle(id: Node): boolean {
+  return (isPropertyAssignment(id.parent) || isPropertyAccessExpression(id.parent)) && id.parent.name === id;
 }
 
 /** Remonte les enveloppes qui ne changent pas la valeur : `(x)`, `x as T`, `x!`. */
@@ -111,7 +152,7 @@ function enveloppe(n: Node): Node {
 
 /** L'erreur paraît-elle ici sans être recopiée ? */
 function presenceNeutre(id: Node): boolean {
-  if ((isPropertyAssignment(id.parent) || isPropertyAccessExpression(id.parent)) && id.parent.name === id) return true;
+  if (estUnNomDeCle(id)) return true;
   const ext = enveloppe(id);
   const parent = ext.parent;
   if (isPropertyAccessExpression(parent) && parent.expression === ext) return !PROPRIETES_FUITE.has(parent.name.text);
@@ -137,12 +178,13 @@ function fuitesDeJournal(chemin: string, source: string): Fuite[] {
   const arbre = arbreDe(chemin, source);
   const fuites: Fuite[] = [];
   for (const appel of noeuds(arbre).filter(isCallExpression)) {
-    if (!CONSOLE.test(appel.expression.getText(arbre))) continue;
-    const erreurs = erreursEnPortee(appel);
-    if (erreurs.size === 0) continue;
+    if (!estConsole(appel)) continue;
+    const { erreurs, champs } = erreursEnPortee(appel);
+    if (erreurs.size === 0 && champs.size === 0) continue;
     const fautes = appel.arguments
       .flatMap(noeuds)
-      .filter(n => isIdentifier(n) && erreurs.has(n.text) && !presenceNeutre(n))
+      .filter(n => isIdentifier(n) && (
+        (erreurs.has(n.text) && !presenceNeutre(n)) || (champs.has(n.text) && !estUnNomDeCle(n))))
       .map(n => enveloppe(n).parent.getText(arbre));
     if (fautes.length > 0 && !exempte(appel, source)) {
       fuites.push({ ligne: arbre.getLineAndCharacterOfPosition(appel.getStart(arbre)).line + 1, fautes });
@@ -160,18 +202,29 @@ function releve(): Map<string, Fuite[]> {
   return parFichier;
 }
 
+/** Les fichiers dont le compte mesuré dépasse le gel — un fichier absent du gel est gelé à 0. */
+function depassements(actuel: Map<string, Fuite[]>, gel: Record<string, number>): string[] {
+  return [...actuel.entries()]
+    .filter(([fichier, fuites]) => fuites.length > (gel[fichier] ?? 0))
+    .map(([fichier, fuites]) => `${fichier} : ${fuites.length} > ${gel[fichier] ?? 0} — `
+      + fuites.map(f => `l.${f.ligne} ${f.fautes.join(' | ')}`).join(' ; '));
+}
+
 describe('Cliquet : l’erreur d’un catch ne part pas en clair dans un console.* (20261126-0758-d)', () => {
   const actuel = releve();
+  const gel = JSON.parse(readFileSync(CLIQUET, 'utf8')) as Record<string, number>;
 
-  if (process.env.WN_CLIQUET_JOURNAL_ECRIRE === '1') {
-    it('réécrit le cliquet', () => {
-      const gel = Object.fromEntries([...actuel.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([f, l]) => [f, l.length]));
-      writeFileSync(CLIQUET, `${JSON.stringify(gel, null, 2)}\n`);
+  if (process.env.WN_CLIQUET_JOURNAL_ECRIRE === 'true') {
+    // LE MODE D'ÉCRITURE N'ABAISSE QUE (focus area « Cliquet relâchable » de
+    // PR-Agent, #2380) : sinon la commande de l'en-tête absoudrait une fuite
+    // neuve, et seul le diff du JSON la montrerait.
+    it('réécrit le cliquet, sans jamais le relever', () => {
+      expect(depassements(actuel, gel), 'Une hausse ne se gèle pas : convertir le site.').toEqual([]);
+      const neuf = Object.fromEntries([...actuel.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([f, l]) => [f, l.length]));
+      writeFileSync(CLIQUET, `${JSON.stringify(neuf, null, 2)}\n`);
     });
     return;
   }
-
-  const gel = JSON.parse(readFileSync(CLIQUET, 'utf8')) as Record<string, number>;
 
   it('le banc lit bien le dépôt (il n’est pas vide)', () => {
     const total = [...actuel.values()].reduce((s, l) => s + l.length, 0);
@@ -182,11 +235,7 @@ describe('Cliquet : l’erreur d’un catch ne part pas en clair dans un console
   });
 
   it('aucun fichier ne dépasse son compte gelé (le code neuf passe par classeEtCode)', () => {
-    const depasses = [...actuel.entries()]
-      .filter(([fichier, fuites]) => fuites.length > (gel[fichier] ?? 0))
-      .map(([fichier, fuites]) => `${fichier} : ${fuites.length} > ${gel[fichier] ?? 0} — `
-        + fuites.map(f => `l.${f.ligne} ${f.fautes.join(' | ')}`).join(' ; '));
-    expect(depasses).toEqual([]);
+    expect(depassements(actuel, gel)).toEqual([]);
   });
 
   it('le cliquet ne garde aucune marge : un site converti abaisse le compte', () => {
@@ -209,6 +258,14 @@ describe('Cliquet : l’erreur d’un catch ne part pas en clair dans un console
     }
     expect(fautes('main().catch(err => { console.error(\'x\', err); });')).not.toEqual([]);
     expect(fautes('main().catch(function (e) { console.error(\'x\', e.message); });')).not.toEqual([]);
+    // Les formes de « Contournement possible » (PR-Agent, #2380) que l'arbre sait lire.
+    expect(fautes('try {} catch (err) { console[\'error\'](\'x\', err.message); }')).not.toEqual([]);
+    expect(fautes('try {} catch (err) { console . error(\'x\', err); }')).not.toEqual([]);
+    expect(fautes('try {} catch ({ message }) { console.error(\'x\', message); }')).not.toEqual([]);
+    expect(fautes('try {} catch ({ message: m, code }) { console.error(\'x\', m, code); }')).toHaveLength(1);
+    expect(fautes('p.catch(({ stack }) => { console.warn(stack); });')).not.toEqual([]);
+    expect(fautes('try {} catch ({ name, code }) { console.error(\'x\', name, code); }')).toEqual([]);
+    expect(fautes('try {} catch ({ message }) { console.error(\'x\', { message: 1 }); }')).toEqual([]);
     // Ce qui ne recopie rien.
     for (const sur of ['...classeEtCode(err)', 'signature(err)', 'signatureErreur(err)', 'nomErreur(err)',
       'messageJournalisable(err)', 'err.name', 'err.code', 'err instanceof Error', 'typeof err', '{ error: 1 }',

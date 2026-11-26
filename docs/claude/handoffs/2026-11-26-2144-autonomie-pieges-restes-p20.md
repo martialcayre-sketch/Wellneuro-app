@@ -36,6 +36,17 @@ Comme B, en cliquet ».
     `messageJournalisable`, ainsi que `.name`, `.code`, `instanceof` et `typeof`.
   - Les propriétés comptées comme fuites sont `message`, `stack`, `meta` et `cause`.
   - Exemption motivée : `// wn-journal-erreur-sur : <motif ≥ 10 caractères>` sur la ligne qui précède l'appel.
+- **Verdicts sur les trois focus areas de PR-Agent** (#2380) :
+  - « Cliquet relâchable » : **corrigé**. Le mode d'écriture refuse toute hausse et tout fichier absent du gel ;
+    il ne sait qu'abaisser.
+  - « Convention WN_ » : **corrigé**. `WN_CLIQUET_JOURNAL_ECRIRE=true`, comme les drapeaux `WN_*` du code.
+  - « Contournement possible » : **corrigé en partie**. Sont désormais lus :
+    - `console['error']` et `console . error`, sur l'arbre et non plus sur le texte ;
+    - le `catch ({ message })` déstructuré, pour `message`, `stack`, `meta` et `cause`.
+
+    **Écarté avec motif** : la variable intermédiaire (`const detail = err.message`). La suivre demanderait une
+    analyse du flot des valeurs, hors de portée d'un banc d'arbre. La limite est écrite en tête du banc, et la
+    revue la garde.
 - **Hors périmètre, non fait** :
   - `logger.*`, puisque l'option C ne porte que sur `console` ;
   - le correctif de `sanitizeError` pour les erreurs `PrismaClient*`, proposé à part et non retenu dans la
@@ -61,7 +72,11 @@ Comme B, en cliquet ».
     `sanitizeAuditError(err)` ;
   - M4 : `meta` retiré des fuites ;
   - M5 : exemption sans motif minimal ;
-  - M6 : portée perdue.
+  - M6 : portée perdue ;
+  - M7 : le mode d'écriture gèle une fuite neuve. Il échoue, et le gel n'est pas réécrit ;
+  - M8 : `console['error']` non reconnu ;
+  - M9 : champs déstructurés ignorés.
+- Après les deux fusions d'`origin/main` (jusqu'à 32380ddf), le compte est inchangé : 151 sites.
 - Fichiers restaurés après mutation (`cmp`).
 - T1 rapide : code 0. T1 complet : joué avant le commit.
 
