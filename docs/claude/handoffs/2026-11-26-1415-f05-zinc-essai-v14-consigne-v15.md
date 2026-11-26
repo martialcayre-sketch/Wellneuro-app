@@ -44,7 +44,9 @@ stables.
 
 ## Problèmes ouverts
 
-- `FU_ZINC_P7` n° 1 : validation à l'écran par le responsable, puis constat.
+- `FU_ZINC_P7` n° 1 : validée à l'écran par le responsable le 2026-11-26
+  (constat par conteneur `one-off-2141` : 3 actes `validee`, relecture
+  intégrale, empreintes égales aux rubriques déposées). Fait.
 - `FU_ZINC_P6` : second refus de « options » (effets comparatifs, limites de
   preuve) hors v15 ; contenu de la rubrique à arbitrer.
 - Fer P2 et P6 : arbitrage distinct (quantités de prise).
