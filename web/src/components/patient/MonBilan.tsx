@@ -9,6 +9,7 @@ import { PatientButton } from '@/components/patient/ui/PatientButton';
 import { PatientErrorState } from '@/components/patient/PatientErrorState';
 import { AvisLectureDatee } from '@/components/patient/AvisLectureDatee';
 import { ConsignerLecturePortail } from '@/components/patient/ConsignerLecturePortail';
+import { LienDecor } from '@/components/ui/LienDecor';
 
 // « Mon bilan » — le document que le praticien a transmis, lu dans l'espace du
 // patient plutôt que reçu par e-mail.
@@ -108,6 +109,8 @@ export function MonBilan({ token }: { token: string }) {
     return (
       <PatientCard>
         <h1 className="font-display text-2xl font-bold leading-tight text-foreground">Mon bilan</h1>
+        {/* Ornement d'état vide réel ([[D-481]] §1 bis, PAT-5 décor, Q2a-Q3a). */}
+        <LienDecor emplacement="etat-vide" element="nutrition-sprout" className="mt-3 w-40" />
         <p className="mt-3 text-base text-muted-foreground">
           Votre praticien ne vous a pas encore transmis de bilan. Il apparaîtra ici dès qu’il
           l’aura fait.
