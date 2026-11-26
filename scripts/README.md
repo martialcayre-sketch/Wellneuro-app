@@ -129,16 +129,11 @@ Usage markdown (rapport versionnable):
 node scripts/wn-campaign-audit.mjs --no-fail --format markdown --write docs/claude/campagnes/AUDIT_REGLES_CAMPAGNES.md
 ```
 
-Mode CI bloquant sur les incohérences d'état (ligne de `ci.yml` et de
-`campaign-audit-check`) :
+Mode CI bloquant sur les incohérences d'état et les dérives du miroir :
 
 ```bash
-node scripts/wn-campaign-audit.mjs --fail-on-warning-codes missing_audit_root,closed_campaign_with_open_lots,inflight_without_active_lot,idle_with_active_fields
+node scripts/wn-campaign-audit.mjs --fail-on-warning-codes missing_audit_root,missing_in_mirror,extra_in_mirror,status_drift_between_roots,closed_campaign_with_open_lots,inflight_without_active_lot,idle_with_active_fields
 ```
-
-Les codes de miroir (`missing_in_mirror`, `extra_in_mirror`,
-`status_drift_between_roots`) ne sonnent qu'avec une seconde racine passée en
-`--root` ; il n'existe pas de miroir vivant, aucune ligne bloquante ne les arme.
 
 Mode CI strict (bloque sur tout warning):
 

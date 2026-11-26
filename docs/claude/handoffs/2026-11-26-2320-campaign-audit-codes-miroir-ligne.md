@@ -27,15 +27,17 @@ observable : chaque code armé peut réellement sonner, `main` vert.
 - Banc : `redCases` ne porte plus que les quatre codes de la ligne ; les trois cas de miroir passent dans
   `mirrorCases`, joués avec leurs propres codes et `--root` (mécanisme de `compareRoots` toujours prouvé) ;
   chacun vérifie aussi qu'il ne rougit pas la ligne. Un test neuf rougit si un code de miroir revient sur
-  la ligne. Le cas « principal et miroir identiques » se joue avec les codes de miroir. `scripts/README.md`
-  (quatrième copie, non gardée) aligné sur les quatre codes.
+  la ligne. Le cas « principal et miroir identiques » se joue avec les codes de miroir.
+- `scripts/README.md` (quatrième copie, documentaire, non gardée) laissé à sept codes : son blob sur `main`
+  est en CRLF alors que `.gitattributes` impose `eol=lf`, et toute retouche le réécrit en entier (constat
+  PR-Agent sur d93812c3). Retiré du diff ; routé en problème ouvert.
 - `wn-campaign-audit.mjs` et les fichiers de campagne : inchangés (hors périmètre).
 
 ## 4. Fichiers modifiés
 
 - `web/package.json` (`campaign-audit-check`), `.github/workflows/ci.yml` (« Campaign rules audit
   (blocking) »), `scripts/wn-test-worktree.sh`.
-- `scripts/wn-campaign-audit.test.mjs`, `scripts/README.md`.
+- `scripts/wn-campaign-audit.test.mjs`.
 - `changelog.d/2026-11-26-campaign-audit-codes-miroir-ligne.md`, ce handoff.
 
 ## 5. Validations exécutées
@@ -48,7 +50,9 @@ observable : chaque code armé peut réellement sonner, `main` vert.
   `npm run check` : résultat dans la déclaration « prête ». T2/T3 non joués (passe cloud, `D-540`).
 - Revue `wn-reviewer` (P1) avant le push : GO, aucun P0/P1 ; mutations jouées en copie (code de miroir
   remis sur la ligne, `--root` ajouté, chaque `warnings.push` neutralisé, `compareRoots` retiré) : chacune
-  rougit le banc. P2 corrigés : README, deux formulations du fragment, codes du cas « miroir identique ».
+  rougit le banc. P2 corrigés : deux formulations du fragment, codes du cas « miroir identique » ; P2 README
+  routé (ci-dessous). PR-Agent sur d93812c3 : « Réécriture hors périmètre » (README en CRLF normalisé) →
+  corrigé, README retiré du diff.
 
 ## 6. Problèmes ouverts
 
@@ -58,6 +62,9 @@ observable : chaque code armé peut réellement sonner, `main` vert.
 - `scripts/wn-test-worktree.sh` (troisième copie de la liste) n'est gardée par aucun banc de parité, et le
   commentaire de `scripts/parite-check-ci.test.mjs` parle de « DEUX exemplaires ». Préexistant, hors du
   lot : à inscrire au carnet par une session qui inscrit (la passe n'inscrit pas).
+- `scripts/README.md` documente encore la ligne à sept codes, et son blob est en CRLF contre `eol=lf` : un
+  lot de normalisation des fins de ligne (ce fichier seul, diff d'espaces) puis l'alignement sur quatre codes.
+  À inscrire au carnet.
 - Ligne de boîte `20261126-2237-integrateur-d-2379` restée `lu` : le recalcul de la fusion de #2380 revient
   à la session qui tient #2380.
 
