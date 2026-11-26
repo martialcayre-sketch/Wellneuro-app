@@ -19,7 +19,7 @@
 //
 // Fixtures seules : Michel Dogné (PAT_SEED_03) pour le parcours, Jennifer
 // Martin (PAT_SEED_02) pour la date de naissance et le circuit mineur — sa
-// date est retirée puis restituée.
+// date est retirée, puis remise à la valeur du seed.
 import { test, expect, devices, type Page } from '@playwright/test';
 import {
   accuserPorteTrust,
@@ -30,15 +30,21 @@ import {
 import { praticienSessionCookie, patientPortailSessionCookie } from './helpers/auth';
 
 const PARCOURS = { idPatient: 'PAT_SEED_03', email: 'michel.dogne@fictif.wellneuro.fr' };
-const MINEUR = { idPatient: 'PAT_SEED_02', email: 'jennifer.martin@fictif.wellneuro.fr' };
+// La date de naissance restituée est FIXE, celle de `prisma/seed.ts`, jamais
+// relue : un run interrompu entre le retrait et la restitution laisserait
+// sinon `null` ou la date de mineur, que le run suivant relirait et
+// restituerait (constat PR-Agent sur #2384).
+const MINEUR = {
+  idPatient: 'PAT_SEED_02',
+  email: 'jennifer.martin@fictif.wellneuro.fr',
+  dateNaissanceSeed: '1979-07-28',
+};
 const FRISE = 'ol[aria-label="Étapes de votre parcours"]';
 
 test.describe.configure({ mode: 'serial' });
 
-let dateAvant: string | null | undefined;
-
 test.afterAll(async () => {
-  if (dateAvant !== undefined) await poserDateNaissanceFixture(MINEUR.idPatient, dateAvant);
+  await poserDateNaissanceFixture(MINEUR.idPatient, MINEUR.dateNaissanceSeed);
   await resetPortailState(PARCOURS.idPatient);
   await closePrisma();
 });
@@ -103,8 +109,7 @@ function scenarios() {
 
   test('U04 et U05 : date de naissance, puis circuit mineur sans navigation', async ({ page, context }) => {
     await accuserPorteTrust(MINEUR.idPatient);
-    const avant = await poserDateNaissanceFixture(MINEUR.idPatient, null);
-    if (dateAvant === undefined) dateAvant = avant;
+    await poserDateNaissanceFixture(MINEUR.idPatient, null);
     await context.addCookies([patientPortailSessionCookie(MINEUR.idPatient, MINEUR.email)]);
     await page.goto(`/portail/${MINEUR.idPatient}`);
 

@@ -377,7 +377,8 @@ export async function accuserPorteTrust(idPatient: string): Promise<void> {
 
 /**
  * Pose la date de naissance d'un dossier de FIXTURE, `null` compris, et rend
- * celle d'avant pour que le spec la restitue dans son `afterAll`. Sert à
+ * celle d'avant. Le spec restitue la valeur du seed, fixe, jamais celle-ci :
+ * un run interrompu la laisserait fausse (constat PR-Agent sur #2384). Sert à
  * rejouer l'étape « date de naissance » (U04) puis le circuit mineur (U05)
  * par l'interface, sur un dossier fictif seulement — jamais un dossier réel.
  */

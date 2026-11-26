@@ -46,8 +46,9 @@ Cahier : `plan-patient.md` §PAT-2 ; arbitrages : `pat2-arbitrages.md`.
     sorte que le fond ne paraît ni ne disparaît d'une étape à l'autre.
   - U01 et U02 enveloppent leur colonne.
 - **Hors cadrage annoncé** : un helper de fixture, `poserDateNaissanceFixture`, ajouté à
-  `e2e/helpers/db.ts` pour rejouer U04 et U05 par l'interface. La date d'avant est
-  restituée en `afterAll`.
+  `e2e/helpers/db.ts` pour rejouer U04 et U05 par l'interface. En `afterAll`, le spec
+  remet la date du seed, une valeur fixe : il ne relit pas la date d'avant, qu'un run
+  interrompu laisserait fausse. C'est le constat PR-Agent sur #2384, corrigé.
 - **Relecture `ui-ux-pro-max`**, en lecture seule :
   - fond `aria-hidden` ;
   - aucun texte sur le décor hors du canevas uni ;
