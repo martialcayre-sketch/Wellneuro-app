@@ -2,7 +2,8 @@
 
 ## 1. Branche et état Git
 
-- Branche `worktree-fix-horloge-contradictions-d495`, worktree
+- Branche de la PR `fix/test-contradictions-horloge-figee` (nom local
+  `worktree-fix-horloge-contradictions-d495`), worktree
   `.claude/worktrees/fix-horloge-contradictions-d495`, partie de `origin/main`
   `7c1a9c59` (#2372).
 - Un commit : test, fragment `changelog.d/`, ce handoff. PR ouverte par
