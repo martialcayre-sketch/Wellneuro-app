@@ -230,3 +230,28 @@ describe('MonParcoursAccueil — accueil et interdits', () => {
     expect(container.textContent).not.toMatch(/score/i);
   });
 });
+
+describe('MonParcoursAccueil — signature du hub (PAT-3b)', () => {
+  const maintenant = new Date('2026-07-21T12:00:00.000Z');
+  const base = { token: 'TOK', prenom: 'Michel', derniereReponseLe: null, maintenant };
+
+  it('pose le bandeau du hub en tête de carte, avant le titre, par LienDecor', () => {
+    const { container } = render(<MonParcoursAccueil {...base} fil={{ taches: [tache()], repos: { kind: 'stable' } }} />);
+    const bandeau = container.querySelector<HTMLElement>('[data-lien-decor="hub-patient"]');
+    expect(bandeau).not.toBeNull();
+    expect(bandeau!.dataset.element).toBe('quiet-sweep');
+    // Premier enfant de la carte : rien au-dessus, le titre juste après.
+    expect(bandeau!.previousElementSibling).toBeNull();
+    expect(bandeau!.nextElementSibling?.tagName).toBe('H1');
+    expect(bandeau!.className.split(/\s+/)).toEqual(expect.arrayContaining(['-mx-8', '-mt-8', 'print:hidden']));
+  });
+
+  it('hors de l’accessibilité, sans texte : le contenu lisible de la carte est inchangé', () => {
+    const { container } = render(<MonParcoursAccueil {...base} fil={{ taches: [tache()], repos: { kind: 'stable' } }} />);
+    const bandeau = container.querySelector<HTMLElement>('[data-lien-decor="hub-patient"]')!;
+    expect(bandeau.getAttribute('aria-hidden')).toBe('true');
+    expect(bandeau.textContent).toBe('');
+    expect(screen.getAllByRole('heading')).toHaveLength(1);
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Mon parcours');
+  });
+});

@@ -136,4 +136,4 @@ mesure. Un contrôle à l'œil est dû avant tout lot.
 - Lecteur d'écran réel, téléphone réel, comparaison aux prototypes, U21
   imprimable avec un protocole diffusé, étapes de l'entrée une par une : comme
   au constat partiel §5.
-- L'en-tête de U10 : après PAT-3b.
+- L'en-tête de U10 : vu après PAT-3b (`pat7-constat-partiel.md` §6).
