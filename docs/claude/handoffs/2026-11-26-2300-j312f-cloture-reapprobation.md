@@ -13,7 +13,7 @@ Constater en lecture seule la réapprobation des 2 protocoles diffusés que le c
 
 - Aucune décision nouvelle. Fragment de journal H15 (`2026-11-26-02`) et fragment de changelog ; restes ouverts nommés.
 - Le constat ne conclut pas sur l'étiquette v21 : elle n'est lue dans aucune ligne stockée (aucun épisode ni aucune synthèse créés depuis le déploiement ; les charges des brouillons ne la portent pas). La dérive de l'empreinte de la carte (2 sur 2) est compatible avec le changement de version et de source, sans isoler l'étiquette ; celle du brouillon est attendue de tout brouillon neuf.
-- Les lignes « J3-12f » et « réapprobation » de `PLAN_WELLNEURO.md` passent à « fait » (colonne d'état, pas la fiche) ; les restes ouverts sont nommés au journal H15.
+- Les lignes « J3-12f » et « réapprobation » de `PLAN_WELLNEURO.md` passent à « fait », et la ligne « dossiers des autres besoins » ne dit plus « restent à ouvrir 8, 10, 12, puis 6, 7, 11 » (retour de PR-Agent, « Incohérence du plan » : omission du lot des décisions D-564 à D-570) ; colonne d'état seulement, pas la fiche. Les restes ouverts sont nommés au journal H15.
 
 ## 4. Fichiers modifiés
 
