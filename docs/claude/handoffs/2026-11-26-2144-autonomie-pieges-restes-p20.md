@@ -73,6 +73,16 @@ Comme B, en cliquet ».
   responsable le souhaite.
 - Toujours hérités : un `mergeable=false` périmé après un changement de tête (à constater) ; `--sha` depuis
   l'intégrateur (reste 13-14).
+- **Constaté sur #2380 le 2026-11-26** (matière pour le lot `gh-rest-rerun-check-runs`, file D, ordre 101) :
+  - Le premier CI a échoué : `typage-tests` était rouge sur `main` depuis 10:00Z. La cause est une fixture
+    clinique datée du 2026-11-05, prise sur l'horloge réelle avec une fenêtre de 21 jours. L'intégrateur l'a
+    corrigée par #2379.
+  - Après le correctif, j'ai fermé puis rouvert la PR pour recalculer la fusion. Le nouveau run a tout passé
+    (45896808088), et `mergeState` est revenu à `CLEAN`.
+  - Mais `wn-attendre-ci` a rendu 1, avec « verify → SUCCESS/FAILURE » : sur la même tête, il agrège l'ancien
+    `verify` en échec et le nouveau réussi.
+  - Seule une tête neuve en sort. Le responsable a arbitré : fusion d'`origin/main` dans la branche (exception à
+    D-518 pour #2380, 2026-11-26).
 
 ## 7. Prochaine action exacte
 
