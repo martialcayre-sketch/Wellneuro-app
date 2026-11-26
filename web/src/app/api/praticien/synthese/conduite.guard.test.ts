@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { QUESTIONNAIRE_CATALOGUE, calculateScore } from '@/lib/questions';
 import { buildMiniSynthese } from '@/lib/scoring/miniSynthese';
 import { scoresPourPrompt } from '@/lib/scoring/scoresPourPrompt';
+import { QUESTIONNAIRES_INTERPRETATION_NON_TRANSMISE } from '@/lib/synthese/interpretationNonTransmise';
 
 // Garde de la séparation mesure / conduite (arbitrage du 2026-07-26).
 // Sortir la conduite de la bande d'interprétation ne l'a pas empêchée de
@@ -238,5 +239,32 @@ describe('Balayage du catalogue servi — aucune conduite ne survit à la séria
     // C'est ce qui autorise le filtre : ce qu'il retire du bloc brut, le prompt
     // le reçoit ailleurs, sous « — Orientation : ».
     expect(perdues, `conduites absentes de la mini-synthèse : ${perdues.join(', ')}`).toEqual([]);
+  });
+});
+
+describe('D-571 §3 — la liste fermée ne reçoit pas de mini-synthèse : aucune conduite ne s’y perd', () => {
+  // L'asymétrie que ce fichier garde : ce que `scoresPourPrompt` retire, la
+  // mini-synthèse le rend, étiquetée. Pour `Q_INF_02` et `Q_INF_03`, la
+  // mini-synthèse ne part plus (elle reprend le libellé). Une conduite posée
+  // sur leurs bandes serait donc perdue en silence : ce garde exige qu'il n'y
+  // en ait aucune, à aucune borne, recueil complet ou partiel. (La bande haute
+  // de `Q_INF_02` écrit une conduite DANS son libellé ; ce n'est pas une clé
+  // `conduite`, et elle ne parvient plus au modèle — D-571 §3, risque assumé.)
+  it.each(QUESTIONNAIRES_INTERPRETATION_NON_TRANSMISE)('%s : aucune conduite servie', (id) => {
+    for (const borne of ['min', 'max'] as const) {
+      for (const reponses of [reponsesALaBorne(id, borne), reponsesPartielles(id, borne)]) {
+        expect(cheminsDeConduite(calculateScore(id, reponses)), `${id} (${borne})`).toEqual([]);
+      }
+    }
+  });
+
+  it('la branche de la liste fermée ne lit pas la mini-synthèse ; la branche ordinaire, toujours', () => {
+    const debut = SOURCE.indexOf('if (interpretationNonTransmise(r.idQuestionnaire)) {');
+    expect(debut).toBeGreaterThan(-1);
+    const fin = SOURCE.indexOf('\n    }\n', debut);
+    const branche = SOURCE.slice(debut, fin);
+    expect(branche).not.toMatch(/buildMiniSynthese|miniSynthese|r\.interpretation|scoresPourPrompt/);
+    expect(branche).toMatch(/scores:\s*scoresSansInterpretation\(r\.idQuestionnaire,\s*r\.scores\)/);
+    expect(SOURCE.slice(fin)).toMatch(/miniSynthese:\s*buildMiniSynthese\(r\.scores\)/);
   });
 });

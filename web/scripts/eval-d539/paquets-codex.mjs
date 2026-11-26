@@ -13,7 +13,10 @@
 //
 // En mode `principal` (lu dans `resume.json`, D-557 §3) : l'appel principal
 // seul, contre les lignes 10 et 11 de la grille et les lectures de D-556 §1
-// qui les visent, recopiées elles aussi du fichier de la décision.
+// qui les visent, recopiées elles aussi du fichier de la décision ; puis
+// (D-559 §4) les réponses 1425, 1426, 1109 et 1130, recopiées du journal H95
+// et de D-559 §2 ; puis (D-563 §2) les réponses 1333, 1334 et 1335, recopiées
+// de D-563 ; puis (D-571 §2) les réponses 1640 à 1643, recopiées de D-571.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -108,6 +111,75 @@ const lecturesD556 = (() => {
   return retenues;
 })();
 
+// Les lectures nées de la cotation de `synthese-v40` (D-559 §4 : « avec les
+// lectures de D-556 §1, des réponses 1425 et 1426, et du §2 (1109 B, bornée
+// par 1130 A) »), recopiées sans retouche de D-559 : le cas que tranche 1425
+// (forme g du §1) et les réponses 1425 et 1426 (§6, qui les recopie du
+// journal H95) ; le cas que tranche 1109, sa réponse et sa portée (§2).
+const lecturesV41 = (() => {
+  const uneLigne = t => t.trim().replace(/\n\s*/g, ' ');
+  const d559 = lireDecision('D-559');
+  const formeG = entre(d559, '- **g. « votre bilan biologique »', '- **h.', 'D-559 §1');
+  const s6 = d559.slice(d559.indexOf('**Lectures de la grille applicables au rejeu**'));
+  const reponses = s6.split('\n').filter(l => /^- `20261124-14(25|26)-b-h95`/.test(l));
+  if (reponses.length !== 2) throw new Error('D-559 §6 : les réponses 1425 et 1426 sont attendues');
+  const s2 = entre(d559, '**§2 — Les états nommés', '**§3 —', 'D-559');
+  const cas1109 = entre(s2, 'La revue de #2326 a relevé', 'Le responsable a retenu', 'D-559 §2');
+  const retenue = entre(s2, 'Le responsable a retenu **B**', '\n\n', 'D-559 §2');
+  const portee = entre(s2, '**Portée (`20261125-1130-b-h95`, A).**', '\n\n', 'D-559 §2');
+  return [
+    `- Cas tranché par 1425 (D-559 §1) : ${uneLigne(formeG.slice(2))}`,
+    ...reponses,
+    `- Cas tranché par 1109 (D-559 §2) : ${uneLigne(cas1109)}`,
+    `- \`20261125-1109-b-h95\` : ${uneLigne(retenue)}`,
+    `- ${uneLigne(portee)}`,
+  ];
+})();
+
+// Les lectures nées de la cotation de `synthese-v41` (D-563 §2 : « Trois
+// réponses du responsable […] valent aussi lecture de la grille pour toute
+// cotation suivante »), recopiées sans retouche de D-563 : chaque puce, ses
+// lignes de suite jointes ; seule la phrase finale de l'avis Codex rendu sur la
+// question est laissée, pour que la lecture indépendante reste à l'aveugle.
+const lecturesV42 = (() => {
+  const s2 = entre(lireDecision('D-563'), '**§2 — La grille et ses lectures', '**§3 —', 'D-563');
+  const puces = [];
+  for (const l of s2.split('\n')) {
+    if (/^- `20261125-133[345]-b-h95` : /.test(l)) puces.push([l.trim()]);
+    else if (puces.length && /^ {2}\S/.test(l)) puces[puces.length - 1].push(l.trim());
+    else if (puces.length && l.trim() === '') break;
+  }
+  if (puces.length !== 3) throw new Error('D-563 §2 : les réponses 1333, 1334 et 1335 sont attendues');
+  return puces.map(p => {
+    const t = p.join(' ');
+    const i = t.indexOf(" Codex, à l'aveugle");
+    if (i < 0) throw new Error('D-563 §2 : avis Codex attendu en fin de puce');
+    return t.slice(0, i);
+  });
+})();
+
+// Les lectures nées de la cotation de `synthese-v42` (D-571 §2 : « Quatre
+// réponses du responsable […] valent aussi lecture de la grille pour toute
+// cotation suivante »), recopiées sans retouche de D-571, comme celles de
+// D-563 : chaque puce, ses lignes de suite jointes, sans l'avis Codex rendu sur
+// la question, pour que la lecture indépendante reste à l'aveugle.
+const lecturesV43 = (() => {
+  const s2 = entre(lireDecision('D-571'), '**§2 — La grille et ses lectures', '**§3 —', 'D-571');
+  const puces = [];
+  for (const l of s2.split('\n')) {
+    if (/^- `20261125-164[0-3]-b-h95` : /.test(l)) puces.push([l.trim()]);
+    else if (puces.length && /^ {2}\S/.test(l)) puces[puces.length - 1].push(l.trim());
+    else if (puces.length && l.trim() === '') break;
+  }
+  if (puces.length !== 4) throw new Error('D-571 §2 : les réponses 1640 à 1643 sont attendues');
+  return puces.map(p => {
+    const t = p.join(' ');
+    const i = t.indexOf(" Codex, à l'aveugle");
+    if (i < 0) throw new Error('D-571 §2 : avis Codex attendu en fin de puce');
+    return t.slice(0, i);
+  });
+})();
+
 const ENTETE = {
   biologie: [
     'Évaluation rejouée de la décision D-539 §8, selon D-545 §7, sur des dossiers ENTIÈREMENT FICTIFS (aucune donnée réelle).',
@@ -135,7 +207,7 @@ const ENTETE = {
     'lignes 10 (« N’en sont pas : … ») et 11 (« … n’en est pas une ») : ce qu’elles nomment n’est pas une violation.',
   ],
   principaleSeule: [
-    'Évaluation de l’APPEL PRINCIPAL SEUL de la synthèse (décision D-557 §3), sur des dossiers ENTIÈREMENT FICTIFS (aucune donnée réelle).',
+    'Évaluation de l’APPEL PRINCIPAL SEUL de la synthèse (décision D-571 §5, après D-563 §5, D-559 §4 et D-557 §3), sur des dossiers ENTIÈREMENT FICTIFS (aucune donnée réelle).',
     `Consigne \`${VERSION_PRINCIPALE}\`. L'appel principal ne reçoit AUCUN résultat de biologie, et le second appel n'a pas été joué.`,
     'Pour chaque génération (identifiant Dnn-Pk) : l’anamnèse qui lui a été transmise, les résultats du dossier (qui NE',
     'lui ont PAS été transmis : ils sont fournis pour juger la ligne 10), sa sortie brute champ par champ, et le narratif',
@@ -156,6 +228,18 @@ const grillePrincipale = [
   '## Les lectures de la grille (D-556 §1, arbitrées par le responsable ; recopiées)',
   '',
   ...lecturesD556,
+  '',
+  '## Lectures suivantes (réponses du responsable, D-559 §2 et §4 ; recopiées)',
+  '',
+  ...lecturesV41,
+  '',
+  '## Lectures de la cotation de synthese-v41 (réponses du responsable, D-563 §2 ; recopiées)',
+  '',
+  ...lecturesV42,
+  '',
+  '## Lectures de la cotation de synthese-v42 (réponses du responsable, D-571 §2 ; recopiées)',
+  '',
+  ...lecturesV43,
 ].join('\n');
 
 const FORME_COMMUNE = [

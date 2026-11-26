@@ -43,6 +43,11 @@ import { CORPUS_CLINIQUE_METADATA, CORPUS_CLINIQUE_SHA256 } from '@/lib/clinical
 import { buildMiniSynthese } from '@/lib/scoring/miniSynthese';
 import { filtrerPassationsExploitables, statutExcluDuRaisonnement } from '@/lib/scoring/validite';
 import { scoresPourPrompt } from '@/lib/scoring/scoresPourPrompt';
+import {
+  MOTIF_INTERPRETATION_NON_TRANSMISE,
+  interpretationNonTransmise,
+  scoresSansInterpretation,
+} from '@/lib/synthese/interpretationNonTransmise';
 import { reponsesLisiblesPourPrompt } from '@/lib/scoring/reponsesLisibles';
 import {
   avertissementSyntheseAnterieure,
@@ -537,6 +542,28 @@ function buildUserMessage(
         scorePrincipal: null,
         interpretation: null,
         miniSynthese: '',
+      };
+    }
+    // Passation d'un questionnaire dont le libellé d'interprétation nomme l'état
+    // d'un nutriment ou d'un messager (liste fermée de [[D-571]] §3). Le modèle
+    // n'en reçoit le libellé par AUCUN des trois canaux : ni la colonne
+    // `interpretation`, ni l'objet `interpretation` des scores ou la bande de
+    // chaque sous-score, ni la mini-synthèse qui les reprend. Il en reçoit les
+    // scores, projetés par liste blanche sur une forme unique, et un motif fixe
+    // que la consigne explique (texte 8). Même patron que `mesureNonInterpretable`
+    // ci-dessus : retirer la donnée protège, la consigne explique le trou. Le
+    // praticien, lui, voit toujours le libellé.
+    if (interpretationNonTransmise(r.idQuestionnaire)) {
+      return {
+        idQuestionnaire: r.idQuestionnaire,
+        titre: r.titre,
+        date: r.date,
+        passationCourante: r.passationCourante,
+        ...(r.statutEcarte ? { ecarteeDuRaisonnement: r.statutEcarte } : {}),
+        ...(r.formeAmbigue ? { formeInstrumentAmbigue: r.formeAmbigue } : {}),
+        interpretationNonTransmise: MOTIF_INTERPRETATION_NON_TRANSMISE,
+        scores: scoresSansInterpretation(r.idQuestionnaire, r.scores),
+        scorePrincipal: r.scorePrincipal,
       };
     }
     return {

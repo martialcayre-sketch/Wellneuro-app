@@ -3,6 +3,7 @@ import { QUESTIONNAIRE_CATALOGUE, calculateScore, computeScoreFromDef } from '@/
 import { scoresPourPrompt } from '@/lib/scoring/scoresPourPrompt';
 import { Q_ALI_01_SIIN_57 } from '@/lib/questionnaires/alimentaire';
 import { SYSTEM_PROMPT_GOUVERNANCE } from '@/lib/anthropic';
+import { QUESTIONNAIRES_INTERPRETATION_NON_TRANSMISE, scoresSansInterpretation } from '@/lib/synthese/interpretationNonTransmise';
 
 // Résiduel documenté à la clôture de #437. La consigne `synthese-v9` décrivait
 // DEUX porteurs de sous-scores — `dimensions` et `scoresBesoins` — et laissait le
@@ -700,5 +701,24 @@ describe('couplage consigne / charge — les champs décrits sont réellement li
     // ce que le modèle de synthèse reçoit réellement.
     expect(releve.sansTotalGlobal.slice().sort())
       .toEqual(['Q_CAN_01', 'Q_CAN_02', 'Q_PED_02', 'Q_SOM_07', 'Q_STR_06']);
+  });
+});
+
+describe('D-571 §3 — les sous-scores de la liste fermée : aucun champ sans mode d’emploi', () => {
+  // Pour `Q_INF_02` et `Q_INF_03`, le modèle ne reçoit pas `scoresPourPrompt`
+  // mais la projection de `scoresSansInterpretation`. Ses champs de sous-score
+  // sont un sous-ensemble de ceux que la consigne décrit déjà, plus `domaine`,
+  // que le texte 8 de D-571 §4 explique (« pour certains sous-scores, le
+  // domaine qu'ils décrivent »).
+  it.each(QUESTIONNAIRES_INTERPRETATION_NON_TRANSMISE)('%s', (id) => {
+    const reponses = reponsesPour(id);
+    const projete = scoresSansInterpretation(id, (calculateScore as any)(id, reponses));
+    const champs = new Set((projete.subScores ?? []).flatMap((x) => Object.keys(x)));
+    const nonDecrits = [...champs]
+      .filter((c) => !CHAMPS_EVIDENTS.has(c) && c !== 'domaine')
+      .filter((c) => !SYSTEM_PROMPT_GOUVERNANCE.includes(`**${c}**`));
+    expect(nonDecrits, `champ(s) livré(s) sans mode d'emploi : ${nonDecrits.join(', ')}`).toEqual([]);
+    if (champs.has('domaine')) expect(SYSTEM_PROMPT_GOUVERNANCE).toContain("pour certains sous-scores, le domaine qu'ils décrivent");
+    for (const k of Object.keys(projete)) expect(['maxTotal', 'missing', 'subScores', 'total']).toContain(k);
   });
 });
