@@ -48,7 +48,8 @@ Cahier : `plan-patient.md` §PAT-2 ; arbitrages : `pat2-arbitrages.md`.
 - **Hors cadrage annoncé** : un helper de fixture, `poserDateNaissanceFixture`, ajouté à
   `e2e/helpers/db.ts` pour rejouer U04 et U05 par l'interface. En `afterAll`, le spec
   remet la date du seed, une valeur fixe : il ne relit pas la date d'avant, qu'un run
-  interrompu laisserait fausse. C'est le constat PR-Agent sur #2384, corrigé.
+  interrompu laisserait fausse. La date de mineur saisie est calculée au jour du run
+  (12 ans révolus), jamais figée. Ce sont les deux constats PR-Agent sur #2384, corrigés.
 - **Relecture `ui-ux-pro-max`**, en lecture seule :
   - fond `aria-hidden` ;
   - aucun texte sur le décor hors du canevas uni ;

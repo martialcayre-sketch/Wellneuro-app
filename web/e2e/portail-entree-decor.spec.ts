@@ -41,6 +41,17 @@ const MINEUR = {
 };
 const FRISE = 'ol[aria-label="Étapes de votre parcours"]';
 
+/**
+ * Une date de naissance de 12 ans révolus au jour du run : toujours dans la
+ * tranche « avant 15 ans », sans date figée qui vieillirait avec le dépôt
+ * (constat PR-Agent sur #2384).
+ */
+function dateDeNaissanceDouzeAns(): string {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() - 12);
+  return d.toISOString().slice(0, 10);
+}
+
 test.describe.configure({ mode: 'serial' });
 
 test.afterAll(async () => {
@@ -115,7 +126,7 @@ function scenarios() {
 
     await expect(page.locator('#date-naissance')).toBeVisible();
     await controlerFond(page, { frise: false });
-    await page.locator('#date-naissance').fill('2012-05-10');
+    await page.locator('#date-naissance').fill(dateDeNaissanceDouzeAns());
     await page.locator('form button[type="submit"]').click();
     await page.getByRole('button', { name: 'C’est exact, enregistrer' }).click();
 
