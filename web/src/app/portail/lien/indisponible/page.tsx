@@ -6,6 +6,7 @@ import {
 } from '@/lib/portail/featureFlag';
 import { MESSAGE_LIEN_INDISPONIBLE } from '@/lib/portail/lienMagique';
 import { DemandeLienForm } from '@/components/patient/DemandeLienForm';
+import { FondEntreePatient } from '@/components/patient/ui/FondEntreePatient';
 import { PatientCard } from '@/components/patient/ui/PatientCard';
 import { PatientInlineMessage } from '@/components/patient/ui/PatientInlineMessage';
 import { PatientPageHeader } from '@/components/patient/ui/PatientPageHeader';
@@ -29,37 +30,39 @@ export default function LienIndisponiblePage() {
   if (!isG4LienMagiqueEnabled()) notFound();
 
   return (
-    <div className="w-full max-w-[35rem] space-y-4">
-      <PatientCard className="space-y-4">
-        <PatientPageHeader
-          center
-          title="Votre lien n’est plus valable"
-          subtitle={MESSAGE_LIEN_INDISPONIBLE}
-        />
-        {/* Le titre et le message ne varient jamais : consommé, expiré, inconnu
-            ou révoqué se lisent pareil. Seule l'ACTION proposée dépend de
-            l'ouverture du canal public — jamais la raison du refus. */}
-        {isG4RedemandePatientEnabled() ? (
-          <DemandeLienForm />
-        ) : (
-          <PatientInlineMessage tone="info">
-            Demandez un nouveau lien à votre praticien : il vous en enverra un par e-mail.
-          </PatientInlineMessage>
-        )}
-        {/* Gate G5 : quand l'entrée par Google est ouverte, ce cul-de-sac cesse
-            d'en être un — la personne peut entrer sans attendre d'e-mail. Le
-            lien n'apparaît que si le chemin existe vraiment. */}
-        {isG5GooglePatientEnabled() && (
-          // Navigation pleine page ASSUMÉE : `connexion` est `force-dynamic` pour
-          // relire ses drapeaux à chaque requête, et ce cul-de-sac doit repartir
-          // d'un état propre. Passer à `<Link>` changerait le comportement — pas
-          // le rôle d'une PR de version.
-          // eslint-disable-next-line @next/next/no-html-link-for-pages
-          <a href="/portail/connexion" className={patientButtonClassName('ghost', 'w-full')}>
-            Continuer avec Google
-          </a>
-        )}
-      </PatientCard>
-    </div>
+    <FondEntreePatient>
+      <div className="w-full max-w-[35rem] space-y-4">
+        <PatientCard className="space-y-4">
+          <PatientPageHeader
+            center
+            title="Votre lien n’est plus valable"
+            subtitle={MESSAGE_LIEN_INDISPONIBLE}
+          />
+          {/* Le titre et le message ne varient jamais : consommé, expiré, inconnu
+              ou révoqué se lisent pareil. Seule l'ACTION proposée dépend de
+              l'ouverture du canal public — jamais la raison du refus. */}
+          {isG4RedemandePatientEnabled() ? (
+            <DemandeLienForm />
+          ) : (
+            <PatientInlineMessage tone="info">
+              Demandez un nouveau lien à votre praticien : il vous en enverra un par e-mail.
+            </PatientInlineMessage>
+          )}
+          {/* Gate G5 : quand l'entrée par Google est ouverte, ce cul-de-sac cesse
+              d'en être un — la personne peut entrer sans attendre d'e-mail. Le
+              lien n'apparaît que si le chemin existe vraiment. */}
+          {isG5GooglePatientEnabled() && (
+            // Navigation pleine page ASSUMÉE : `connexion` est `force-dynamic` pour
+            // relire ses drapeaux à chaque requête, et ce cul-de-sac doit repartir
+            // d'un état propre. Passer à `<Link>` changerait le comportement — pas
+            // le rôle d'une PR de version.
+            // eslint-disable-next-line @next/next/no-html-link-for-pages
+            <a href="/portail/connexion" className={patientButtonClassName('ghost', 'w-full')}>
+              Continuer avec Google
+            </a>
+          )}
+        </PatientCard>
+      </div>
+    </FondEntreePatient>
   );
 }
