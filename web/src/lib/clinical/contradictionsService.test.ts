@@ -829,7 +829,12 @@ describe('Convergences — double verrou du dossier (H98)', () => {
   // moteur reçoit et ce que le cockpit doit dire. Revue `wn-reviewer` de t71b :
   // le banc de route mocke ce service et ne prouvait que la transmission.
 
+  // Le service lit `Date.now()` : sans horloge figée, la réponse datée du
+  // 2026-11-05 sortait de sa fenêtre de fraîcheur (21 jours) le 2026-11-26 à
+  // 10 h UTC et la convergence attendue disparaissait. Seule `Date` est figée.
   async function serviceStocke(orientation: OrientationAdmissible | null) {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(MAINTENANT);
     vi.doMock('./orientationAdmissible', () => ({
       reglesOrientationAdmissibles: vi.fn().mockResolvedValue(orientation),
     }));
@@ -839,6 +844,7 @@ describe('Convergences — double verrou du dossier (H98)', () => {
   }
 
   afterEach(() => {
+    vi.useRealTimers();
     vi.doUnmock('./orientationAdmissible');
     vi.doUnmock('./convergenceEngine');
   });
