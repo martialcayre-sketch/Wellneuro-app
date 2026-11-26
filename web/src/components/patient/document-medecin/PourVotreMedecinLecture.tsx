@@ -7,6 +7,7 @@ import { PatientCard } from '@/components/patient/ui/PatientCard';
 import { patientButtonClassName } from '@/components/patient/ui/PatientButton';
 import { PatientErrorState } from '@/components/patient/PatientErrorState';
 import { enTeteDossierPage } from '@/lib/portail/dossierPage';
+import { LienDecor } from '@/components/ui/LienDecor';
 import {
   AUCUN_DOCUMENT_MEDECIN,
   BOUTON_TELECHARGER,
@@ -131,7 +132,11 @@ export function PourVotreMedecinLecture({ token }: { token: string }) {
     return (
       <PatientCard padding="sm">
         <h1 className="font-display text-2xl font-bold leading-tight text-foreground">{TITRE_DOCUMENT_MEDECIN}</h1>
-        <div className="mt-3"><p className="text-base text-foreground">{AUCUN_DOCUMENT_MEDECIN}</p></div>
+        <div className="mt-3">
+          {/* Ornement d'état vide réel ([[D-481]] §1 bis, PAT-5 décor, Q2a-Q3a). */}
+          <LienDecor emplacement="etat-vide" element="nutrition-sprout" className="mb-3 w-40" />
+          <p className="text-base text-foreground">{AUCUN_DOCUMENT_MEDECIN}</p>
+        </div>
       </PatientCard>
     );
   }

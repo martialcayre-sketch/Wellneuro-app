@@ -10,6 +10,7 @@ import { PatientField, patientInputClassName } from '@/components/patient/ui/Pat
 import { PatientInlineMessage } from '@/components/patient/ui/PatientInlineMessage';
 import { PatientRegionAccuse } from '@/components/patient/ui/PatientRegionAccuse';
 import { PatientPageHeader } from '@/components/patient/ui/PatientPageHeader';
+import { LienDecor } from '@/components/ui/LienDecor';
 import { LONGUEUR_MAX_DESACCORD } from '@/lib/praticien/syntheseComprehension';
 import type { PortailComprehensionResponse } from '@/app/api/portail/comprehension/route';
 
@@ -167,10 +168,14 @@ export function ComprehensionView() {
         {/* SILENCE ≠ RÉPONSE (`DC-24`) : l'absence de synthèse se dit comme une
             absence, jamais comme un « rien à signaler ». */}
         {!synthese ? (
-          <PatientInlineMessage tone="info">
-            Votre praticien n’a encore rien publié ici. Cela ne veut rien dire de plus : il n’a
-            simplement pas encore écrit cette page.
-          </PatientInlineMessage>
+          <div className="space-y-3">
+            {/* Ornement d'état vide réel ([[D-481]] §1 bis, PAT-5 décor, Q2a-Q3a). */}
+            <LienDecor emplacement="etat-vide" element="nutrition-sprout" className="w-40" />
+            <PatientInlineMessage tone="info">
+              Votre praticien n’a encore rien publié ici. Cela ne veut rien dire de plus : il n’a
+              simplement pas encore écrit cette page.
+            </PatientInlineMessage>
+          </div>
         ) : (
           <>
             {/* Refonte Lien, PAT-7m (F7 a) : la synthèse sur le fond de la voix

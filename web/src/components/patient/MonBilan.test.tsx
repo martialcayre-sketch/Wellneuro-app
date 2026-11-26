@@ -48,6 +48,9 @@ describe('MonBilan — la lecture datée (D-297)', () => {
     await screen.findByText(/ne vous a pas encore transmis de bilan/);
     expect(screen.queryByRole('region', { name: TITRE_LECTURE_DATEE })).toBeNull();
     expect(consigner).not.toHaveBeenCalled();
+    // Ornement d'état vide réel (PAT-5 décor, Q2a-Q3a) : décoratif, avant la phrase.
+    expect(document.querySelectorAll('[data-lien-decor="etat-vide"]')).toHaveLength(1);
+    expect(document.querySelectorAll('[data-lien-decor="etat-vide"]')[0].getAttribute('aria-hidden')).toBe('true');
   });
 
   it('panne passagère : ni avis, ni lecture consignée — rien n’a été lu', async () => {
@@ -56,5 +59,6 @@ describe('MonBilan — la lecture datée (D-297)', () => {
     await screen.findByText('Le bilan n’a pas pu être chargé.');
     expect(screen.queryByRole('region', { name: TITRE_LECTURE_DATEE })).toBeNull();
     expect(consigner).not.toHaveBeenCalled();
+    expect(document.querySelectorAll('[data-lien-decor="etat-vide"]')).toHaveLength(0); // une erreur garde son traitement (D-481 §1 bis)
   });
 });
