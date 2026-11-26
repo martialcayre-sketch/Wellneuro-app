@@ -113,6 +113,22 @@ test("next suit exclusivement le lot déclaré dans state.json", () => {
   assert.match(result.stdout, /campaign-a.*LOT-01-build\.md/s);
 });
 
+// Arbitrage du 2026-11-25 : « transféré » ferme un lot, ici comme dans
+// wn-campaign-audit. Mutation : retirer `|| isTransferredStatus(value)` de
+// `isClosedStatus` → ce test rouge (LOT-00 serait activé).
+test("activate sans --lot saute un lot « transféré »", () => {
+  const root = setup();
+  const dir = path.join(root, "docs", "claude", "campagnes", "campaign-c");
+  fs.mkdirSync(path.join(dir, "lots"), { recursive: true });
+  fs.writeFileSync(path.join(dir, "CAMPAGNE.md"), campaignText("campaign-c", "Campagne C", ""));
+  fs.writeFileSync(path.join(dir, "lots", "LOT-00-parti.md"), lotText("LOT-00", "transféré le 2026-11-25 au plan"));
+  fs.writeFileSync(path.join(dir, "lots", "LOT-01-reste.md"), lotText("LOT-01", "à_faire"));
+  const result = run(root, "activate", "campaign-c");
+  assert.equal(result.status, 0, result.stderr);
+  const state = JSON.parse(fs.readFileSync(path.join(root, ".wn", "state.json"), "utf8"));
+  assert.equal(state.active_lot, "LOT-01");
+});
+
 test("deactivate neutralise l'état et régénère la vue humaine", () => {
   const root = setup();
   assert.equal(run(root, "activate", "campaign-a").status, 0);

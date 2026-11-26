@@ -134,11 +134,15 @@ test.describe('Portail — rail latéral', () => {
       // `scrollTo`, rougissait au hasard en CI (cinq fois le 2026-11-25) quand
       // défilement et mise en page n'étaient pas encore posés. L'interdit ne
       // change pas : à la fin, rien ne recouvre le numéro. En cas d'échec, le
-      // message nomme ce qui le recouvre.
+      // message nomme ce qui le recouvre. Chaque mesure redéfile jusqu'au bas :
+      // la page s'allonge parfois après le premier `scrollTo` (contenu posé
+      // ensuite), et le numéro restait alors « hors de la fenêtre » pendant
+      // tout le délai (constaté en local le 2026-11-25, sur #2364).
       await expect
         .poll(
           () =>
             numero.evaluate(el => {
+              window.scrollTo(0, document.documentElement.scrollHeight);
               const r = el.getBoundingClientRect();
               const dessus = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
               if (dessus === el || (dessus !== null && el.contains(dessus))) return '';

@@ -98,6 +98,37 @@ test("un spécificateur d'import est reconnu — `\\b` ne s'ancre pas devant `@`
   assert.equal(mentionne('const ORIENTATION_METADATA_BIS = 1;', 'ORIENTATION_METADATA'), false);
 });
 
+test('un spécificateur se lit entier : le baril ne vaut pas ses fichiers voisins', () => {
+  // Régression (revue CodeRabbit de #1736) : `@/lib/food-compass`, forme
+  // abrégée du baril, se trouvait par inclusion dans l'import de
+  // `@/lib/food-compass/refValidation`, et la Boussole passait pour lue par
+  // le portail patient à travers une simple validation de référence.
+  const validation = "import { assertFoodCompassActionRef } from '@/lib/food-compass/refValidation';";
+  assert.equal(mentionne(validation, '@/lib/food-compass'), false);
+  assert.equal(mentionne(validation, '@/lib/food-compass/refValidation'), true);
+  assert.equal(mentionne("import { x } from '@/lib/food-compass';", '@/lib/food-compass'), true);
+  assert.equal(mentionne('import { x } from "./catalogueV2";', './catalogue'), false);
+  assert.equal(mentionne('const m = await import(`./catalogue`);', './catalogue'), true);
+  assert.equal(mentionne("const { prisma } = await import('@/lib/prisma');", '@/lib/prisma'), true);
+});
+
+test('un baril importé seulement par ses fichiers voisins ne relie pas la source au patient', () => {
+  const index = [
+    { chemin: 'web/src/lib/fc/distribution.ts', contenu: 'export const getDistribution = () => 1;' },
+    { chemin: 'web/src/lib/fc/refValidation.ts', contenu: 'export const assertRef = () => true;' },
+    { chemin: 'web/src/lib/fc/index.ts', contenu: "export * from './distribution';\nexport * from './refValidation';" },
+    { chemin: 'web/src/lib/protocol/fromPrisma.ts', contenu: "import { assertRef } from '@/lib/fc/refValidation';\nexport const reconstruire = () => assertRef();" },
+    { chemin: 'web/src/app/api/portail/protocole/route.ts', contenu: "import { reconstruire } from '@/lib/protocol/fromPrisma';\nexport const GET = () => reconstruire();" },
+    { chemin: 'web/src/app/api/praticien/fc/route.ts', contenu: "import { getDistribution } from '@/lib/fc';\nexport const GET = () => getDistribution();" },
+  ];
+  const { lignes } = construireMatrice(index, {}, [
+    { id: 'fc', libelle: 'fc', module: 'web/src/lib/fc/distribution.ts', symboles: ['getDistribution'], decisionProduite: 'x' },
+  ]);
+  const [ligne] = lignes;
+  assert.deepEqual(ligne.surfaces.map((s) => s.chemin), ['web/src/app/api/praticien/fc/route.ts']);
+  assert.equal(ligne.patientVisible, false);
+});
+
 test('une mention en COMMENTAIRE ne fait pas passer une source pour consommée', () => {
   const index = indexer({
     'web/src/lib/fictif/source.ts': 'export const SAVOIR_FICTIF = 1;',

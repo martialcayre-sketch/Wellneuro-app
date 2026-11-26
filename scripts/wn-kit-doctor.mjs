@@ -264,37 +264,70 @@ function checkGit() {
   return c;
 }
 
-function checkNoSecrets() {
-  const c = new CheckList("SECURITY");
+// Verdict par répertoire : chaque ligne ne juge que ses propres racines et
+// nomme fichier et motif. Un booléen unique était recopié sur toutes les
+// lignes : une occurrence sous docs/ rougissait aussi .wn/ et .claude/, sans
+// dire où elle était (40/43 constaté sur main le 2026-11-07 et le 2026-11-25).
+// Les répertoires et fichiers exemptés suivent GREP_EXCLUDES de
+// scripts/check_no_secrets.sh ; les motifs, les extensions lues (.md, .yml,
+// .json seulement) et les racines (pour .claude/ : skills et agents) restent
+// ceux du doctor. Le garde réel, qui lit tout fichier, est check_no_secrets.sh.
+const SECRETS_MOTIFS = ["DATABASE_URL=", "ANTHROPIC_API_KEY=", "NEXTAUTH_SECRET=", "GOOGLE_CLIENT_SECRET="];
+const SECRETS_GROUPES = [
+  { libelle: ".wn/", racines: [".wn"] },
+  { libelle: ".claude/", racines: [".claude/skills", ".claude/agents"] },
+  { libelle: ".github/prompts/", racines: [".github/prompts"] },
+  { libelle: "docs/", racines: ["docs"] },
+];
+const SECRETS_REPERTOIRES_EXCLUS = new Set([".git", "node_modules", ".next", "generated", "pgdata"]);
 
-  const forbidden = ["DATABASE_URL=", "ANTHROPIC_API_KEY=", "NEXTAUTH_SECRET=", "GOOGLE_CLIENT_SECRET="];
-  const managedRoots = [".wn", ".claude/skills", ".claude/agents", ".github/prompts", "docs"];
+function secretsFichierExclu(nom) {
+  return (
+    nom === "check_no_secrets.sh" ||
+    nom === "package-lock.json" ||
+    nom.endsWith(".lock") ||
+    /^\.env.*\.local/.test(nom)
+  );
+}
 
-  let foundSecrets = false;
-  for (const managed of managedRoots) {
-    if (!dirExists(managed)) continue;
-    const stack = [path.join(root, managed)];
-    while (stack.length) {
-      const current = stack.pop();
-      for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
-        const full = path.join(current, entry.name);
-        if (entry.isDirectory() && !entry.name.startsWith(".git")) stack.push(full);
-        else if (entry.isFile() && (entry.name.endsWith(".md") || entry.name.endsWith(".yml") || entry.name.endsWith(".json"))) {
-          const text = fs.readFileSync(full, "utf8");
-          for (const needle of forbidden) {
-            if (text.includes(needle)) {
-              log("✗", `Secret pattern '${needle}' in ${path.relative(root, full)}`);
-              foundSecrets = true;
-            }
-          }
+function secretsTrouves(racine) {
+  const trouves = [];
+  const stack = [path.join(root, racine)];
+  while (stack.length) {
+    const current = stack.pop();
+    for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
+      const full = path.join(current, entry.name);
+      if (entry.isDirectory()) {
+        if (!SECRETS_REPERTOIRES_EXCLUS.has(entry.name)) stack.push(full);
+      } else if (
+        entry.isFile() &&
+        !secretsFichierExclu(entry.name) &&
+        (entry.name.endsWith(".md") || entry.name.endsWith(".yml") || entry.name.endsWith(".json"))
+      ) {
+        const text = fs.readFileSync(full, "utf8");
+        for (const motif of SECRETS_MOTIFS) {
+          // Le fichier et le motif seulement, jamais la ligne trouvée.
+          if (text.includes(motif)) trouves.push(`${path.relative(root, full)} : '${motif}'`);
         }
       }
     }
   }
+  return trouves;
+}
 
-  c.add("No secrets in .wn/", !foundSecrets);
-  c.add("No secrets in .claude/", !foundSecrets);
-  c.add("No secrets in docs/", !foundSecrets);
+function checkNoSecrets() {
+  const c = new CheckList("SECURITY");
+
+  for (const groupe of SECRETS_GROUPES) {
+    const presentes = groupe.racines.filter((r) => dirExists(r));
+    const absentes = groupe.racines.filter((r) => !dirExists(r));
+    const trouves = presentes.flatMap((r) => secretsTrouves(r)).sort();
+    const parties = [...trouves];
+    if (presentes.length === 0) parties.push("absent");
+    else if (absentes.length > 0) parties.push(`${absentes.join(", ")} absent`);
+    const detail = parties.join(" ; ");
+    c.add(`No secrets in ${groupe.libelle}`, trouves.length === 0, detail);
+  }
 
   return c;
 }
@@ -314,7 +347,10 @@ function actionCheck() {
     checkNoSecrets()
   ];
 
-  const allHealthy = checklists.every(c => (c.print(), c.isHealthy()));
+  // Chaque bloc s'imprime : `every` s'arrêtait au premier bloc rouge et
+  // taisait les suivants (SECURITY absent dès que GIT était sale).
+  checklists.forEach(c => c.print());
+  const allHealthy = checklists.every(c => c.isHealthy());
 
   console.log(`\n=== OVERALL ===`);
   const passed = checklists.reduce((sum, c) => sum + c.passed, 0);
