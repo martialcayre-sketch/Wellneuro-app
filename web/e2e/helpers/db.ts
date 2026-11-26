@@ -376,6 +376,21 @@ export async function accuserPorteTrust(idPatient: string): Promise<void> {
 }
 
 /**
+ * Pose la date de naissance d'un dossier de FIXTURE, `null` compris, et rend
+ * celle d'avant pour que le spec la restitue dans son `afterAll`. Sert à
+ * rejouer l'étape « date de naissance » (U04) puis le circuit mineur (U05)
+ * par l'interface, sur un dossier fictif seulement — jamais un dossier réel.
+ */
+export async function poserDateNaissanceFixture(
+  idPatient: string,
+  dateNaissance: string | null,
+): Promise<string | null> {
+  const avant = await prisma.patient.findUniqueOrThrow({ where: { idPatient }, select: { dateNaissance: true } });
+  await prisma.patient.update({ where: { idPatient }, data: { dateNaissance } });
+  return avant.dateNaissance;
+}
+
+/**
  * Nettoie l'état de reprise laissé par un run : les propositions, ET les dates
  * de réponses antidatées par `preparerReprisePourTest` — voir le commentaire de
  * `datesReponsesAntidatees` pour ce que leur oubli cassait.
