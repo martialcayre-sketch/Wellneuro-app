@@ -46,7 +46,10 @@ Lot PRA-3a décor de la refonte Lien, ouvert par le responsable le 2026-11-26 (�
   - Le banc mord : avant le correctif, le test d'impression rougissait sur les deux moteurs.
   - Sans la marge négative, la sonde mesurait l'en-tête à 100 px au lieu de 45,5 px à 768 px.
 - T2 `--fast` à `32380ddf` plus le diff : vert en 12 min 48 s. Vitest 1 096 fichiers, 18 728 tests (62 sautés) ; E2E 495 réussis, 45 sautés, aucun rouge (Chromium et WebKit, build de production).
-- Baselines visuelles : RÉSULTAT À REPORTER.
+- Baselines visuelles : workflow `visual-baselines` sur la branche (run 45902732024, succès).
+  - Cinq images changent : cockpit, tiroir des 12 besoins et onglet Trajectoire au bureau ; cockpit et onglet Trajectoire sur iPhone 13.
+  - Comparaison pixel à pixel avec les baselines de `main` : l'écart tient dans la seule boîte des arcs (92 × 22 px, 231 à 241 pixels), à droite de l'identité. Chaque image a été relue sur cette zone, puis promue.
+  - Les trois autres (tiroir sur iPhone 13, connexion du portail ×2) sont identiques au bit près et ne sont pas versées.
 
 ## Problèmes ouverts
 
