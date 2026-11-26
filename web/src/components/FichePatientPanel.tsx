@@ -99,6 +99,7 @@ import { LIGNE_VERSION_SCORING_NON_CONSERVEE } from '@/components/patient-cockpi
 import { Chip } from '@/components/ui/Chip';
 import { SpiraleTrajectoire } from '@/components/ui/SpiraleTrajectoire';
 import { ModeConsultation } from '@/components/ui/ModeConsultation';
+import { LienDecor } from '@/components/ui/LienDecor';
 import { useFocusApresRelecture } from '@/components/ui/useFocusApresRelecture';
 import { ChiffresMasquesProvider, useChiffresMasques, ValeurMasquee } from '@/components/patient-cockpit/ChiffresMasques';
 import { PatientPreview } from '@/components/PatientPreview';
@@ -2652,12 +2653,32 @@ export function FichePatientPanel({
           ligne + les onglets ≈ 11.75rem). Zéro scroll de page en usage
           courant ; les bannières critiques, exceptionnelles, peuvent décaler. */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0">
-          {/* Le nom du dossier est le h1 de la page, comme sur les autres
-              écrans praticien ; toute la cascade de la fiche part de lui
-              (PRA-6e, question 20261117-1423-d). Le style ne change pas. */}
-          <h1 ref={relectureFiche.titreRef} tabIndex={-1} className="font-display text-xl font-bold tracking-[-0.02em] text-foreground">{nomComplet}</h1>
-          <p className="break-all text-xs text-muted-foreground">{patient.email}</p>
+        {/* Motif d'alliance de l'en-tête ([[D-481]] §1 bis, lot PRA-3a,
+            variante A du prototype, question 20261126-2231-d) : les arcs
+            suivent l'identité, dans l'espace libre seulement, sans jamais
+            ajouter de hauteur. Au téléphone, la ligne d'identité est une
+            rangée ; dès `sm`, `contents` rend ses deux enfants à la rangée
+            de l'en-tête. L'enveloppe (`flex-1 basis-0`) ne prend que la
+            place restante ; sa marge négative annule le `gap-3` qu'elle
+            ajouterait. Requête de conteneur : l'ornement entier (106 px,
+            plus 12 d'écart) ou rien. Cette règle vient après le
+            `print:hidden` de la primitive et l'emporterait : l'enveloppe
+            porte son propre `print:hidden` (constat du banc E2E). */}
+        <div className="flex min-w-0 items-center gap-3 sm:contents">
+          <div className="min-w-0">
+            {/* Le nom du dossier est le h1 de la page, comme sur les autres
+                écrans praticien ; toute la cascade de la fiche part de lui
+                (PRA-6e, question 20261117-1423-d). Le style ne change pas. */}
+            <h1 ref={relectureFiche.titreRef} tabIndex={-1} className="font-display text-xl font-bold tracking-[-0.02em] text-foreground">{nomComplet}</h1>
+            <p className="break-all text-xs text-muted-foreground">{patient.email}</p>
+          </div>
+          <div className="-ml-3 flex min-w-0 flex-1 basis-0 items-center [container-type:inline-size] print:hidden">
+            <LienDecor
+              emplacement="entete-fiche"
+              element="alliance-arcs"
+              className="ml-3 hidden w-[106px] shrink-0 [@container(min-width:118px)]:block"
+            />
+          </div>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           {derniereAssignationId && (
