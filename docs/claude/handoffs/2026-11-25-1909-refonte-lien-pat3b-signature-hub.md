@@ -43,6 +43,10 @@ Cahier : `plan-patient.md`, « PAT-3b ».
 - **Constat PR-Agent sur COM-2** (« Bandeau non bord à bord »), confirmé à l'écran par le
   premier passage du constat local (292 px au téléphone) : COM-2 a retiré `w-full`.
   La pose de PAT-3b n'a pas changé.
+- **Constats PR-Agent sur #2372**, corrigés dans le spec E2E : la barre basse, armée par
+  la configuration Playwright, est attendue avant la mesure (`isVisible()` n'attendait
+  pas) ; les hauteurs se comparent à la demi-unité près (`toBeCloseTo`). `origin/main`
+  fusionné avant, sur arbitrage écrit du responsable (D-518, « Fusionner origin/main »).
 - **Relecture `ui-ux-pro-max`**, en lecture seule : aucun écart.
   - `icon-context` : décor `aria-hidden` ;
   - débordement masqué : le recadrage ne coupe que le décor ;

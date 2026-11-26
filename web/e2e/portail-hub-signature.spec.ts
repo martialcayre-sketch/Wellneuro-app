@@ -58,7 +58,9 @@ test.describe('Portail — signature du hub (PAT-3b)', () => {
     test.skip(isMobile, 'cas du bureau');
     const bandeau = await surLeHub(page);
     const boite = await bandeau.boundingBox();
-    expect(boite?.height).toBe(64);
+    // À la demi-unité près : une boîte peut tomber sur un sous-pixel selon le
+    // moteur (constat PR-Agent sur #2372).
+    expect(boite?.height ?? 0).toBeCloseTo(64, 0);
   });
 
   test.describe('sur téléphone', () => {
@@ -66,18 +68,21 @@ test.describe('Portail — signature du hub (PAT-3b)', () => {
 
     test('bandeau de 52 px ; la première action se lit sans défiler, au-dessus de la barre basse', async ({ page }) => {
       const bandeau = await surLeHub(page);
-      expect((await bandeau.boundingBox())?.height).toBe(52);
+      expect((await bandeau.boundingBox())?.height ?? 0).toBeCloseTo(52, 0);
+      // La barre basse est armée par `playwright.config.ts` : on l'attend,
+      // avec le bouton « Menu » qui dit la garde franchie, avant de mesurer —
+      // `isVisible()` n'attend pas, et une barre rendue après la mesure
+      // laisserait passer une action masquée (constat PR-Agent sur #2372).
+      await expect(page.getByRole('button', { name: 'Menu', exact: true })).toBeVisible();
+      const barre = page.getByRole('navigation', { name: 'Accès rapides' });
+      await expect(barre).toBeVisible();
       expect(await page.evaluate(() => window.scrollY)).toBe(0);
       const action = premiereAction(page);
       await expect(action).toBeVisible();
       const boiteAction = await action.boundingBox();
-      const barre = page.getByRole('navigation', { name: 'Accès rapides' });
-      // Sans barre basse (drapeau éteint), la limite est le bas de la fenêtre.
-      const limite = (await barre.isVisible())
-        ? (await barre.boundingBox())!.y
-        : page.viewportSize()!.height;
-      expect(boiteAction).toBeTruthy();
-      expect(boiteAction!.y + boiteAction!.height).toBeLessThanOrEqual(limite);
+      const boiteBarre = await barre.boundingBox();
+      expect(boiteAction && boiteBarre).toBeTruthy();
+      expect(boiteAction!.y + boiteAction!.height).toBeLessThanOrEqual(boiteBarre!.y);
     });
   });
 });
