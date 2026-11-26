@@ -122,14 +122,19 @@ test("témoin : un état machine qui pointe une campagne « transférée » est 
 // rougit son cas (le garde serait redevenu muet sur lui).
 //
 // Mutations qui doivent rougir ce banc : supprimer le `warnings.push` d'un
-// des sept codes de wn-campaign-audit.mjs → son cas rouge ; retirer un code
-// de la ligne de check → son cas rouge (« … ne rougit pas la ligne ») ;
-// ajouter un code à la ligne sans cas → test « chaque code a son cas ».
+// des quatre codes de la ligne dans wn-campaign-audit.mjs → son cas rouge ;
+// retirer un code de la ligne de check → son cas rouge (« … ne rougit pas la
+// ligne ») ; ajouter un code à la ligne sans cas → test « chaque code a son
+// cas » ; y remettre un code de miroir → test « aucun code de miroir ».
 //
-// Constat : la ligne ne passe pas `--root`, donc n'audite que la racine
-// principale ; les trois codes de miroir (missing_in_mirror, extra_in_mirror,
-// status_drift_between_roots) n'y peuvent pas sonner. Leurs cas passent
-// `--root` en plus des drapeaux de la ligne : ils prouvent le mécanisme.
+// Les trois codes de miroir (missing_in_mirror, extra_in_mirror,
+// status_drift_between_roots) ne sont plus sur la ligne : elle ne passe pas
+// `--root`, n'audite que la racine principale, et il n'existe pas de miroir
+// vivant de `docs/claude/campagnes` (`.wn/campaigns/active` est vide,
+// `.wn/campaigns/archive` ne tient qu'une campagne close, sans `CAMPAGNE.md`).
+// Armés, ils ne pouvaient pas sonner. Leurs cas restent plus bas : ils
+// prouvent le mécanisme de `compareRoots`, avec `--root` et leurs propres
+// codes, pour le jour où un miroir vivant serait câblé.
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const checkLine = JSON.parse(fs.readFileSync(path.join(repoRoot, "web", "package.json"), "utf8"))
@@ -205,6 +210,11 @@ const redCases = {
     tree: { [`${PRIMARY}/campagne-banc`]: { status: "terminée", lots: closedLots } },
     state: { schema_version: 1, status: "idle", active_campaign: "campagne-banc", active_lot: null },
   },
+};
+
+// Les trois codes de miroir, hors de la ligne : chaque cas se joue avec ces
+// trois codes armés (et non ceux de la ligne), `--root` passé en plus.
+const mirrorCases = {
   missing_in_mirror: {
     tree: {
       [`${PRIMARY}/campagne-banc`]: { status: "terminée", lots: closedLots },
@@ -229,10 +239,15 @@ const redCases = {
     roots: [PRIMARY, MIRROR],
   },
 };
+const mirrorCodes = Object.keys(mirrorCases);
 
-test("la ligne de check porte les sept codes attendus, sans doublon", () => {
+test("la ligne de check porte les quatre codes attendus, sans doublon", () => {
   assert.deepEqual([...checkCodes].sort(), Object.keys(redCases).sort());
   assert.equal(new Set(checkCodes).size, checkCodes.length);
+});
+
+test("aucun code de miroir sur la ligne : sans `--root`, il ne peut pas sonner", () => {
+  for (const code of mirrorCodes) assert.ok(!checkCodes.includes(code), `code ${code} armé sans racine miroir`);
 });
 
 test("chaque code de la ligne de check a son cas rouge", () => {
@@ -251,6 +266,27 @@ for (const [code, fixture] of Object.entries(redCases)) {
   test(`garde rouge : ${code} ne rougit plus une fois retiré de la ligne`, () => {
     // Attribue la sortie 1 au seul code : sans lui, la même fixture passe.
     const { status, stderr } = runCheck({ ...fixture, codes: checkCodes.filter((item) => item !== code) });
+    assert.equal(status, 0, stderr);
+  });
+}
+
+for (const [code, fixture] of Object.entries(mirrorCases)) {
+  test(`mécanisme miroir : ${code} sonne avec --root et rougit ses codes`, () => {
+    const { status, report, stderr } = runCheck({ ...fixture, codes: mirrorCodes });
+    assert.deepEqual(report.issues, [], "une erreur expliquerait la sortie à la place du code");
+    const sounding = report.warnings.map((item) => item.code).filter((item) => mirrorCodes.includes(item));
+    assert.deepEqual([...new Set(sounding)], [code]);
+    assert.equal(status, 1, stderr);
+  });
+
+  test(`mécanisme miroir : ${code} ne rougit plus une fois retiré`, () => {
+    const { status, stderr } = runCheck({ ...fixture, codes: mirrorCodes.filter((item) => item !== code) });
+    assert.equal(status, 0, stderr);
+  });
+
+  test(`mécanisme miroir : ${code} ne sonne pas sur la ligne de check`, () => {
+    // Même fixture, codes de la ligne : le code reste au rapport, la sortie est 0.
+    const { status, stderr } = runCheck({ ...fixture, codes: checkCodes });
     assert.equal(status, 0, stderr);
   });
 }
@@ -276,7 +312,7 @@ test("garde conforme : principal et miroir identiques → sortie 0", () => {
     [`${MIRROR}/campagne-banc`]: { status: "Terminée", lots: closedLots },
   };
   const state = { schema_version: 1, status: "idle", active_campaign: null, active_lot: null };
-  const { status, report, stderr } = runCheck({ tree, state, roots: [PRIMARY, MIRROR] });
+  const { status, report, stderr } = runCheck({ tree, state, roots: [PRIMARY, MIRROR], codes: mirrorCodes });
   assert.deepEqual(report.issues, []);
   assert.deepEqual(report.warnings, []);
   assert.equal(status, 0, stderr);
