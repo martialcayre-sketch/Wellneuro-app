@@ -10,7 +10,9 @@
   (v2), `docs/claude/corpus/measurement_evidence.json` (v1),
   `docs/claude/GUIDE_12_BESOINS_NEURONUTRITION.md`, [[D-402]], [[D-424]],
   [[D-516]], [[D-526]], [[D-529]], [[D-541]], [[D-548]], [[D-564]] à
-  [[D-570]], et les décisions qu'elles citent.
+  [[D-570]], et les décisions qu'elles citent et que les tableaux renvoient
+  ([[D-042]], [[D-117]], [[D-438]], [[D-538]], [[D-542]], [[D-543]],
+  [[D-552]]).
 - **Lot** : `besoins-inventaire-instruments` (file D), troisième des six lots
   de réconciliation inscrits sur la réponse à la question `20261127-2046-b`.
   Fait suite à `PIECES_ATTENDUES.md`.
@@ -27,12 +29,19 @@
   - `IR:n` : `docs/claude/corpus/instrument_registry.json`, ligne n ;
   - `ME:n` : `docs/claude/corpus/measurement_evidence.json`, ligne n ;
   - `G:n` : `docs/claude/GUIDE_12_BESOINS_NEURONUTRITION.md`, ligne n.
+
+  Tous les numéros de ligne valent sur `7751caad` ; un fichier modifié
+  depuis se relit à ce commit (`git show 7751caad:<fichier>`).
 - **Sens** : « inversé » quand `inverser: true` (un score plus haut couvre
   moins le besoin), « direct » sinon.
 - **Instrument visé par le guide** : ce que nomment les « Variables d'entrée »
   de la section du guide sur `origin/main`.
 - **Niveau** : la table signée de [[D-424]] (A, B, D), un niveau par clé ; le
-  besoin porte celui de sa source la plus faible (`C:459-466`).
+  besoin porte celui de sa source la plus faible (`C:459-466`), parmi les
+  sources **effectivement répondues** par le patient
+  (`web/src/lib/equilibre/evidence.ts:6-9`). Le niveau d'un besoin n'est donc
+  pas fixe : au besoin 5, il vaut D dès que l'agenda est répondu, et B quand
+  le mouvement l'est sans l'agenda. Les tableaux donnent le niveau de chaque clé.
 - **Psychométrie** : la valeur `cosmin` du registre ; la ligne de [[D-402]] §2
   (fidélité test-retest, G-10) ; les études de `measurement_evidence.json`.
 - **Statut** : *mesuré* (une source au score), *non mesuré* (liste vide :
@@ -54,7 +63,7 @@
 | 5 | PSQI, `Q_SOM_01`, total, 21, inversé, repos, poids 2 — `C:386` | PSQI (`G:140`) | aucun | A (`C:474`) | mesuré |
 | 5 | Agenda du sommeil 21 nuits, `Q_SOM_09`, indice, 100, direct, repos, poids 1 — `C:391` | agenda, niveau D (`G:140-141`) | l'indice composite n'est pas l'objet du dossier ([[D-529]] §2.2) | D (`C:483`) | mesuré |
 | 5 | Epworth, `Q_SOM_02`, total, 24, inversé, repos, poids 1 — `C:396` | Epworth (`G:141`) | aucun | A (`C:487`) | mesuré |
-| 5 | MFI-20, `Q_SOM_07`, `GEN` seul, min 4, max 20, inversé, repos, poids 1 — `C:397` | fatigue générale du MFI-20 (`G:141-142`) | quatre autres dimensions décrites sans être lues ([[D-529]] §2.2) ; écart de structure de la clé servie ([[D-542]]) | A (`C:488`) | mesuré |
+| 5 | MFI-20, `Q_SOM_07`, `GEN` seul, min 4, max 20, inversé, repos, poids 1 — `C:397` | fatigue générale du MFI-20 (`G:141-142`) | quatre autres dimensions décrites sans être lues ([[D-529]] §2.2) ; écart de structure de la clé servie avec la validation publiée de la traduction servie ([[D-542]] §1, §2) | A (`C:488`) | mesuré |
 | 6 | aucun — `C:399` | aucune source de score (`G:174-179`) | instruments décrits, hors score (partie 3) | — | non mesuré |
 | 7 | aucun — `C:400` | aucune source de score (`G:201-204`) | « contacts sensoriels » non définis ([[D-569]] §2) | — | non mesuré |
 | 8 | HAD, `Q_NEU_11`, sous-score `D`, 21, inversé — `C:401` | HAD-D, seule source (`G:220-223`) | n'est pas une mesure de l'anhédonie au sens large ([[D-567]] §2.1) | A (`C:489`) | mesuré |

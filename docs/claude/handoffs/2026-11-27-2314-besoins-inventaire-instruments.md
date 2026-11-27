@@ -43,6 +43,10 @@ six lots inscrits sur la réponse à `20261127-2046-b`.
 - `npm run check:rapide` et `npm run check` : codes de sortie rapportés dans
   le commentaire de la PR.
 - Pas de T2 ni de T3 (passe cloud, `D-540`).
+- Revue PR-Agent sur la première tête : trois points focaux ; deux corrigés
+  (décisions citées listées, `D-542` §1-§2 ; niveau d'un besoin selon les
+  sources répondues, `evidence.ts:6-9`), un écarté avec motif (numéros de
+  ligne ancrés au commit lu) ; verdicts au commentaire « prête ».
 
 ## Problèmes ouverts
 
