@@ -72,6 +72,24 @@ test.describe('Fiche — motif d’alliance de l’en-tête (PRA-3a)', () => {
     await page.emulateMedia({ media: 'screen' });
   });
 
+  // COM-4 : la primitive se masque seule à l'impression, même quand
+  // l'appelant passe une classe d'affichage à variante arbitraire, émise
+  // après les variantes d'impression. Le `print:hidden` de l'enveloppe est
+  // retiré de la page pour que seule la primitive réponde. Au bureau
+  // (1440 px) et au téléphone, où le motif est rendu entier.
+  test('à l’impression, la primitive l’emporte sur la requête de conteneur', async ({ page, isMobile }) => {
+    if (!isMobile) await page.setViewportSize({ width: 1440, height: 900 });
+    await ouvrir(page);
+    const motif = page.locator(MOTIF);
+    await expect(motif).toBeVisible();
+    expect(await motif.getAttribute('class')).toContain('[@container(min-width:118px)]:block');
+    await motif.evaluate((noeud) => noeud.parentElement!.classList.remove('print:hidden'));
+    await page.emulateMedia({ media: 'print' });
+    await expect(motif).toBeHidden();
+    await page.emulateMedia({ media: 'screen' });
+    await expect(motif).toBeVisible();
+  });
+
   test.describe('au bureau et à la tablette', () => {
     test.skip(({ isMobile }) => isMobile, 'largeurs du bureau');
 

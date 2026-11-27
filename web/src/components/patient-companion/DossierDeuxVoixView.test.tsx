@@ -244,7 +244,7 @@ describe('DossierDeuxVoixView', () => {
       const sep = separateurs()[0];
       expect(sep.getAttribute('aria-hidden')).toBe('true');
       expect(sep.getAttribute('data-element')).toBe('divider-two-voices');
-      expect(sep.className).toContain('print:hidden');
+      expect(sep.className).toContain('print:!hidden');
       expect(sep.className).toContain('max-w-[320px]');
       const patient = screen.getByRole('heading', { name: 'Ce qui compte pour moi' });
       const praticien = screen.getByRole('heading', { name: 'Ce que mon praticien a compris de moi' });
