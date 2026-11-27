@@ -217,8 +217,10 @@ dans « interpretations », le résultat, sa conclusion et sa limite
 s'écrivent dans une même phrase, et une limite générale du marqueur
 relève de « limites » ; un fait dont le claim nomme des populations hors
 de la population d'usage s'écrit pour celles qui y sont comprises
-seulement ; les indications d'une spécialité nommée ne relèvent pas de
-l'exception du §19. Côté rédaction seulement, la population que le claim
+seulement, sauf une population que nomme une condition de sécurité ou
+d'admissibilité, qui se garde ; une indication d'une spécialité nommée
+énoncée pour elle-même ne relève pas de l'exception du §19, mais celle qui
+restreint une condition admise s'écrit avec elle. Côté rédaction seulement, la population que le claim
 attache au résultat reste dans la phrase d'« interpretations ».
 
 ## Ce que l'outil ne voit pas
