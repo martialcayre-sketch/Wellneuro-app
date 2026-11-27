@@ -83,7 +83,7 @@ rejoué rend `BROUILLON_INCHANGE`.
 
 ## La consigne versionnée
 
-`versionConsigne` vaut `fiche-usage-v15+<empreinte des deux consignes>`,
+`versionConsigne` vaut `fiche-usage-v16+<empreinte des deux consignes>`,
 épinglée dans `lib/consigne.mjs` et gardée par `lib/consigne.test.mjs`.
 
 Depuis la v2 (`D-501`), le message d'une fiche porte ses cinq axes signés,
@@ -209,6 +209,17 @@ apports de référence n'est pas une limite de l'examen ; l'exception du §19
 exclut aussi une consigne de posologie sans valeur et les effets
 indésirables ou surdosages d'une spécialité nommée. Côté contre-lecture, une
 sous-population gardée du claim n'est pas une restriction de la désignation.
+
+La v16 (`D-501` §21) précise, des deux côtés : la « question » relie ses
+désignations par une liste fermée de mots de liaison (« chez », « pour
+l'hypothèse de », « de » après « confirmer une hypothèse », la virgule) ;
+dans « interpretations », le résultat, sa conclusion et sa limite
+s'écrivent dans une même phrase, et une limite générale du marqueur
+relève de « limites » ; un fait dont le claim nomme des populations hors
+de la population d'usage s'écrit pour celles qui y sont comprises
+seulement ; les indications d'une spécialité nommée ne relèvent pas de
+l'exception du §19. Côté rédaction seulement, la population que le claim
+attache au résultat reste dans la phrase d'« interpretations ».
 
 ## Ce que l'outil ne voit pas
 
