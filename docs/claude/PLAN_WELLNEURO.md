@@ -1328,7 +1328,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 
 | identifiant | objet | file | portes | migration | fiche |
 |---|---|---|---|---|---|
-| J2-base | palier 1, alerte hébergeur, EF-3b, NF-7 | A | 8, 9, 12, 16, 21 ; lève 24 à la livraison de ses lots (D-534) | oui (EF-3b) | H59 |
+| J2-base | palier 1, alerte hébergeur, EF-3b, NF-7 ; close le 2026-11-27 | A | 8, 9, 12, 16, 21 ; lève 24 à la livraison de ses lots (D-534) | oui (EF-3b) | H59 |
 | p, J2-cc8 | journal de lecture du protocole | A | 8, 9 | oui | H60 |
 | J3-base | point d'étape, complétude ; frise et repères sortis (D-530) | A | 16 ; 9 pour BF-8 | selon | H61 |
 | J3-collecte | collecte documentaire : table, dépôt, classement | A | 8, 9, 17 | oui | H62 |
@@ -1575,7 +1575,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 #### H67 · R:Onglet : onglet Alimentation
 - **Identifiant, piste** : R:Onglet (FC-3) ; aucun calcul neuf ; alimentation ; file A.
 - **Rang** : 5.
-- **Portes, préalables** : J2-alim (H45) ; c (F59) ; FC-2 (H61), levé par D-530 §3 ; J2-base (H59) ; porte 12 ; porte 24 (critère amendé par D-534).
+- **Portes, préalables** : J2-alim (H45) ; c (F59) ; FC-2 (H61), levé par D-530 §3 ; J2-base (H59), levé à sa clôture le 2026-11-27 ; porte 12 ; porte 24 (critère amendé par D-534).
 - **Migration, release-db** : non.
 - **Décisions, textes** : aucune.
 - **Critère de fin** : onglet servi.
