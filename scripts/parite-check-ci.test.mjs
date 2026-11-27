@@ -61,9 +61,32 @@ export function commandesCiAvantNpm(yml) {
   return commandesNodeBash(lignes.slice(0, setup));
 }
 
-/** Les appels `node`/`bash` d'une suite de lignes, en `run:` simple ou en bloc. */
-function commandesNodeBash(lignesLues) {
+/**
+ * Les appels `node`/`bash` d'une suite de lignes, en `run:` simple ou en bloc.
+ *
+ * Une seule forme est lue : `node` ou `bash` en tête de la ligne de shell —
+ * la seule que `ci.yml` emploie. Le mot `node` ou `bash` ailleurs dans la
+ * ligne (derrière `cd … &&`, `;`, `then`, `$(`, un préfixe d'environnement,
+ * entre guillemets, par un chemin absolu `/usr/bin/node`) est **refusé**, pas
+ * ignoré : avant ce refus, un garde écrit `run: cd web && node …` sortait sans
+ * bruit de la liste attendue, et la parité restait verte. Un `run:` d'une
+ * ligne dont la valeur commence par `|`, `>` ou un guillemet sans être un
+ * en-tête de bloc reconnu est refusé aussi. Ne sont pas visés : une ligne de
+ * commentaire de shell (`#`), un mot qui ne fait que contenir `node`
+ * (`node_modules`, `scripts/node`, `--node`). Limites connues, aucune forme
+ * présente dans `ci.yml` : un scalaire simple continué sur la ligne suivante,
+ * un `shell: node {0}`. Rend `{ commandes, illisibles }`.
+ */
+function lireNodeBash(lignesLues) {
   const commandes = [];
+  const illisibles = [];
+  const lire = (shell) => {
+    const t = shell.trim();
+    if (t === "" || t.startsWith("#")) return;
+    const m = /^(node|bash)\s+(.*\S)$/.exec(t);
+    if (m) commandes.push(`${m[1]} ${m[2]}`.replace(/\s+/g, " "));
+    else if (/(?:^|[^\w./-])(?:\/[\w./-]*\/)?(?:node|bash)(?=[\s;&|)"'`]|$)/.test(t)) illisibles.push(t);
+  };
   // Indentation du `run: |` en cours, ou `null` hors bloc. Un bloc scalaire
   // YAML court jusqu'à la première ligne non vide moins indentée que lui.
   let blocIndentation = null;
@@ -72,20 +95,35 @@ function commandesNodeBash(lignesLues) {
       const indentation = /^[ \t]*/.exec(ligne)[0].length;
       if (ligne.trim() !== "" && indentation <= blocIndentation) blocIndentation = null;
       else {
-        const m = /^\s*(node|bash)\s+(.*\S)\s*$/.exec(ligne);
-        if (m) commandes.push(`${m[1]} ${m[2]}`.replace(/\s+/g, " "));
+        lire(ligne);
         continue;
       }
     }
-    const bloc = /^(\s*)(?:-\s+)?run:\s*[|>][-+]?\s*$/.exec(ligne);
+    // En-tête de bloc : indicateurs d'indentation et de fin, commentaire YAML.
+    const bloc = /^(\s*)(-\s+)?run:\s*[|>](?:[1-9][-+]?|[-+][1-9]?)?\s*(?:#.*)?$/.exec(ligne);
     if (bloc) {
-      blocIndentation = bloc[1].length;
+      // Sous `- run: |`, les clés sœurs (`shell:`, `env:`) sont indentées
+      // comme `run:`, pas comme le tiret : elles ferment le bloc.
+      blocIndentation = bloc[1].length + (bloc[2] ? bloc[2].length : 0);
       continue;
     }
-    const m = /^\s*(?:-\s+)?run:\s+(node|bash)\s+(.*\S)\s*$/.exec(ligne);
+    const m = /^\s*(?:-\s+)?run:\s+(.*)$/.exec(ligne);
     if (!m) continue;
-    commandes.push(`${m[1]} ${m[2]}`.replace(/\s+/g, " "));
+    if (/^[|>"']/.test(m[1])) illisibles.push(m[1].trim());
+    else lire(m[1]);
   }
+  return { commandes, illisibles };
+}
+
+/** `lireNodeBash`, avec refus bruyant de toute forme non lue. */
+function commandesNodeBash(lignesLues) {
+  const { commandes, illisibles } = lireNodeBash(lignesLues);
+  assert.deepEqual(
+    illisibles,
+    [],
+    "`run:` sous une forme non lue (seul `node …`/`bash …` en tête de ligne l'est) : " +
+      "écrire l'appel en tête de sa ligne, ou sortir le mot `node`/`bash` du shell qui n'en appelle pas",
+  );
   return commandes;
 }
 
@@ -104,7 +142,8 @@ function commandesNodeBash(lignesLues) {
  *
  * Un job sans `setup-node` (`verify`) n'a pas d'« avant » : il tourne entier
  * sur le Node préinstallé du runner. Ses blocs de shell restent admis, mais un
- * appel `node` ou `bash` y est refusé, pour la même raison qu'ailleurs.
+ * appel `node` ou `bash` y est refusé, pour la même raison qu'ailleurs — en
+ * tête de ligne comme sous une autre forme (`cd … && node …`).
  *
  * Rend les étapes fautives de chaque job autre que `controles`, sous la forme
  * `job : ligne`.
@@ -125,7 +164,8 @@ export function etapesHorsParite(yml) {
     const corps = lignes.slice(debut + 1, k + 1 < entetes.length ? entetes[k + 1].debut : lignes.length);
     const setup = corps.findIndex((l) => /^\s*-\s*uses:\s*actions\/setup-node@/.test(l));
     if (setup < 0) {
-      for (const c of commandesNodeBash(corps)) fautes.push(`${job} : ${c}`);
+      const { commandes, illisibles } = lireNodeBash(corps);
+      for (const c of [...commandes, ...illisibles]) fautes.push(`${job} : ${c}`);
       return;
     }
     for (const l of corps.slice(0, setup)) {
@@ -308,6 +348,93 @@ test("le bloc réel du CI n'introduit aucune commande node/bash aujourd'hui", ()
     attendues.filter((c) => /GITHUB_OUTPUT|docs_only/.test(c)),
     [],
   );
+});
+
+// ── Les formes d'appel non lues : refusées, jamais ignorées ─────────────────
+
+const ciAvec = (etape) => `jobs:
+  controles:
+    steps:
+      - name: Garde lu
+        run: node scripts/garde-simple.mjs
+${etape}
+      - uses: actions/setup-node@v4
+`;
+
+test("un appel node/bash derrière un préfixe, en `run:` simple ou en bloc, est refusé", () => {
+  // La morsure de la faiblesse : avec la seule lecture « en tête de ligne »,
+  // chacun de ces gardes sortait sans bruit de la liste attendue.
+  for (const etape of [
+    "      - run: cd web && node scripts/garde.mjs",
+    "      - run: |\n          cd web && node scripts/garde.mjs",
+    "      - run: |\n          FOO=1 bash scripts/garde.sh",
+    "      - run: |\n          if true; then node scripts/garde.mjs; fi",
+    '      - run: |\n          v="$(node -p 1)"',
+    "      - run: >-\n          true; bash scripts/garde.sh",
+    "      - run: /bin/bash scripts/garde.sh",
+    "      - run: |\n          /usr/bin/node scripts/garde.mjs",
+    '      - run: |\n          "node" scripts/garde.mjs',
+    "      - run: |\n          $(command -v node) scripts/garde.mjs",
+    "      - run: | # bloc commenté\n          cd web && node scripts/garde.mjs",
+    "      - run: |2\n          cd web && node scripts/garde.mjs",
+    '      - run: "node scripts/garde.mjs"',
+  ]) {
+    assert.throws(() => commandesCiAvantNpm(ciAvec(etape)), /forme non lue/, etape);
+  }
+});
+
+test("ce qui n'appelle pas node/bash reste lu sans refus", () => {
+  // Le refus ne doit pas mordre le shell ordinaire : commentaire de shell,
+  // chemin ou option qui contient le mot, clé `shell: bash` hors du `run:`.
+  const etape = [
+    "      - shell: bash",
+    "        run: |",
+    "          # node scripts/commentaire.mjs n'est pas exécuté",
+    "          ls node_modules ./node_modules/.bin/x scripts/node --node x",
+    '          echo "docs_only=false" >> "$GITHUB_OUTPUT"',
+    // Clés sœurs après `- run: |` : elles ferment le bloc, ce n'est pas du shell.
+    "      - run: |",
+    "          true",
+    "        shell: bash",
+    "        name: Étape node",
+  ].join("\n");
+  assert.deepEqual(commandesCiAvantNpm(ciAvec(etape)), ["node scripts/garde-simple.mjs"]);
+});
+
+test("un en-tête de bloc avec indicateur ou commentaire est lu comme un bloc", () => {
+  for (const entete of ["run: | # commentaire", "run: |2", "run: >-", "run: |+"]) {
+    const etape = `      - ${entete}\n          node scripts/garde-bloc.mjs`;
+    assert.deepEqual(
+      commandesCiAvantNpm(ciAvec(etape)),
+      ["node scripts/garde-simple.mjs", "node scripts/garde-bloc.mjs"],
+      entete,
+    );
+  }
+});
+
+test("contre-épreuve : un banc réel déguisé en bloc dans ci.yml est signalé", () => {
+  // Jouée sur le CI réel : le dernier banc avant setup-node, réécrit en bloc
+  // derrière un `cd`, doit faire refuser la lecture.
+  const ligne = "        run: node --test scripts/parite-check-ci.test.mjs";
+  assert.ok(yml.includes(ligne), "étape du banc de parité introuvable dans ci.yml");
+  const deguise = yml.replace(
+    ligne,
+    "        run: |\n          cd . && node --test scripts/parite-check-ci.test.mjs",
+  );
+  assert.throws(() => commandesCiAvantNpm(deguise), /forme non lue/);
+});
+
+test("un appel déguisé dans un job sans setup-node est une faute", () => {
+  const ci = `jobs:
+  controles:
+    steps:
+      - uses: actions/setup-node@v4
+  verify:
+    steps:
+      - run: |
+          test -n "x" && node scripts/glisse.mjs
+`;
+  assert.deepEqual(etapesHorsParite(ci), ['verify : test -n "x" && node scripts/glisse.mjs']);
 });
 
 // ── Les autres jobs : rien avant leur `setup-node`, hors périmètre ──────────
