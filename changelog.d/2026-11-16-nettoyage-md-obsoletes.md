@@ -1,0 +1,4 @@
+### Nettoyage de fichiers Markdown périmés (2026-11-16)
+- `README.md` : la section « Setup Supabase Prisma Vercel » (commandes `supabase login` et `npm run supabase:link`, variables côté Vercel, pooler Supabase) est remplacée par une section Prisma et Scalingo, conforme au décommissionnement du 2026-09-01 (`D-080`, `D-120`) ; le script `supabase:link` n'existe plus dans `web/package.json`.
+- `README_MAC_FIRST_RUN.md` : les deux cas de reprise (connexion Vercel, option `--skip-env-pull`) décrivaient des étapes que `scripts/bootstrap-mac*.sh` n'ont plus ; ils sont remplacés par le comportement réel (`web/.env.local` à créer à la main, `--skip-repo-bootstrap`).
+- Supprimés, aucun renvoi dans le dépôt : `prompts/interpretation_dnsm.md` (gabarit vide), `tests/scenarios_validation_mvp.md` (scénarios du MVP de juin), `docs/claude/consentement-statuts-r8-lite.md` (document de travail d'une branche d'expérience jamais reprise).
