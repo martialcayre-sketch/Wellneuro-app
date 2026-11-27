@@ -43,7 +43,7 @@ describe('Pour votre médecin — décor de l’état vide (PAT-5 décor)', () =
     const germe = germes()[0];
     expect(germe.getAttribute('aria-hidden')).toBe('true');
     expect(germe.getAttribute('data-element')).toBe('nutrition-sprout');
-    expect(germe.className).toContain('print:hidden');
+    expect(germe.className).toContain('print:!hidden');
     expect(germe.compareDocumentPosition(phrase) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 

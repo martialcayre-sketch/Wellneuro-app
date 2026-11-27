@@ -8,7 +8,12 @@
  *   n'entre dans l'arbre d'accessibilité ;
  * - aucune interception du pointeur (`pointer-events-none`), rien de
  *   sélectionnable ;
- * - absent à l'impression (`print:hidden`) ;
+ * - absent à l'impression (`print:!hidden`) : forcé, car une classe
+ *   d'affichage de l'appelant à variante arbitraire (une requête de
+ *   conteneur, émise après les variantes d'impression) ou marquée importante
+ *   l'emporterait sur un `print:hidden` simple (constat du banc E2E de
+ *   PRA-3a ; micro-lot COM-4). Aucun nom de classe en exemple ici : Tailwind
+ *   lit aussi les commentaires et produirait la règle ;
  * - statique : aucune classe d'animation ni de transition, y compris sans
  *   `prefers-reduced-motion` ; les classes de mouvement passées par l'appelant
  *   sont retirées ;
@@ -107,7 +112,7 @@ export type LienDecorProps =
   | { emplacement: 'etat-vide'; element: ElementsDe<'etat-vide'>; className?: string }
   | { emplacement: 'hub-patient'; element?: ElementsDe<'hub-patient'>; className?: string };
 
-const SOCLE = 'pointer-events-none select-none print:hidden';
+const SOCLE = 'pointer-events-none select-none print:!hidden';
 
 /**
  * Retire des classes de l'appelant ce qui défait une règle du décor :

@@ -4469,14 +4469,15 @@ describe('FichePatientPanel — motif d’alliance de l’en-tête (PRA-3a)', ()
     // Tout ou rien : masqué par défaut, rendu entier par la requête de
     // conteneur de son enveloppe, qui ne prend que l'espace libre.
     expect(motif.className.split(/\s+/)).toEqual(
-      expect.arrayContaining(['hidden', 'w-[106px]', 'shrink-0', '[@container(min-width:118px)]:block', 'print:hidden']),
+      expect.arrayContaining(['hidden', 'w-[106px]', 'shrink-0', '[@container(min-width:118px)]:block', 'print:!hidden']),
     );
     const enveloppe = motif.parentElement as HTMLElement;
     expect(enveloppe.className.split(/\s+/)).toEqual(
       expect.arrayContaining(['-ml-3', 'flex-1', 'basis-0', 'min-w-0', '[container-type:inline-size]']),
     );
-    // La règle de conteneur passe après le `print:hidden` de la primitive :
-    // l'enveloppe se masque elle-même à l'impression (constat du banc E2E).
+    // La règle de conteneur passait après le `print:hidden` de la primitive :
+    // l'enveloppe se masque elle-même à l'impression (constat du banc E2E),
+    // gardée depuis que la primitive force `print:!hidden` (COM-4).
     expect(enveloppe.className.split(/\s+/)).toContain('print:hidden');
   });
 

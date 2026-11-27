@@ -61,7 +61,7 @@ describe('LienDecor — décoratif seulement', () => {
     const classes = noeud!.className.split(/\s+/);
     expect(classes).toContain('pointer-events-none');
     expect(classes).toContain('select-none');
-    expect(classes).toContain('print:hidden');
+    expect(classes).toContain('print:!hidden');
   });
 
   it('un fond reste sous le contenu ; un ornement prend sa place dans le flux', () => {

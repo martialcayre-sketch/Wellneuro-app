@@ -54,7 +54,7 @@ describe('Connexion — lien d’évitement et repères', () => {
     expect(decor.getAttribute('data-lien-decor')).toBe('connexion-praticien');
     expect(decor.getAttribute('aria-hidden')).toBe('true');
     expect(decor.className).toMatch(/\bpointer-events-none\b/);
-    expect(decor.className).toMatch(/\bprint:hidden\b/);
+    expect(decor.className).toMatch(/(^|\s)print:!hidden(\s|$)/);
     expect(decor.className).toMatch(/(^|\s)-z-10(\s|$)/);
     // `isolate` borne le `-z-10` au cadre de la page : le fond ne passe pas
     // sous le `bg-background` qui le porte.

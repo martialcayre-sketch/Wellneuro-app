@@ -2661,9 +2661,10 @@ export function FichePatientPanel({
             de l'en-tête. L'enveloppe (`flex-1 basis-0`) ne prend que la
             place restante ; sa marge négative annule le `gap-3` qu'elle
             ajouterait. Requête de conteneur : l'ornement entier (106 px,
-            plus 12 d'écart) ou rien. Cette règle vient après le
-            `print:hidden` de la primitive et l'emporterait : l'enveloppe
-            porte son propre `print:hidden` (constat du banc E2E). */}
+            plus 12 d'écart) ou rien. Cette règle venait après le
+            `print:hidden` de la primitive et l'emportait : l'enveloppe
+            porte son propre `print:hidden` (constat du banc E2E), gardé
+            depuis que la primitive force `print:!hidden` (COM-4). */}
         <div className="flex min-w-0 items-center gap-3 sm:contents">
           <div className="min-w-0">
             {/* Le nom du dossier est le h1 de la page, comme sur les autres
