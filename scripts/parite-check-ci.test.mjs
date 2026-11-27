@@ -8,7 +8,7 @@
 // passe `--staged` quand le CI scanne le dépôt entier. Un palier qui ne couvre
 // pas ce que le CI vérifie ne protège de rien : il rend vert, et le CI rouge.
 //
-// La règle gardée ici, et rien d'autre : **tout ce que le job `verify` exécute
+// La règle gardée ici, et rien d'autre : **tout ce que le job `controles` exécute
 // AVANT d'installer npm doit être atteignable depuis `npm run check`.** Ce
 // découpage n'est pas arbitraire — ces étapes-là ne demandent que `node`, `git`
 // et `bash`, elles coûtent quelques secondes, et rien ne justifie qu'un
@@ -39,7 +39,7 @@ const CI = path.join(RACINE, ".github/workflows/ci.yml");
 const PACKAGE = path.join(RACINE, "web/package.json");
 
 /**
- * Les commandes `node`/`bash` du job `verify` exécutées AVANT
+ * Les commandes `node`/`bash` du job `controles` exécutées AVANT
  * `actions/setup-node` — c'est-à-dire celles qui ne demandent ni `npm ci` ni
  * build.
  *

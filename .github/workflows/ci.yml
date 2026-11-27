@@ -568,9 +568,10 @@ jobs:
       # développeur les découvre en CI. C'est la leçon du lint (2026-07-21),
       # revenue à l'identique le 2026-08-04 quand sept bancs ont été câblés ici
       # et laissés hors de `check`. Ce banc échoue dès qu'une étape bloquante du
-      # CI manque à `check` — y compris lui-même. L'inverse n'est pas contrôlé,
-      # et n'a pas à l'être : `check` fait légitimement plus (lint, type-check,
-      # Vitest).
+      # CI manque à `check` — y compris lui-même. L'inverse n'est contrôlé que
+      # pour la liste `bancs-outillage-check` (web/package.json) : chacun de ses
+      # bancs doit être joué ici. Le reste de `check` n'a pas à l'être : il fait
+      # légitimement plus (lint, type-check, Vitest).
       - name: Parité `npm run check` / CI (banc de la liste)
         run: node --test scripts/parite-check-ci.test.mjs
 
