@@ -69,3 +69,13 @@ documentant le rouge restant ; (c) rouvrir le cadrage.
 - Pas d'exemption ni de motif affaibli dans le doctor ou `check_no_secrets.sh`.
 - Pas d'autre document de campagne touché.
 - Passe cloud : pas de merge, pas de T2/T3, pas de réponse à une question.
+
+## Suite du 2026-11-27 (session de reprise de l'orchestrateur)
+
+- Arbitrage du responsable : **option (b)**. La seule reformulation part au merge ; la ligne `docs/` du doctor
+  reste rouge sur le handoff historique du 2026-11-25, nommé par le doctor, et ce rouge est accepté.
+- Constat de PR-Agent sur la première PR (#2399, « Commande ambiguë ») : sans l'affectation en ligne, une
+  commande copiée telle quelle lancerait Prisma sur la `DATABASE_URL` de l'environnement. **Corrigé** : le
+  prompt dit désormais d'exporter d'abord la variable, puis de lancer la commande.
+- #2399 est fermée au profit d'une PR neuve tirée de `main`, le commit de la passe repris tel quel. La branche
+  de la passe ne contenait pas `main`, et D-518 interdit d'y fusionner `main` sans arbitrage.

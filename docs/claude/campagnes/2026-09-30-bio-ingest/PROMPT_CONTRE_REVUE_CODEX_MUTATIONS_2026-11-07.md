@@ -65,12 +65,15 @@ non désigné qui reste vert ne prouve rien.
   remplacée ne prouve rien. Les versions en vigueur sont indiquées au §3.
 - **Commandes admises**, depuis `web/` de la copie :
   - `npx vitest run <fichier>` et `npm run check` ;
-  - un contrat SQL sur la base locale, la variable `DATABASE_URL` valant
-    l'URL imprimée : `npx prisma db execute --file prisma/checks/<contrat>.sql` ;
+  - un contrat SQL sur la base locale. **D'abord**, exporter dans le shell la
+    variable `DATABASE_URL`, avec l'URL imprimée pour valeur (sans elle, Prisma
+    lirait celle de l'environnement ou du `.env`, peut-être une autre base) ;
+    **puis** lancer : `npx prisma db execute --file prisma/checks/<contrat>.sql` ;
   - un banc à deux sessions sur la base locale, comme le CI
-    (`.github/workflows/ci.yml`) le lance : `DATABASE_URL` valant `<url>`, plus la
-    variable qui nomme la base (elle doit égaler le nom de la base de
-    `DATABASE_URL`, sinon le banc refuse) :
+    (`.github/workflows/ci.yml`) le lance. **D'abord**, exporter `DATABASE_URL`
+    avec `<url>` pour valeur, comme ci-dessus ; **puis** lancer la commande, qui
+    pose en tête la variable qui nomme la base (elle doit égaler le nom de la
+    base de `DATABASE_URL`, sinon le banc refuse) :
     - `WN_BIO_ECART_BANC_BASE=<base> node scripts/banc-ecart-validation-deux-sessions.test.mjs`
     - `WN_BIO_MASQUAGE_BANC_BASE=<base> node scripts/banc-masquage-purge-deux-sessions.test.mjs`
     - `WN_BIO_FILE_BANC_BASE=<base> TZ=Europe/Paris node prisma/runWithAlias.js scripts/banc-file-extraction-deux-sessions.test.ts`
