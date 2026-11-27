@@ -1,4 +1,4 @@
-// La consigne « fiche-usage-v15 » est épinglée : un octet changé sans bump de
+// La consigne « fiche-usage-v16 » est épinglée : un octet changé sans bump de
 // version rougit ici, et l'outil refuse de tourner ([[D-314]] §4).
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -391,4 +391,31 @@ test('v15 §20 : interpretations, question, population, limites et RCP précisé
   assert.match(c, /son absence ne tait aucune condition de sécurité/);
   // Contre-lecture : une sous-population gardée n'est pas une restriction de la désignation.
   assert.match(c, /comprise dans la population d'usage, n'est pas une restriction de la désignation : c'est une condition gardée/);
+});
+
+test('v16 §21 : liaisons de la question, phrase unique des interpretations, populations hors usage, indications', () => {
+  const { redaction, contreLecture } = lireConsignes();
+  const r = redaction.replace(/\s+/g, ' ');
+  const c = contreLecture.replace(/\s+/g, ' ');
+  for (const t of [r, c]) {
+    // « question » : liste fermée des mots de liaison.
+    assert.match(t, /« chez l' », « chez la »\)/);
+    assert.match(t, /« pour l'hypothèse de » \(accordé : « d' » ; « pour les hypothèses de »\)/);
+    assert.match(t, /« face à », (ni )?« au regard de », (ni )?« dans le cas de », (ni )?« en cas de »/);
+    // « interpretations » : résultat, conclusion et limite dans une même phrase.
+    assert.match(t, /ce qu'il permet ou interdit de conclure et cette limite/);
+    assert.match(t, /limite générale du marqueur/);
+    // Indications d'une spécialité nommée, hors de l'exception.
+    assert.match(t, /\(la maladie qu'elle traite, son emploi poursuivi dans cette maladie\)/);
+  }
+  assert.match(r, /L'ordre est toujours : la mesure, le verbe et l'usage décisionnel, l'hypothèse, la population, puis la réserve\./);
+  assert.match(r, /la taire élargit le fait à toute cette population\./);
+  assert.match(r, /le fait s'écrit pour celles qui y sont comprises seulement/);
+  assert.match(c, /nommer une population du claim qui n'y est pas comprise élargit la population d'usage/);
+  assert.match(c, /la limite n'y déborde pas sur « limites »/);
+  // Réserves (contre-revue Codex) : aucune condition de sécurité ou d'admissibilité tue.
+  for (const t of [r, c]) {
+    assert.match(t, /une population que nomme une condition de sécurité ou d'admissibilité du fait \(une exclusion, une contre-indication, une période\)/);
+    assert.match(t, /qui n'est ni une condition de sécurité ou d'admissibilité ni la restriction d'une telle condition/);
+  }
 });
