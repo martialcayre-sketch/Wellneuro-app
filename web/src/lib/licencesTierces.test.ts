@@ -11,11 +11,14 @@ import os from 'node:os';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { POLICES_OFL, POLYFILLS_NEXT, TEXTE_OFL } from '../../scripts/licences-hors-graphe.mjs';
+import { COPIES_NEXT_SANS_LICENCE, POLICES_OFL, POLYFILLS_NEXT, TEXTE_OFL } from '../../scripts/licences-hors-graphe.mjs';
 import {
   PluginLicencesTierces,
   composerMentions,
+  dossierSousVendor,
+  lirePaquet,
   racinePaquet,
+  sansLicence,
   textesTypes,
 } from '../../scripts/licences-tierces.mjs';
 
@@ -68,6 +71,19 @@ const POLYFILLS_ESSAI = {
   [sha256('1')]: { next: '0.0.0-essai', composants: [{ nom: 'poly', version: '1.0.0', licence: 'MIT', texte: 'Copyright Poly' }] },
 };
 const POLICES_ESSAI = { 'Police Connue': { droits: 'Copyright Police Connue' } };
+/** Copies vendues sans licence de fixture : l'une reconnue par son empreinte, l'autre altérée. */
+const COPIES_ESSAI = {
+  'copie-nue': {
+    fichier: 'index.js',
+    empreinte: sha256('module.exports = 9;\n'),
+    version: '1.2.3',
+    licence: 'MIT',
+    auteur: 'Amont',
+    source: 'copie-nue@1.2.3 (essai)',
+    textes: [{ nom: 'LICENSE', texte: 'Copyright Amont' }],
+  },
+  'copie-alteree': { fichier: 'index.js', empreinte: sha256('autre'), version: '1.0.0', licence: 'MIT', auteur: 'Amont', source: 'essai', textes: [] },
+};
 
 function compiler(
   entree: string,
@@ -83,7 +99,7 @@ function compiler(
       // Le minificateur par défaut n'est pas embarqué par Next ; la
       // concaténation, elle, reste active — c'est elle que le banc éprouve.
       optimization: { minimize: false, concatenateModules: true },
-      plugins: [emetteur(fichiers), new PluginLicencesTierces({ sortie, horsGraphe, polyfills: POLYFILLS_ESSAI, polices: POLICES_ESSAI })],
+      plugins: [emetteur(fichiers), new PluginLicencesTierces({ sortie, horsGraphe, polyfills: POLYFILLS_ESSAI, polices: POLICES_ESSAI, copiesSansLicence: COPIES_ESSAI })],
     }).run((erreur, stats) => {
       if (erreur) rejeter(erreur);
       else resoudre(stats!.compilation.errors);
@@ -136,6 +152,29 @@ beforeAll(() => {
   paquet('node_modules/next', { name: 'next', version: '0.0.0-essai', license: 'MIT' }, 'Copyright Next');
   ecrire('node_modules/next/font/google/target.js', 'module.exports = {};\n');
   ecrire('src/police.js', `import p from 'next/font/google/target.js?{"import":"Police_Connue"}';\nconsole.log(p);\n`);
+  // Code vendu sous `lib-vendor/` dans un dossier qui porte sa licence : il
+  // revient à ce dossier d'origine, pas à son hôte.
+  paquet('node_modules/hote-vendor', { name: 'hote-vendor', version: '1.0.0', license: 'MIT', main: 'index.js' }, 'Copyright (c) Hote Vendor');
+  ecrire('node_modules/hote-vendor/index.js', "module.exports = require('./lib-vendor/origine/src/index.js');\n");
+  ecrire('node_modules/hote-vendor/lib-vendor/origine/LICENSE', 'Copyright Origine');
+  ecrire('node_modules/hote-vendor/lib-vendor/origine/src/index.js', 'module.exports = 10;\n');
+  ecrire('src/vendor.js', "import v from 'hote-vendor';\nconsole.log(v);\n");
+  // Code vendu sous `vendor/` sans licence d'origine : à même le dossier, ou
+  // dans un sous-dossier qui n'en porte pas.
+  paquet('node_modules/hote-nu', { name: 'hote-nu', version: '1.0.0', license: 'MIT' }, 'Copyright (c) Hote Nu');
+  ecrire('node_modules/hote-nu/vendor/outil.js', 'module.exports = 11;\n');
+  ecrire('node_modules/hote-nu/vendor/sans-licence/index.js', 'module.exports = 12;\n');
+  ecrire(
+    'src/vendor-nu.js',
+    "import a from 'hote-nu/vendor/outil.js';\nimport b from 'hote-nu/vendor/sans-licence/index.js';\nconsole.log(a + b);\n",
+  );
+  // Copies vendues par Next sans licence ni version (querystring-es3…).
+  paquet('node_modules/hote/dist/compiled/copie-nue', { name: 'copie-nue', main: 'index.js' });
+  ecrire('node_modules/hote/dist/compiled/copie-nue/index.js', 'module.exports = 9;\n');
+  paquet('node_modules/hote/dist/compiled/copie-alteree', { name: 'copie-alteree', main: 'index.js' });
+  ecrire('node_modules/hote/dist/compiled/copie-alteree/index.js', 'module.exports = 13;\n');
+  ecrire('src/copie-nue.js', "import c from 'hote/dist/compiled/copie-nue/index.js';\nconsole.log(c);\n");
+  ecrire('src/copie-alteree.js', "import c from 'hote/dist/compiled/copie-alteree/index.js';\nconsole.log(c);\n");
   ecrire('src/police-inconnue.js', `import p from 'next/font/google/target.js?{"import":"Police_Inconnue"}';\nconsole.log(p);\n`);
 });
 
@@ -227,6 +266,48 @@ describe('PluginLicencesTierces sur une vraie compilation webpack', () => {
     expect(fs.existsSync(sortie)).toBe(false);
   });
 
+  it("attribue le code vendu sous lib-vendor/ au dossier d'origine qui porte sa licence, pas à son hôte", async () => {
+    const sortie = path.join(racine, 'public-sous-vendor', 'licences-tierces.txt');
+    const erreurs = await compiler('src/vendor.js', sortie);
+    expect(erreurs).toEqual([]);
+    const texte = fs.readFileSync(sortie, 'utf8');
+    expect(texte).toContain('origine (vendu par hote-vendor@1.0.0)\nLicence : celle du fichier reproduit ci-dessous');
+    expect(texte).toContain('--- LICENSE ---\n\nCopyright Origine');
+    // L'hôte reste listé pour son propre code (`index.js`).
+    expect(texte).toContain('hote-vendor@1.0.0\nLicence déclarée : MIT');
+    expect(texte).toContain('Composants : 3.');
+  });
+
+  it("rougit le build sur du code vendu sous vendor/ sans licence d'origine, sans écrire le fichier", async () => {
+    const sortie = path.join(racine, 'public-vendor-nu', 'licences-tierces.txt');
+    const erreurs = await compiler('src/vendor-nu.js', sortie);
+    const message = erreurs.map((e) => e.message).join('\n');
+    expect(message).toMatch(/vendu sous vendor\/ sans fichier de licence/);
+    expect(message).toContain(path.join('hote-nu', 'vendor', 'outil.js'));
+    expect(message).toContain(path.join('hote-nu', 'vendor', 'sans-licence', 'index.js'));
+    expect(fs.existsSync(sortie)).toBe(false);
+  });
+
+  it("donne à une copie vendue sans licence, reconnue par son empreinte, la version et les droits de l'amont", async () => {
+    const sortie = path.join(racine, 'public-copie-nue', 'licences-tierces.txt');
+    const erreurs = await compiler('src/copie-nue.js', sortie);
+    expect(erreurs).toEqual([]);
+    const texte = fs.readFileSync(sortie, 'utf8');
+    expect(texte).toContain('copie-nue@1.2.3\nLicence déclarée : MIT\nAuteur : Amont');
+    expect(texte).toContain("mentions reprises de l'amont : copie-nue@1.2.3 (essai)");
+    expect(texte).toContain('--- LICENSE ---\n\nCopyright Amont');
+    expect(texte).not.toContain('copie-nue@?');
+  });
+
+  it("rougit le build sur une copie vendue sans licence dont l'empreinte a changé, sans écrire le fichier", async () => {
+    const sortie = path.join(racine, 'public-copie-alteree', 'licences-tierces.txt');
+    const erreurs = await compiler('src/copie-alteree.js', sortie);
+    const message = erreurs.map((e) => e.message).join('\n');
+    expect(message).toContain(`copie-alteree (index.js : ${sha256('module.exports = 13;\n')})`);
+    expect(message).toMatch(/réidentifier la version amont/);
+    expect(fs.existsSync(sortie)).toBe(false);
+  });
+
   it('rougit le build sur du code servi hors des morceaux et inconnu (.js, .wasm, polyfills hors de static/chunks)', async () => {
     const sortie = path.join(racine, 'public-hors', 'licences-tierces.txt');
     const erreurs = await compiler('src/app.js', sortie, { fichiers: { 'static/chunks/copie-tierce.js': '1', 'static/media/tiers.wasm': '2', 'static/polyfills.js': '3' } });
@@ -261,6 +342,32 @@ describe('licences-hors-graphe : les tables couvrent ce qui est livré', () => {
     expect(importees?.length).toBeGreaterThan(0);
     for (const nom of importees ?? []) expect(Object.keys(POLICES_OFL), nom).toContain(nom);
     expect(TEXTE_OFL).toContain('SIL OPEN FONT LICENSE Version 1.1 - 26 February 2007');
+  });
+});
+
+describe('licences-hors-graphe : les copies que Next vend sans licence', () => {
+  it("reconnaît les copies de la version installée de Next, toujours livrées sans licence", () => {
+    const copies = COPIES_NEXT_SANS_LICENCE as Record<string, { fichier: string; empreinte: string; version: string; licence: string; auteur: string }>;
+    expect(Object.keys(copies).sort()).toEqual(['constants-browserify', 'querystring-es3']);
+    for (const [nom, copie] of Object.entries(copies)) {
+      const fichier = requireNext.resolve(`next/dist/compiled/${nom}/${copie.fichier}`);
+      expect(sha256(fs.readFileSync(fichier)), `${nom} : empreinte changée, réidentifier la version amont`).toBe(copie.empreinte);
+      // Si Next fournit un jour la licence, l'entrée n'a plus lieu d'être.
+      expect(sansLicence(lirePaquet(path.dirname(fichier))), nom).toBe(true);
+      expect(textesTypes(copie.licence), nom).not.toBeNull();
+      expect(copie.auteur.length, nom).toBeGreaterThan(0);
+    }
+  });
+});
+
+describe('dossierSousVendor', () => {
+  it("rend le dossier d'origine sous vendor/, lib-vendor/ ou vendored/, null à même le dossier, undefined ailleurs", () => {
+    const h = path.join(racine, 'node_modules', 'h');
+    expect(dossierSousVendor(h, path.join(h, 'lib-vendor', 'd3-scale', 'src', 'x.js'))).toBe(path.join(h, 'lib-vendor', 'd3-scale'));
+    expect(dossierSousVendor(h, path.join(h, 'build', 'vendored', '@s', 'p', 'x.js'))).toBe(path.join(h, 'build', 'vendored', '@s', 'p'));
+    expect(dossierSousVendor(h, path.join(h, 'build', 'esm', 'vendor', 'x.js'))).toBeNull();
+    expect(dossierSousVendor(h, path.join(h, 'dist', 'vendors.js'))).toBeUndefined();
+    expect(dossierSousVendor(h, path.join(h, 'es', 'd3-scale.js'))).toBeUndefined();
   });
 });
 

@@ -18,12 +18,21 @@
 // Un paquet livré sans fichier de licence reçoit le texte type de sa licence
 // déclarée, MIT ou ISC seulement ; sans l'un ni l'autre, IL REND LE BUILD
 // ROUGE : on ne sert pas une liste dont on sait qu'elle est incomplète.
+// Deux exceptions nommées (lot `licences-vendor-mentions-restantes`) : une
+// copie que Next vend sans licence prend celle de son paquet amont, reconnue
+// par empreinte (`COPIES_NEXT_SANS_LICENCE`) ; du code vendu sous `vendor/`
+// est attribué au dossier d'origine qui porte sa licence, pas à son hôte.
 
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
-import { POLICES_OFL, POLYFILLS_NEXT as POLYFILLS_RECONNUS, TEXTE_OFL } from './licences-hors-graphe.mjs';
+import {
+  COPIES_NEXT_SANS_LICENCE,
+  POLICES_OFL,
+  POLYFILLS_NEXT as POLYFILLS_RECONNUS,
+  TEXTE_OFL,
+} from './licences-hors-graphe.mjs';
 
 const NOM_PLUGIN = 'PluginLicencesTierces';
 const SEGMENT_NODE_MODULES = `${path.sep}node_modules${path.sep}`;
@@ -172,7 +181,47 @@ export function sansLicence(paquet) {
   return paquet.textesLicence.length === 0 && textesTypes(paquet.licence) === null;
 }
 
+/**
+ * Un composant vendu SOUS un dossier `vendor/` de son hôte, dans son propre
+ * dossier qui porte un fichier de licence mais aucun manifeste : nom du
+ * dossier, licence lue dans ce dossier, version inconnue, hôte nommé.
+ */
+export function lireVenduSousVendor(dossier, hote) {
+  return {
+    nom: path.basename(dossier),
+    version: null,
+    licence: null,
+    auteur: null,
+    hote,
+    textesLicence: lireFichiers(dossier, MOTIF_LICENCE),
+    notices: lireFichiers(dossier, MOTIF_NOTICE),
+  };
+}
+
+/**
+ * Une copie que Next vend sans licence (`COPIES_NEXT_SANS_LICENCE`) reçoit la
+ * version, la licence et les droits de son paquet amont, si l'empreinte de
+ * son fichier est la sienne. Sinon `ecart` la nomme : le build rougit, on
+ * réidentifie. Tout autre paquet est rendu tel quel.
+ */
+export function completerCopieSansLicence(dossier, paquet, table = COPIES_NEXT_SANS_LICENCE) {
+  if (!sansLicence(paquet) || !Object.hasOwn(table, paquet.nom)) return paquet;
+  const copie = table[paquet.nom];
+  const chemin = path.join(dossier, copie.fichier);
+  const empreinte = fs.existsSync(chemin) ? createHash('sha256').update(fs.readFileSync(chemin)).digest('hex') : 'absent';
+  if (empreinte !== copie.empreinte) return { ...paquet, ecart: `${paquet.nom} (${copie.fichier} : ${empreinte})` };
+  return {
+    ...paquet,
+    version: copie.version,
+    licence: copie.licence,
+    auteur: copie.auteur,
+    textesLicence: copie.textes,
+    provenance: copie.source,
+  };
+}
+
 function cle(paquet) {
+  if (paquet.hote) return `${paquet.nom} (vendu par ${paquet.hote})`;
   return `${paquet.nom}@${paquet.version ?? '?'}`;
 }
 
@@ -199,8 +248,14 @@ export function composerMentions(paquets, horsGraphe = {}) {
     `Composants : ${tries.length}.`,
   ];
   for (const p of tries) {
-    lignes.push('', trait, cle(p), `Licence déclarée : ${p.licence ?? 'non déclarée'}`);
+    lignes.push(
+      '',
+      trait,
+      cle(p),
+      p.hote ? 'Licence : celle du fichier reproduit ci-dessous (dossier sans manifeste)' : `Licence déclarée : ${p.licence ?? 'non déclarée'}`,
+    );
     if (p.auteur) lignes.push(`Auteur : ${p.auteur}`);
+    if (p.provenance) lignes.push(`Copie vendue par Next.js sans licence ; mentions reprises de l'amont : ${p.provenance}`);
     lignes.push(trait);
     if (p.textesLicence.length === 0) {
       lignes.push(
@@ -241,16 +296,37 @@ export function composerMentions(paquets, horsGraphe = {}) {
 
 const SEGMENT_VENDU = `dist${path.sep}compiled${path.sep}`;
 const MOTIF_POLICE_NEXT = `${path.sep}next${path.sep}font${path.sep}`;
+const SEGMENT_VENDOR = /^(?:lib-)?vendor(?:ed)?$/;
+
+/**
+ * Le dossier propre d'un fichier vendu sous un dossier `vendor/`,
+ * `lib-vendor/` ou `vendored/` de son hôte (`victory-vendor/lib-vendor/
+ * d3-scale/src/…` → `…/lib-vendor/d3-scale`), `undefined` hors d'un tel
+ * dossier, `null` pour un fichier posé à même `vendor/` (rien ne l'y nomme).
+ */
+export function dossierSousVendor(racine, fichier) {
+  const segments = path.relative(racine, fichier).split(path.sep);
+  const rang = segments.findIndex((s) => SEGMENT_VENDOR.test(s));
+  if (rang < 0) return undefined;
+  const largeur = segments[rang + 1]?.startsWith('@') ? 2 : 1;
+  if (segments.length <= rang + 1 + largeur) return null;
+  return path.join(racine, ...segments.slice(0, rang + 1 + largeur));
+}
 
 /**
  * Ce que les morceaux émis livrent : les dossiers des paquets, les fichiers
  * VENDUS SANS MANIFESTE (du code sous `<paquet>/dist/compiled/` que rien ne
- * distingue de son hôte : il serait attribué en silence à l'hôte, à tort) et
- * les polices de `next/font` (reconnues par leur nom, `POLICES_OFL`).
+ * distingue de son hôte : il serait attribué en silence à l'hôte, à tort),
+ * le code VENDU SOUS `vendor/` (attribué à son dossier d'origine quand ce
+ * dossier porte sa licence, `sousVendor` : dossier → hôte ; sinon nommé dans
+ * `vendorSansLicence`) et les polices de `next/font` (reconnues par leur nom,
+ * `POLICES_OFL`).
  */
 export function dossiersLivres(compilation, cache = new Map()) {
   const dossiers = new Set();
   const vendusSansManifeste = new Set();
+  const sousVendor = new Map();
+  const vendorSansLicence = new Set();
   const polices = new Set();
   for (const morceau of compilation.chunks) {
     for (const module of compilation.chunkGraph.getChunkModulesIterable(morceau)) {
@@ -258,6 +334,12 @@ export function dossiersLivres(compilation, cache = new Map()) {
         const fichier = cheminRessource(feuille);
         const dossier = racinePaquet(fichier, cache);
         if (!dossier) continue;
+        const origine = dossierSousVendor(dossier, fichier);
+        if (origine !== undefined) {
+          if (origine && lireFichiers(origine, MOTIF_LICENCE).length > 0) sousVendor.set(origine, dossier);
+          else vendorSansLicence.add(fichier);
+          continue;
+        }
         dossiers.add(dossier);
         if (path.relative(dossier, fichier).startsWith(SEGMENT_VENDU)) vendusSansManifeste.add(fichier);
         if (fichier.includes(MOTIF_POLICE_NEXT)) {
@@ -267,7 +349,7 @@ export function dossiersLivres(compilation, cache = new Map()) {
       }
     }
   }
-  return { dossiers, vendusSansManifeste, polices };
+  return { dossiers, vendusSansManifeste, sousVendor, vendorSansLicence, polices };
 }
 
 /**
@@ -322,19 +404,21 @@ function empreinteFichier(compilation, nom) {
 
 export class PluginLicencesTierces {
   /**
-   * @param {{ sortie?: string, horsGraphe?: string[], polyfills?: object, polices?: object }} [options]
+   * @param {{ sortie?: string, horsGraphe?: string[], polyfills?: object, polices?: object, copiesSansLicence?: object }} [options]
    *   `sortie` : chemin absolu du fichier écrit (défaut : `public/
    *   licences-tierces.txt` sous le dossier du projet, `compiler.context`) ;
    *   `horsGraphe` : dossiers des composants livrés hors du graphe des modules
-   *   (défaut : `horsGrapheParDefaut`) ; `polyfills` et `polices` : tables des
-   *   fichiers de polyfills et des polices reconnus (défaut :
+   *   (défaut : `horsGrapheParDefaut`) ; `polyfills`, `polices` et
+   *   `copiesSansLicence` : tables des fichiers de polyfills, des polices et
+   *   des copies vendues sans licence reconnus (défaut :
    *   `licences-hors-graphe.mjs`).
    */
-  constructor({ sortie, horsGraphe, polyfills, polices } = {}) {
+  constructor({ sortie, horsGraphe, polyfills, polices, copiesSansLicence } = {}) {
     this.sortie = sortie ?? null;
     this.horsGraphe = horsGraphe ?? null;
     this.polyfills = polyfills ?? POLYFILLS_RECONNUS;
     this.polices = polices ?? POLICES_OFL;
+    this.copiesSansLicence = copiesSansLicence ?? COPIES_NEXT_SANS_LICENCE;
   }
 
   apply(compiler) {
@@ -350,10 +434,15 @@ export class PluginLicencesTierces {
           if (introuvables.length > 0) {
             refus.push(`composant(s) déclaré(s) hors du graphe introuvable(s) : ${introuvables.join(', ')}`);
           }
-          const { dossiers, vendusSansManifeste, polices } = dossiersLivres(compilation);
+          const { dossiers, vendusSansManifeste, sousVendor, vendorSansLicence, polices } = dossiersLivres(compilation);
           if (vendusSansManifeste.size > 0) {
             refus.push(
               `code vendu sans manifeste propre, attribuable à tort à son hôte : ${[...vendusSansManifeste].sort().join(', ')}`,
+            );
+          }
+          if (vendorSansLicence.size > 0) {
+            refus.push(
+              `code vendu sous vendor/ sans fichier de licence dans son dossier d'origine, attribuable à tort à son hôte : ${[...vendorSansLicence].sort().join(', ')}`,
             );
           }
           const horsMorceaux = fichiersHorsMorceaux(compilation);
@@ -373,9 +462,19 @@ export class PluginLicencesTierces {
           if (policesInconnues.length > 0) {
             refus.push(`police(s) next/font sans mention de droits (licences-hors-graphe.mjs) : ${policesInconnues.join(', ')}`);
           }
+          let paquets = [];
           if (refus.length === 0) {
             for (const d of horsGraphe) dossiers.add(d);
-            const muets = [...dossiers].map(lirePaquet).filter(sansLicence);
+            paquets = [...dossiers].map((d) => completerCopieSansLicence(d, lirePaquet(d), this.copiesSansLicence));
+            const ecarts = paquets.filter((p) => p.ecart).map((p) => p.ecart);
+            if (ecarts.length > 0) {
+              refus.push(
+                `copie(s) vendue(s) par Next sans licence, d'empreinte inconnue (${ecarts.join(', ')}) : ` +
+                  'réidentifier la version amont (licences-hors-graphe.mjs)',
+              );
+            }
+            for (const [origine, hote] of sousVendor) paquets.push(lireVenduSousVendor(origine, cle(lirePaquet(hote))));
+            const muets = paquets.filter(sansLicence);
             if (muets.length > 0) {
               refus.push(
                 `${muets.length} composant(s) livré(s) au navigateur sans licence lisible ` +
@@ -397,7 +496,7 @@ export class PluginLicencesTierces {
             polices: [...polices].sort().map((nom) => ({ nom, droits: this.polices[nom].droits })),
           };
           fs.mkdirSync(path.dirname(sortie), { recursive: true });
-          fs.writeFileSync(sortie, composerMentions([...dossiers].map(lirePaquet), horsDuGraphe));
+          fs.writeFileSync(sortie, composerMentions(paquets, horsDuGraphe));
         },
       );
     });
