@@ -106,6 +106,26 @@ test('signatures node : tests TAP en échec et violations, sans numéro de ligne
   assert.deepEqual(signaturesNode(''), []);
 });
 
+test('signatures node : une violation de la numérotation des sources ne dépend pas du rang de sa notice', () => {
+  const avant = signaturesNode('✗ docs/claude/corpus/source_registry.json — WN-SRC-0612 en double (notices 40 et 611)');
+  const decale = signaturesNode('✗ docs/claude/corpus/source_registry.json — WN-SRC-0612 en double (notices 41 et 612)');
+  assert.deepEqual(avant, decale);
+  assert.deepEqual(avant, ['✗ docs/claude/corpus/source_registry.json — WN-SRC-0612 en double (notice)']);
+  assert.deepEqual(
+    signaturesNode('✗ docs/claude/corpus/source_registry.json — notice 7 : sourceId "WN-SRC-12" hors de la forme WN-SRC-NNNN'),
+    ['✗ docs/claude/corpus/source_registry.json — notice : sourceId "WN-SRC-12" hors de la forme WN-SRC-NNNN'],
+  );
+  // Un doublon d'un autre numéro reste une violation distincte.
+  assert.notDeepEqual(avant, signaturesNode('✗ docs/claude/corpus/source_registry.json — WN-SRC-0613 en double (notices 40 et 611)'));
+});
+
+test('la numérotation des sources est un garde de la fusion, local et sans verdict sur son code 2', () => {
+  const g = GARDES_NODE.find((x) => x.id === 'sources');
+  assert.ok(g, 'garde « sources » absent de GARDES_NODE');
+  assert.deepEqual(g.args, ['scripts/lib/sources-numerotation.mjs']);
+  assert.deepEqual(g.sansVerdict, [2]);
+});
+
 const R = (nom, status, echecs = []) => ({
   name: `/tmp/arbre/${nom}`,
   status,
@@ -265,6 +285,7 @@ function depot({ base = {}, pr = {}, main = {}, prDepuisMain = false } = {}) {
       'scripts/lib/decisions-numerotation.mjs': '',
       'scripts/wn-matrice-consommation.test.mjs': '',
       'scripts/ci-invariants.test.mjs': '',
+      'scripts/lib/sources-numerotation.mjs': '',
       [GARDE_VITEST]: '',
       'docs/texte.md': 'un\n',
       ...base,
@@ -299,7 +320,7 @@ function depot({ base = {}, pr = {}, main = {}, prDepuisMain = false } = {}) {
 
 /**
  * Les gardes simulés. `regle(dossier, passe)` rend, par garde (`numerotation`,
- * `matrice`, `invariants`, `vitest`) : `true` vert, `false` rouge, un tableau
+ * `matrice`, `invariants`, `sources`, `vitest`) : `true` vert, `false` rouge, un tableau
  * de noms de tests rouges, `'delai'` ou `'code2'` ; et `vitestCode` pour forcer
  * le code de sortie de Vitest. `passe` compte les appels sur ce dossier.
  * `appels` garde chaque appel.
@@ -334,7 +355,7 @@ function gardesSimules(regle, appels = []) {
     }
     appels.push({ dossier, garde: args.at(-1) });
     const id = GARDES_NODE.find((x) => x.args.at(-1) === args.at(-1)).id;
-    const etat = r[{ numerotation: 'numerotation', matrice: 'matrice', 'invariants-ci': 'invariants' }[id]];
+    const etat = r[{ numerotation: 'numerotation', matrice: 'matrice', 'invariants-ci': 'invariants', sources: 'sources' }[id]];
     if (etat === 'delai') return { code: null, signal: 'SIGTERM', erreur: null, sortie: '' };
     if (etat === 'code2') return { code: 2, signal: null, erreur: null, sortie: '✗ registre illisible' };
     const noms = etat === false ? ['un test'] : Array.isArray(etat) ? etat : [];
@@ -342,7 +363,7 @@ function gardesSimules(regle, appels = []) {
   };
 }
 
-const tousVerts = () => ({ numerotation: true, matrice: true, invariants: true, vitest: true });
+const tousVerts = () => ({ numerotation: true, matrice: true, invariants: true, sources: true, vitest: true });
 
 function cacheMemoire() {
   const m = new Map();
@@ -547,6 +568,19 @@ test('collecte : deux vertes séparément, rouge ensemble — défaut imputable 
   assert.equal(vitest.length, 3);
   assert.deepEqual(vitest[1].vitest, [GARDE_VITEST.slice('web/'.length)]);
   assert.notEqual(vitest[2].dossier, vitest[0].dossier);
+});
+
+test('collecte : la même source ajoutée par la PR et par main — doublon, défaut imputable', (t) => {
+  // Deux ajouts au milieu du registre ne se heurtent pas dans Git (P2-3 de la partie 13).
+  const d = depot({ pr: { 'source-pr.txt': '' }, main: { 'source-main.txt': '' } });
+  t.after(() => rmSync(d.tmp, { recursive: true, force: true }));
+  const regle = (dossier) => ({
+    ...tousVerts(),
+    sources: existsSync(join(dossier, 'source-pr.txt')) && existsSync(join(dossier, 'source-main.txt')) ? ['doublon'] : true,
+  });
+  const r = jouer(d, { regle });
+  assert.equal(r.code, SORTIE_DEFAUT, r.lignes.join('\n'));
+  assert.match(r.lignes[0], /imputable\(s\) à la PR : sources/);
 });
 
 test('collecte : rouge sous la charge, vert au rejeu seul — indéterminé, jamais un défaut ni en cache', (t) => {
