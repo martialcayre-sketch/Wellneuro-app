@@ -196,6 +196,8 @@ describe('DossierDeuxVoixView', () => {
     expect(texteRendu()).not.toContain('Ce qui compte pour moi');
     expect(texteRendu()).not.toContain('Ce que mon praticien a compris de moi');
     expect(texteRendu()).not.toContain('pas encore ouvert');
+    // Sans les deux voix du bas, pas de séparateur (DOC-9 Q3a).
+    expect(document.querySelectorAll('[data-lien-decor="deux-voix"]')).toHaveLength(0);
   });
 
   it('un bloc OUVERT et vide dit une absence, jamais un « rien à signaler »', async () => {
@@ -208,6 +210,10 @@ describe('DossierDeuxVoixView', () => {
     expect(texteRendu()).toContain('Vous n’avez encore rien déposé ici');
     expect(texteRendu()).toContain('n’a encore rien publié ici');
     expect(texteRendu()).not.toContain('rien à signaler');
+    // PAT-5 décor (Q3a) : les deux vides du bas ne reçoivent pas d'ornement,
+    // le séparateur décore déjà leur zone.
+    expect(document.querySelectorAll('[data-lien-decor="etat-vide"]')).toHaveLength(0);
+    expect(document.querySelectorAll('[data-lien-decor="deux-voix"]')).toHaveLength(1);
   });
 
   it('un dossier entièrement vide ne propose aucune réponse', async () => {
@@ -216,6 +222,51 @@ describe('DossierDeuxVoixView', () => {
 
     await waitFor(() => expect(texteRendu()).toContain('Aucun objectif n’a encore été écrit'));
     expect(screen.queryByText('C’est bien ça')).toBeNull();
+    // PAT-5 décor (Q3a) : le vide de l'objectif reçoit le seul germe de l'écran,
+    // décoratif, avant sa phrase.
+    const germes = document.querySelectorAll('[data-lien-decor="etat-vide"]');
+    expect(germes).toHaveLength(1);
+    expect(germes[0].getAttribute('aria-hidden')).toBe('true');
+    expect(germes[0].getAttribute('data-element')).toBe('nutrition-sprout');
+    const phrase = screen.getByText(/Aucun objectif n’a encore été écrit/);
+    expect(germes[0].compareDocumentPosition(phrase) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  describe('séparateur des deux voix (PAT-5 décor, DOC-9 Q3a, Q1a)', () => {
+    const separateurs = () => document.querySelectorAll('[data-lien-decor="deux-voix"]');
+
+    it('un seul, entre « Ce qui compte pour moi » et « Ce que mon praticien a compris de moi »', async () => {
+      fetchMock.mockResolvedValueOnce(json(assemblage()));
+      render(<DossierDeuxVoixView token="TOK" />);
+
+      await waitFor(() => expect(texteRendu()).toContain('la marche du dimanche'));
+      expect(separateurs()).toHaveLength(1);
+      const sep = separateurs()[0];
+      expect(sep.getAttribute('aria-hidden')).toBe('true');
+      expect(sep.getAttribute('data-element')).toBe('divider-two-voices');
+      expect(sep.className).toContain('print:hidden');
+      expect(sep.className).toContain('max-w-[320px]');
+      const patient = screen.getByRole('heading', { name: 'Ce qui compte pour moi' });
+      const praticien = screen.getByRole('heading', { name: 'Ce que mon praticien a compris de moi' });
+      expect(patient.compareDocumentPosition(sep) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(sep.compareDocumentPosition(praticien) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      // Hors des cartes : ni dans l'une, ni dans l'autre.
+      expect(patient.parentElement?.contains(sep)).toBe(false);
+      expect(praticien.parentElement?.contains(sep)).toBe(false);
+    });
+
+    it('absent quand une seule des deux sections est servie', async () => {
+      fetchMock.mockResolvedValueOnce(json(assemblage({ ceQuiCompte: null })));
+      render(<DossierDeuxVoixView token="TOK" />);
+      await waitFor(() => expect(texteRendu()).toContain('Ce que mon praticien a compris de moi'));
+      expect(separateurs()).toHaveLength(0);
+      cleanup();
+
+      fetchMock.mockResolvedValueOnce(json(assemblage({ comprehension: null })));
+      render(<DossierDeuxVoixView token="TOK" />);
+      await waitFor(() => expect(texteRendu()).toContain('Ce qui compte pour moi'));
+      expect(separateurs()).toHaveLength(0);
+    });
   });
 
   it('N’AFFICHE AUCUNE DATE quand le patient n’en a déclaré aucune', async () => {

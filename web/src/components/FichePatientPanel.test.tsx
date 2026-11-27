@@ -4433,3 +4433,67 @@ describe('FichePatientPanel — titre des états sans dossier (PRA-6o)', () => {
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
   });
 });
+
+// PRA-3a ([[D-481]] §1 bis, variante A du prototype, question
+// 20261126-2231-d) : les arcs d'alliance suivent l'identité dans l'en-tête,
+// par `LienDecor`, hors de l'accessibilité ; ni texte, ni titre en plus. La
+// géométrie (aucune hauteur ajoutée, tout ou rien) se reçoit en E2E
+// (`e2e/fiche-entete-decor.spec.ts`) : jsdom ne calcule pas la mise en page.
+describe('FichePatientPanel — motif d’alliance de l’en-tête (PRA-3a)', () => {
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  const rendre = () =>
+    render(
+      <C5FeatureProvider enabled={false}>
+        <FichePatientPanel idPatient="PAT001" />
+      </C5FeatureProvider>,
+    );
+
+  it('un seul motif, les arcs, posé après l’identité et avant les actions', async () => {
+    stubFetch({});
+    const { container } = rendre();
+    const titre = await screen.findByRole('heading', { level: 1, name: 'Sophie Nicola' });
+    const motifs = container.querySelectorAll('[data-lien-decor]');
+    expect(motifs).toHaveLength(1);
+    const motif = motifs[0] as HTMLElement;
+    expect(motif.dataset.lienDecor).toBe('entete-fiche');
+    expect(motif.dataset.element).toBe('alliance-arcs');
+    expect(motif.getAttribute('aria-hidden')).toBe('true');
+    expect(motif.textContent).toBe('');
+    expect(titre.compareDocumentPosition(motif) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const action = screen.getByRole('button', { name: 'Mode consultation' });
+    expect(motif.compareDocumentPosition(action) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // Tout ou rien : masqué par défaut, rendu entier par la requête de
+    // conteneur de son enveloppe, qui ne prend que l'espace libre.
+    expect(motif.className.split(/\s+/)).toEqual(
+      expect.arrayContaining(['hidden', 'w-[106px]', 'shrink-0', '[@container(min-width:118px)]:block', 'print:hidden']),
+    );
+    const enveloppe = motif.parentElement as HTMLElement;
+    expect(enveloppe.className.split(/\s+/)).toEqual(
+      expect.arrayContaining(['-ml-3', 'flex-1', 'basis-0', 'min-w-0', '[container-type:inline-size]']),
+    );
+    // La règle de conteneur passe après le `print:hidden` de la primitive :
+    // l'enveloppe se masque elle-même à l'impression (constat du banc E2E).
+    expect(enveloppe.className.split(/\s+/)).toContain('print:hidden');
+  });
+
+  it('ne change pas les titres de la fiche : un seul h1, le nom', async () => {
+    stubFetch({});
+    rendre();
+    await screen.findByRole('heading', { level: 1, name: 'Sophie Nicola' });
+    expect(screen.getAllByRole('heading', { level: 1 }).map(t => t.textContent)).toEqual(['Sophie Nicola']);
+  });
+
+  it('aucun motif tant que le dossier n’est pas affiché', () => {
+    const base = stubFetch({});
+    vi.stubGlobal('fetch', vi.fn((input: unknown) =>
+      String(input).includes('/api/praticien/equilibre') ? new Promise(() => {}) : base(input),
+    ));
+    const { container } = rendre();
+    screen.getByText('Chargement de la fiche patient...');
+    expect(container.querySelector('[data-lien-decor]')).toBeNull();
+  });
+});

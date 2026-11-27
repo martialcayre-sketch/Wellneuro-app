@@ -7,6 +7,7 @@ import { PatientCard } from '@/components/patient/ui/PatientCard';
 import { PatientInlineMessage } from '@/components/patient/ui/PatientInlineMessage';
 import { PatientRegionAccuse } from '@/components/patient/ui/PatientRegionAccuse';
 import { PatientPageHeader } from '@/components/patient/ui/PatientPageHeader';
+import { LienDecor } from '@/components/ui/LienDecor';
 import type { PortailDossierResponse } from '@/app/api/portail/dossier/route';
 import {
   EVA_MAX,
@@ -384,10 +385,16 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
           </h2>
 
           {objectifs.length === 0 ? (
-            <PatientInlineMessage tone="info">
-              Aucun objectif n’a encore été écrit avec votre praticien. Cela ne veut rien dire de
-              plus : c’est une page qui n’a pas encore été remplie.
-            </PatientInlineMessage>
+            <>
+              {/* Ornement d'état vide réel ([[D-481]] §1 bis, PAT-5 décor, Q3a) :
+                  le seul de l'écran. Les deux vides du bas n'en reçoivent pas,
+                  le séparateur décore déjà leur zone (un décor par zone). */}
+              <LienDecor emplacement="etat-vide" element="nutrition-sprout" className="w-40" />
+              <PatientInlineMessage tone="info">
+                Aucun objectif n’a encore été écrit avec votre praticien. Cela ne veut rien dire de
+                plus : c’est une page qui n’a pas encore été remplie.
+              </PatientInlineMessage>
+            </>
           ) : (
             <>
               {/* DEUX VERSIONS COEXISTANTES : on les MONTRE toutes les deux et on
@@ -1200,6 +1207,14 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
             Déposer ce qui compte pour moi aujourd’hui
           </a>
         </PatientCard>
+      )}
+
+      {/* LE SÉPARATEUR DES DEUX VOIX ([[D-481]] §1 bis, DOC-9 Q3a ; PAT-5 décor,
+          Q1a) : un seul, entre les deux sections du bas, et seulement quand
+          les deux sont servies. Hors des cartes, 320 px au plus ; absent à
+          l'impression, où les intitulés des deux voix restent en texte. */}
+      {ceQuiCompte !== null && comprehension !== null && (
+        <LienDecor emplacement="deux-voix" className="mx-auto w-full max-w-[320px]" />
       )}
 
       {/* ── CE QUE MON PRATICIEN A COMPRIS ────────────────────────────────── */}

@@ -98,10 +98,10 @@ const CLES_TSCONFIG_ADMISES = [
 const EMPREINTE_NEXT_CONFIG = '19a1dab2af4f1a7cfa0fafe0c252aa76ce8b3dc460d33539b0dbc57990986d21';
 // Le plugin que `webpack` installe s'exécute dans la compilation client : une
 // édition pourrait y réécrire une résolution (`normalModuleFactory`). Figé.
-const EMPREINTE_PLUGIN_LICENCES = 'b304dccaf87a81042cf27285a9e635110ae51fccce2fc307bc62b82793e00ee7';
+const EMPREINTE_PLUGIN_LICENCES = '72e20886ddc0ff89d046830ed2938060c8079752716f8a95dec2d6040efe8016';
 // Le module que le plugin importe s'exécute avec lui : figé de même. Données
 // seules (textes de licence, lot `licences-hors-graphe`) — il le reste.
-const EMPREINTE_LICENCES_HORS_GRAPHE = 'ead0885c73c4b576130b5c330564d0fbe661d408bb64332762521e065801dcbc';
+const EMPREINTE_LICENCES_HORS_GRAPHE = '313a1a8a32c1e28d9ea532e0dcf94476a45d048b8542e1f5676f715738c094bf';
 
 /** La chaîne de lancement de production, figée (voir le banc « chaîne de lancement »). */
 const EMPREINTES_LANCEMENT: Record<string, string> = {

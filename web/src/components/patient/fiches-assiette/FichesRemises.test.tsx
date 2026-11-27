@@ -107,6 +107,9 @@ describe('FichesRemises — la liste', () => {
     render(<FichesRemises token="TOK" />);
     await laisserCharger();
     expect(screen.getByText(/ne vous a pas encore remis de fiche/)).toBeTruthy();
+    // Ornement d'état vide réel (PAT-5 décor, Q2a-Q3a) : décoratif, avant la phrase.
+    expect(document.querySelectorAll('[data-lien-decor="etat-vide"]')).toHaveLength(1);
+    expect(document.querySelectorAll('[data-lien-decor="etat-vide"]')[0].getAttribute('aria-hidden')).toBe('true');
   });
 
   it('session expirée : retour au portail', async () => {
@@ -122,6 +125,7 @@ describe('FichesRemises — la liste', () => {
     await laisserCharger();
     expect(screen.getByText('Cet espace n’est pas encore ouvert.')).toBeTruthy();
     expect(screen.queryByRole('button', { name: /Réessayer/ })).toBeNull();
+    expect(document.querySelectorAll('[data-lien-decor="etat-vide"]')).toHaveLength(0); // une erreur garde son traitement (D-481 §1 bis)
   });
 });
 

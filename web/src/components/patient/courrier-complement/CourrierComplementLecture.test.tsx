@@ -128,6 +128,9 @@ describe('Courrier à remettre à votre médecin (D-345, J3-12h lot 4)', () => {
     repondre(200, { ok: true, courriers: [] });
     await afficher();
     expect(screen.getByText(AUCUN_COURRIER_COMPLEMENT)).toBeTruthy();
+    // Ornement d'état vide réel (PAT-5 décor, Q2a-Q3a) : décoratif, avant la phrase.
+    expect(document.querySelectorAll('[data-lien-decor="etat-vide"]')).toHaveLength(1);
+    expect(document.querySelectorAll('[data-lien-decor="etat-vide"]')[0].getAttribute('aria-hidden')).toBe('true');
     // Le titre de la page reste son `h1`, même sans courrier (PAT-7b).
     expect(screen.getByRole('heading', { level: 1, name: TITRE_COURRIER_COMPLEMENT }).className).toContain('font-display'); // PAT-7h : Lora
     expect(tracesPosees()).toEqual([]);
@@ -144,5 +147,6 @@ describe('Courrier à remettre à votre médecin (D-345, J3-12h lot 4)', () => {
     await afficher();
     expect(screen.getByText('Cet espace n’est pas encore ouvert.')).toBeTruthy();
     expect(screen.queryByRole('button', { name: /réessayer/i })).toBeNull();
+    expect(document.querySelectorAll('[data-lien-decor="etat-vide"]')).toHaveLength(0); // une erreur garde son traitement (D-481 §1 bis)
   });
 });

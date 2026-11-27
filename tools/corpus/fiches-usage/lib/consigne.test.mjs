@@ -1,4 +1,4 @@
-// La consigne « fiche-usage-v14 » est épinglée : un octet changé sans bump de
+// La consigne « fiche-usage-v15 » est épinglée : un octet changé sans bump de
 // version rougit ici, et l'outil refuse de tourner ([[D-314]] §4).
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -366,4 +366,29 @@ test('v14 §19 : exception des médicaments nommés, bornée, et délai d\'inter
   assert.match(r, /Une condition que l'exception des MÉDICAMENTS, ci-dessous, permet d'écrire ne relève pas de ce refus\./);
   assert.match(c, /sans attribution, privée d'une de ses restrictions, généralisée au nutriment ou à la catégorie « médicaments », accompagnée d'une autre quantité de prise \(dose, durée, fréquence, moment\), ou réunissant dans une même phrase un fait propre à une spécialité et une interaction/);
   assert.match(r, /Les faits propres à une spécialité et les interactions s'écrivent dans des phrases distinctes\./);
+});
+
+test('v15 §20 : interpretations, question, population, limites et RCP précisés des deux côtés', () => {
+  const { redaction, contreLecture } = lireConsignes();
+  const r = redaction.replace(/\s+/g, ' ');
+  const c = contreLecture.replace(/\s+/g, ' ');
+  for (const t of [r, c]) {
+    // « interpretations » : seul l'analyte de la fiche est un résultat de l'examen.
+    assert.match(t, /Un déficit, une carence, un statut ou un apport du nutriment n'est pas un résultat de l'examen/);
+    assert.match(t, /\(une sensibilité ou une spécificité faibles, des situations où il ne permet pas de conclure\)/);
+    // « question » : un seul verbe, les autres tournures écartées.
+    assert.match(t, /« permet-il de » \(accordé : « permet-elle de »\)/);
+    assert.match(t, /« peut-il », .*« aider à », .*« contribuer à », .*« dans quelle mesure »/);
+    // « population » : la désignation seule.
+    assert.match(t, /« Cette fiche concerne », (ni )?« La population d'usage est »/);
+    // « limites » : les apports de référence n'en sont pas une.
+    assert.match(t, /Une limite des apports de référence \(besoins, références nutritionnelles\) pour juger un statut nutritionnel ne l'est pas non plus\./);
+    // §19 borné : ni consigne de posologie, ni effets indésirables d'une spécialité.
+    assert.match(t, /\(l'adapter, en tenir compte\)/);
+    assert.match(t, /\(ses effets indésirables, ses surdosages\)/);
+  }
+  assert.match(r, /le taire ne tait aucune condition de sécurité\./);
+  assert.match(c, /son absence ne tait aucune condition de sécurité/);
+  // Contre-lecture : une sous-population gardée n'est pas une restriction de la désignation.
+  assert.match(c, /comprise dans la population d'usage, n'est pas une restriction de la désignation : c'est une condition gardée/);
 });
