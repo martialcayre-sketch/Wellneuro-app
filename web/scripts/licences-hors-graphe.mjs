@@ -215,3 +215,83 @@ INCLUDING ANY GENERAL, SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL
 DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
 OTHER DEALINGS IN THE FONT SOFTWARE.`;
+
+/**
+ * LES COPIES QUE NEXT VEND SANS LICENCE (`next/dist/compiled/<nom>/` : un
+ * `package.json` sans `license` ni `version`, aucun fichier de licence),
+ * replis client de `querystring` et de `constants` (`webpack-config.js` de
+ * Next). Aucune n'est livrée au navigateur aujourd'hui ; un import client qui
+ * en atteindrait une rougissait le build. Clé : le nom du paquet vendu. La
+ * copie est reconnue par l'empreinte SHA-256 de son fichier `fichier`, au
+ * contenu identique à celui du paquet amont nommé (comparé le 2026-11-27 aux
+ * archives du registre npm : l'`encode.js` de querystring-es3 0.2.1 appelle
+ * `map(obj[k], …)`, celui de 0.2.0 `obj[k].map(…)` ; le `constants.json` de
+ * constants-browserify 1.0.0 est identique, celui de 0.0.1 non). Version,
+ * licence et droits sont ceux de ce paquet amont. Une autre empreinte rend le
+ * build rouge : on réidentifie la version amont.
+ */
+export const COPIES_NEXT_SANS_LICENCE = {
+  'querystring-es3': {
+    fichier: 'index.js',
+    empreinte: 'ab87d36cb40ef82c4ea4eb2738fd207155a170032a1b6877820eca6b0c3cf0f2',
+    version: '0.2.1',
+    licence: 'MIT',
+    auteur: 'Irakli Gozalishvili',
+    source: 'querystring-es3@0.2.1 (registre npm) : License.md, et en-tête de decode.js et de encode.js',
+    textes: [
+      {
+        nom: 'License.md',
+        texte: `Copyright 2012 Irakli Gozalishvili. All rights reserved.
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to
+deal in the Software without restriction, including without limitation the
+rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+sell copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+IN THE SOFTWARE.`,
+      },
+      {
+        nom: 'decode.js, encode.js (en-tête)',
+        texte: `Copyright Joyent, Inc. and other Node contributors.
+
+Permission is hereby granted, free of charge, to any person obtaining a
+copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to permit
+persons to whom the Software is furnished to do so, subject to the
+following conditions:
+
+The above copyright notice and this permission notice shall be included
+in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+USE OR OTHER DEALINGS IN THE SOFTWARE.`,
+      },
+    ],
+  },
+  'constants-browserify': {
+    fichier: 'constants.json',
+    empreinte: '92fbd2596dc1cb9ff728c8df2ff2002413f205a7636c50dbbd7a814531304127',
+    version: '1.0.0',
+    licence: 'MIT',
+    auteur: 'Julian Gruber',
+    source: 'constants-browserify@1.0.0 (registre npm) : licence MIT déclarée, aucun fichier de licence',
+    textes: [],
+  },
+};
