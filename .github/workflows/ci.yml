@@ -552,16 +552,19 @@ jobs:
       # REST de `gh`, journaux de one-off, revue Copilot, environnements des
       # workflows, seuil visuel, ancres de doctrine, réexpédition à la racine,
       # palier T1, densité du context pack, hygiène du dépôt (`repo-hygiene.sh`,
-      # joué chaque jour par la passe cloud), verdict secrets du kit doctor
-      # (fixtures en dossier temporaire). Même défaut que l'étape ci-dessus :
+      # joué chaque jour par la passe cloud), balayage des bancs de
+      # certification (`run-certify-bancs.sh`, arborescence jetable), verdict
+      # secrets du kit doctor (fixtures en dossier temporaire). Même défaut que
+      # l'étape ci-dessus :
       # un garde redevenu muet restait vert tant que personne ne rejouait
       # `npm run check` (lot `ci-bancs-gardes-merge-manquants`). Tous
-      # hermétiques, constaté le 2026-11-25 : dépendances injectées, faux `gh`
+      # hermétiques, constaté le 2026-11-25 (le 2026-11-27 pour le balayage des
+      # bancs de certification) : dépendances injectées, faux `gh`
       # en dossier temporaire ou arrêt à l'usage avant tout appel externe ;
       # aucun réseau, aucune dépendance npm ; node, git, bash et les outils
       # de base du runner (awk, sed) suffisent.
       - name: Outillage de l'intégrateur, de l'orchestrateur et des paliers (bancs)
-        run: node --test scripts/wn-integrer.test.mjs scripts/lib/focus-areas-pr-agent.test.mjs scripts/wn-orchestrateur-passe.test.mjs scripts/nettoyage-branches.test.mjs scripts/repo-hygiene.test.mjs scripts/wn-kit-doctor.test.mjs scripts/lib/gh-rest.test.mjs scripts/wn-one-off-logs.test.mjs scripts/wn-revue-copilot.test.mjs scripts/workflows-environnements.test.mjs scripts/seuil-visuel.test.mjs scripts/wn-ancres-doctrine.test.mjs scripts/racine-reexpedition.test.mjs scripts/wn-check-rapide.test.mjs tests/wellneuro/evals/context-pack-density.test.mjs
+        run: node --test scripts/wn-integrer.test.mjs scripts/lib/focus-areas-pr-agent.test.mjs scripts/wn-orchestrateur-passe.test.mjs scripts/nettoyage-branches.test.mjs scripts/repo-hygiene.test.mjs scripts/run-certify-bancs.test.mjs scripts/wn-kit-doctor.test.mjs scripts/lib/gh-rest.test.mjs scripts/wn-one-off-logs.test.mjs scripts/wn-revue-copilot.test.mjs scripts/workflows-environnements.test.mjs scripts/seuil-visuel.test.mjs scripts/wn-ancres-doctrine.test.mjs scripts/racine-reexpedition.test.mjs scripts/wn-check-rapide.test.mjs tests/wellneuro/evals/context-pack-density.test.mjs
 
       # Parité entre ce job et `npm run check`. Toutes les étapes ci-dessus sont
       # bloquantes et ne demandent que node, git et bash : aucune raison qu'un
