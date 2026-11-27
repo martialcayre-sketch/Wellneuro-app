@@ -185,7 +185,9 @@ move_file_safe() {
   local dest="$2"
   local dry_run="$3"
 
-  mkdir -p "$(dirname "$dest")"
+  # Chemins resolus contre --root, jamais contre le cwd : lance d'ailleurs,
+  # mkdir et mv ecriraient sinon hors de la racine.
+  mkdir -p "$(dirname "$(abs_path "$dest")")"
   if [[ "$dry_run" == "1" ]]; then
     printf 'MOVE %s -> %s\n' "$src" "$dest"
     return 0
@@ -194,7 +196,7 @@ move_file_safe() {
   if git -C "$ROOT" ls-files --error-unmatch "$src" >/dev/null 2>&1; then
     git -C "$ROOT" mv "$src" "$dest"
   else
-    mv "$src" "$dest"
+    mv "$(abs_path "$src")" "$(abs_path "$dest")"
   fi
 }
 
