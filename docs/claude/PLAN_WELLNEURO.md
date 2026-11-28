@@ -1575,7 +1575,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 #### H67 · R:Onglet : onglet Alimentation
 - **Identifiant, piste** : R:Onglet (FC-3) ; aucun calcul neuf ; alimentation ; file A.
 - **Rang** : 5.
-- **Portes, préalables** : J2-alim (H45) ; c (F59) ; FC-2 (H61), levé par D-530 §3 ; J2-base (H59), levé à sa clôture le 2026-11-27 ; porte 12 ; porte 24 (critère amendé par D-534).
+- **Portes, préalables** : J2-alim (H45) ; c (F59) ; FC-2 (H61), levé par D-530 §3 — ce qui est levé, c'est le rattachement à H61 ; la décision FC-2 elle-même reste à écrire avant le code (lot `h67-fc2-decision`, journal du 2026-11-28) ; J2-base (H59), levé à sa clôture le 2026-11-27 ; porte 12 ; porte 24 (critère amendé par D-534).
 - **Migration, release-db** : non.
 - **Décisions, textes** : la décision FC-2 (« Alimentation, surface du dossier »), à écrire avant le code (réponse `20261128-0842-a`, journal du 2026-11-28) ; source du contenu hors dépôt : pièce 16, module 10, §7 et §8 Q2, réponse 24 de la séance du 2026-10-12.
 - **Critère de fin** : onglet servi.
