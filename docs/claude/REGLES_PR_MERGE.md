@@ -150,7 +150,9 @@ ne corrige pas une PR. Depuis `D-546`, l'intégrateur merge par
 de repentir de dix minutes après elle et le bail unique, puis écrit le
 journal des merges. Il refuse aussi (26) une focus area de PR-Agent dont le
 titre n'est cité par aucun commentaire du propriétaire jusqu'à la
-déclaration. Toute parole sur la PR depuis la déclaration suspend le
+déclaration, et (27) une PR dont le CI sur la tête ou la preuve PR-Agent
+ne rend pas 0, sauf si la déclaration cite « D-448 » et « wn-reviewer GO
+@<sha> » sur ce sha. Toute parole sur la PR depuis la déclaration suspend le
 merge, celle d'un robot comprise ; la file redéclare, et le délai repart.
 En repli, sur décision du responsable (`D-454`,
 amendement du 2026-11-08), chaque session reprend ses merges selon le même cycle, plus bas. Une PR « prête » ni mergée ni commentée par l'intégrateur vingt minutes après sa déclaration revient à sa file, qui la merge selon ce même cycle (même amendement). Une PR qui écrit la réponse à une
