@@ -182,3 +182,40 @@ describe('TrustPanel — file compacte et détail (PRA-2b, Q10 b)', () => {
     expect(((await screen.findByLabelText(/Réponse envoyée au patient/)) as HTMLTextAreaElement).value).toBe('Brouillon.');
   });
 });
+
+// PRA-2 décor ([[D-481]] §1 bis, question 20261128-0838-d : Q1 A, Q2) : le
+// germe se pose sur la file vide seulement — ni sur l'échec, ni sur une file
+// qui porte des dépôts.
+describe('TrustPanel — ornement d’état vide', () => {
+  const ORNEMENT = '[data-lien-decor="etat-vide"]';
+  const repondre = (corps: unknown) => {
+    global.fetch = vi.fn(() =>
+      Promise.resolve({ ok: true, json: () => Promise.resolve(corps) } as Response),
+    ) as unknown as typeof fetch;
+  };
+
+  it('pose le germe sur la file vide', async () => {
+    repondre({ ok: true, signalements: [], nonTraites: 0 });
+    const { container } = render(<TrustPanel />);
+    await screen.findByText(/Aucun signalement ni demande pour le moment/);
+    const ornements = container.querySelectorAll(ORNEMENT);
+    expect(ornements).toHaveLength(1);
+    expect(ornements[0].getAttribute('data-element')).toBe('nutrition-sprout');
+    expect(ornements[0].getAttribute('aria-hidden')).toBe('true');
+    expect(ornements[0].className).toContain('print:!hidden');
+    expect(ornements[0].className).toContain('max-w-full');
+  });
+
+  it('aucun germe sur l’échec de lecture', async () => {
+    repondre({ ok: false, error: 'Erreur réseau. Rechargez la page.' });
+    const { container } = render(<TrustPanel />);
+    await screen.findByRole('alert');
+    expect(container.querySelector(ORNEMENT)).toBeNull();
+  });
+
+  it('aucun germe sur une file qui porte des dépôts', async () => {
+    const { container } = render(<TrustPanel />);
+    await screen.findAllByText(/Demande d'exercice de droit/);
+    expect(container.querySelector(ORNEMENT)).toBeNull();
+  });
+});

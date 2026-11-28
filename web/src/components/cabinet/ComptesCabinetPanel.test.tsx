@@ -108,6 +108,33 @@ describe('ComptesCabinetPanel (D-385)', () => {
     expect(screen.queryByRole('table')).toBeNull();
   });
 
+  // PRA-2 décor ([[D-481]] §1 bis, question 20261128-0838-d : Q1 A, Q2) :
+  // le germe se pose sur le cabinet vide seulement.
+  it('ornement : le germe sur le cabinet vide, ni sur l’échec ni sur des comptes', async () => {
+    const ORNEMENT = '[data-lien-decor="etat-vide"]';
+    stub(ok({ ok: true, comptes: comptes([], false) }));
+    const vide = render(<ComptesCabinetPanel />);
+    await screen.findByText('Aucun dossier dans le cabinet pour l’instant.');
+    const ornements = vide.container.querySelectorAll(ORNEMENT);
+    expect(ornements).toHaveLength(1);
+    expect(ornements[0].getAttribute('data-element')).toBe('nutrition-sprout');
+    expect(ornements[0].getAttribute('aria-hidden')).toBe('true');
+    expect(ornements[0].className).toContain('print:!hidden');
+    expect(ornements[0].className).toContain('max-w-full');
+    vide.unmount();
+
+    stub(ok({ ok: false, reason: 'exception' }));
+    const echec = render(<ComptesCabinetPanel />);
+    await screen.findByRole('alert');
+    expect(echec.container.querySelector(ORNEMENT)).toBeNull();
+    echec.unmount();
+
+    stub(ok({ ok: true, comptes: comptes(Array.from({ length: 3 }, () => ({ etape: 'decision', protocole: 'sans_protocole' })), true) }));
+    const plein = render(<ComptesCabinetPanel />);
+    await waitFor(() => expect(screen.getAllByText('Effectif : 3 dossiers')).toHaveLength(2));
+    expect(plein.container.querySelector(ORNEMENT)).toBeNull();
+  });
+
   // UN SEUL JEU DE LIBELLÉS DE PHASE : ceux du rail de la fiche. Le panneau ne
   // peut pas importer le composant de la fiche ; ce banc lit sa source.
   it('les sept libellés de phase sont ceux du rail de la fiche', () => {

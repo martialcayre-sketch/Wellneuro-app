@@ -13,6 +13,7 @@ import {
 } from '@/components/ValidationEffetIndesirable';
 import { Button } from '@/components/ui/Button';
 import { TRAIT_ICONE } from '@/components/ui/icone';
+import { LienDecor } from '@/components/ui/LienDecor';
 
 const LIBELLE_STATUT: Record<string, string> = {
   recu: 'Reçu',
@@ -152,6 +153,9 @@ export function TrustPanel() {
   if (data.signalements.length === 0) {
     return (
       <div className="bg-surface border border-border rounded-xl shadow-card p-6 text-base text-muted-foreground shadow-card">
+        {/* Ornement d'état vide réel ([[D-481]] §1 bis ; PRA-2 décor, Q1 A et Q2
+            de la question 20261128-0838-d). */}
+        <LienDecor emplacement="etat-vide" element="nutrition-sprout" className="mx-auto mb-3 w-40 max-w-full" />
         Aucun signalement ni demande pour le moment. Les dépôts des patients (effets indésirables,
         incidents de confidentialité, demandes de droits) apparaîtront ici et dans le Fil.
       </div>

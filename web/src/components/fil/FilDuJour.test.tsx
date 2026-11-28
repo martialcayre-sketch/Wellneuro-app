@@ -709,3 +709,52 @@ describe('FilDuJour — la cible de chaque carte ne change pas, type par type', 
     expect(lien.getAttribute('href')).toBe(href);
   });
 });
+
+// PRA-2 décor ([[D-481]] §1 bis, question 20261128-0838-d : Q1 A, Q2) : le
+// germe se pose sur le Fil réellement vide seulement — ni sur l'indisponibilité,
+// ni sous une alerte de calcul, ni quand une trace lue occupe la zone, ni sur
+// un Fil qui porte des cartes.
+describe('FilDuJour — ornement d’état vide', () => {
+  const ORNEMENT = '[data-lien-decor="etat-vide"]';
+  beforeEach(() => vi.clearAllMocks());
+
+  it('pose le germe sur le Fil réellement vide', async () => {
+    stubFetch(async () => ({ cartes: [] }));
+    const { container } = render(<FilDuJour />);
+    await screen.findByText(/Rien n.appelle votre attention/i);
+    const ornements = container.querySelectorAll(ORNEMENT);
+    expect(ornements).toHaveLength(1);
+    expect(ornements[0].getAttribute('data-element')).toBe('nutrition-sprout');
+    expect(ornements[0].getAttribute('aria-hidden')).toBe('true');
+    expect(ornements[0].className).toContain('print:!hidden');
+    expect(ornements[0].className).toContain('max-w-full');
+  });
+
+  it('aucun germe sur l’indisponibilité', async () => {
+    stubFetch(async () => ({ cartes: [], unavailable: true }));
+    const { container } = render(<FilDuJour />);
+    await screen.findByText(/momentanément indisponible/i);
+    expect(container.querySelector(ORNEMENT)).toBeNull();
+  });
+
+  it('aucun germe sous une alerte de calcul', async () => {
+    stubFetch(async () => ({ cartes: [], lecturesBiologieIndisponibles: true }));
+    const { container } = render(<FilDuJour />);
+    await screen.findByText('Aucune autre carte ne vous attend pour le moment.');
+    expect(screen.getByRole('alert')).toBeTruthy();
+    expect(container.querySelector(ORNEMENT)).toBeNull();
+  });
+
+  it('aucun germe quand une trace lue occupe la zone, ni sur un Fil qui porte des cartes', async () => {
+    stubFetch(async () => ({ cartes: [], lues: [carte({ type: 'geste_objectif', cle: 'geste_objectif:G1' })] }));
+    const trace = render(<FilDuJour />);
+    await screen.findByText(/Rien n.appelle plus votre attention aujourd.hui/);
+    expect(trace.container.querySelector(ORNEMENT)).toBeNull();
+    trace.unmount();
+
+    stubFetch(async () => ({ cartes: [carte()] }));
+    const plein = render(<FilDuJour />);
+    await screen.findByText('Échéance dépassée depuis 2 jours');
+    expect(plein.container.querySelector(ORNEMENT)).toBeNull();
+  });
+});

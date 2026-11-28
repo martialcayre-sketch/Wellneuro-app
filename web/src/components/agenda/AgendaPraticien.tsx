@@ -5,6 +5,7 @@ import { RefreshCw } from 'lucide-react';
 import type { RendezVousApiResponse, RendezVousExpose } from '@/app/api/praticien/rendez-vous/route';
 import { Button } from '@/components/ui/Button';
 import { TRAIT_ICONE } from '@/components/ui/icone';
+import { LienDecor } from '@/components/ui/LienDecor';
 
 type PatientOption = { idPatient: string; nomComplet: string };
 
@@ -230,9 +231,14 @@ export function AgendaPraticien({ patients }: { patients: PatientOption[] }) {
             </Button>
           </div>
         ) : groupes.length === 0 ? (
-          <p className="mt-3 text-sm text-muted-foreground">
-            Aucun rendez-vous planifié pour les 7 prochains jours.
-          </p>
+          <div className="mt-3">
+            {/* Ornement d'état vide réel ([[D-481]] §1 bis ; PRA-2 décor, Q1 A
+                et Q2 de la question 20261128-0838-d). */}
+            <LienDecor emplacement="etat-vide" element="nutrition-sprout" className="mx-auto mb-3 w-40 max-w-full" />
+            <p className="text-sm text-muted-foreground">
+              Aucun rendez-vous planifié pour les 7 prochains jours.
+            </p>
+          </div>
         ) : (
           <div className="mt-3 flex flex-col gap-4">
             {groupes.map(groupe => (

@@ -166,3 +166,41 @@ describe('TrajectoiresPanel (SP-TRAJ LOT-04)', () => {
     expect(screen.getByRole('link', { name: /Michel Dogné/ })).toBeTruthy();
   });
 });
+
+// PRA-2 décor ([[D-481]] §1 bis, question 20261128-0838-d : Q1 A, Q2) :
+// le germe se pose sur le cabinet vide seulement — ni sur l'échec, ni sur la
+// liste pleine, ni sur une recherche sans résultat.
+describe('TrajectoiresPanel — ornement d’état vide', () => {
+  const ORNEMENT = '[data-lien-decor="etat-vide"]';
+
+  it('pose le germe sur le cabinet vide', async () => {
+    stubFetch({ ok: true, lignes: [] });
+    const { container } = render(<TrajectoiresPanel />);
+    await screen.findByText(/Aucun patient dans le cabinet/);
+    const ornements = container.querySelectorAll(ORNEMENT);
+    expect(ornements).toHaveLength(1);
+    expect(ornements[0].getAttribute('data-element')).toBe('nutrition-sprout');
+    expect(ornements[0].getAttribute('aria-hidden')).toBe('true');
+    expect(ornements[0].className).toContain('print:!hidden');
+    expect(ornements[0].className).toContain('max-w-full');
+  });
+
+  it('aucun germe sur l’échec de lecture', async () => {
+    stubFetch({ ok: false, reason: 'exception' });
+    const { container } = render(<TrajectoiresPanel />);
+    await screen.findByRole('alert');
+    expect(container.querySelector(ORNEMENT)).toBeNull();
+  });
+
+  it('aucun germe sur la liste pleine ni sur la recherche sans résultat', async () => {
+    stubFetch({ ok: true, lignes: LIGNES });
+    const { container } = render(<TrajectoiresPanel />);
+    await screen.findByRole('link', { name: /Sophie Nicola/ });
+    expect(container.querySelector(ORNEMENT)).toBeNull();
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Rechercher un patient' }), {
+      target: { value: 'zzz' },
+    });
+    expect(screen.getByText('Aucun patient ne correspond à la recherche.')).toBeTruthy();
+    expect(container.querySelector(ORNEMENT)).toBeNull();
+  });
+});
