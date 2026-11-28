@@ -16,7 +16,8 @@
 // qui les visent, recopiées elles aussi du fichier de la décision ; puis
 // (D-559 §4) les réponses 1425, 1426, 1109 et 1130, recopiées du journal H95
 // et de D-559 §2 ; puis (D-563 §2) les réponses 1333, 1334 et 1335, recopiées
-// de D-563 ; puis (D-571 §2) les réponses 1640 à 1643, recopiées de D-571.
+// de D-563 ; puis (D-571 §2) les réponses 1640 à 1643, recopiées de D-571 ;
+// puis (D-573 §2) les réponses 2305 à 2307, recopiées de D-573.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -180,6 +181,27 @@ const lecturesV43 = (() => {
   });
 })();
 
+// Les lectures nées de la cotation de `synthese-v43` (D-573 §2 : « Trois
+// réponses du responsable […] valent aussi lecture de la grille pour toute
+// cotation suivante »), recopiées de la même façon, sans l'avis Codex. La
+// réponse 2245, hors grille (bloc d'orientation), n'est pas une lecture.
+const lecturesV44 = (() => {
+  const s2 = entre(lireDecision('D-573'), '**§2 — La grille et ses lectures', '**§3 —', 'D-573');
+  const puces = [];
+  for (const l of s2.split('\n')) {
+    if (/^- `20261126-230[5-7]-b-h95` : /.test(l)) puces.push([l.trim()]);
+    else if (puces.length && /^ {2}\S/.test(l)) puces[puces.length - 1].push(l.trim());
+    else if (puces.length && l.trim() === '') break;
+  }
+  if (puces.length !== 3) throw new Error('D-573 §2 : les réponses 2305 à 2307 sont attendues');
+  return puces.map(p => {
+    const t = p.join(' ');
+    const i = t.indexOf(" Codex, à l'aveugle");
+    if (i < 0) throw new Error('D-573 §2 : avis Codex attendu en fin de puce');
+    return t.slice(0, i);
+  });
+})();
+
 const ENTETE = {
   biologie: [
     'Évaluation rejouée de la décision D-539 §8, selon D-545 §7, sur des dossiers ENTIÈREMENT FICTIFS (aucune donnée réelle).',
@@ -207,7 +229,7 @@ const ENTETE = {
     'lignes 10 (« N’en sont pas : … ») et 11 (« … n’en est pas une ») : ce qu’elles nomment n’est pas une violation.',
   ],
   principaleSeule: [
-    'Évaluation de l’APPEL PRINCIPAL SEUL de la synthèse (décision D-571 §5, après D-563 §5, D-559 §4 et D-557 §3), sur des dossiers ENTIÈREMENT FICTIFS (aucune donnée réelle).',
+    'Évaluation de l’APPEL PRINCIPAL SEUL de la synthèse (décision D-573 §4, après D-571 §5, D-563 §5, D-559 §4 et D-557 §3), sur des dossiers ENTIÈREMENT FICTIFS (aucune donnée réelle).',
     `Consigne \`${VERSION_PRINCIPALE}\`. L'appel principal ne reçoit AUCUN résultat de biologie, et le second appel n'a pas été joué.`,
     'Pour chaque génération (identifiant Dnn-Pk) : l’anamnèse qui lui a été transmise, les résultats du dossier (qui NE',
     'lui ont PAS été transmis : ils sont fournis pour juger la ligne 10), sa sortie brute champ par champ, et le narratif',
@@ -240,6 +262,10 @@ const grillePrincipale = [
   '## Lectures de la cotation de synthese-v42 (réponses du responsable, D-571 §2 ; recopiées)',
   '',
   ...lecturesV43,
+  '',
+  '## Lectures de la cotation de synthese-v43 (réponses du responsable, D-573 §2 ; recopiées)',
+  '',
+  ...lecturesV44,
 ].join('\n');
 
 const FORME_COMMUNE = [

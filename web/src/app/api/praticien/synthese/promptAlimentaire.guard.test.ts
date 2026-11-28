@@ -191,7 +191,9 @@ const SOURCE_ROUTE = readFileSync(join(__dirname, '../../../../lib/synthese/gene
 // v43 (2026-11-26, D-571, H95 part B) : texte 10 à la suite du texte 1 de D-559, texte 11 et la
 // phrase qui le suit à la suite du texte 2, texte 9 à la suite du texte 6 de D-563, texte 8 en
 // paragraphe neuf ; textes validés mot pour mot (v42 jamais servie).
-const EMPREINTE_V43 = 'e0c328690bba65a7';
+// v44 (2026-11-27, D-573, H95 part B) : la consigne ne change pas ; seul le contrat de sortie
+// reçoit le texte 12, et l'empreinte suit la version (v43 jamais servie).
+const EMPREINTE_V44 = 'e0c328690bba65a7';
 
 /**
  * La seule phrase de la consigne autorisée à attribuer une validité — parce
@@ -313,7 +315,7 @@ describe('garde-fou alimentaire — consigne système', () => {
     expect(
       { version: VERSION_PROMPT_SYNTHESE, empreinte },
       "consigne modifiée : incrémenter VERSION_PROMPT_SYNTHESE et reporter la nouvelle empreinte ici. CE GESTE N'EST PAS MÉCANIQUE — la consigne est du clinique (`DC-17`) : relire ce qui a changé, et si un interdit a bougé, une décision `D-xxx` et un fragment `changelog.d/` sont dus AVANT de reporter l'empreinte. C'est ici que passe une clause affaiblie qu'aucune assertion de vocabulaire ne voit.",
-    ).toEqual({ version: 'synthese-v43', empreinte: EMPREINTE_V43 });
+    ).toEqual({ version: 'synthese-v44', empreinte: EMPREINTE_V44 });
   });
 
   it('ne présente pas les questionnaires comme validés, et dit pourquoi (D-034)', () => {

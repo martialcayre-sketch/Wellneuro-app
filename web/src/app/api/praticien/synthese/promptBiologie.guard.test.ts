@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 import {
   SYSTEM_PROMPT_CONTRAT_JSON,
   SYSTEM_PROMPT_GOUVERNANCE,
+  SYSTEM_PROMPT_SYNTHESE,
   VERSION_PROMPT_SYNTHESE,
   VERSION_SCHEMA_SYNTHESE,
 } from '@/lib/anthropic';
@@ -20,7 +21,8 @@ import {
 // et §5 (qui amende [[D-513]] §3, §4 et §6), amendés par [[D-545]] §3 et §5,
 // complétés par [[D-557]] §2 et [[D-559]] §3 (`synthese-v41`, jamais servie),
 // puis par [[D-563]] §3 et §4 (`synthese-v42`, jamais servie), puis par
-// [[D-571]] §4 (`synthese-v43`, 2026-11-26).
+// [[D-571]] §4 (`synthese-v43`, jamais servie), puis par [[D-573]] §3
+// (`synthese-v44`, 2026-11-27 : le texte 12, au contrat de sortie).
 // Textes validés mot pour mot par le responsable le 2026-11-18 (D-539) et le
 // 2026-11-19 (D-545) : la section « Résultats de biologie » de `synthese-v38`,
 // ses retouches et son contrat de sortie ; la consigne du second appel,
@@ -34,7 +36,8 @@ import {
 // du texte 3 de D-559, le texte 7 en puce du narratif et l'exemple du contrat ;
 // pour v43, le texte 10 à la suite du texte 1 de D-559, le texte 11 et la phrase
 // qui le suit à la suite du texte 2, le texte 9 à la suite du texte 6 de D-563,
-// et le texte 8 en paragraphe neuf, avant le texte 4 de D-559.
+// et le texte 8 en paragraphe neuf, avant le texte 4 de D-559 ; pour v44,
+// le texte 12 de D-573 en paragraphe neuf du contrat, après son titre.
 // Rien n'est recopié à la main.
 //
 // CE BANC NE PROUVE PAS QUE LE MODÈLE OBÉIT : il prouve qu'on ne peut plus
@@ -46,7 +49,7 @@ const TITRE_SECTION = '## Résultats de biologie';
 const SECTION_SUIVANTE = '## Consignes de réponse';
 
 const EMPREINTE_SECTION_V43 = '501667127401b843';
-const EMPREINTE_CONTRAT_V42 = '7d968ff7f97c6c5c';
+const EMPREINTE_CONTRAT_V44 = '32590ab4a46424b6';
 const EMPREINTE_CONSIGNE_BIOLOGIE_V2 = 'a7a0ec27ba117fea';
 const EMPREINTE_RELANCE_BIOLOGIE_V1 = '4e45bd3f269fe124';
 
@@ -59,6 +62,7 @@ const D557 = lireDecision('D-557');
 const D559 = lireDecision('D-559');
 const D563 = lireDecision('D-563');
 const D571 = lireDecision('D-571');
+const D573 = lireDecision('D-573');
 
 /** Un bloc cité d'une décision, à partir de sa première ligne, sans ses chevrons (et leur retrait). */
 function citationDe(decision: string[], premiere: string, retrait = ''): string {
@@ -204,12 +208,13 @@ function empreinte(texte: string): string {
   return createHash('sha256').update(texte).digest('hex').slice(0, 16);
 }
 
-describe('synthese-v43 — la section « Résultats de biologie » (D-539 §5.1, D-545 §5.1, D-557 §2, D-559 §3, D-563 §3, D-571 §4)', () => {
+describe('synthese-v44 — la section « Résultats de biologie », inchangée depuis v43 (D-539 §5.1, D-545 §5.1, D-557 §2, D-559 §3, D-563 §3, D-571 §4)', () => {
   // v39 (D-543) ne touchait pas cette section ; v41 (D-559, jamais servie) y ajoutait les textes de
   // D-557 §2 et D-559 §3 ; v42 (D-563, jamais servie) les textes 5 et 6 à la suite du texte 3 de
-  // D-559 ; v43 (D-571) les textes 8 à 11 et la phrase qui suit le texte 11.
-  it('la version est synthese-v43', () => {
-    expect(VERSION_PROMPT_SYNTHESE).toBe('synthese-v43');
+  // D-559 ; v43 (D-571) les textes 8 à 11 et la phrase qui suit le texte 11 ; v44 (D-573) n'y
+  // touche pas.
+  it('la version est synthese-v44', () => {
+    expect(VERSION_PROMPT_SYNTHESE).toBe('synthese-v44');
   });
 
   it('la section est, au caractère près, le texte de D-539 amendé par D-545, suivi des textes de D-557 §2, D-559 §3, D-563 §3 et D-571 §4 à leur place', () => {
@@ -308,7 +313,29 @@ describe('synthese-v38 — les retouches (D-539 §5.2 et §5.3, D-545 §5.2)', (
   });
 });
 
-describe('synthese-v43 — le contrat de sortie, inchangé depuis v42, schéma v4 sans les clés biologiques (D-539 §5.4), exemple d’argument de D-563 §4', () => {
+/** Le texte 12 de [[D-573]] §3, sans retouche (citation retirée de deux espaces). */
+function texteD573(): string {
+  const t = D573.filter((l) => l.startsWith('  > ')).map((l) => l.slice(4));
+  expect(t, 'D-573 §3 : un seul texte').toHaveLength(1);
+  expect(t[0].startsWith('Dans axe et dans arguments'), 'D-573 §3 : texte 12').toBe(true);
+  return t[0];
+}
+
+describe('synthese-v44 — le contrat de sortie : texte 12 de D-573 §3 en tête, schéma v4 sans les clés biologiques (D-539 §5.4), exemple d’argument de D-563 §4', () => {
+  it('v44 (D-573 §3) : le texte 12 est un paragraphe neuf, juste après le titre et avant la phrase du JSON, une seule fois', () => {
+    const t12 = texteD573();
+    expect(SYSTEM_PROMPT_CONTRAT_JSON.startsWith(
+      `## Format de sortie\n\n${t12}\n\nRéponds exclusivement en JSON valide, sans texte avant ni après. Structure exacte :\n\n{`,
+    )).toBe(true);
+    expect(SYSTEM_PROMPT_SYNTHESE.split(t12)).toHaveLength(2);
+    expect(CONSIGNE).not.toContain(t12);
+  });
+
+  it('hors du texte 12, le contrat est celui de v43, au caractère près', () => {
+    const sans = SYSTEM_PROMPT_CONTRAT_JSON.replace(`${texteD573()}\n\n`, '');
+    expect(empreinte(sans), 'contrat de v43 modifié hors du texte 12').toBe('7d968ff7f97c6c5c');
+  });
+
   it('le schéma enregistré reste synthese-json-v4', () => {
     expect(VERSION_SCHEMA_SYNTHESE).toBe('synthese-json-v4');
   });
@@ -326,7 +353,7 @@ describe('synthese-v43 — le contrat de sortie, inchangé depuis v42, schéma v
   });
 
   it('le contrat est épinglé par empreinte', () => {
-    expect(empreinte(SYSTEM_PROMPT_CONTRAT_JSON), 'contrat modifié : le texte a été validé mot pour mot, resoumettre au responsable').toBe(EMPREINTE_CONTRAT_V42);
+    expect(empreinte(SYSTEM_PROMPT_CONTRAT_JSON), 'contrat modifié : le texte a été validé mot pour mot, resoumettre au responsable').toBe(EMPREINTE_CONTRAT_V44);
   });
 });
 

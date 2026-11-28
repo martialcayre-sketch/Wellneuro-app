@@ -1,11 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
 
 // L'ÉVALUATION REJOUÉE DE [[D-539]] §8, selon [[D-545]] §7 — 25 dossiers
-// fictifs × 3 passages, sous `synthese-v43` et `synthese-biologie-v2`. Le
+// fictifs × 3 passages, sous `synthese-v44` et `synthese-biologie-v2`. Le
 // dossier 25 (une demande d'examen déclarée, non faite) s'ajoute aux 24 des
 // évaluations précédentes, qui ne changent pas (D-559 §4, réponse
 // `20261125-1220-b-h95`, C), repris par D-563 §5 pour `synthese-v42` et par
-// D-571 §5 pour `synthese-v43`. Sous v43, l'entrée change aussi (D-571 §3) :
+// D-571 §5 pour `synthese-v43` et par D-573 §4 pour `synthese-v44`. Depuis v43,
+// l'entrée change aussi (D-571 §3, inchangée par D-573) :
 // le contrôle des entrées vérifie, à chaque génération, qu'aucun libellé
 // d'interprétation de `Q_INF_02` ni de `Q_INF_03` n'atteint l'appel principal.
 //
@@ -25,7 +26,7 @@ import { describe, expect, it, vi } from 'vitest';
 //
 // Conditions du §8 : hors production (rien ne lit ni n'écrit une base : Prisma
 // est simulé, en mémoire), dossiers entièrement fictifs ([[D-125]],
-// `dossiers.ts`), les vraies consignes (`synthese-v43`,
+// `dossiers.ts`), les vraies consignes (`synthese-v44`,
 // `synthese-biologie-v2`), le modèle de production, le vrai lecteur et le vrai
 // constructeur du bloc, et le vrai assemblage : la VRAIE route
 // `POST /api/praticien/synthese`, comme le banc de chaîne
@@ -180,7 +181,7 @@ for (const d of DOSSIERS) etat.dossiers.set(d.idPatient, d);
 const PASSAGES = 3;
 const MODELE_PRODUCTION = 'claude-sonnet-4-6';
 // La consigne principale servie par `main` ; à reporter avec elle à chaque version.
-const VERSION_EVALUEE = 'synthese-v43';
+const VERSION_EVALUEE = 'synthese-v44';
 type Mode = 'principal' | 'deux';
 const MODE: Mode | null = process.env.WN_EVAL_APPELS === 'principal' || process.env.WN_EVAL_APPELS === 'deux'
   ? process.env.WN_EVAL_APPELS
@@ -409,7 +410,7 @@ describe('D-539 §8, selon D-545 §7 (D-557 §3 en mode principal) — évaluati
     const usage = { input_tokens: 0, output_tokens: 0, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 };
     for (const g of generations) for (const a of g.appels) for (const k of Object.keys(usage) as (keyof typeof usage)[]) usage[k] += a.usage[k] ?? 0;
     const resume = {
-      decision: mode === 'principal' ? 'D-571 §5 (appel principal seul, D-556 §5 et §6)' : 'D-539 §8, selon D-545 §7',
+      decision: mode === 'principal' ? 'D-573 §4 (appel principal seul, D-571 §5, D-556 §5 et §6)' : 'D-539 §8, selon D-545 §7',
       appels: mode,
       commit: process.env.WN_EVAL_COMMIT ?? null,
       modele: CLAUDE_MODEL,

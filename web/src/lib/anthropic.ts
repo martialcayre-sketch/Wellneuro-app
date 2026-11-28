@@ -444,7 +444,17 @@ export const CLAUDE_MODEL = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6';
 // #2358 fermées, évaluations non conformes) ; leurs numéros ne sont pas repris.
 // Servis après le verdict conforme de l'évaluation de l'appel principal seul
 // (D-571 §5). Comme v39, v43 vaut drapeau posé ou non. Bump assumé et déclaré.
-export const VERSION_PROMPT_SYNTHESE = 'synthese-v43';
+// v44 (H95 part B, [[D-573]] §3, qui amende [[D-571]] §4 ; arbitrages
+// `20261127-0005-b-h95` (A') et `20261127-1925-b-h95`) : sur la base de v43,
+// inchangée (entrée de D-571 §3 et textes 8 à 11 compris), le texte 12 forme
+// un paragraphe neuf dans le contrat de sortie, juste après le titre « ##
+// Format de sortie » et avant « Réponds exclusivement en JSON valide… » ; clés,
+// structure et schéma `synthese-json-v4` inchangés. Texte validé mot pour mot
+// par le responsable le 2026-11-27. `synthese-v43` n'a jamais été servie
+// (#2386, évaluation non conforme) ; son numéro n'est pas repris. Servi après
+// le verdict conforme de l'évaluation de l'appel principal seul (D-573 §4).
+// Comme v39, v44 vaut drapeau posé ou non. Bump assumé et déclaré.
+export const VERSION_PROMPT_SYNTHESE = 'synthese-v44';
 // v3 (LOT-01 étape 4) : la sortie du modèle est lue par `analyserSortieSynthese`
 // — schéma fermé, énumérations contrôlées, rejet + une relance. La forme du JSON
 // est inchangée ; ce qui change est qu'une sortie non conforme n'est plus servie
@@ -776,6 +786,8 @@ en sortir orienté, jamais inquiété.
 `;
 
 export const SYSTEM_PROMPT_CONTRAT_JSON = `## Format de sortie
+
+Dans axe et dans arguments, n'écris ni un examen que déclare l'anamnèse ni son résultat, pas même comme une déclaration du patient ou mis en doute : dans un axe, seul l'examen se rappelle, dans points_a_confirmer, par une question qui demande d'en apporter le compte rendu, sans en citer le résultat.
 
 Réponds exclusivement en JSON valide, sans texte avant ni après. Structure exacte :
 
