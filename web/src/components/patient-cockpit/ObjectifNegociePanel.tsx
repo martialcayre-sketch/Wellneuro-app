@@ -38,6 +38,7 @@ import {
 import { LONGUEUR_MAX_MOTIF_ECART } from '@/lib/praticien/propositionObjectif';
 import { PRIORITE_REPRISE, REFORMULATION_REPRISE } from '@/lib/objectif/marquesProvenance';
 import { useFocusApresRelecture } from '@/components/ui/useFocusApresRelecture';
+import { LienDecor } from '@/components/ui/LienDecor';
 
 // L'objectif négocié (Alliance 6.0-A, LOT-02) — surface praticien, phase
 // « Compréhension » du poste de pilotage.
@@ -339,11 +340,14 @@ function LigneObjectif({
   ligne,
   ratification,
   accord,
+  separateurDeuxVoix = false,
 }: {
   ligne: ObjectifExpose;
   ratification?: { libelle: string; date: string | null };
   /** L'accord de CETTE version et sa provenance ; absent = aucun accord connu. */
   accord?: AccordAffiche | null;
+  /** Décor entre les deux voix (PRA-3b) : version courante seulement. */
+  separateurDeuxVoix?: boolean;
 }) {
   return (
     <div className="text-base text-foreground">
@@ -363,6 +367,14 @@ function LigneObjectif({
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Le patient</p>
         <p className="mt-1 whitespace-pre-wrap">« {ligne.enoncePatient} »</p>
       </div>
+      {/* SÉPARATEUR DES DEUX VOIX (PRA-3b décor ; [[D-481]] §1 bis ; prototype
+          validé « Q1a — Q2a — Q3a » le 2026-11-28). Version courante seulement,
+          et seulement quand la reformulation existe : une voix seule n'a rien
+          à séparer. Étroit (320 px au plus), gardé à toute largeur ; absent à
+          l'impression, où les intitulés restent. */}
+      {separateurDeuxVoix && ligne.reformulationPraticien && (
+        <LienDecor emplacement="deux-voix" className="mx-auto mt-2 w-full max-w-[320px]" />
+      )}
       {ligne.reformulationPraticien && (
         <div className="mt-2 rounded-lg border border-border bg-surface-2 p-3">
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -1760,6 +1772,7 @@ export function ObjectifNegociePanel({
                 <div className="mt-1">
                   <LigneObjectif
                     ligne={courante}
+                    separateurDeuxVoix
                     accord={accords[courante.id] ?? null}
                     ratification={{
                       libelle:
