@@ -5,7 +5,8 @@
 // lecture, aucune écriture, aucun réseau, aucune horloge implicite
 // (`maintenant` est toujours passé). La source des règles est
 // `docs/ROLES_MACHINES.md` (« La liste commune de questions et le guichet »,
-// « Le registre des messages entre agents », « Le carnet de lots ») : chaque
+// « Le registre des messages entre agents », « Le carnet de lots », et pour la
+// collection `reponses` du cockpit, « Réponse depuis le cockpit ») : chaque
 // énumération, chaque délai ci-dessous en est la transcription, et rien n'y
 // est ajouté. Ce qui n'est pas une règle écrite sort en `avis`, jamais en
 // `anomalie`.
@@ -33,6 +34,12 @@ export const NATURES_LOT = ['ordinaire', 'reservee'];
 export const RISQUES_LOT = ['P0', 'P1', 'P2'];
 export const NATURES_QUESTION = ['ordinaire', 'clinique', 'migration'];
 export const STATUTS_QUESTION = ['ouverte', 'en_seance', 'repondue', 'close'];
+// La collection `reponses` du cockpit (question `20261115-1525-d`, `D-531`).
+export const ETATS_REPONSE = ['envoyee', 'reportee', 'ecartee'];
+export const SOURCE_REPONSE = 'cockpit';
+/** `reponse_par` d'une question où la session a reporté une réponse du cockpit. */
+export const REPONSE_PAR_COCKPIT = 'responsable, par le cockpit';
+const FILES_QUESTION = [...BOITES_FILES, 'guichet'];
 
 /** Un lot `pris` sans `pr` est sans nouvelles au-delà (`D-510`, « Sans nouvelles »). */
 export const SANS_NOUVELLES_MS = 4 * 3600 * 1000;
@@ -46,6 +53,8 @@ const CHAMPS_REPONSE_LE = ['reponse_le', 'repondu_le', 'date_reponse'];
 const RE_ID_DATE = /^(\d{4})(\d{2})(\d{2})-(\d{2})(\d{2})-([a-z0-9]+(?:-[a-z0-9]+)*)$/;
 const RE_ID_LOT = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const RE_REF_PR = /#\d+/;
+// `<question>--<horodatage UTC>-<suffixe>`.
+const RE_ID_REPONSE = /^(.+)--(\d{8}T\d{6,9}Z?)-([a-z0-9]+)$/;
 
 // Indices de contenu interdit (« Ce qui n'y entre jamais »). Heuristiques :
 // elles sortent en `avis`, et ne citent jamais la valeur trouvée.
@@ -240,13 +249,46 @@ export function controlerQuestions(questions) {
   return r.constats;
 }
 
+/**
+ * Les lignes `reponses` du cockpit contre la règle écrite (« Réponse depuis le
+ * cockpit », `D-531`). Une ligne `envoyee` que la règle écarte n'est pas une
+ * anomalie : c'est une action due (voir `actionsDues`). Une ligne déjà
+ * `reportee` alors que la règle l'écartait, si.
+ */
+export function controlerReponses(reponses, questions = null) {
+  const r = relever('reponses');
+  const parQuestion = questions ? new Map(questions.map((q) => [q.id, q])) : null;
+  for (const p of reponses) {
+    const m = RE_ID_REPONSE.exec(p.id);
+    if (!m || !idDate(m[1])) r.anomalie(p.id, 'identifiant', 'attendu `<question>--<horodatage UTC>-<suffixe>`');
+    else if (!vide(p.question) && m[1] !== p.question) r.anomalie(p.id, 'identifiant', 'l\'identifiant ne commence pas par la question visée (`question`)');
+    for (const c of ['question', 'file', 'nature', 'reponse', 'le', 'etat']) if (vide(p[c])) r.anomalie(p.id, 'champ', `\`${c}\` manque`);
+    if (!vide(p.file) && !FILES_QUESTION.includes(p.file)) r.anomalie(p.id, 'file', `« ${court(p.file)} » n'est pas une file (${FILES_QUESTION.join(', ')})`);
+    if (!vide(p.nature) && !NATURES_QUESTION.includes(p.nature)) r.anomalie(p.id, 'nature', `« ${court(p.nature)} » n'est pas une nature (${NATURES_QUESTION.join(', ')})`);
+    if (!vide(p.etat) && !ETATS_REPONSE.includes(p.etat)) r.anomalie(p.id, 'etat', `« ${court(p.etat)} » n'est pas un état (${ETATS_REPONSE.join(', ')})`);
+    controlerHorodatages(p, ['le', 'reportee_le'], r);
+    const q = parQuestion && !vide(p.question) ? parQuestion.get(p.question) : undefined;
+    if (p.etat === 'reportee') {
+      for (const c of ['reportee_le', 'reportee_par']) if (vide(p[c])) r.anomalie(p.id, 'report', `ligne \`reportee\` sans \`${c}\``);
+      // « Une ligne sans `par`, ou dont la `source` n'est pas `cockpit`, est `ecartee`. »
+      if (vide(p.par) || p.source !== SOURCE_REPONSE) r.anomalie(p.id, 'source', 'ligne `reportee` sans `par` ou de source autre que `cockpit` — la règle l\'écarte');
+      if (p.nature === 'migration' || q?.nature === 'migration') r.anomalie(p.id, 'report', 'réponse `migration` reportée — elle se tranche en séance, la ligne est `ecartee`');
+      if (q && (q.statut === 'ouverte' || q.statut === 'en_seance')) r.anomalie(p.id, 'report', `ligne \`reportee\`, question encore \`${court(q.statut, 12)}\` — le report écrit la réponse dans la question`);
+    }
+    if (p.etat === 'ecartee' && vide(p.motif)) r.avis(p.id, 'ecartee', 'ligne `ecartee` sans `motif` — la règle l\'écarte « avec son motif »');
+    if (parQuestion && !vide(p.question) && !q) r.avis(p.id, 'question', 'la question visée n\'est pas dans la liste commune exportée');
+    controlerContenu(p, r);
+  }
+  return r.constats;
+}
+
 const heures = (ms) => Math.round((ms / 3600000) * 10) / 10;
 
 /**
  * Ce que les règles écrites appellent, à l'instant `maintenant` (ms). Chaque
  * action cite la règle qui la fonde ; aucune n'est une autorisation.
  */
-export function actionsDues({ messages = [], lots = [], questions = [], absentes = [] }, maintenant) {
+export function actionsDues({ messages = [], lots = [], questions = [], reponses = [], absentes = [] }, maintenant) {
   const actions = [];
   const sansMessages = absentes.includes('messages');
   const questionParId = new Map(questions.map((q) => [q.id, q]));
@@ -329,6 +371,58 @@ export function actionsDues({ messages = [], lots = [], questions = [], absentes
       }
     }
   }
+  actions.push(...actionsReponses(reponses, questionParId, absentes.includes('questions'), maintenant));
+  return actions;
+}
+
+/**
+ * « Le report » : les lignes `reponses` encore `envoyee`. Une ligne sans `par`
+ * ou d'une autre source que le cockpit s'écarte ; parmi les autres, la plus
+ * récente de chaque question l'emporte, et les plus anciennes passent à
+ * `reportee`, motif « remplacée ».
+ */
+function actionsReponses(reponses, questionParId, sansQuestions, maintenant) {
+  const actions = [];
+  const poser = (p, type, detail) => {
+    const t = instant(p.le);
+    actions.push({ type, collection: 'reponses', id: p.id, cible: court(p.file), age_h: t === null ? null : heures(maintenant - t), detail });
+  };
+  const ecarter = (p, motif) => poser(p, 'reponse_a_ecarter', `${motif} — la ligne passe à \`ecartee\` avec son motif, et l'écartement est signalé au responsable`);
+  const parQuestion = new Map();
+  for (const p of reponses) {
+    if (p.etat !== 'envoyee') continue;
+    if (vide(p.par) || p.source !== SOURCE_REPONSE) {
+      ecarter(p, 'ligne sans `par` ou de source autre que `cockpit`');
+      continue;
+    }
+    const cle = texte(p.question);
+    parQuestion.set(cle, [...(parQuestion.get(cle) ?? []), p]);
+  }
+  for (const [cle, lignes] of parQuestion) {
+    lignes.sort((x, y) => (instant(y.le) ?? 0) - (instant(x.le) ?? 0) || y.id.localeCompare(x.id));
+    const [recente, ...anciennes] = lignes;
+    const q = questionParId.get(cle);
+    const clinique = recente.nature === 'clinique' || q?.nature === 'clinique';
+    let reportable = false;
+    if (recente.nature === 'migration' || q?.nature === 'migration') ecarter(recente, 'question `migration` : elle se tranche en séance');
+    else if (!q) {
+      poser(recente, 'reponse_a_verifier', sansQuestions ? 'la liste commune manque à l\'export : refaire l\'export avant tout report' : 'la question visée n\'est pas dans la liste commune exportée — à vérifier avant tout report');
+    } else if (q.statut === 'ouverte' || q.statut === 'en_seance') {
+      reportable = true;
+      poser(recente, 'reponse_sans_report', `réponse du cockpit que la question \`${court(q.statut, 12)}\` ne reflète pas — y écrire, avec \`if_version\`, \`statut: repondue\`, \`reponse\`, \`reponse_note\`, \`reponse_le\` (le \`le\` de la ligne) et \`reponse_par: ${REPONSE_PAR_COCKPIT}\`, puis passer la ligne à \`reportee\`${clinique ? ' ; clinique : vérifier d\'abord que `par` est le compte du responsable (`profiles`), puis décision `D-xxx` et fragment `changelog.d/` avant tout code' : ''}`);
+    } else if (q.statut === 'repondue' || q.statut === 'close') {
+      const t = instant(q.reponse_le);
+      const reflete = texte(q.reponse) === texte(recente.reponse) && texte(q.reponse_par) === REPONSE_PAR_COCKPIT && t !== null && t === instant(recente.le);
+      if (reflete) {
+        reportable = true;
+        poser(recente, 'reponse_reportee_non_marquee', 'la question reflète déjà cette réponse — passer la ligne à `reportee`, avec `reportee_le` et `reportee_par`');
+      } else ecarter(recente, `question déjà \`${court(q.statut, 12)}\``);
+    } else poser(recente, 'reponse_a_verifier', `question au statut « ${court(q.statut, 12)} » — à vérifier avant tout report`);
+    for (const p of anciennes) {
+      if (reportable) poser(p, 'reponse_remplacee', `une ligne plus récente de la même question l'emporte (${recente.id}) — \`reportee\`, motif « remplacée »`);
+      else poser(p, 'reponse_a_verifier', `une ligne plus récente de la même question (${recente.id}) n'est pas reportable — à vérifier avec elle`);
+    }
+  }
   return actions;
 }
 
@@ -376,19 +470,25 @@ function compter(lignes, champ) {
   return { total: lignes.length, par: Object.fromEntries(par) };
 }
 
-/** L'analyse entière d'un export : constats de règle, actions dues, lots suivants, comptes. */
-export function analyser({ messages: m = [], lots: l = [], questions: q = [], absentes = [] }, maintenant) {
-  const [messages, lots, questions] = [m, l, q].map(assainirIds);
-  const constats = [...controlerMessages(messages), ...controlerLots(lots, questions.length > 0 ? questions : null), ...controlerQuestions(questions)];
+/** L'analyse entière d'un export : constats de règle, actions dues, lots suivants, comptes (`reponses` vide si non exportée). */
+export function analyser({ messages: m = [], lots: l = [], questions: q = [], reponses: p = [], absentes = [] }, maintenant) {
+  const [messages, lots, questions, reponses] = [m, l, q, p].map(assainirIds);
+  const constats = [
+    ...controlerMessages(messages),
+    ...controlerLots(lots, questions.length > 0 ? questions : null),
+    ...controlerQuestions(questions),
+    ...controlerReponses(reponses, questions.length > 0 ? questions : null),
+  ];
   return {
     comptes: {
       messages: compter(messages, 'etat'),
       lots: compter(lots, 'etat'),
       questions: compter(questions, 'statut'),
+      reponses: compter(reponses, 'etat'),
     },
     anomalies: constats.filter((c) => c.gravite === 'anomalie'),
     avis: constats.filter((c) => c.gravite === 'avis'),
-    actions: actionsDues({ messages, lots, questions, absentes }, maintenant),
+    actions: actionsDues({ messages, lots, questions, reponses, absentes }, maintenant),
     suivants: lotsSuivants(lots),
   };
 }

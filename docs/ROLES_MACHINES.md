@@ -397,10 +397,15 @@ suivi.
 Une session peut faire relire par une machine ce qu'elle vient d'exporter :
 `node scripts/wn-registres.mjs <dossier-export> [--boite <nom>]`, sur le
 dossier d'un `ArtifactData list … out_dir` des collections `messages`, `lots`
-et `questions`. Le script applique les règles écrites ci-dessus et rend trois
+et `questions`, et, si elle est exportée, `reponses` (les réponses du
+cockpit). Le script applique les règles écrites ci-dessus et rend trois
 listes : les anomalies de règle, les avis, et les actions dues (ligne `emis` à
-relancer, lot sans nouvelles, question répondue sans suite). Sa portée est
-bornée, et la croire plus large est le risque :
+relancer, lot sans nouvelles, question répondue sans suite, réponse du
+cockpit `envoyee` que la question ne reflète pas, à écarter ou remplacée).
+La collection `reponses` est facultative : sans dossier, la sortie dit
+qu'elle n'est pas contrôlée, et un manifeste qui ne la déclare pas n'est pas
+en écart, sauf si elle est exportée. Sa portée est bornée, et la croire plus
+large est le risque :
 
 - il lit des fichiers locaux et n'écrit rien, ni au dépôt ni aux registres —
   les écritures restent celles de la session, par `if_version` ;
