@@ -8,9 +8,12 @@
 //                                 [--maintenant <ISO>]
 //
 // Le dossier est celui que rend l'export : `<dossier>/messages/<id>.json`,
-// `<dossier>/lots/<id>.json`, `<dossier>/questions/<id>.json`. Il reste hors
-// du dépôt (bloc-notes de la session) : un export porte le contenu des
-// registres et ne se committe jamais.
+// `<dossier>/lots/<id>.json`, `<dossier>/questions/<id>.json`, et, facultatif,
+// `<dossier>/reponses/<id>.json` (les réponses du cockpit, « Réponse depuis le
+// cockpit ») : un export qui ne la porte pas reste lisible, la sortie dit
+// alors que les réponses ne sont pas contrôlées. Il reste hors du dépôt
+// (bloc-notes de la session) : un export porte le contenu des registres et
+// ne se committe jamais.
 //
 // Ce que la sortie vaut : les règles écrites de `docs/ROLES_MACHINES.md`
 // appliquées à l'état exporté, à l'heure de l'export. Elle n'authentifie
@@ -44,6 +47,9 @@ export const SORTIE_ANOMALIES = 2;
 export const SORTIE_USAGE = 3;
 
 export const COLLECTIONS = ['messages', 'lots', 'questions'];
+// Lue si elle est exportée, jamais exigée : son absence ne fait ni
+// collection « absente », ni écart au manifeste qui ne la déclare pas.
+export const COLLECTIONS_FACULTATIVES = ['reponses'];
 /** Au-delà, l'export décrit un état passé : la sortie le dit en tête. */
 export const EXPORT_PERIME_MIN = 30;
 
@@ -73,17 +79,18 @@ export function analyserArguments(argv) {
 }
 
 /**
- * Lit l'export. Rend `{ messages, lots, questions, absentes, illisibles,
- * plusAncien }` — chaque ligne reçoit son `id`, le nom de son fichier.
- * `plusAncien` est la date du fichier le plus ancien : un export refait en
- * partie a l'âge de ce qui n'a pas été refait.
+ * Lit l'export. Rend `{ messages, lots, questions, reponses, absentes,
+ * nonExportees, illisibles, plusAncien }` — chaque ligne reçoit son `id`, le
+ * nom de son fichier. `nonExportees` : les collections facultatives sans
+ * dossier. `plusAncien` est la date du fichier le plus ancien : un export
+ * refait en partie a l'âge de ce qui n'a pas été refait.
  */
 export function lireExport(dossier) {
-  const lu = { messages: [], lots: [], questions: [], absentes: [], illisibles: [], plusAncien: null };
-  for (const collection of COLLECTIONS) {
+  const lu = { messages: [], lots: [], questions: [], reponses: [], absentes: [], nonExportees: [], illisibles: [], plusAncien: null };
+  for (const collection of [...COLLECTIONS, ...COLLECTIONS_FACULTATIVES]) {
     const chemin = join(dossier, collection);
     if (!existsSync(chemin) || !statSync(chemin).isDirectory()) {
-      lu.absentes.push(collection);
+      (COLLECTIONS_FACULTATIVES.includes(collection) ? lu.nonExportees : lu.absentes).push(collection);
       continue;
     }
     for (const fichier of readdirSync(chemin).filter((f) => f.endsWith('.json')).sort()) {
@@ -110,7 +117,8 @@ export const SCHEMA_MANIFESTE = 1;
  * `etat` vaut `absent`, `conforme` ou `ecart`. Une collection que le
  * manifeste déclare vide (0 ligne, curseur épuisé) et dont le dossier manque
  * n'est plus « absente » : l'outil n'écrit pas de dossier pour une collection
- * vide. `lu.absentes` est corrigé en place dans ce seul cas.
+ * vide. `lu.absentes` (ou `lu.nonExportees`, pour une collection
+ * facultative) est corrigé en place dans ce seul cas.
  */
 export function lireManifeste(dossier, lu, maintenant = null) {
   const chemin = join(dossier, FICHIER_MANIFESTE);
@@ -150,6 +158,31 @@ export function lireManifeste(dossier, lu, maintenant = null) {
     const surDisque = absente ? 0 : lu[collection].length + lu.illisibles.filter((f) => f.startsWith(`${collection}/`)).length;
     if (surDisque !== d.lignes) ecarts.push(`${collection} : ${surDisque} fichier(s) pour ${d.lignes} ligne(s) déclarée(s)`);
   }
+  // Une collection facultative : non déclarée et sans dossier, rien à dire ;
+  // exportée sans être déclarée, ou déclarée, elle se confronte comme les autres.
+  for (const collection of COLLECTIONS_FACULTATIVES) {
+    const d = m.collections[collection];
+    const exportee = !(lu.nonExportees ?? []).includes(collection);
+    if (d === undefined) {
+      if (exportee) ecarts.push(`${collection} : exportée, non déclarée au manifeste`);
+      continue;
+    }
+    if (!d || typeof d !== 'object') {
+      ecarts.push(`${collection} : déclaration illisible au manifeste`);
+      continue;
+    }
+    if (d.curseur_epuise !== true) ecarts.push(`${collection} : pagination non attestée épuisée (\`curseur_epuise\`)`);
+    if (!Number.isInteger(d.lignes) || d.lignes < 0) {
+      ecarts.push(`${collection} : \`lignes\` n'est pas un entier`);
+      continue;
+    }
+    if (!exportee && d.lignes === 0 && d.curseur_epuise === true) {
+      lu.nonExportees = lu.nonExportees.filter((c) => c !== collection);
+      continue;
+    }
+    const surDisque = exportee ? lu[collection].length + lu.illisibles.filter((f) => f.startsWith(`${collection}/`)).length : 0;
+    if (surDisque !== d.lignes) ecarts.push(`${collection} : ${surDisque} fichier(s) pour ${d.lignes} ligne(s) déclarée(s)`);
+  }
   return { etat: ecarts.length === 0 ? 'conforme' : 'ecart', ecarts, exporteLe };
 }
 
@@ -165,17 +198,18 @@ export function ageExport(lu, manifeste, maintenant) {
 const age = (h) => (h === null ? '' : ` · ${h} h`);
 
 /** Le rendu texte : comptes, anomalies, avis, actions dues, lots suivants, boîte, ligne machine. */
-export function rendre(analyse, { absentes = [], illisibles = [], ageExportMin = null, boiteNom = null, lignesBoite = [], manifeste = null } = {}) {
+export function rendre(analyse, { absentes = [], nonExportees = [], illisibles = [], ageExportMin = null, boiteNom = null, lignesBoite = [], manifeste = null } = {}) {
   const lignes = [];
   if (ageExportMin !== null && ageExportMin > EXPORT_PERIME_MIN) lignes.push(`⚠ export vieux de ${Math.round(ageExportMin)} min — il décrit un état passé ; refaire l'export avant tout geste.`);
   if (manifeste?.etat === 'absent') lignes.push(`· export sans ${FICHIER_MANIFESTE} : complétude de la pagination non attestée.`);
   for (const e of manifeste?.ecarts ?? []) lignes.push(`✗ manifeste en écart : ${court(e, 120)}`);
   if (absentes.length > 0) lignes.push(`· collection(s) absente(s) de l'export, non contrôlée(s) : ${absentes.join(', ')}`);
+  if (nonExportees.length > 0) lignes.push(`· collection(s) facultative(s) non exportée(s), non contrôlée(s) : ${nonExportees.join(', ')}`);
   for (const f of illisibles) lignes.push(`✗ fichier illisible : ${court(f, 80)}`);
   const { comptes, anomalies, avis, actions, suivants } = analyse;
   const detail = (c) => Object.entries(c.par).map(([k, n]) => `${k} ${n}`).join(', ');
-  for (const collection of COLLECTIONS) {
-    if (!absentes.includes(collection)) lignes.push(`· ${collection} : ${comptes[collection].total} ligne(s)${comptes[collection].total > 0 ? ` (${detail(comptes[collection])})` : ''}`);
+  for (const collection of [...COLLECTIONS, ...COLLECTIONS_FACULTATIVES]) {
+    if (!absentes.includes(collection) && !nonExportees.includes(collection) && comptes[collection]) lignes.push(`· ${collection} : ${comptes[collection].total} ligne(s)${comptes[collection].total > 0 ? ` (${detail(comptes[collection])})` : ''}`);
   }
   if (anomalies.length === 0) lignes.push('✓ aucune anomalie de règle.');
   else {
@@ -221,10 +255,10 @@ export function controler(argv, { maintenant = Date.now() } = {}) {
   const lignesBoite = options.boite === null ? [] : boite(lu.messages, options.boite);
   const code = codeDeSortie(analyse, lu.illisibles, manifeste);
   if (options.json) {
-    const sortie = { ...analyse, absentes: lu.absentes, illisibles: lu.illisibles, manifeste: { etat: manifeste.etat, ecarts: manifeste.ecarts }, export_age_min: ageExportMin === null ? null : Math.round(ageExportMin), ...(options.boite === null ? {} : { boite: { nom: options.boite, lignes: lignesBoite } }), code };
+    const sortie = { ...analyse, absentes: lu.absentes, non_exportees: lu.nonExportees, illisibles: lu.illisibles, manifeste: { etat: manifeste.etat, ecarts: manifeste.ecarts }, export_age_min: ageExportMin === null ? null : Math.round(ageExportMin), ...(options.boite === null ? {} : { boite: { nom: options.boite, lignes: lignesBoite } }), code };
     return { code, lignes: [JSON.stringify(sortie, null, 2)] };
   }
-  return { code, lignes: rendre(analyse, { absentes: lu.absentes, illisibles: lu.illisibles, ageExportMin, boiteNom: options.boite, lignesBoite, manifeste }) };
+  return { code, lignes: rendre(analyse, { absentes: lu.absentes, nonExportees: lu.nonExportees, illisibles: lu.illisibles, ageExportMin, boiteNom: options.boite, lignesBoite, manifeste }) };
 }
 
 const direct = process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url);

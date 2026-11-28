@@ -18,8 +18,11 @@ import {
   RISQUES_LOT,
   ETATS_LOT,
   ETATS_MESSAGE,
+  ETATS_REPONSE,
   NATURES_QUESTION,
   OBJETS_MESSAGE,
+  REPONSE_PAR_COCKPIT,
+  SOURCE_REPONSE,
   STATUTS_QUESTION,
   actionsDues,
   analyser,
@@ -27,12 +30,13 @@ import {
   controlerLots,
   controlerMessages,
   controlerQuestions,
+  controlerReponses,
   court,
   instant,
   lotsSuivants,
   normaliserBoite,
 } from './registres.mjs';
-import { SORTIE_ACTIONS, SORTIE_ANOMALIES, SORTIE_CONFORME, SORTIE_USAGE, analyserArguments, codeDeSortie, controler, lireExport, rendre } from '../wn-registres.mjs';
+import { SORTIE_ACTIONS, SORTIE_ANOMALIES, SORTIE_CONFORME, SORTIE_USAGE, analyserArguments, codeDeSortie, controler, lireExport, lireManifeste, rendre } from '../wn-registres.mjs';
 
 const RACINE = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const T0 = Date.parse('2026-01-10T12:00:00Z');
@@ -93,6 +97,21 @@ const question = (extra = {}) => ({
   ...extra,
 });
 
+const reponse = (extra = {}) => ({
+  id: '20260110-0900-a--20260110T120000-ab12',
+  question: '20260110-0900-a',
+  file: 'A',
+  lot: 'h00-1',
+  nature: 'ordinaire',
+  reponse: 'a',
+  note: '',
+  le: iso(T0),
+  par: 'u_compte_fictif',
+  source: 'cockpit',
+  etat: 'envoyee',
+  ...extra,
+});
+
 const regles = (constats, gravite = 'anomalie') => constats.filter((c) => c.gravite === gravite).map((c) => c.regle);
 
 test('énumérations : celles de docs/ROLES_MACHINES.md, mot pour mot', () => {
@@ -108,6 +127,8 @@ test('énumérations : celles de docs/ROLES_MACHINES.md, mot pour mot', () => {
   assert.ok(regle.includes(`la nature : ${cite(NATURES_QUESTION).slice(0, 2).join(', ')} ou ${cite(NATURES_QUESTION)[2]}`), 'natures');
   assert.ok(regle.includes(`le statut : ${cite(STATUTS_QUESTION).slice(0, 3).join(', ')} ou ${cite(STATUTS_QUESTION)[3]}`), 'statuts');
   assert.ok(regle.includes(`\`${ACCORD_CODEX}\``), 'mention de l\'accord D-505');
+  assert.ok(regle.includes(`\`source\` (\`${SOURCE_REPONSE}\`) et \`etat\` : \`${ETATS_REPONSE[0]}\`, puis \`${ETATS_REPONSE[1]}\` ou \`${ETATS_REPONSE[2]}\``), 'source et états des réponses du cockpit');
+  assert.ok(regle.includes(`\`reponse_par: ${REPONSE_PAR_COCKPIT}\``), 'mention du report depuis le cockpit');
   assert.ok(regle.includes('a plus de quatre heures'), 'délai sans nouvelles');
   assert.ok(regle.includes('une heure après son émission'), 'délai de reprise');
 });
@@ -343,6 +364,96 @@ test('actions : questions ouvertes par destinataire, répondues par suite due', 
   assert.doesNotMatch(a[0].detail, /dépassée/);
 });
 
+test('réponses du cockpit : une ligne conforme ne lève rien, à chaque état', () => {
+  const repondue = question({ statut: 'repondue', reponse: 'a', reponse_le: iso(T0), reponse_par: REPONSE_PAR_COCKPIT });
+  assert.deepEqual(controlerReponses([reponse()], [question()]), []);
+  assert.deepEqual(controlerReponses([reponse({ etat: 'reportee', reportee_le: iso(T0 + H), reportee_par: 'File A' })], [repondue]), []);
+  assert.deepEqual(controlerReponses([reponse({ etat: 'ecartee', motif: 'question déjà close', par: '', source: 'autre' })], [repondue]), []);
+  assert.deepEqual(controlerReponses([reponse({ id: '20260110-0900-g--20260110T120000123Z-x', question: '20260110-0900-g', file: 'guichet' })]), [], 'file guichet, horodatage en millisecondes');
+});
+
+test('réponses du cockpit : identifiant, champs, énumérations, report fautif', () => {
+  const r = (extra, questions = null) => regles(controlerReponses([reponse(extra)], questions));
+  assert.deepEqual(r({ id: '20260110-0900-a-ab12' }), ['identifiant']);
+  assert.deepEqual(r({ id: '20260110-0901-a--20260110T120000-ab12' }), ['identifiant'], 'la question de l\'identifiant est celle du champ');
+  assert.deepEqual(r({ id: '20261131-0900-a--20260110T120000-ab12', question: '20261131-0900-a' }), ['identifiant'], 'une date qui n\'existe pas');
+  assert.deepEqual(r({ reponse: '', le: '' }), ['champ', 'champ']);
+  assert.deepEqual(r({ file: 'E', nature: 'produit', etat: 'lue' }), ['file', 'nature', 'etat']);
+  assert.deepEqual(r({ le: 'hier' }), ['horodatage']);
+  const reportee = { etat: 'reportee', reportee_le: iso(T0 + H), reportee_par: 'File A' };
+  assert.deepEqual(r({ ...reportee, reportee_le: '', reportee_par: '' }), ['report', 'report']);
+  assert.deepEqual(r({ ...reportee, source: 'page' }), ['source']);
+  assert.deepEqual(r({ ...reportee, par: '' }), ['source']);
+  assert.deepEqual(r({ ...reportee, nature: 'migration' }), ['report']);
+  assert.deepEqual(r(reportee, [question({ nature: 'migration', statut: 'repondue', reponse: 'a', reponse_le: iso(T0) })]), ['report'], 'nature lue sur la question');
+  assert.deepEqual(r(reportee, [question({ statut: 'en_seance' })]), ['report'], 'reportée, question encore ouverte');
+  assert.deepEqual(r({ etat: 'envoyee', par: '', source: 'page' }), [], 'une ligne envoyée à écarter est une action, pas une anomalie');
+  const avis = (extra, questions = null) => regles(controlerReponses([reponse(extra)], questions), 'avis');
+  assert.deepEqual(avis({ etat: 'ecartee', motif: '' }), ['ecartee']);
+  assert.deepEqual(avis({}, [question({ id: '20260110-0959-a' })]), ['question']);
+  assert.deepEqual(avis({}), [], 'sans liste commune exportée, la question n\'est pas recherchée');
+  const contenu = controlerReponses([reponse({ note: 'écrire à nom.prenom@exemple.fr' })]);
+  assert.deepEqual(regles(contenu, 'avis'), ['contenu']);
+  assert.ok(!JSON.stringify(contenu).includes('exemple.fr'));
+});
+
+test('actions : réponse envoyée sans report — la plus récente l\'emporte, le reste se remplace ou s\'écarte', () => {
+  const qid = (n) => `20260110-090${n}-a`;
+  const rid = (n, h) => `${qid(n)}--20260110T1${h}0000-x${n}`;
+  const repondue = { statut: 'repondue', reponse: 'a', reponse_le: iso(T0), reponse_par: REPONSE_PAR_COCKPIT };
+  const questions = [
+    question({ id: qid(1) }),
+    question({ id: qid(2), nature: 'clinique', statut: 'en_seance' }),
+    question({ id: qid(3), ...repondue }),
+    question({ id: qid(4), ...repondue, reponse: 'b' }),
+    question({ id: qid(5), nature: 'migration' }),
+    question({ id: qid(6), statut: 'close', reponse: 'a', reponse_le: iso(T0), reponse_par: 'responsable, en session' }),
+  ];
+  const reponses = [
+    reponse({ id: rid(1, 1), question: qid(1), le: iso(T0 - H) }),
+    reponse({ id: rid(1, 2), question: qid(1), le: iso(T0) }),
+    reponse({ id: rid(2, 2), question: qid(2), nature: 'clinique' }),
+    reponse({ id: rid(3, 2), question: qid(3) }),
+    reponse({ id: rid(4, 2), question: qid(4) }),
+    reponse({ id: rid(5, 2), question: qid(5) }),
+    reponse({ id: rid(6, 2), question: qid(6) }),
+    reponse({ id: rid(7, 2), question: qid(7) }),
+    reponse({ id: rid(8, 2), question: qid(8), par: '' }),
+    reponse({ id: rid(9, 2), question: qid(9), source: 'page' }),
+    reponse({ id: rid(1, 0), question: qid(1), etat: 'reportee', reportee_le: iso(T0), reportee_par: 'File A' }),
+    reponse({ id: rid(4, 0), question: qid(4), etat: 'ecartee', motif: 'm' }),
+  ];
+  const a = actionsDues({ questions, reponses }, T0 + 2 * H).filter((x) => x.collection === 'reponses');
+  assert.deepEqual(a.map((x) => [x.type, x.id]), [
+    ['reponse_a_ecarter', rid(8, 2)],
+    ['reponse_a_ecarter', rid(9, 2)],
+    ['reponse_sans_report', rid(1, 2)],
+    ['reponse_remplacee', rid(1, 1)],
+    ['reponse_sans_report', rid(2, 2)],
+    ['reponse_reportee_non_marquee', rid(3, 2)],
+    ['reponse_a_ecarter', rid(4, 2)],
+    ['reponse_a_ecarter', rid(5, 2)],
+    ['reponse_a_ecarter', rid(6, 2)],
+    ['reponse_a_verifier', rid(7, 2)],
+  ]);
+  assert.equal(a[2].cible, 'A');
+  assert.equal(a[2].age_h, 2);
+  assert.match(a[2].detail, /reponse_par: responsable, par le cockpit/);
+  assert.doesNotMatch(a[2].detail, /profiles/);
+  assert.match(a[4].detail, /`profiles`.*`D-xxx`/, 'clinique : compte du responsable vérifié, puis décision avant tout code');
+  assert.match(a[6].detail, /déjà `repondue`/);
+  assert.match(a[7].detail, /migration/);
+  assert.match(a[9].detail, /pas dans la liste commune/);
+
+  const autreHeure = actionsDues({ questions: [question({ ...repondue, reponse_le: iso(T0 - H) })], reponses: [reponse()] }, T0);
+  assert.deepEqual(autreHeure.filter((x) => x.collection === 'reponses').map((x) => x.type), ['reponse_a_ecarter'], 'même texte, autre heure : la question reflète une autre réponse');
+  const sansListe = actionsDues({ reponses: [reponse()], absentes: ['questions'] }, T0);
+  assert.deepEqual(sansListe.map((x) => x.type), ['reponse_a_verifier']);
+  assert.match(sansListe[0].detail, /refaire l'export/);
+  const nonReportable = actionsDues({ questions: [question({ nature: 'migration' })], reponses: [reponse({ id: rid(0, 1), le: iso(T0 - H) }), reponse()] }, T0);
+  assert.deepEqual(nonReportable.filter((x) => x.collection === 'reponses').map((x) => x.type), ['reponse_a_ecarter', 'reponse_a_verifier'], 'une ligne plus ancienne ne se remplace que par une ligne reportable');
+});
+
 test('lot suivant : `pret` au plus petit ordre, dont le préalable est `fait`', () => {
   const s = lotsSuivants([
     lot({ id: 'h00-1', ordre: 30 }),
@@ -394,10 +505,13 @@ test('analyse et rendu : comptes, ligne machine, aucun texte libre en sortie', (
       messages: [message({ texte: secret }), message({ id: '20260110-1301-a', objet: 'renvoi', texte: secret })],
       lots: [lot({ titre: secret, motif: secret })],
       questions: [question({ question: secret, faits: secret, reponse: secret })],
+      reponses: [reponse({ reponse: secret, note: secret, lot: secret, etat: 'ecartee', motif: secret })],
     },
     T0 + H,
   );
   assert.deepEqual(analyse.comptes.messages, { total: 2, par: { emis: 2 } });
+  assert.deepEqual(analyse.comptes.reponses, { total: 1, par: { ecartee: 1 } });
+  assert.deepEqual(analyser({}, T0).comptes.reponses, { total: 0, par: {} });
   const pieges = analyser({ lots: [lot({ etat: 'total' }), lot({ id: 'h00-2', etat: '' }), lot({ id: 'h00-3', etat: '__proto__' })] }, T0).comptes.lots;
   assert.equal(pieges.total, 3, 'une valeur d\'état ne peut pas écraser le total');
   assert.deepEqual(Object.entries(pieges.par), [['total', 1], ['(vide)', 1], ['__proto__', 1]]);
@@ -478,6 +592,54 @@ test('CLI : lit un export sur disque, codes 0, 1, 2 et 3, sans rien écrire', ()
     assert.match(processus.stdout, /REGISTRES anomalies=2 avis=0 actions=2\n$/);
     const usage = spawnSync(process.execPath, [join(RACINE, 'scripts', 'wn-registres.mjs')], { encoding: 'utf8' });
     assert.equal(usage.status, SORTIE_USAGE);
+  } finally {
+    rmSync(dossier, { recursive: true, force: true });
+  }
+});
+
+test('CLI : `reponses` facultative — lue si exportée, jamais exigée, confrontée au manifeste qui la déclare', () => {
+  const dossier = mkdtempSync(join(tmpdir(), 'wn-registres-'));
+  try {
+    const poser = (collection, ligne) => {
+      mkdirSync(join(dossier, collection), { recursive: true });
+      const { id, ...donnees } = ligne;
+      writeFileSync(join(dossier, collection, `${id}.json`), JSON.stringify(donnees));
+    };
+    const manifeste = (collections) => writeFileSync(join(dossier, 'manifeste.json'), JSON.stringify({ schema: 1, exporte_le: iso(T0), collections }));
+    const declare = (lignes) => ({ lignes, curseur_epuise: true });
+    const maintenant = ['--maintenant', iso(T0 + 60000)];
+    poser('lots', lot({ id: 'h00-4', etat: 'fait', fait_le: iso(T0) }));
+    poser('questions', question({ statut: 'close', reponse: 'a', reponse_le: iso(T0) }));
+    poser('messages', message({ etat: 'traite', lu_le: iso(T0), traite_le: iso(T0) }));
+
+    const ancien = controler([dossier, ...maintenant]);
+    assert.equal(ancien.code, SORTIE_CONFORME, 'un export sans `reponses` reste conforme');
+    assert.match(ancien.lignes.join('\n'), /facultative\(s\) non exportée\(s\), non contrôlée\(s\) : reponses/);
+    assert.doesNotMatch(ancien.lignes.join('\n'), /absente\(s\) de l'export/);
+    assert.deepEqual(lireExport(dossier).absentes, [], '`reponses` n\'entre jamais dans `absentes`');
+    manifeste({ messages: declare(1), lots: declare(1), questions: declare(1) });
+    assert.equal(controler([dossier, ...maintenant]).code, SORTIE_CONFORME, 'manifeste d\'avant, sans `reponses` : aucun écart');
+    manifeste({ messages: declare(1), lots: declare(1), questions: declare(1), reponses: declare(0) });
+    const vide = lireExport(dossier);
+    assert.equal(lireManifeste(dossier, vide, T0).etat, 'conforme');
+    assert.deepEqual(vide.nonExportees, [], 'déclarée vide : exportée');
+
+    poser('reponses', reponse({ question: '20260110-0900-a' }));
+    const json = JSON.parse(controler([dossier, '--json', ...maintenant]).lignes[0]);
+    assert.equal(json.code, SORTIE_ANOMALIES, 'un fichier pour zéro ligne déclarée');
+    assert.deepEqual(json.manifeste.ecarts, ['reponses : 1 fichier(s) pour 0 ligne(s) déclarée(s)']);
+    manifeste({ messages: declare(1), lots: declare(1), questions: declare(1) });
+    assert.deepEqual(lireManifeste(dossier, lireExport(dossier), T0).ecarts, ['reponses : exportée, non déclarée au manifeste']);
+    manifeste({ messages: declare(1), lots: declare(1), questions: declare(1), reponses: { lignes: 1 } });
+    assert.match(lireManifeste(dossier, lireExport(dossier), T0).ecarts[0], /reponses : pagination non attestée/);
+
+    manifeste({ messages: declare(1), lots: declare(1), questions: declare(1), reponses: declare(1) });
+    const due = controler([dossier, ...maintenant]);
+    assert.equal(due.code, SORTIE_ACTIONS, 'réponse envoyée sur une question close : à écarter');
+    assert.match(due.lignes.join('\n'), /· reponses : 1 ligne\(s\) \(envoyee 1\)/);
+    assert.match(due.lignes.join('\n'), /reponse_a_ecarter reponses\/20260110-0900-a--20260110T120000-ab12 → A/);
+    assert.equal(due.lignes.at(-1), 'REGISTRES anomalies=0 avis=0 actions=1 manifeste=conforme');
+    assert.deepEqual(JSON.parse(controler([dossier, '--json', ...maintenant]).lignes[0]).non_exportees, []);
   } finally {
     rmSync(dossier, { recursive: true, force: true });
   }
