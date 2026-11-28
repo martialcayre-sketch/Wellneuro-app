@@ -171,6 +171,15 @@ describe('FicheRemiseLecture — la page d’une fiche', () => {
     expect(consigner).not.toHaveBeenCalled();
   });
 
+  it('un mot sans espace se coupe : précautions et paragraphes portent overflow-wrap (PAT-7n)', async () => {
+    render(<FicheRemiseLecture token="TOK" idRemise="rem_servie" />);
+    await laisserCharger();
+    // Le constat local à 390 et 195 px débordait de 371 et 554 px sur le mot
+    // long de la fixture de banc ; jsdom ne mesure rien, on vérifie la classe.
+    expect(screen.getByText('Précaution synthétique.').className).toContain('[overflow-wrap:anywhere]');
+    expect(screen.getByText('Paragraphe un.').className).toContain('[overflow-wrap:anywhere]');
+  });
+
   it('le texte est du texte : une balise s’affiche telle quelle, jamais interprétée', async () => {
     const { container } = render(<FicheRemiseLecture token="TOK" idRemise="rem_servie" />);
     await laisserCharger();

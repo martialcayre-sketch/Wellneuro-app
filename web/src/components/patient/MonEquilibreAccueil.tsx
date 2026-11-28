@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { Sprout } from 'lucide-react';
 import type { PatientEquilibreResponse } from '@/app/api/patient/equilibre/route';
 import { ScoreGauge } from '@/components/ui/ScoreGauge';
-import { GrowthIllustration } from '@/components/patient/ui/GrowthIllustration';
+import { LienDecor } from '@/components/ui/LienDecor';
 // Doctrine « construction, jamais dégradation » (SP-CONV LOT-05, D7) ET nature
 // du total ([[D-106]], `DC-22`) : les trois libellés vivent désormais avec la
 // doctrine qui les motive, jamais en double.
@@ -74,7 +74,7 @@ export function MonEquilibreAccueil({
   if (loading) {
     return (
       <div className="w-full max-w-md">
-        <div className="bg-surface rounded-lg shadow-card border border-border p-8 text-center text-sm text-muted-foreground">
+        <div className="bg-surface rounded-lg shadow-card border border-border p-8 max-[319px]:p-5 text-center text-sm text-muted-foreground">
           Chargement de Mon équilibre…
         </div>
       </div>
@@ -84,7 +84,7 @@ export function MonEquilibreAccueil({
   if (!data || 'ok' in data) {
     return (
       <div className="w-full max-w-md">
-        <div className="bg-surface rounded-lg shadow-card border border-border p-8 text-center">
+        <div className="bg-surface rounded-lg shadow-card border border-border p-8 max-[319px]:p-5 text-center">
           <p className="text-sm text-muted-foreground">
             {data && 'error' in data ? data.error : 'Impossible de charger Mon équilibre pour le moment.'}
           </p>
@@ -113,7 +113,7 @@ export function MonEquilibreAccueil({
 
   return (
     <div className="w-full max-w-md">
-      <div className="bg-surface rounded-lg shadow-card border border-border p-8">
+      <div className="bg-surface rounded-lg shadow-card border border-border p-8 max-[319px]:p-5">
         <h1 className="font-display text-2xl font-bold leading-tight text-foreground mb-6 text-center">Mon équilibre</h1>
 
         <div className="flex justify-center mb-4">
@@ -121,9 +121,10 @@ export function MonEquilibreAccueil({
             <ScoreGauge value={indiceGlobal} label="Mon équilibre" showValue={false} />
           ) : (
             <div className="flex flex-col items-center py-4">
-              {/* Métaphore de construction (maquette) — décorative, le texte
-                  porte l'information. */}
-              <GrowthIllustration />
+              {/* PAT-7n (D-481 §1 quater) : le décor des vides passe par
+                  LienDecor, comme les vides de PAT-5 décor ; décoratif, la
+                  phrase porte l'information. */}
+              <LienDecor emplacement="etat-vide" element="nutrition-sprout" className="mb-3 w-40" />
               <p className="text-base text-muted-foreground text-center">
                 Pas encore assez de réponses pour calculer votre indice.
               </p>

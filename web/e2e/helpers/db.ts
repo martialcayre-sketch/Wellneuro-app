@@ -689,6 +689,132 @@ export async function versionsFicheE2EEncoreValidees(): Promise<{ id: string; co
 }
 
 // ---------------------------------------------------------------------------
+// Fixture « fiche remise » (PAT-7n, U29 — `portail/[token]/fiches/[idRemise]`).
+//
+// Aucun seed ni helper ne posait de remise : l'écran de lecture n'avait jamais
+// été vu. Celle-ci amène un dossier de FIXTURE à l'état qu'exige l'écran, EN
+// BASE, comme `provisionnerRatification` : la décision du responsable et la
+// remise au clic ont leurs propres séries (`bibliotheque-fiches-conseils`),
+// les rejouer ferait dépendre la lecture d'un parcours qui n'est pas son sujet.
+//
+// Ce que les triggers de `fiches_assiette_remises` exigent, et que la fixture
+// pose dans l'ordre : une version du banc VALIDÉE, de numéro le plus haut (la
+// référence de sa fiche) ; un protocole et son approbation sur CE dossier ; une
+// action du protocole qui porte l'assiette de la fiche ; l'empreinte recopiée.
+// Le payload du protocole n'est pas reconstructible : la place de la fiche
+// dans le protocole se lit « inconnue », que l'écran tait.
+//
+// LA VERSION VALIDÉE EST LA RÉFÉRENCE DE LA FICHE POUR TOUTE LA BASE : le
+// nettoyage la retire (un acte « retirée », les actes ne s'effacent pas) ; un
+// run tué la laisse validée, et `versionsFicheE2EEncoreValidees` la rend au
+// spec de la bibliothèque, qui la retire avant de semer. Jamais à jouer en
+// parallèle de ce spec.
+// ---------------------------------------------------------------------------
+
+const PATIENTS_FICHE_REMISE_E2E = new Set(['PAT_SEED_01', 'PAT_SEED_02', 'PAT_SEED_03']);
+const ID_EPISODE_FICHE_REMISE_E2E = 'ep_e2e_fiche_remise';
+const ID_PROTOCOLE_FICHE_REMISE_E2E = 'proto_e2e_fiche_remise#e2e';
+const ID_APPROBATION_FICHE_REMISE_E2E = 'appr_e2e_fiche_remise';
+const ID_REMISE_FICHE_E2E = 'remise_e2e_fiche_remise';
+const ACTION_FICHE_REMISE_E2E = 'action:e2e-fiche-remise';
+const VALIDATEUR_FICHE_REMISE_E2E = 'banc-e2e-fiche-remise';
+
+/**
+ * Remet la fiche du banc à un patient de fixture ; rend l'identifiant de la
+ * remise (le segment `[idRemise]` de l'URL). Refuse tout autre dossier
+ * ([[D-075]], [[D-125]]).
+ */
+export async function provisionFicheRemiseE2E(idPatient: string): Promise<{ idRemise: string; idVersion: string }> {
+  if (!PATIENTS_FICHE_REMISE_E2E.has(idPatient)) {
+    throw new Error(`provisionFicheRemiseE2E : ${idPatient} n'est pas un patient de fixture.`);
+  }
+  await cleanupFicheRemiseE2E();
+  const { idVersion, contenuSha256 } = await deposerVersionFicheE2E();
+  await prisma.ficheAssietteActe.create({
+    data: { idVersion, acte: 'validee', contenuSha256, validateur: VALIDATEUR_FICHE_REMISE_E2E, relectureIntegrale: true },
+  });
+  const maintenant = new Date();
+  await prisma.assessmentEpisode.create({
+    data: {
+      id: ID_EPISODE_FICHE_REMISE_E2E,
+      idPatient,
+      milestone: 'T0',
+      targetAt: maintenant,
+      confirmedAt: maintenant,
+      payload: { source: 'e2e-fiche-remise' },
+      payloadHash: 'e2e-fiche-remise',
+      contractVersion: 'objets-cliniques-v1',
+      cycleId: ID_EPISODE_FICHE_REMISE_E2E,
+      versionScore: 'v1',
+    },
+  });
+  await prisma.protocolDraft.create({
+    data: {
+      id: ID_PROTOCOLE_FICHE_REMISE_E2E,
+      idPatient,
+      assessmentEpisodeId: ID_EPISODE_FICHE_REMISE_E2E,
+      decisionCardId: 'runtime-decision-e2e-fiche-remise',
+      decisionCardInputHash: 'e2e-fiche-remise-carte',
+      snapshotInputHash: 'e2e-fiche-remise-instantane',
+      reviewInputHash: 'e2e-fiche-remise-relecture',
+      selectedPriorityId: 'priority:e2e-fiche-remise',
+      status: 'practitioner_reviewed',
+      // Ce que lit le trigger de la remise, et rien d'autre.
+      payload: { source: 'e2e-fiche-remise', actions: [{ actionId: ACTION_FICHE_REMISE_E2E, recommendedPlateRef: { plateCode: PLATE_FICHE_E2E } }] },
+      inputHash: 'e2e-fiche-remise-version',
+      contractVersion: 'c1-protocol-draft-v1',
+      reviewedAt: new Date(maintenant.getTime() - 60_000),
+    },
+  });
+  await prisma.protocolDiffusionApproval.create({
+    data: {
+      id: ID_APPROBATION_FICHE_REMISE_E2E,
+      idPatient,
+      protocolDraftId: ID_PROTOCOLE_FICHE_REMISE_E2E,
+      decisionCardInputHash: 'e2e-fiche-remise-carte',
+      protocolDraftInputHash: 'e2e-fiche-remise-version',
+      approvedAt: maintenant,
+      approvedBy: 'practitioner',
+      confirmation: 'content_approved_for_diffusion',
+    },
+  });
+  // `createMany` : le trigger rend zéro ligne sur une remise identique à la
+  // remise en cours, ce qu'un `create` lirait comme une erreur.
+  const { count } = await prisma.ficheAssietteRemise.createMany({
+    data: [{ id: ID_REMISE_FICHE_E2E, idPatient, idApprobation: ID_APPROBATION_FICHE_REMISE_E2E, actionId: ACTION_FICHE_REMISE_E2E, idVersion, contenuSha256 }],
+  });
+  if (count !== 1) throw new Error('provisionFicheRemiseE2E : la remise n’a pas été posée.');
+  return { idRemise: ID_REMISE_FICHE_E2E, idVersion };
+}
+
+/**
+ * Défait la fixture : la remise et sa lecture, l'approbation, le protocole et
+ * l'épisode ; puis retire les versions du banc restées validées.
+ */
+export async function cleanupFicheRemiseE2E(): Promise<void> {
+  // Les lectures que l'écran pose (la fiche, et le protocole si l'accueil l'a ouvert).
+  await prisma.portailLecturePatient.deleteMany({
+    where: { OR: [{ espece: 'fiche_assiette', idObjet: ID_REMISE_FICHE_E2E }, { espece: 'protocole', idObjet: ID_APPROBATION_FICHE_REMISE_E2E }] },
+  });
+  await prisma.ficheAssietteRemise.deleteMany({ where: { id: ID_REMISE_FICHE_E2E } });
+  await prisma.protocolDiffusionApproval.deleteMany({ where: { id: ID_APPROBATION_FICHE_REMISE_E2E } });
+  await prisma.protocolDraft.deleteMany({ where: { id: ID_PROTOCOLE_FICHE_REMISE_E2E } });
+  await prisma.assessmentEpisode.deleteMany({ where: { id: ID_EPISODE_FICHE_REMISE_E2E } });
+  for (const version of await versionsFicheE2EEncoreValidees()) {
+    await prisma.ficheAssietteActe.create({
+      data: {
+        idVersion: version.id,
+        acte: 'retiree',
+        contenuSha256: version.contenuSha256,
+        validateur: VALIDATEUR_FICHE_REMISE_E2E,
+        relectureIntegrale: false,
+        motif: 'Fin de la fixture de banc.',
+      },
+    });
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Fixture « orientation → file d'envoi » (LOT-01, spec
 // `orientation-file-envoi.spec.ts`). Réservée à Sophie Nicola (PAT_SEED_01) —
 // c'est le patient de tous les specs praticien de fiche-trajectoire.

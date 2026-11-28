@@ -48,6 +48,17 @@ describe('MonEquilibreAccueil — base de l’indice', () => {
     await rendre(reponse([null, null, null], null));
     expect(screen.queryByText(MENTION_BESOINS_PARTIELS_PATIENT)).toBeNull();
   });
+
+  it('aucun indice : le vide porte le germe par LienDecor, hors de l’accessibilité (PAT-7n)', async () => {
+    await rendre(reponse([null, null, null], null));
+    const phrase = screen.getByText('Pas encore assez de réponses pour calculer votre indice.');
+    const decor = phrase.parentElement!.querySelector<HTMLElement>('[data-lien-decor="etat-vide"]');
+    expect(decor).not.toBeNull();
+    expect(decor!.dataset.element).toBe('nutrition-sprout');
+    expect(decor!.getAttribute('aria-hidden')).toBe('true');
+    // Le décor précède la phrase, qui porte seule l'information.
+    expect(decor!.nextElementSibling).toBe(phrase);
+  });
 });
 
 // [[D-355]] — « Points à explorer » : exception nommée à la règle du portail,
