@@ -86,8 +86,11 @@ la journée.
 - **Références citées** : identifiants au dossier privé ; seuls les claims
   cités par une position signée fondent un constat (`D-564` §5.4).
 - **Population visée et « non évalué »** : `D-564` §4.
-- **Ouverts, en l'état** : la règle de priorité `PRIO-PON-01` et la lecture
-  « discordance » de `D-040` (`D-564` §6).
+- **Maintenus, plus ouverts** : la règle de priorité `PRIO-PON-01`
+  (rattachement gardé, aucun claim ne nomme le rythme alimentaire) et la
+  lecture « discordance » de `D-040` (seuils gardés, « non évalués », à
+  réviser à la première clôture réelle de 21 jours) (`D-564` amendée le
+  2026-11-28, §6.2).
 - **Application** : aucun changement de calcul ni de version (`D-548` §4, amendée le 2026-11-25) ; mentions « non évalué » à l'affichage avec le prochain lot de code.
 
 ---
