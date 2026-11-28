@@ -67,7 +67,13 @@ files déclarent prêtes ; les files travaillent chacune dans leur worktree.
   - **les focus areas de PR-Agent** (lot `autonomie-pieges-restes`,
     partie 14) : chaque titre du commentaire persistant, têtes précédentes
     comprises, est cité par un commentaire du propriétaire au plus tard
-    avec la déclaration, sinon refus (26).
+    avec la déclaration, sinon refus (26) ;
+  - **la preuve de revue** (même lot, partie 22) : avant le déploiement, il
+    rejoue `wn-attendre-ci <N> --sha <sha>` et `wn-revue-pr-agent <N>`. Si
+    PR-Agent ne rend pas 0, il n'accepte que si la déclaration elle-même
+    cite « D-448 » et « wn-reviewer GO @<sha> » sur ce sha, sinon refus
+    (27). La file qui retient le repli de `D-448` l'écrit donc dans sa
+    déclaration.
 - **Il prend en charge une PR** par un commentaire marqué
   `<!-- wn-integrateur -->` (`D-454` §2), qui ne suspend pas son propre
   merge.

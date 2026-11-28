@@ -49,7 +49,15 @@
 //   de la copie principale a échoué (à arbitrer) · 26 focus area de PR-Agent
 //   dont le titre n'est cité par aucun commentaire du propriétaire jusqu'à la
 //   déclaration, ou focus areas illisibles (`autonomie-pieges-restes`,
-//   partie 14).
+//   partie 14) · 27 preuve de revue absente : `wn-attendre-ci <N> --sha
+//   <sha>` ne rend pas 0, ou `wn-revue-pr-agent <N>` ne rend pas 0 et la
+//   déclaration servie ne porte pas le repli de `D-448` (partie 22).
+//
+// PREUVE DE REVUE (partie 22, arbitrage du 2026-11-27) : avant le
+// déploiement, le script relance lui-même les deux preuves que la file a
+// citées en déclarant. PR-Agent ne rend pas 0 : le merge n'est admis que si
+// la déclaration SERVIE — elle seule, déjà d'origine vérifiée — cite
+// « D-448 » et « wn-reviewer GO @<sha> » sur un préfixe du sha à merger.
 import { execFileSync, spawnSync } from 'node:child_process';
 import { appendFileSync, existsSync, mkdirSync, readFileSync, realpathSync, renameSync, rmdirSync, unlinkSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
@@ -90,6 +98,7 @@ export const CODES = Object.freeze({
   // 24 est évité : « porte 24 » désigne autre chose dans le plan.
   avance: 25,
   focus: 26,
+  revue: 27,
 });
 
 const SHA_COMPLET = /^[0-9a-f]{40}$/;
@@ -200,6 +209,22 @@ export function focusSansVerdict(decl, { commentaires = [], proprietaire = '' })
     .filter((c) => !estCommentaireIntegrateur('commentaire', c, proprietaire))
     .map((c) => String(c?.body ?? ''));
   return { titres, manquants: titresNonCites(titres, textes) };
+}
+
+/**
+ * Repli de `D-448` porté par la déclaration servie : elle cite « D-448 » et
+ * « wn-reviewer GO @<x> », `<x>` (7 caractères au moins) préfixe du sha à
+ * merger. Un GO sur une autre tête, ou cité ailleurs que dans la
+ * déclaration servie, ne vaut pas : un commit poussé après le GO demande une
+ * revue de l'écart, donc une déclaration neuve.
+ */
+export function repliD448(decl, sha) {
+  const corps = String(decl?.body ?? '');
+  if (!/(^|[^0-9A-Za-z])D-448(?![0-9])/.test(corps)) return false;
+  for (const m of corps.matchAll(/wn-reviewer\s+GO\s+@([0-9a-fA-F]{7,40})(?![0-9a-fA-F])/g)) {
+    if (sha.startsWith(m[1].toLowerCase())) return true;
+  }
+  return false;
 }
 
 /** Secondes restantes avant la fin d'un délai parti de `depuis` (ISO). */
@@ -457,14 +482,30 @@ export async function integrer(n, sha, mode, deps) {
   if (v.code !== CODES.ok) return finir(v.code, v.motif);
   dire(`gardes=0 (${v.motif})`);
 
-  // Étapes 7 bis et 7 ter d'`integrer.sh`, à l'identique.
   const etape = (nom, script, args, code, resume) => {
     const r = lancerCmd('node', [script, ...args], { sortie: path.join(scratch, `${nom}-${n}.txt`) });
     dire(`${nom}=${r.code}`);
     for (const x of resume(lignes(r.texte))) dire(x);
     return r.code === 0 ? null : finir(code, `${nom} rend ${r.code}`);
   };
-  let refus =
+
+  // Preuve de revue (partie 22), avant le déploiement, dans tous les modes :
+  // le CI sur ce sha, puis PR-Agent ou, à défaut, le repli de `D-448` cité
+  // par la déclaration servie.
+  let refus = etape('ci', 'scripts/wn-attendre-ci.mjs', [String(n), '--sha', sha], CODES.revue, (x) => x.slice(-1));
+  if (refus !== null) return refus;
+  const pa = lancerCmd('node', ['scripts/wn-revue-pr-agent.mjs', String(n)], { sortie: path.join(scratch, `pr-agent-${n}.txt`) });
+  dire(`pr-agent=${pa.code}`);
+  for (const x of lignes(pa.texte).slice(-1)) dire(x);
+  if (pa.code !== 0) {
+    if (!repliD448(declarationServie(l.commentaires, sha), sha)) {
+      return finir(CODES.revue, `wn-revue-pr-agent rend ${pa.code} et la déclaration servie ne cite pas « D-448 » avec « wn-reviewer GO @<sha> » sur ce sha`);
+    }
+    dire('revue=repli D-448 (wn-reviewer GO sur ce sha, cité par la déclaration servie)');
+  }
+
+  // Étapes 7 bis et 7 ter d'`integrer.sh`, à l'identique.
+  refus =
     etape('deploiement', 'scripts/wn-deploiement-observation.mjs', [], CODES.deploiement, (x) => x.slice(0, 4)) ??
     etape('controle', 'scripts/wn-controle-fusion.mjs', [String(n)], CODES.controle, (x) => x.slice(-1));
   if (refus !== null) return refus;

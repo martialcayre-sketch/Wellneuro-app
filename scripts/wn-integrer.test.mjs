@@ -22,6 +22,7 @@ import {
   operationBail,
   parolesApres,
   prendreBail,
+  repliD448,
   secondesRestantes,
   verdictGardes,
 } from './wn-integrer.mjs';
@@ -488,6 +489,83 @@ test('passage : filet après vingt minutes, hors copie principale, sans bail ni 
     assert.equal(s.journal()[0].filet, true);
   } finally { s.nettoyer(); }
 });
+
+// ── Preuve de revue (partie 22) ────────────────────────────────────────────
+
+for (const [libelle, corps, attendu] of [
+  ['D-448 et GO sur le sha complet', `prête @${SHA}\nRevue : D-448, wn-reviewer GO @${SHA}.`, true],
+  ['D-448 et GO sur un préfixe de 7', `prête @${SHA}\nD-448 · wn-reviewer GO @${SHA.slice(0, 7)}`, true],
+  ['GO en majuscules hexadécimales', `prête @${SHA}\nD-448 · wn-reviewer GO @${SHA.slice(0, 9).toUpperCase()}`, true],
+  ['GO sans D-448', `prête @${SHA}\nwn-reviewer GO @${SHA}`, false],
+  ['D-448 sans GO', `prête @${SHA}\nD-448 : wn-reviewer a revu.`, false],
+  ['GO sur une autre tête', `prête @${SHA}\nD-448 · wn-reviewer GO @${AUTRE_SHA}`, false],
+  ['GO sur un préfixe de 6', `prête @${SHA}\nD-448 · wn-reviewer GO @${SHA.slice(0, 6)}`, false],
+  ['D-4480 n\'est pas D-448', `prête @${SHA}\nD-4480 · wn-reviewer GO @${SHA}`, false],
+  ['GO prolongé au-delà du sha (autre objet)', `prête @${SHA}\nD-448 · wn-reviewer GO @${SHA}0`, false],
+]) {
+  test(`repli D-448 : ${libelle} → ${attendu}`, () => {
+    assert.equal(repliD448(commentaire(2, corps, T0), SHA), attendu);
+  });
+}
+
+test('repli D-448 : sans déclaration servie, aucun repli', () => {
+  assert.equal(repliD448(null, SHA), false);
+});
+
+test('passage : CI non vert sur ce sha → 27, avant le déploiement, aucun merge', async () => {
+  const s = simulation({ lectures: [lecture()], codesEtapes: { 'wn-attendre-ci.mjs': 1 } });
+  try {
+    assert.equal(await integrer(42, SHA, 'merge', s.deps), CODES.revue);
+    assert.ok(s.appels.includes(`node scripts/wn-attendre-ci.mjs 42 --sha ${SHA}`));
+    assert.ok(!s.appels.some((a) => a.includes('wn-revue-pr-agent') || a.includes('wn-deploiement')));
+    assert.equal(merges(s.appels).length, 0);
+    assert.match(s.journal()[0].motif, /^ci rend 1$/);
+  } finally { s.nettoyer(); }
+});
+
+test('passage : PR-Agent ≠ 0 sans repli → 27, avant le déploiement, aucun merge', async () => {
+  const s = simulation({ lectures: [lecture()], codesEtapes: { 'wn-revue-pr-agent.mjs': 1 } });
+  try {
+    assert.equal(await integrer(42, SHA, 'merge', s.deps), CODES.revue);
+    assert.ok(s.appels.includes('node scripts/wn-revue-pr-agent.mjs 42'));
+    assert.ok(!s.appels.some((a) => a.includes('wn-deploiement')));
+    assert.equal(merges(s.appels).length, 0);
+    assert.match(s.journal()[0].motif, /^wn-revue-pr-agent rend 1 et la déclaration servie ne cite pas/);
+  } finally { s.nettoyer(); }
+});
+
+test('passage : PR-Agent ≠ 0, repli cité par un commentaire antérieur seulement → 27', async () => {
+  const go = commentaire(1, `D-448 · wn-reviewer GO @${SHA}`, '2026-11-20T09:50:00Z');
+  const s = simulation({ lectures: [lecture({ commentaires: [go, decl] })], codesEtapes: { 'wn-revue-pr-agent.mjs': 1 } });
+  try {
+    assert.equal(await integrer(42, SHA, 'merge', s.deps), CODES.revue);
+    assert.equal(merges(s.appels).length, 0);
+  } finally { s.nettoyer(); }
+});
+
+test('passage : PR-Agent ≠ 0, repli D-448 dans la déclaration servie → merge', async () => {
+  const declRepli = commentaire(2, `prête @${SHA}\nPR-Agent : pruning diff ; D-448, wn-reviewer GO @${SHA.slice(0, 8)}.`, T0);
+  const commentaires = [declRepli];
+  const s = simulation({
+    lectures: [lecture({ commentaires }), lecture({ commentaires }), lecture({ commentaires, state: 'MERGED', merge: { oid: 'c'.repeat(40) } })],
+    codesEtapes: { 'wn-revue-pr-agent.mjs': 1 },
+  });
+  try {
+    assert.equal(await integrer(42, SHA, 'merge', s.deps), CODES.ok);
+    assert.equal(merges(s.appels).length, 1);
+    assert.ok(s.dits.some((x) => x.startsWith('revue=repli D-448')));
+  } finally { s.nettoyer(); }
+});
+
+for (const mode of ['sans-merge', 'filet']) {
+  test(`passage : ${mode}, PR-Agent ≠ 0 sans repli → 27 aussi`, async () => {
+    const s = simulation({ lectures: [lecture()], copiePrincipale: mode !== 'filet', bail: null, maintenantMs: plus(DELAI_FILET_S), codesEtapes: { 'wn-revue-pr-agent.mjs': 2 } });
+    try {
+      assert.equal(await integrer(42, SHA, mode, s.deps), CODES.revue);
+      assert.equal(merges(s.appels).length, 0);
+    } finally { s.nettoyer(); }
+  });
+}
 
 // ── Interface : usage refusé avant toute lecture ───────────────────────────
 
