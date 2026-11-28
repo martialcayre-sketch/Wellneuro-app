@@ -306,6 +306,57 @@ describe('ObjectifNegociePanel (Alliance 6.0-A LOT-02)', () => {
     expect(screen.getByText(/Priorité : Premier plan/)).toBeTruthy();
   });
 
+  // PRA-3b décor ([[D-481]] §1 bis ; prototype validé « Q1a — Q2a — Q3a »).
+  const trajectoireDeuxVoix = (reformulationCourante: string | null) =>
+    router({
+      dossier: {
+        ...DOSSIER_VIDE,
+        objectifs: [ligne({ id: 'OBJ_2', supersedesObjectifId: 'OBJ_1', reformulationPraticien: reformulationCourante })],
+        trajectoires: [
+          {
+            idObjectif: 'OBJ_2',
+            lignes: [
+              ligne({ id: 'OBJ_2', supersedesObjectifId: 'OBJ_1', reformulationPraticien: reformulationCourante }),
+              ligne({ id: 'OBJ_1', reformulationPraticien: 'Reformulation de la version antérieure.' }),
+            ],
+          },
+        ],
+        ratifications: { OBJ_2: 'en_attente' },
+        amendements: [],
+        reponsesJalon: [],
+      },
+    });
+
+  it('PRA-3b : un séparateur entre les deux voix de la version courante, aucun dans l’historique', async () => {
+    fetchMock.mockImplementation(trajectoireDeuxVoix('Sommeil fragmenté en seconde partie de nuit.'));
+    await attendreLeDossier();
+
+    const decors = document.querySelectorAll('[data-lien-decor]');
+    expect(decors).toHaveLength(1);
+    const separateur = decors[0] as HTMLElement;
+    expect(separateur.dataset.lienDecor).toBe('deux-voix');
+    expect(separateur.dataset.element).toBe('divider-two-voices');
+    expect(separateur.getAttribute('aria-hidden')).toBe('true');
+    expect(separateur.className).toContain('print:!hidden');
+    expect(separateur.className).toContain('max-w-[320px]');
+
+    // Entre « Le patient » et « Le praticien a compris » de la version courante.
+    const patient = screen.getAllByText('Le patient')[0];
+    const praticien = screen.getAllByText('Le praticien a compris')[0];
+    expect(patient.compareDocumentPosition(separateur) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(separateur.compareDocumentPosition(praticien) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // La version antérieure garde ses deux voix, sans décor.
+    expect(screen.getAllByText('Le praticien a compris')).toHaveLength(2);
+  });
+
+  it('PRA-3b : sans reformulation, une voix seule — aucun séparateur', async () => {
+    fetchMock.mockImplementation(trajectoireDeuxVoix(null));
+    await attendreLeDossier();
+
+    expect(screen.getAllByText('Le patient').length).toBeGreaterThan(0);
+    expect(document.querySelectorAll('[data-lien-decor]')).toHaveLength(0);
+  });
+
   it('quand deux versions courantes coexistent, les affiche toutes et le dit', async () => {
     fetchMock.mockImplementation(
       router({

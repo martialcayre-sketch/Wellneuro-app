@@ -1371,6 +1371,16 @@ ce qui se passe à trois mois si le second accord n'est pas recueilli.
   n'est ouvert avant qu'elle soit tranchée.
 - Les points ouverts vont au cadrage de J3-mineurs (question `-c-3`).
 
+— 2026-11-26 : cadrage de J3-mineurs fait ([[D-572]]). À trois mois sans
+le second accord, la pause revient d'elle-même, rien n'est effacé, et le
+praticien est averti avant (§3) : la condition ci-dessus est levée. Les
+points ouverts 6 et 8 sont tranchés par [[D-572]] §9 (chaque parent qui a
+donné l'accord est prévenu, à la clôture comme à la désactivation), et le
+point 7 par le §10 (une opposition maintenue clôt le suivi). Les points 1,
+2, 3 et 5 sont écrits par le responsable avant les textes des parents
+(§15). Rien ne s'applique avant la livraison de J3-mineurs, sous drapeau
+éteint jusqu'à l'allumage par le responsable (§17).
+
 Ces conclusions se réexaminent si les faits changent (« pour l'instant » ;
 point 8 : « nouvel accord »). L'avocat relit l'ensemble à la
 commercialisation (point 7 de [[D-449]] §6).

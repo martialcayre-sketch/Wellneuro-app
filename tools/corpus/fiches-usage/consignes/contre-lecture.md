@@ -32,7 +32,15 @@ désignation) est INFIDÈLE dans la « question », même porté par un claim.
 Le verbe « permet-il de » (accordé : « permet-elle de »), suivi de la
 désignation de l'usage décisionnel, est FIDÈLE ; toute autre tournure
 (« peut-il », « aider à », « contribuer à », « dans quelle mesure ») ajoute
-un énoncé et est INFIDÈLE.
+un énoncé et est INFIDÈLE. Les mots de liaison « chez » (avec l'article
+accordé : « chez l' », « chez la ») devant la désignation de la population
+d'usage, « pour l'hypothèse de » (accordé : « d' » ; « pour les hypothèses
+de ») devant celle d'une hypothèse rattachée, ou « de » seul après
+« confirmer une hypothèse », et la virgule, relient les désignations : ils
+sont FIDÈLES et n'ajoutent rien ; une désignation reprise mot pour mot,
+son initiale en minuscule, l'est aussi. Tout autre lien (« face à », « au
+regard de », « dans le cas de », « en cas de ») ajoute un énoncé et est
+INFIDÈLE.
 
 La rubrique « population » nomme la seule population d'usage par sa
 désignation approuvée : elle est FIDÈLE même si aucun claim ne porte sur
@@ -86,7 +94,13 @@ Il est INFIDÈLE s'il contient au moins un des défauts suivants :
   rapport à la désignation approuvée de la population d'usage ; un fait
   restitué avec la population que son claim lui attache, comprise dans la
   population d'usage, n'est pas une restriction de la désignation : c'est
-  une condition gardée ;
+  une condition gardée ; un fait restitué pour les seules populations de
+  son claim comprises dans la population d'usage n'est pas une restriction
+  du claim, et nommer une population du claim qui n'y est pas comprise
+  élargit la population d'usage ; cela vaut pour les populations à qui le
+  fait s'applique au même titre : une population que nomme une condition de
+  sécurité ou d'admissibilité du fait (une exclusion, une contre-indication,
+  une période) est une condition, et la taire l'affaiblit ;
 - une hypothèse nommée qui n'est pas rattachée à la fiche, ou un sens tiré
   d'un identifiant plutôt que de sa désignation ;
 - une désignation employée pour affirmer un fait que les claims n'établissent
@@ -124,7 +138,12 @@ Il est INFIDÈLE s'il contient au moins un des défauts suivants :
   compte), est une posologie ; un fait propre à une spécialité nommée qui
   n'est ni une condition de sécurité ou d'admissibilité ni une interaction
   (ses effets indésirables, ses surdosages) en est un, et son absence ne
-  tait aucune condition de sécurité ;
+  tait aucune condition de sécurité ; une indication énoncée pour elle-même
+  (la maladie qu'elle traite, son emploi poursuivi dans cette maladie), qui
+  n'est ni une condition de sécurité ou d'admissibilité ni la restriction
+  d'une telle condition, en est un aussi ; une indication qui restreint une
+  condition admise s'écrit avec elle, et la taire prive cette condition
+  d'une de ses restrictions ;
 - une quantité à prendre ou à consommer (dose, volume, nombre d'unités,
   apport recommandé ou de référence), une fréquence ou un fractionnement
   des prises, une durée de prise ou de traitement, un moment de prise (le
@@ -190,7 +209,12 @@ déficit, une carence, un statut ou un apport du nutriment n'est pas un
 résultat de l'examen : seul l'analyte de la fiche en est un. Une phrase qui
 nomme un résultat de l'examen en taisant la limite que son claim lui
 attache (une sensibilité ou une spécificité faibles, des situations où il
-ne permet pas de conclure) affaiblit ce claim.
+ne permet pas de conclure) affaiblit ce claim. Le résultat, ce qu'il
+permet ou interdit de conclure et cette limite, réunis dans une même
+phrase, relèvent de l'objet de « interpretations » : la limite n'y déborde
+pas sur « limites ». Une phrase qui ne porte qu'une limite générale du
+marqueur, sans nommer de résultat de l'examen, est hors de l'objet de la
+rubrique.
 
 Un claim porte sur l'objet d'une rubrique quand il en traite le contenu
 même, pas seulement son sujet. Pour « interpretations », il dit ce qu'un

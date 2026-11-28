@@ -13,11 +13,11 @@
 //      déplace bien (fichier suivi par `git mv`, non suivi par `mv`) et
 //      réécrit les références — jamais hors de `--root`.
 // Le banc joue le script depuis sa racine (`cwd` = `--root`), comme la passe
-// cloud : `move_file_safe` crée ses dossiers et déplace un fichier non suivi
-// en chemins relatifs au `cwd` (revue `wn-reviewer` du lot), défaut du
-// script hors du périmètre de ce banc, routé par son handoff. Et le
-// `--dry-run` crée ses dossiers d'archive et `moved-map.tsv` : il ne déplace
-// ni ne modifie aucun fichier, ce que seul le banc promet.
+// cloud ; deux scènes le jouent aussi depuis un `cwd` hors de `--root` :
+// `move_file_safe` résout ses chemins contre `--root` (lot
+// `repo-hygiene-move-file-safe-racine`, P2-1 de `wn-reviewer` sur #2374).
+// Le `--dry-run` crée ses dossiers d'archive et `moved-map.tsv` : il ne
+// déplace ni ne modifie aucun fichier, ce que seul le banc promet.
 // Le comportement du script n'est pas l'objet du banc : il le constate.
 
 import test from 'node:test';
@@ -76,7 +76,11 @@ function preparer() {
 }
 
 function jouer(env, ...args) {
-  return spawnSync('bash', [SCRIPT, ...args, '--root', env.depot], { cwd: env.depot, encoding: 'utf8' });
+  return jouerDepuis(env, env.depot, ...args);
+}
+
+function jouerDepuis(env, cwd, ...args) {
+  return spawnSync('bash', [SCRIPT, ...args, '--root', env.depot], { cwd, encoding: 'utf8' });
 }
 
 /**
@@ -198,4 +202,35 @@ test('contre-épreuve : apply-safe déplace et réécrit dans le dépôt jetable
   );
   assert.equal(fs.readFileSync(env.temoin, 'utf8'), `Voir ${ANCIEN_CONTEXTE}.\n`, 'réécriture hors de --root');
   assert.deepEqual(fs.readdirSync(env.racine).sort(), ['depot', 'hors-banc.md'], 'écriture hors de --root');
+});
+
+test('apply-safe depuis un cwd hors de --root : déplace dans la racine, n’écrit rien dans le cwd', (t) => {
+  const env = preparer();
+  t.after(() => fs.rmSync(env.racine, { recursive: true, force: true }));
+  const ailleurs = path.join(env.racine, 'ailleurs');
+  fs.mkdirSync(ailleurs);
+  const r = jouerDepuis(env, ailleurs, 'apply-safe');
+  assert.equal(r.status, 0, r.stderr);
+  assert.deepEqual(fs.readdirSync(ailleurs), [], 'écriture dans le cwd');
+  assert.ok(!fs.existsSync(path.join(env.depot, REPRISE_NON_SUIVIE)));
+  // Le fichier non suivi, déplacé par `mv`, arrive dans la racine.
+  assert.equal(fs.readFileSync(path.join(env.depot, 'docs/archive/reprise/reprise-locale.md'), 'utf8'), '# Reprise locale\n');
+  assert.equal(
+    fs.readFileSync(path.join(env.depot, 'docs/archive/contextes/CONTEXTE_ESSAI_2026-01-02.md'), 'utf8'),
+    '# Contexte daté\n',
+  );
+  assert.equal(fs.readFileSync(path.join(env.depot, 'docs/archive/reprise/reprise-essai.md'), 'utf8'), '# Reprise\n');
+  assert.deepEqual(fs.readdirSync(env.racine).sort(), ['ailleurs', 'depot', 'hors-banc.md'], 'écriture hors de --root');
+});
+
+test('apply-safe --dry-run depuis un cwd hors de --root : ne crée rien dans le cwd', (t) => {
+  const env = preparer();
+  t.after(() => fs.rmSync(env.racine, { recursive: true, force: true }));
+  const ailleurs = path.join(env.racine, 'ailleurs');
+  fs.mkdirSync(ailleurs);
+  const avant = empreinte(env.depot);
+  const r = jouerDepuis(env, ailleurs, 'apply-safe', '--dry-run');
+  assert.equal(r.status, 0, r.stderr);
+  assert.deepEqual(fs.readdirSync(ailleurs), [], 'écriture dans le cwd');
+  assert.deepEqual(empreinte(env.depot), avant, 'le dry-run a modifié un fichier');
 });

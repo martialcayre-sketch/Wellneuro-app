@@ -22,8 +22,9 @@
 // d'environnement concorde (verrou installé, schéma du client Prisma), les
 // gardes rapides de la liste explicite, sur l'arbre extrait par `git archive`
 // dans un dossier temporaire indexé (quelques bancs lisent `git ls-files` ou
-// `git grep`). La numérotation y joue en mode local : sans base de PR, la
-// vérification « décision supprimée » du CI n'y est pas.
+// `git grep`). Les deux numérotations (décisions, sources) y jouent en mode
+// local, sans lecture distante : sans base de PR, la vérification « décision
+// supprimée » du CI n'y est pas.
 //
 // UN ROUGE NE SUFFIT PAS. Rejoué seul sur l'arbre fusionné, il doit le rester
 // (sinon : instable, indéterminé) ; puis rejoué dans les mêmes conditions sur
@@ -69,14 +70,19 @@ export const SORTIE_USAGE = 3;
 
 /**
  * Les gardes rapides de D-373 §4, sur liste explicite : numérotation du
- * registre, matrice de consommation, invariants du CI. Lancés par `node`
- * depuis la racine de l'arbre extrait. `sansVerdict` : codes de sortie qui
- * disent « je ne peux pas juger » (le refus d'être vert de la numérotation).
+ * registre, matrice de consommation, invariants du CI, numérotation des
+ * sources du corpus. Lancés par `node` depuis la racine de l'arbre extrait.
+ * `sansVerdict` : codes de sortie qui disent « je ne peux pas juger » (le
+ * refus d'être vert des deux numérotations).
  */
 export const GARDES_NODE = [
   { id: 'numerotation', args: ['scripts/lib/decisions-numerotation.mjs'], sansVerdict: [2] },
   { id: 'matrice', args: ['--test', '--test-reporter=tap', 'scripts/wn-matrice-consommation.test.mjs'], sansVerdict: [] },
   { id: 'invariants-ci', args: ['--test', '--test-reporter=tap', 'scripts/ci-invariants.test.mjs'], sansVerdict: [] },
+  // Deux PR vertes chacune qui ajoutent le même `sourceId` au milieu du
+  // registre ne se heurtent pas dans Git : seul ce garde voit le doublon
+  // (autonomie-pieges-restes, partie 21).
+  { id: 'sources', args: ['scripts/lib/sources-numerotation.mjs'], sansVerdict: [2] },
 ];
 
 /** Les bancs `*.guard.test.*` que Vitest collecte (son `include`, `web/vitest.config.ts`). */
@@ -166,15 +172,16 @@ export function bancsVitest(fichiers) {
 
 /**
  * Ce qui rougit dans la sortie d'un garde `node` : les tests `not ok` (TAP),
- * les violations `✗` de la numérotation, sans leur numéro de ligne — une
- * décision ajoutée en tête décale les lignes d'une violation préexistante.
+ * les violations `✗` des numérotations, sans leur numéro de ligne ni leur
+ * rang de notice — une décision ajoutée en tête, une source insérée plus
+ * haut, décalent ceux d'une violation préexistante.
  */
 export function signaturesNode(sortie) {
   const s = new Set();
   for (const ligne of String(sortie ?? '').split('\n')) {
     const tap = /^\s*not ok \d+ - (.+)$/.exec(ligne);
     if (tap) s.add(`test : ${tap[1].trim()}`);
-    else if (ligne.startsWith('✗ ')) s.add(ligne.replace(/(\.md):\d+/g, '$1').trim());
+    else if (ligne.startsWith('✗ ')) s.add(ligne.replace(/(\.md):\d+/g, '$1').replace(/\bnotices? \d+( et \d+)?/g, 'notice').trim());
   }
   return [...s].sort();
 }

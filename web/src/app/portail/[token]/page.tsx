@@ -33,6 +33,7 @@ import { AvantDeCommencer } from '@/components/patient/trust/AvantDeCommencer';
 import { AccueilConditions } from '@/components/patient/trust/ConditionsUtilisation';
 import { DateNaissanceEcran, EcranCircuitMineur } from '@/components/patient/DateNaissanceEcran';
 import type { StatutAge, TrancheMineur } from '@/lib/patient/gardeAge';
+import { FondEntreePatient } from '@/components/patient/ui/FondEntreePatient';
 import { DocumentTrust, LigneVersion } from '@/components/patient/trust/DocumentTrust';
 import { getDocumentCourant } from '@/lib/trust/contenus/registre';
 import {
@@ -820,105 +821,122 @@ export default function PortailPage() {
     return () => { active = false; };
   }, [token, appliquerSession, router]);
 
+  // Le fond de l'entrée ([[D-481]] §1 bis, lot PAT-2 décor) porte chaque
+  // étape de cette page, U03 à U09, vérification de session comprise : même
+  // composant à la racine, si bien que le décor ne paraît ni ne disparaît
+  // d'une étape à l'autre. Sur les étapes à frise, la frise passe en
+  // `entete`, au-dessus du fond (Q1 (b) du prototype).
   if (step.name === 'loading') {
     return (
-      <PatientCard maxWidth="md">
-        <p className="text-sm text-muted-foreground" role="status">Vérification de votre session…</p>
-      </PatientCard>
+      <FondEntreePatient>
+        <PatientCard maxWidth="md">
+          <p className="text-sm text-muted-foreground" role="status">Vérification de votre session…</p>
+        </PatientCard>
+      </FondEntreePatient>
     );
   }
 
   if (step.name === 'avant') {
     return (
-      <div className="w-full max-w-2xl space-y-4">
-        {step.conditions ? (
-          <AccueilConditions onDone={() => setStep(prochaineEtape(consultation, premiere, statut))} />
-        ) : (
-          <AvantDeCommencer
-            token={token}
-            onDone={() => setStep(prochaineEtape(consultation, premiere, statut))}
-          />
-        )}
-      </div>
+      <FondEntreePatient>
+        <div className="w-full max-w-2xl space-y-4">
+          {step.conditions ? (
+            <AccueilConditions onDone={() => setStep(prochaineEtape(consultation, premiere, statut))} />
+          ) : (
+            <AvantDeCommencer
+              token={token}
+              onDone={() => setStep(prochaineEtape(consultation, premiere, statut))}
+            />
+          )}
+        </div>
+      </FondEntreePatient>
     );
   }
 
   if (step.name === 'date') {
     return (
-      <div className="w-full max-w-[35rem] space-y-4">
-        <DateNaissanceEcran
-          onEnregistree={(nouveau, trancheNouvelle) => {
-            setStatut(nouveau);
-            setTranche(trancheNouvelle);
-            setStep(prochaineEtape(consultation, premiere, nouveau));
-          }}
-        />
-      </div>
+      <FondEntreePatient>
+        <div className="w-full max-w-[35rem] space-y-4">
+          <DateNaissanceEcran
+            onEnregistree={(nouveau, trancheNouvelle) => {
+              setStatut(nouveau);
+              setTranche(trancheNouvelle);
+              setStep(prochaineEtape(consultation, premiere, nouveau));
+            }}
+          />
+        </div>
+      </FondEntreePatient>
     );
   }
 
   if (step.name === 'mineur') {
     return (
-      <div className="w-full max-w-[35rem] space-y-4">
-        <EcranCircuitMineur lienParcours={`/portail/${token}/questionnaires`} tranche={tranche} />
-      </div>
+      <FondEntreePatient>
+        <div className="w-full max-w-[35rem] space-y-4">
+          <EcranCircuitMineur lienParcours={`/portail/${token}/questionnaires`} tranche={tranche} />
+        </div>
+      </FondEntreePatient>
     );
   }
 
   if (step.name === 'consent') {
     return (
-      <div className="w-full max-w-2xl space-y-4">
-        <PatientJourneyProgress steps={buildJourneySteps(1)} />
-        <ConsentScreen
-          token={token}
-          email={email}
-          onAccepted={() => {
-            const next = consultation ? { ...consultation, consentementDonne: true } : null;
-            setConsultation(next);
-            setStep(prochaineEtape(next, premiere, statut));
-          }}
-        />
-      </div>
+      <FondEntreePatient entete={<PatientJourneyProgress steps={buildJourneySteps(1)} />}>
+        <div className="w-full max-w-2xl space-y-4">
+          <ConsentScreen
+            token={token}
+            email={email}
+            onAccepted={() => {
+              const next = consultation ? { ...consultation, consentementDonne: true } : null;
+              setConsultation(next);
+              setStep(prochaineEtape(next, premiere, statut));
+            }}
+          />
+        </div>
+      </FondEntreePatient>
     );
   }
 
   if (step.name === 'fiche') {
     return (
-      <div className="w-full max-w-2xl space-y-4">
-        <PatientJourneyProgress steps={buildJourneySteps(2)} />
-        <FicheForm
-          token={token}
-          idPatient={idPatient}
-          email={email}
-          onDone={() => {
-            const next = consultation ? { ...consultation, ficheRemplie: true } : null;
-            setConsultation(next);
-            setStep(prochaineEtape(next, premiere, statut));
-          }}
-        />
-      </div>
+      <FondEntreePatient entete={<PatientJourneyProgress steps={buildJourneySteps(2)} />}>
+        <div className="w-full max-w-2xl space-y-4">
+          <FicheForm
+            token={token}
+            idPatient={idPatient}
+            email={email}
+            onDone={() => {
+              const next = consultation ? { ...consultation, ficheRemplie: true } : null;
+              setConsultation(next);
+              setStep(prochaineEtape(next, premiere, statut));
+            }}
+          />
+        </div>
+      </FondEntreePatient>
     );
   }
 
   if (step.name === 'anamnese') {
     return (
-      <div className="w-full max-w-2xl space-y-4">
-        <PatientJourneyProgress steps={buildJourneySteps(3)} />
-        <AnamneseForm
-          token={token}
-          idPatient={idPatient}
-          email={email}
-          motifInitial={consultation?.motif ?? null}
-          onDone={pa => setStep({ name: 'done', premiereAssignation: pa ?? premiere })}
-        />
-      </div>
+      <FondEntreePatient entete={<PatientJourneyProgress steps={buildJourneySteps(3)} />}>
+        <div className="w-full max-w-2xl space-y-4">
+          <AnamneseForm
+            token={token}
+            idPatient={idPatient}
+            email={email}
+            motifInitial={consultation?.motif ?? null}
+            onDone={pa => setStep({ name: 'done', premiereAssignation: pa ?? premiere })}
+          />
+        </div>
+      </FondEntreePatient>
     );
   }
 
   return (
-    <div className="w-full max-w-2xl space-y-4">
-      <PatientJourneyProgress steps={buildJourneySteps(4)} />
-      <DoneScreen token={token} premiereAssignation={step.premiereAssignation} />
-    </div>
+    <FondEntreePatient entete={<PatientJourneyProgress steps={buildJourneySteps(4)} />}>
+      <div className="w-full max-w-2xl space-y-4">
+        <DoneScreen token={token} premiereAssignation={step.premiereAssignation} />
+      </div>
+    </FondEntreePatient>
   );
 }

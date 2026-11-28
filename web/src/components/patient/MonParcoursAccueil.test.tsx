@@ -243,7 +243,7 @@ describe('MonParcoursAccueil — signature du hub (PAT-3b)', () => {
     // Premier enfant de la carte : rien au-dessus, le titre juste après.
     expect(bandeau!.previousElementSibling).toBeNull();
     expect(bandeau!.nextElementSibling?.tagName).toBe('H1');
-    expect(bandeau!.className.split(/\s+/)).toEqual(expect.arrayContaining(['-mx-8', '-mt-8', 'print:hidden']));
+    expect(bandeau!.className.split(/\s+/)).toEqual(expect.arrayContaining(['-mx-8', '-mt-8', 'print:!hidden']));
   });
 
   it('hors de l’accessibilité, sans texte : le contenu lisible de la carte est inchangé', () => {

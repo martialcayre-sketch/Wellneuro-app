@@ -7,13 +7,18 @@ import { Suspense, useEffect } from 'react';
 import { messageErreurConnexion } from '@/lib/messagesErreurLogin';
 import { CLASSES_LIEN_EVITEMENT, ID_CONTENU, LIEN_EVITEMENT_PRATICIEN } from '@/lib/navigation/lienEvitementPraticien';
 import { EmpreinteMarque } from '@/components/ui/EmpreinteMarque';
+import { LienDecor } from '@/components/ui/LienDecor';
 
 // Rendue hors de NavBar : la page porte son propre lien d'évitement et son
 // propre <main id="contenu"> ([[D-488]] T-16). Habillage Lien seulement
 // (PRA-2a) : le flux NextAuth, le domaine autorisé et les gardes ne changent pas.
+// Décor `login-calm` en périphérie ([[D-481]] §1 bis, Q8 a ; lot PRA-2 décor) :
+// fond posé par `LienDecor` sous le contenu (`isolate` borne son `-z-10`) ; la
+// carte reste opaque, le centre du SVG est libre.
 function EcranCentre({ children }: { children: React.ReactNode }) {
   return (
-    <div data-theme="praticien" className="relative min-h-screen bg-background">
+    <div data-theme="praticien" className="relative isolate min-h-screen bg-background">
+      <LienDecor emplacement="connexion-praticien" />
       <a href={`#${ID_CONTENU}`} className={CLASSES_LIEN_EVITEMENT}>
         {LIEN_EVITEMENT_PRATICIEN}
       </a>

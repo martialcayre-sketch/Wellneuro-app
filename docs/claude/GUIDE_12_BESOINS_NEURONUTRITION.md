@@ -41,8 +41,9 @@ ultra-transformés.
   cités par une position signée fondent un constat ou un conseil, la liste de
   provenance seule est au `D-516` §5.4.
 - **Population visée et « non évalué »** : `D-516` §4.
-- **Motif de la part de pondération** : non tranché (`D-516` §6.3).
-- **Application** : lot J3-12f.
+- **Motif de la part de pondération** : parts retirées, égalité entre
+  besoins par convention de modèle (`D-547` §2, réponse à `D-516` §6.3).
+- **Application** : appliqué par `D-548` (vague 1).
 
 ### 2. Les micronutriments essentiels
 
@@ -124,7 +125,7 @@ ressentir une sécurité fondamentale archaïque. Englobe le confort digestif
 - **Population visée et « non évalué »** : `D-526` §4.
 - **Motif de la part de pondération** : parts égales entre les deux
   questionnaires, aucune pondération sourcée (`D-526` §6.3).
-- **Application** : lot J3-12f.
+- **Application** : appliqué par `D-548` (vague 1).
 
 ### 5. Les mouvements, les fonctions corporelles et le repos
 
@@ -163,7 +164,7 @@ cerveau) et les phases de repos (qui restaurent).
 - **Motif de la part de pondération** : mouvement et repos à parts égales,
   aucune pondération sourcée ; poids du repos selon `D-438` (`D-529` §6.3,
   motif confirmé par le responsable).
-- **Application** : lot J3-12f.
+- **Application** : appliqué par `D-548` (vague 1).
 
 ### 6. Le besoin de respirer (oxygénation)
 
@@ -266,7 +267,7 @@ déséquilibre le système nerveux autonome (sympathique/parasympathique).
   cités par une position signée fondent un constat, dans le rôle qu'elle leur
   donne. Les claims de provenance ou de limite seulement sont au `D-541` §5.5.
 - **Population visée et « non évalué »** : `D-541` §4.
-- **Application** : lot J3-12f.
+- **Application** : appliqué par `D-548` (vague 1).
 
 ---
 

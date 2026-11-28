@@ -69,7 +69,15 @@ Les DÉSIGNATIONS APPROUVÉES servent seulement à nommer (voir plus bas).
   qui ne nomme que l'un d'eux n'entre pas dans « interpretations ». Quand le
   claim attache à ce résultat une limite (une sensibilité ou une spécificité
   faibles, des situations où il ne permet pas de conclure), la phrase la
-  porte : c'est ce que le résultat interdit de conclure.
+  porte : c'est ce que le résultat interdit de conclure. Le résultat, ce
+  qu'il permet ou interdit de conclure et cette limite s'écrivent dans une
+  même phrase : une limite écrite dans une phrase à part, qui ne nomme pas
+  de nouveau le résultat, n'entre pas dans « interpretations », et une
+  limite générale du marqueur, rattachée à aucun résultat, relève de
+  « limites ». La population ou la situation que le claim attache au
+  résultat s'écrit dans cette même phrase, même quand elle est comprise
+  dans la population d'usage : la taire élargit le fait à toute cette
+  population.
   Avant d'écrire la phrase d'absence, examine chacun des
   claims fournis : elle s'écrit si, et seulement si, aucun ne porte sur
   l'objet de la rubrique. Si l'un y porte, rédige à partir de lui, même
@@ -178,12 +186,24 @@ Les DÉSIGNATIONS APPROUVÉES servent seulement à nommer (voir plus bas).
   Un fait propre à une spécialité qui n'est ni une condition de sécurité ou
   d'admissibilité ni une interaction (ses effets indésirables, ses
   surdosages) ne relève pas de cette exception et ne s'écrit pas : le taire
-  ne tait aucune condition de sécurité.
+  ne tait aucune condition de sécurité. Une indication énoncée pour
+  elle-même (la maladie qu'elle traite, son emploi poursuivi dans cette
+  maladie), qui n'est ni une condition de sécurité ou d'admissibilité ni la
+  restriction d'une telle condition, n'en relève pas davantage ; quand elle
+  restreint une condition que l'exception permet d'écrire, elle s'écrit
+  avec elle.
 - Garde les conditions, les populations et les limites que portent les
   claims : ne les élargis pas, ne les supprime pas. Un fait se restitue
   avec toutes les conditions que son claim lui attache (population, âge,
   voie, durée, matrice, méthode ou type de mesure, critère étudié) ; si tu
-  ne peux pas toutes les reprendre, n'écris pas ce fait. Ne généralise
+  ne peux pas toutes les reprendre, n'écris pas ce fait. Quand le claim
+  nomme plusieurs populations dont certaines ne sont pas comprises dans la
+  population d'usage, le fait s'écrit pour celles qui y sont comprises
+  seulement : nommer les autres élargit la population d'usage, les taire ne
+  restreint pas le claim. Cela vaut pour les populations à qui le fait
+  s'applique au même titre ; une population que nomme une condition de
+  sécurité ou d'admissibilité du fait (une exclusion, une contre-indication,
+  une période) se garde, comme toute condition. Ne généralise
   rien : un nombre précis ne devient pas « plusieurs », une liste nommée ne
   devient pas une catégorie, un seuil ne devient pas une formule vague. Ne
   transpose pas un terme du claim en un terme voisin : ni un analyte, ni un
@@ -274,6 +294,16 @@ Le verbe est toujours « permet-il de » (accordé : « permet-elle de »),
 suivi de la désignation de l'usage décisionnel ; aucune autre tournure ne
 s'y emploie (ni « peut-il », ni « aider à », ni « contribuer à », ni
 « dans quelle mesure »), car chacune ajoute un énoncé.
+Les désignations se relient par ces seuls mots de liaison, qui n'énoncent
+aucun fait : « chez » devant la désignation de la population d'usage, avec
+l'article accordé qu'elle demande (« chez l' », « chez la ») ; « pour
+l'hypothèse de » (accordé : « d' » ; « pour les hypothèses de ») devant la
+désignation d'une hypothèse rattachée, sauf après « confirmer une
+hypothèse », où elle suit, introduite par « de » seul ; la virgule. Une
+désignation s'y reprend mot pour mot, son initiale en minuscule. Aucun
+autre lien ne s'y emploie (ni « face à », ni « au regard de », ni « dans le
+cas de », ni « en cas de »). L'ordre est toujours : la mesure, le verbe et
+l'usage décisionnel, l'hypothèse, la population, puis la réserve.
 Quand le statut l'impose, la réserve est toujours présente, et c'est celle
 de ce statut, jamais celle d'un autre. Elle qualifie l'usage : la question
 ne demande pas si l'usage est établi ou validé. Quand la liste ne donne

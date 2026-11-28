@@ -6,6 +6,7 @@ import { PatientErrorState } from '@/components/patient/PatientErrorState';
 import { CarteFicheRemise } from './CarteFicheRemise';
 import { TITRE_ESPACE } from './textesFiches';
 import { useFichesRemises } from './useFichesRemises';
+import { LienDecor } from '@/components/ui/LienDecor';
 
 // L'espace « Fiches remises par mon praticien » ([[D-251]] §8, lot 10) : la
 // liste des fiches, la remise en cours de chacune. Aucun texte de fiche ici :
@@ -45,6 +46,8 @@ export function FichesRemises({ token }: { token: string }) {
 
       {etat.fiches.length === 0 ? (
         <PatientCard padding="sm">
+          {/* Ornement d'état vide réel ([[D-481]] §1 bis, PAT-5 décor, Q2a-Q3a). */}
+          <LienDecor emplacement="etat-vide" element="nutrition-sprout" className="mb-3 w-40" />
           <p className="text-base text-muted-foreground">
             Votre praticien ne vous a pas encore remis de fiche. Elles apparaîtront ici dès qu’il l’aura fait.
           </p>

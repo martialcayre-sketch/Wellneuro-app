@@ -61,7 +61,7 @@ describe('LienDecor — décoratif seulement', () => {
     const classes = noeud!.className.split(/\s+/);
     expect(classes).toContain('pointer-events-none');
     expect(classes).toContain('select-none');
-    expect(classes).toContain('print:hidden');
+    expect(classes).toContain('print:!hidden');
   });
 
   it('un fond reste sous le contenu ; un ornement prend sa place dans le flux', () => {
@@ -93,6 +93,24 @@ describe('LienDecor — décoratif seulement', () => {
     expect(etroit.style.backgroundImage).toContain('backgrounds/screen-mobile.svg');
     expect(large.className).toContain('hidden md:block');
     expect(large.style.backgroundImage).toContain('backgrounds/screen-desktop.svg');
+  });
+
+  it('la connexion praticien se cale en haut à droite en portrait, centrée en paysage (COM-3)', () => {
+    const noeud = rendre({ emplacement: 'connexion-praticien' }).noeud!;
+    const couches = Array.from(noeud.children) as HTMLElement[];
+    expect(couches).toHaveLength(2);
+    for (const couche of couches) {
+      const classes = couche.className.split(/\s+/);
+      expect(classes).toEqual(expect.arrayContaining(['bg-cover', 'bg-center', 'portrait:bg-right-top']));
+    }
+  });
+
+  it('l’entrée patient ne reçoit aucun calage portrait : ses fonds ont leur propre format', () => {
+    const noeud = rendre({ emplacement: 'entree-patient' }).noeud!;
+    for (const couche of Array.from(noeud.children) as HTMLElement[]) {
+      expect(couche.className).not.toMatch(/portrait:/);
+      expect(couche.className.split(/\s+/)).toContain('bg-center');
+    }
   });
 });
 
@@ -157,7 +175,11 @@ describe('LienDecor — seuls les éléments nommés aux emplacements retenus', 
       ['connexion-praticien', 'deux-voix', 'entete-fiche', 'entree-patient', 'etat-vide', 'hub-patient'].sort(),
     );
     expect(LIEN_DECOR['hub-patient']).toEqual({ nature: 'bandeau', elements: ['quiet-sweep'] });
-    expect(LIEN_DECOR['connexion-praticien']).toMatchObject({ etroit: expect.stringContaining('login-calm.svg') });
+    expect(LIEN_DECOR['connexion-praticien']).toMatchObject({
+      etroit: expect.stringContaining('login-calm.svg'),
+      portrait: 'haut-droite',
+    });
+    expect(LIEN_DECOR['entree-patient']).not.toHaveProperty('portrait');
     expect(LIEN_DECOR['deux-voix'].elements).toEqual(['divider-two-voices']);
     expect(LIEN_DECOR['entete-fiche'].elements).toEqual(['alliance-arcs', 'linked-loops-muted']);
     expect(LIEN_DECOR['etat-vide'].elements).toEqual(['nutrition-sprout', 'neural-branches']);
