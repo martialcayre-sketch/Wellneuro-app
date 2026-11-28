@@ -24,8 +24,11 @@ sur la réponse à `20261127-2046-b`.
 - Besoins 1, 4, 5, 9 : « Application : lot J3-12f » → « appliqué par `D-548`
   (vague 1) », texte du lot.
 - Besoin 1 : « Motif de la part de pondération : non tranché (`D-516` §6.3) »
-  → renvoi à `D-547` §1 et §2 (parts retirées, égalité entre besoins par
-  convention de modèle), qui répond à `D-516` §6.3.
+  → renvoi à `D-547` §2 (parts retirées, égalité entre besoins par
+  convention de modèle), qui répond à `D-516` §6.3 (en-tête « Répond à »).
+- Revue `wn-reviewer` (P1) sur `cb39f98f` : GO ; P3 corrigé (citation
+  `D-547` §1 retirée, le §1 porte sur le plafonnement) ; P2 (restes de
+  J3-12f dans les règles des besoins 5 et 9) routé au responsable, ci-dessous.
 - Les motifs de pondération des besoins 4 et 5 restent : ils portent sur les
   poids entre sources d'un même besoin, que `D-547` §2 ne touche pas.
 

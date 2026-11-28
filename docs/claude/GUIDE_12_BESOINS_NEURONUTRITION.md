@@ -42,7 +42,7 @@ ultra-transformés.
   provenance seule est au `D-516` §5.4.
 - **Population visée et « non évalué »** : `D-516` §4.
 - **Motif de la part de pondération** : parts retirées, égalité entre
-  besoins par convention de modèle (`D-547` §1 et §2, réponse à `D-516` §6.3).
+  besoins par convention de modèle (`D-547` §2, réponse à `D-516` §6.3).
 - **Application** : appliqué par `D-548` (vague 1).
 
 ### 2. Les micronutriments essentiels
