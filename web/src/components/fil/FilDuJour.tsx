@@ -16,6 +16,7 @@ import {
 import type { EtatMeteoAdhesion } from '@/lib/protocol/adhesion';
 import { BadgeMeteo } from '@/components/meteo/BadgeMeteo';
 import { TRAIT_ICONE } from '@/components/ui/icone';
+import { LienDecor } from '@/components/ui/LienDecor';
 
 /** Identité visuelle de chaque type de carte — l'icône double toujours le
  * libellé textuel (jamais la couleur seule, règle de relief A5-R1). */
@@ -497,6 +498,9 @@ export function FilDuJour() {
     }
     return (
       <div data-testid="fil-du-jour" className="bg-surface border border-border rounded-xl p-6 text-base text-muted-foreground shadow-card">
+        {/* Ornement d'état vide réel ([[D-481]] §1 bis ; PRA-2 décor, Q1 A et Q2
+            de la question 20261128-0838-d) : pas sous une alerte de calcul. */}
+        <LienDecor emplacement="etat-vide" element="nutrition-sprout" className="mx-auto mb-3 w-40 max-w-full" />
         Rien n&apos;appelle votre attention pour le moment. Le Fil se remplit à mesure
         que les signalements, les échéances et les synthèses arrivent.
       </div>

@@ -146,3 +146,51 @@ describe('AgendaPraticien', () => {
     expect(appels).toEqual(['GET /api/praticien/rendez-vous', 'GET /api/praticien/rendez-vous']);
   });
 });
+
+// PRA-2 décor ([[D-481]] §1 bis, question 20261128-0838-d : Q1 A, Q2) :
+// le germe se pose sur le vide réel seulement, jamais sur l'échec ni sur la
+// liste pleine. Les règles de la primitive sont épinglées dans
+// `components/ui/LienDecor.test.tsx`.
+describe('AgendaPraticien — ornement d’état vide', () => {
+  const ORNEMENT = '[data-lien-decor="etat-vide"]';
+
+  it('pose le germe au-dessus de la phrase du vide réel', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => ({ ok: true, rendezVous: [] }) }) as unknown as Response));
+    const { container } = render(<AgendaPraticien patients={PATIENTS} />);
+    const phrase = await screen.findByText(/Aucun rendez-vous planifié/i);
+    const ornements = container.querySelectorAll(ORNEMENT);
+    expect(ornements).toHaveLength(1);
+    const ornement = ornements[0] as HTMLElement;
+    expect(ornement.getAttribute('data-element')).toBe('nutrition-sprout');
+    expect(ornement.getAttribute('aria-hidden')).toBe('true');
+    expect(ornement.className).toContain('print:!hidden');
+    expect(ornement.className).toContain('w-40');
+    expect(ornement.className).toContain('max-w-full');
+    expect(ornement.nextElementSibling).toBe(phrase);
+  });
+
+  it('aucun germe sur l’échec de lecture', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: false, json: async () => ({ ok: false, error: 'x' }) }) as unknown as Response));
+    const { container } = render(<AgendaPraticien patients={PATIENTS} />);
+    await screen.findByRole('alert');
+    expect(container.querySelector(ORNEMENT)).toBeNull();
+  });
+
+  it('aucun germe sur la liste pleine', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({
+        ok: true,
+        json: async () => ({
+          ok: true,
+          rendezVous: [
+            { id: 'RDV_1', idPatient: 'PAT_SEED_01', patient: 'Sophie Nicola', dateHeure: '2026-07-15T09:00:00.000Z', motif: 'Suivi J14' },
+          ],
+        }),
+      }) as unknown as Response),
+    );
+    const { container } = render(<AgendaPraticien patients={PATIENTS} />);
+    await waitFor(() => expect(screen.getByText('Sophie Nicola', { selector: 'li *' })).toBeTruthy());
+    expect(container.querySelector(ORNEMENT)).toBeNull();
+  });
+});

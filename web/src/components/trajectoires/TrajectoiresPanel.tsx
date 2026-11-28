@@ -8,6 +8,7 @@ import { resumerTrajectoire } from '@/lib/protocol/resumeTrajectoire';
 import { SpiraleEpisodes } from '@/components/ui/SpiraleEpisodes';
 import { Badge } from '@/components/ui/Badge';
 import { Input } from '@/components/ui/Input';
+import { LienDecor } from '@/components/ui/LienDecor';
 
 // Porte d'entrée « Trajectoires » (SP-TRAJ LOT-04, maquette 5.0) : la liste
 // des patients ORIENTÉE TRAJECTOIRE — Spirale miniature, épisode en cours,
@@ -93,6 +94,9 @@ export function TrajectoiresPanel() {
   if (lignes.length === 0) {
     return (
       <div className="rounded-xl border border-border bg-surface p-4 text-base text-muted-foreground">
+        {/* Ornement d'état vide réel ([[D-481]] §1 bis ; PRA-2 décor, Q1 A et Q2
+            de la question 20261128-0838-d). */}
+        <LienDecor emplacement="etat-vide" element="nutrition-sprout" className="mx-auto mb-3 w-40 max-w-full" />
         Aucun patient dans le cabinet pour l’instant. Créez un dossier depuis « Patients ».
       </div>
     );

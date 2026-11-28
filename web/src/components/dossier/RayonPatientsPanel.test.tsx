@@ -894,6 +894,88 @@ describe('RayonPatientsPanel — lecture du tableau en échec (PRA-2a)', () => {
   });
 });
 
+// PRA-2 décor ([[D-481]] §1 bis, question 20261128-0838-d : Q1 A, Q2) : le
+// germe se pose sur le cabinet vide seulement. La recherche sans résultat
+// garde la même phrase, sans germe ; l'échec et le tableau plein n'en ont pas.
+describe('RayonPatientsPanel — ornement d’état vide (PRA-2 décor)', () => {
+  const ORNEMENT = '[data-lien-decor="etat-vide"]';
+  const tableau = (url: string) => url.includes('page=');
+  const VIDE = { patients: [], assignations: [], pagination: { page: 1, pageSize: 10, total: 0, totalPages: 0 } };
+
+  it('pose le germe dans la cellule du tableau vide', async () => {
+    stubFetch({ surPatients: () => VIDE });
+    const { container } = render(<RayonPatientsPanel />);
+    const cellule = await screen.findByText('Aucun patient.');
+    const ornements = container.querySelectorAll(ORNEMENT);
+    expect(ornements).toHaveLength(1);
+    expect(cellule.contains(ornements[0])).toBe(true);
+    expect(ornements[0].getAttribute('data-element')).toBe('nutrition-sprout');
+    expect(ornements[0].getAttribute('aria-hidden')).toBe('true');
+    expect(ornements[0].className).toContain('print:!hidden');
+    expect(ornements[0].className).toContain('max-w-full');
+  });
+
+  it('aucun germe sur l’échec du tableau', async () => {
+    stubFetch({
+      surPatients: url => {
+        if (tableau(url)) throw new Error('réseau');
+        return { patients: [PATIENT], assignations: [] };
+      },
+    });
+    const { container } = render(<RayonPatientsPanel />);
+    await screen.findByRole('alert');
+    expect(container.querySelector(ORNEMENT)).toBeNull();
+  });
+
+  it('aucun germe sur le tableau plein', async () => {
+    stubFetch();
+    const { container } = render(<RayonPatientsPanel />);
+    await screen.findAllByRole('button', { name: /gérer le dossier/i });
+    expect(container.querySelector(ORNEMENT)).toBeNull();
+  });
+
+  it('aucun germe sur une recherche sans résultat, qui garde la même phrase', async () => {
+    const appels: string[] = [];
+    stubFetch({
+      surPatients: url => {
+        appels.push(url);
+        return tableau(url) && url.includes('search=') ? VIDE : { patients: [PATIENT], assignations: [] };
+      },
+    });
+    const { container } = render(<RayonPatientsPanel />);
+    await screen.findAllByRole('button', { name: /gérer le dossier/i });
+    fireEvent.change(screen.getByPlaceholderText('Rechercher (nom, prénom, email)'), { target: { value: 'zzz' } });
+    await waitFor(() => expect(appels.some(a => a.includes('search=zzz'))).toBe(true), { timeout: 2000 });
+    expect(await screen.findByText('Aucun patient.')).toBeTruthy();
+    expect(container.querySelector(ORNEMENT)).toBeNull();
+  });
+
+  // Constat PR-Agent sur #2411 : le germe suit la recherche qui a produit le
+  // tableau affiché, pas la saisie en cours.
+  it('le germe suit la recherche lue : absent après « zzz », de retour une fois la recherche effacée et relue', async () => {
+    const appels: string[] = [];
+    stubFetch({
+      surPatients: url => {
+        appels.push(url);
+        return tableau(url) ? VIDE : { patients: [], assignations: [] };
+      },
+    });
+    const { container } = render(<RayonPatientsPanel />);
+    await screen.findByText('Aucun patient.');
+    expect(container.querySelector(ORNEMENT)).not.toBeNull();
+
+    const champ = screen.getByPlaceholderText('Rechercher (nom, prénom, email)');
+    fireEvent.change(champ, { target: { value: 'zzz' } });
+    await waitFor(() => expect(container.querySelector(ORNEMENT)).toBeNull(), { timeout: 2000 });
+    expect(appels.some(a => a.includes('search=zzz'))).toBe(true);
+
+    const avant = appels.length;
+    fireEvent.change(champ, { target: { value: '' } });
+    await waitFor(() => expect(appels.slice(avant).some(a => tableau(a) && !a.includes('search='))).toBe(true), { timeout: 2000 });
+    await waitFor(() => expect(container.querySelector(ORNEMENT)).not.toBeNull(), { timeout: 2000 });
+  });
+});
+
 // T-17 « Réessayer » ([[D-488]], DOC-6) : relit le seul tableau, avec la
 // recherche, le tri et la page de l'écran ; la liste complète n'est pas relue.
 describe('RayonPatientsPanel — « Réessayer » sous l’échec du tableau (T-17)', () => {

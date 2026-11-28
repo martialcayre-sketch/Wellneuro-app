@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { LienDecor } from '@/components/ui/LienDecor';
 import type { ComptesCabinetApiResponse } from '@/app/api/praticien/comptes-cabinet/route';
 import type {
   ComptesCabinet,
@@ -138,6 +139,9 @@ export function ComptesCabinetPanel() {
   if (comptes.prochaineEtape.effectif === 0) {
     return (
       <div className="rounded-xl border border-border bg-surface p-4 text-base text-muted-foreground">
+        {/* Ornement d'état vide réel ([[D-481]] §1 bis ; PRA-2 décor, Q1 A et Q2
+            de la question 20261128-0838-d). */}
+        <LienDecor emplacement="etat-vide" element="nutrition-sprout" className="mx-auto mb-3 w-40 max-w-full" />
         Aucun dossier dans le cabinet pour l’instant.
       </div>
     );
