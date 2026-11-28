@@ -20,8 +20,9 @@
     troubles fonctionnels intestinaux, ni du MSK-HQ ;
   - un candidat neuf pour l'accomplissement : le PERMA-Profiler, en
     version française, dont les droits sont publiés ;
-  - quatre droits publiés en tout : Nijmegen, MAIA-2 d'origine,
-    PERMA-Profiler français et MSK-HQ (licence à demander) ;
+  - trois usages libres publiés (Nijmegen, MAIA-2 d'origine,
+    PERMA-Profiler français) et une condition (MSK-HQ, licence à
+    demander) ;
   - une validation française du GPAQ est indexée, alors que `G10.md` dit
     le contraire. L'écart est signalé, pas corrigé.
 - **Ne décide rien** : aucune décision, aucune ingestion, aucun ajout au

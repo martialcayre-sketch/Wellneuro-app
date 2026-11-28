@@ -23,9 +23,12 @@
   catalogue des questionnaires, aucune source de score. Le registre des
   sources et celui des instruments ne changent pas ici. Servir un
   instrument est une décision du responsable, au Mac.
-- **Forme opaque** ([[D-251]] §4) : identifiants seulement. Aucun titre
-  d'article, aucun item, aucun seuil, aucune valeur chiffrée (coefficient,
-  effectif, bande) n'est recopié.
+- **Forme opaque** ([[D-251]] §4) : identifiants et mécanismes seulement.
+  Population et objet mesuré sont décrits en quelques mots, et les droits
+  sont résumés, jamais cités. Aucun titre d'article, aucun item, aucun
+  seuil et aucune valeur chiffrée tirée d'une source (coefficient,
+  effectif, bande) n'est recopié. Les nombres de l'annexe sont des nombres
+  de résultats de recherche, pas des valeurs de source.
 
 ## Méthode
 
@@ -53,6 +56,9 @@
 
 - **WN-SRC** : la notice du registre des sources quand la publication y est
   déjà inscrite, sinon « — ».
+- **Année** : la date de publication indexée par PubMed (`pubdate`). Elle
+  peut suivre d'un an ou plus la mise en ligne que portent le DOI et le
+  rang du PMID.
 - **Version française** : *oui* (validation d'une version française
   publiée), *non trouvée* (aucune dans la recherche), *autre langue*
   (versions trouvées, langues nommées).
@@ -76,7 +82,7 @@
 | 11, valeurs | aucun | non trouvé, ce qui confirme [[D-570]] §2 |
 | 11, pleine conscience | FMI-14 ; FFMQ | candidats déjà au registre |
 | 4, troubles fonctionnels intestinaux | aucun | non trouvé ; échelles en anglais et en d'autres langues |
-| 4, intéroception | MAIA-2 ; Body Awareness Questionnaire | candidats ; MAIA-2 d'origine dans le domaine public |
+| 4, intéroception | MAIA-2 ; Body Awareness Questionnaire | candidats ; MAIA-2 d'origine dans le domaine public, selon ses auteurs |
 | 4, douleur | DN4 ; BPI ; PCS forme courte ; QIF | candidats, populations cliniques |
 | 5, mobilité | aucun | non trouvé ; MSK-HQ sans version française, licence à demander |
 | 5, activité physique (GPAQ) | GPAQ, version française | candidat de référence ; écart avec `G10.md` signalé |
@@ -268,18 +274,23 @@ signale l'écart.
   variable du guide. Ce document ne rapproche aucun construit. Tout
   rapprochement est exploratoire ([[D-566]] §5.3) et relève d'une décision
   distincte.
-- **Droits** : seuls quatre droits sont publiés :
-  - Nijmegen, libre d'usage ;
-  - MAIA-2 d'origine, domaine public ;
-  - PERMA-Profiler français, gratuit pour cliniciens et chercheurs ;
-  - MSK-HQ, licence à demander.
+- **Droits** : trois usages libres sont publiés, et une condition :
+  - usage libre, selon les auteurs : Nijmegen (non protégé), MAIA-2
+    d'origine (domaine public), PERMA-Profiler français (gratuit pour
+    cliniciens et chercheurs) ;
+  - condition à remplir : MSK-HQ, licence à demander. Ce n'est pas un
+    droit acquis : l'instrument n'est pas utilisable sans elle.
 
-  Le MLQ relève de [[D-570]] §4. Pour tous les autres, rien n'a été
-  trouvé. La question `20261119-1310-b` reste ouverte.
+  Le MLQ relève de [[D-570]] §4. Pour toutes les autres échelles, y compris
+  le GPAQ français, rien n'a été trouvé. Aucune de ces mentions ne vaut
+  autorisation par le cabinet. La question `20261119-1310-b` reste
+  ouverte.
 - **À lire en texte intégral avant tout usage** : PMID 41206253 (MLQ
   français, patients en crise) et PMID 15733628 (DN4), lus au résumé
-  seulement. Les sept notices déjà au registre et nommées par leur
-  seul DOI (parties 1 et 3) n'ont pas été relues ici.
+  seulement. Sept notices déjà au registre, nommées par leur seul
+  DOI, n'ont pas été relues ici : WN-SRC-0551, WN-SRC-0560 et
+  WN-SRC-0756 (partie 1) ; WN-SRC-0548, WN-SRC-0550, WN-SRC-0827 et
+  WN-SRC-0828 (partie 3).
 - **Accès** : PMC, PubMed et doi.org suffisent pour un résumé ou un texte
   libre. Les pages des auteurs et des éditeurs (Open Science Framework,
   page de la MAIA, licence du MSK-HQ) ne sont pas ouvertes au réseau
