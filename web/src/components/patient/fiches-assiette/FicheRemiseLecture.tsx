@@ -84,7 +84,7 @@ export function FicheRemiseLecture({ token, idRemise }: { token: string; idRemis
                 <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Précautions</h2>
                 <ul className="mt-3 list-disc space-y-2 pl-5">
                   {fiche.contenu.precautions.map((precaution, i) => (
-                    <li key={i} className="whitespace-pre-line text-base leading-relaxed text-foreground">{precaution}</li>
+                    <li key={i} className="whitespace-pre-line [overflow-wrap:anywhere] text-base leading-relaxed text-foreground">{precaution}</li>
                   ))}
                 </ul>
               </section>
@@ -93,7 +93,7 @@ export function FicheRemiseLecture({ token, idRemise }: { token: string; idRemis
               <section key={i} className="mt-8">
                 <h2 className="text-lg font-semibold text-foreground">{section.titre}</h2>
                 {section.paragraphes.map((paragraphe, j) => (
-                  <p key={j} className="mt-3 whitespace-pre-line text-base leading-relaxed text-foreground">{paragraphe}</p>
+                  <p key={j} className="mt-3 whitespace-pre-line [overflow-wrap:anywhere] text-base leading-relaxed text-foreground">{paragraphe}</p>
                 ))}
               </section>
             ))}

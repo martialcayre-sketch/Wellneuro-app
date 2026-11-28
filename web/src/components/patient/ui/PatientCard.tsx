@@ -7,7 +7,9 @@ const MAX_WIDTH: Record<'md' | '2xl', string> = {
 
 const PADDING: Record<'sm' | 'lg', string> = {
   sm: 'p-5',
-  lg: 'p-8',
+  // PAT-7n (D-506) : sous 320 px CSS (zoom 200 % au téléphone), la marge
+  // de 32 px ne laissait que 97 px de texte à 195 px ; p-5 en rend 121.
+  lg: 'p-8 max-[319px]:p-5',
 };
 
 // Exporté pour les cartes répétées dans une liste (ex. items du hub), où
