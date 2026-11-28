@@ -1,7 +1,14 @@
 import { describe, expect, it, vi } from 'vitest';
 
-// L'ÉVALUATION REJOUÉE DE [[D-539]] §8, selon [[D-545]] §7 — 24 dossiers
-// fictifs × 3 passages, sous `synthese-v39` et `synthese-biologie-v2`.
+// L'ÉVALUATION REJOUÉE DE [[D-539]] §8, selon [[D-545]] §7 — 25 dossiers
+// fictifs × 3 passages, sous `synthese-v44` et `synthese-biologie-v2`. Le
+// dossier 25 (une demande d'examen déclarée, non faite) s'ajoute aux 24 des
+// évaluations précédentes, qui ne changent pas (D-559 §4, réponse
+// `20261125-1220-b-h95`, C), repris par D-563 §5 pour `synthese-v42` et par
+// D-571 §5 pour `synthese-v43` et par D-573 §4 pour `synthese-v44`. Depuis v43,
+// l'entrée change aussi (D-571 §3, inchangée par D-573) :
+// le contrôle des entrées vérifie, à chaque génération, qu'aucun libellé
+// d'interprétation de `Q_INF_02` ni de `Q_INF_03` n'atteint l'appel principal.
 //
 // DEUX MODES (`WN_EVAL_APPELS`, posé par `lancer.sh`) :
 // - `principal` ([[D-556]] §5 et §6, [[D-557]] §3) : l'appel principal SEUL.
@@ -19,7 +26,7 @@ import { describe, expect, it, vi } from 'vitest';
 //
 // Conditions du §8 : hors production (rien ne lit ni n'écrit une base : Prisma
 // est simulé, en mémoire), dossiers entièrement fictifs ([[D-125]],
-// `dossiers.ts`), les vraies consignes (`synthese-v39`,
+// `dossiers.ts`), les vraies consignes (`synthese-v44`,
 // `synthese-biologie-v2`), le modèle de production, le vrai lecteur et le vrai
 // constructeur du bloc, et le vrai assemblage : la VRAIE route
 // `POST /api/praticien/synthese`, comme le banc de chaîne
@@ -163,6 +170,8 @@ import { VERSION_PROMPT_SYNTHESE_BIOLOGIE } from '@/lib/synthese/appelBiologie';
 import { LIBELLES_MOTIFS_BLOC } from '@/lib/clinical/blocBiologieSynthese';
 import { lireBlocBiologiePourSynthese } from '@/lib/clinical/blocBiologieSyntheseService';
 import { POST } from '@/app/api/praticien/synthese/route';
+import { buildMiniSynthese } from '@/lib/scoring/miniSynthese';
+import { interpretationNonTransmise, libellesDuCatalogue } from '@/lib/synthese/interpretationNonTransmise';
 import { COUVERTURE_LUE_SUR_LE_BLOC, couvertureManquante, DOSSIERS, type Dossier } from './dossiers';
 
 const als = new AsyncLocalStorage<Contexte>();
@@ -172,7 +181,7 @@ for (const d of DOSSIERS) etat.dossiers.set(d.idPatient, d);
 const PASSAGES = 3;
 const MODELE_PRODUCTION = 'claude-sonnet-4-6';
 // La consigne principale servie par `main` ; à reporter avec elle à chaque version.
-const VERSION_EVALUEE = 'synthese-v39';
+const VERSION_EVALUEE = 'synthese-v44';
 type Mode = 'principal' | 'deux';
 const MODE: Mode | null = process.env.WN_EVAL_APPELS === 'principal' || process.env.WN_EVAL_APPELS === 'deux'
   ? process.env.WN_EVAL_APPELS
@@ -186,6 +195,31 @@ function morceauxDuBloc(texteBloc: string): string[] {
     'Lecture déterministe du dossier',
     ...texteBloc.split('\n').filter(l => l.startsWith('- Prélevé le ')),
   ];
+}
+
+/**
+ * [[D-571]] §3 et §5 : les libellés d'interprétation des passations de la liste
+ * fermée que porte le dossier — bandes du catalogue, libellé global de la
+ * passation et mini-synthèse de ses scores —, qu'aucun appel principal ne doit
+ * recevoir. Comparés sans casse : la mini-synthèse abaisse l'initiale.
+ */
+function libellesInterdits(d: Dossier): string[] {
+  const libelles = new Set<string>();
+  for (const r of d.reponses as Array<{ idQuestionnaire: string; scoresJson?: unknown; interpretation?: string | null }>) {
+    if (!interpretationNonTransmise(r.idQuestionnaire)) continue;
+    for (const l of libellesDuCatalogue(r.idQuestionnaire)) libelles.add(l);
+    if (r.interpretation?.trim()) libelles.add(r.interpretation.trim());
+    const mini = buildMiniSynthese(r.scoresJson as Parameters<typeof buildMiniSynthese>[0]);
+    if (mini.trim()) libelles.add(mini.trim());
+  }
+  return [...libelles];
+}
+
+/** Le texte des messages d'un appel, tel qu'envoyé. */
+function texteDesMessages(messages: unknown): string {
+  return (messages as { content: unknown }[])
+    .map(m => (typeof m.content === 'string' ? m.content : JSON.stringify(m.content)))
+    .join('\n');
 }
 
 type Generation = {
@@ -239,6 +273,17 @@ async function generer(d: Dossier, passage: number, mode: Mode, blocConstruit: s
           principalSansBloc = false;
           ecarts.push(`appel principal : morceau du bloc présent (${m.slice(0, 40)}…)`);
         }
+      }
+    }
+  }
+  // D-571 §5 : aucun libellé de la liste fermée n'atteint l'appel principal.
+  const interdits = libellesInterdits(d);
+  for (const a of principaux) {
+    const envoye = texteDesMessages(a.messages).toLowerCase();
+    for (const l of interdits) {
+      if (envoye.includes(l.toLowerCase())) {
+        principalSansBloc = false;
+        ecarts.push(`appel principal : libellé d'interprétation transmis (D-571 §3, ${l.slice(0, 30)}…)`);
       }
     }
   }
@@ -318,7 +363,7 @@ async function enParallele<T, R>(items: T[], largeur: number, f: (t: T) => Promi
 }
 
 describe('D-539 §8, selon D-545 §7 (D-557 §3 en mode principal) — évaluation rejouée (appels réels au fournisseur)', () => {
-  it('relève les 72 générations et vérifie les entrées', async () => {
+  it('relève les 75 générations et vérifie les entrées', async () => {
     const sortie = process.env.WN_EVAL_SORTIE;
     expect(process.env.WN_EVAL_D539_CONFIRME, 'lancer par scripts/eval-d539/lancer.sh').toBe('1');
     expect(MODE, 'WN_EVAL_APPELS : principal ou deux').not.toBeNull();
@@ -330,6 +375,8 @@ describe('D-539 §8, selon D-545 §7 (D-557 §3 en mode principal) — évaluati
     expect(VERSION_PROMPT_SYNTHESE).toBe(VERSION_EVALUEE);
     expect(VERSION_PROMPT_SYNTHESE_BIOLOGIE).toBe('synthese-biologie-v2');
     expect(couvertureManquante()).toEqual([]);
+    // D-571 §5 : le contrôle des libellés n'est pas vide — sinon il ne prouve rien.
+    expect(DOSSIERS.filter(d => libellesInterdits(d).length > 0).length, 'aucun dossier ne porte Q_INF_02 ni Q_INF_03').toBeGreaterThan(0);
 
     vi.stubEnv('WN_SYNTHESE_BIOLOGIE_ENABLED', 'true');
     vi.stubEnv('WN_CB_RESULTS_ENABLED', 'true');
@@ -363,7 +410,7 @@ describe('D-539 §8, selon D-545 §7 (D-557 §3 en mode principal) — évaluati
     const usage = { input_tokens: 0, output_tokens: 0, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 };
     for (const g of generations) for (const a of g.appels) for (const k of Object.keys(usage) as (keyof typeof usage)[]) usage[k] += a.usage[k] ?? 0;
     const resume = {
-      decision: mode === 'principal' ? 'D-557 §3 (appel principal seul, D-556 §5 et §6)' : 'D-539 §8, selon D-545 §7',
+      decision: mode === 'principal' ? 'D-573 §4 (appel principal seul, D-571 §5, D-556 §5 et §6)' : 'D-539 §8, selon D-545 §7',
       appels: mode,
       commit: process.env.WN_EVAL_COMMIT ?? null,
       modele: CLAUDE_MODEL,

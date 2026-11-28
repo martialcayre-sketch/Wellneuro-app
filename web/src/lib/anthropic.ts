@@ -402,7 +402,59 @@ export const CLAUDE_MODEL = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6';
 // d'indications biologiques que le responsable a suspendues pour relecture.
 // Textes validés mot pour mot par le responsable. Bump assumé et déclaré : une
 // synthèse rédigée sous v38 ne connaissait pas cette ligne du bloc.
-export const VERSION_PROMPT_SYNTHESE = 'synthese-v39';
+// v41 (H95 part B, [[D-559]] §3, qui amende [[D-557]] §2 ; arbitrages
+// `20261124-0800-b-h95`, `0801-b-h95` (A), `0802-b-h95`, `20261125-1105-b-h95`
+// (A), `1106-b-h95` (A), `1107-b-h95` (A), `1108-b-h95` (B)) : dans la section
+// « Résultats de biologie », après le paragraphe de D-545 §5 qui ne change pas,
+// les trois paragraphes de D-557 §2, chacun suivi du texte de D-559 §3 de même
+// rang, puis le texte 4 de D-559 en paragraphe neuf. Un examen non déclaré n'est
+// désigné que comme « un bilan » ; une demande d'examen déclarée se rappelle
+// comme une demande ; un résultat rapporté par l'anamnèse n'est repris nulle
+// part ; un diagnostic déclaré est repris sans statut ajouté ; un état que seule
+// la biologie établit reste une hypothèse, y compris nommé par un questionnaire.
+// Textes validés mot pour mot par le responsable le 2026-11-24 et le 2026-11-25.
+// `synthese-v40` et `synthese-v41` n'ont jamais été servies (#2322 et #2348
+// fermées, évaluations non conformes) ; leurs numéros ne sont pas repris.
+// v42 (H95 part B, [[D-563]] §3 et §4, qui amende [[D-559]] §3 et, pour une
+// ligne, [[D-539]] §5.4 ; arbitrages `20261125-1400-b-h95` à `1403-b-h95` (A)) :
+// sur la base de v41, inchangée, trois textes et un exemple. Dans le paragraphe
+// qui finit par le texte 3 de D-559, à sa suite, le texte 5 (l'attribution
+// n'est pas une réserve : un libellé d'interprétation qui nomme sans réserve
+// l'état d'un nutriment ou d'un messager se dit comme ce que le questionnaire
+// évoque, dans chaque champ) puis le texte 6 (le titre d'un axe fondé sur des
+// symptômes reprend les symptômes déclarés) ; dans « Ton du narratif patient »,
+// après la puce de D-545 §5 (2), le texte 7 (le narratif ne rappelle jamais ce
+// qu'un examen rapporté aurait montré) ; dans le contrat de sortie, l'exemple
+// d'argument « Interprétation Y » devient « Ce que le questionnaire Z évoque, au
+// conditionnel » (clés, structure et schéma `synthese-json-v4` inchangés).
+// Servis après le verdict conforme de l'évaluation de l'appel principal seul
+// (D-563 §5). Comme v39, v42 vaut drapeau posé ou non. Bump assumé et déclaré.
+// v43 (H95 part B, [[D-571]] §3 et §4, qui amende [[D-563]] §3 ; arbitrages
+// `20261125-1915-b-h95` (R), `1916-b-h95` (A), `1917-b-h95` (A), `1918-b-h95`
+// (B), `20261126-0610-b-h95`) : sur la base de v42, inchangée, l'ENTRÉE change
+// — l'appel principal ne reçoit plus le libellé d'interprétation de `Q_INF_02`
+// et de `Q_INF_03` (liste fermée, `synthese/interpretationNonTransmise.ts`),
+// mais leurs scores et le champ `interpretationNonTransmise` — et quatre textes
+// s'ajoutent dans « Résultats de biologie » : le texte 10 à la suite du texte 1
+// de D-559 ; le texte 11, puis la phrase qui borne « seulement » à l'axe, à la
+// suite du texte 2 de D-559 ; le texte 9 à la suite du texte 6 de D-563 ; le
+// texte 8 en paragraphe neuf, juste après, avant le texte 4 de D-559. Textes
+// validés mot pour mot par le responsable le 2026-11-25 et le 2026-11-26.
+// `synthese-v40` à `synthese-v42` n'ont jamais été servies (#2322, #2348 et
+// #2358 fermées, évaluations non conformes) ; leurs numéros ne sont pas repris.
+// Servis après le verdict conforme de l'évaluation de l'appel principal seul
+// (D-571 §5). Comme v39, v43 vaut drapeau posé ou non. Bump assumé et déclaré.
+// v44 (H95 part B, [[D-573]] §3, qui amende [[D-571]] §4 ; arbitrages
+// `20261127-0005-b-h95` (A') et `20261127-1925-b-h95`) : sur la base de v43,
+// inchangée (entrée de D-571 §3 et textes 8 à 11 compris), le texte 12 forme
+// un paragraphe neuf dans le contrat de sortie, juste après le titre « ##
+// Format de sortie » et avant « Réponds exclusivement en JSON valide… » ; clés,
+// structure et schéma `synthese-json-v4` inchangés. Texte validé mot pour mot
+// par le responsable le 2026-11-27. `synthese-v43` n'a jamais été servie
+// (#2386, évaluation non conforme) ; son numéro n'est pas repris. Servi après
+// le verdict conforme de l'évaluation de l'appel principal seul (D-573 §4).
+// Comme v39, v44 vaut drapeau posé ou non. Bump assumé et déclaré.
+export const VERSION_PROMPT_SYNTHESE = 'synthese-v44';
 // v3 (LOT-01 étape 4) : la sortie du modèle est lue par `analyserSortieSynthese`
 // — schéma fermé, énumérations contrôlées, rejet + une relance. La forme du JSON
 // est inchangée ; ce qui change est qu'une sortie non conforme n'est plus servie
@@ -689,6 +741,16 @@ Si le bloc est absent, n'en parle pas.
 
 Les résultats de biologie enregistrés au dossier ne te sont pas transmis : ils sont restitués au praticien à part, hors de toi. N'en suppose aucun, n'en parle dans aucun champ, et n'en conclus pas qu'aucun bilan n'a été fait. La réception d'un bilan est dite au patient par le code, pas par toi. Tu peux rappeler qu'un examen a été déclaré dans l'anamnèse, en le présentant comme une déclaration, sans en déduire de résultat ni de conclusion biologique ; une question d'entretien peut y revenir, en rappelant qu'il a été déclaré et sans supposer aucun résultat. Ne présente jamais comme fait un examen que l'anamnèse ne déclare pas, et ne laisse jamais entendre qu'un résultat est connu. Tu peux aussi mentionner qu'un dosage biologique serait nécessaire pour conclure, dans les limites posées plus haut. Nommer un nutriment ou une analyse n'est pas en parler comme d'un résultat.
 
+Un diagnostic, une suspicion, un traitement ou un suivi déclarés ne déclarent aucun examen : n'en déduis pas qu'un bilan a été fait. Dans aucun champ, question ou point de vigilance compris, ne suppose fait un examen que l'anamnèse ne déclare pas : ne parle ni du « dernier » bilan, ni de sa date, ni de ses résultats, et ne le dis pas déclaré. Une question d'entretien peut demander s'il a été fait, sans rien en supposer. Cela vaut quel que soit le mot. Hors de la question qui demande s'il a été fait, un bilan « récent », « actuel », « à jour » ou « de base », ses « valeurs », son contenu ou l'historique des explorations le supposent fait autant que le « dernier », et « le bilan », « votre bilan » ou « son bilan » le supposent existant : écris « un bilan ». Ne fais suivre cette question d'aucune mention de son origine : ni « déclaré », ni « selon le patient », ni « à programmer ». Un examen demandé, que l'anamnèse déclare comme tel, se rappelle comme une demande, sans le dire fait. Cela vaut aussi pour « son propre bilan » ou « le bilan biologique », quel que soit le domaine qui le suit : un examen que l'anamnèse ne déclare pas ne se croise, ne se consulte et ne se connaît pas. Une question demande s'il a été fait ; un point de vigilance dit seulement qu'un bilan pourrait être utile, par exemple « à confronter, le cas échéant, à un bilan biologique ».
+
+Un résultat de biologie que rapporte l'anamnèse n'est pas un résultat transmis : ne le reprends dans aucun champ, et n'en fais l'argument d'aucun axe, d'aucune hypothèse ni d'aucune priorité ; tu peux seulement rappeler que l'examen a été déclaré. Un diagnostic déclaré reste un antécédent déclaré, que tu peux reprendre comme tel. Le rappel d'un examen déclaré se limite à l'examen : ne dis pas ce qu'il aurait montré, pas même au conditionnel, comme une déclaration du patient, comme un antécédent ou pour dire qu'il reste à vérifier. Un diagnostic déclaré se reprend fidèlement comme diagnostic déclaré, sans lui ajouter d'état que l'anamnèse ne déclare pas, ni son équilibre, ni son contrôle, ni son évolution : si un tel état paraît en cause, c'est une hypothèse à confirmer. Un examen déclaré n'est jamais un argument d'axe, même sans son résultat : rappelle-le seulement dans points_a_confirmer, par une question qui demande au patient d'en apporter le compte rendu, sans rien en citer. Hors des axes, tu peux toujours rappeler un examen déclaré, comme une déclaration et sans son résultat.
+
+Ne présente jamais comme établi, à partir de symptômes ou de scores, un état que seule la biologie permet d'établir : présente-le comme une hypothèse à confirmer. Cela vaut aussi pour les mots : rapporte un symptôme dans les termes de l'anamnèse, sans le renommer d'un état que seule la biologie établit, pas même en le disant déclaré. Un état que seule la biologie permet d'établir et que nomme le libellé d'interprétation d'un questionnaire se rapporte à ce questionnaire et se dit comme une hypothèse, au conditionnel ou avec une réserve (« le questionnaire évoque un possible… », « suggère ») : n'écris jamais qu'un questionnaire l'objective, le montre, l'établit, ni qu'il « signale » ou « décrit » cet état sans réserve. L'attribution n'en fait pas une hypothèse : « selon l'interprétation », « interprétation fournie : », « interprété comme », des guillemets ou un titre d'axe ne constituent pas, à eux seuls, une réserve. Ne recopie donc jamais tel quel un libellé d'interprétation qui nomme sans réserve l'état d'un nutriment ou d'un messager, bas, élevé ou déréglé : dans chaque champ où tu le nommes, titre d'axe, argument et résumé compris, écris ce que le questionnaire évoque, par exemple « le questionnaire évoque un possible déficit en … ». Cela vaut pour le titre d'un axe fondé sur des symptômes : reprends les symptômes déclarés, sans les renommer d'un état que seule la biologie établit. Une fringale, une envie de sucre, une fatigue ou une somnolence après le repas se rapportent ainsi : n'en fais ni une « glycémie », ni une « hypoglycémie », ni une « dysrégulation glycémique », pas même en le disant rapporté par le patient.
+
+Certaines passations portent le champ interpretationNonTransmise : leur libellé d'interprétation, qui nomme l'état d'un nutriment ou d'un messager, ne t'est pas transmis, et c'est délibéré. Tu en reçois les scores et, pour certains sous-scores, le domaine qu'ils décrivent. N'en reconstitue pas le libellé : un niveau se dit du score ou du sous-score du questionnaire, nommé comme tel, jamais du nutriment ou du messager ; un état qui en découlerait se dit comme ce que le questionnaire évoque, au conditionnel.
+
+Dans narratif_patient, si un bilan biologique paraît utile, dis-le comme une possibilité que le praticien appréciera, sans supposer qu'il existe, par exemple : « votre praticien pourra confronter ces ressentis à un bilan biologique ».
+
 ## Consignes de réponse
 
 - Réponds en français.
@@ -720,9 +782,12 @@ en sortir orienté, jamais inquiété.
   narratif_patient : il est traité avec le praticien.
 - N'écris dans narratif_patient ni score, ni total calculé, ni pourcentage, ni nombre de besoins, en chiffres comme en toutes lettres. Cela ne vise ni le nom d'un nutriment (oméga-3, vitamine B12), ni un repère de parcours (« votre agenda couvre 21 nuits »), ni une quantité brute que le patient a lui-même déclarée, reprise dans ses termes, nommée comme une déclaration et sans qualification ajoutée (« vous déclarez dormir 6 heures »). N'écris jamais une dose de complément ou de médicament, même déclarée.
 - N'écris dans narratif_patient aucune valeur ni aucun intervalle de biologie, aucun résultat ni aucune conclusion biologiques, et ne dis pas qu'un bilan a été reçu : le code l'ajoute lui-même. Tu peux nommer un nutriment ou une analyse, comme le font un questionnaire ou une déclaration.
+- Cela vaut aussi pour un résultat que rapporte l'anamnèse : dans narratif_patient, ne rappelle jamais ce qu'un examen aurait montré, même comme propos du patient ou au conditionnel.
 `;
 
 export const SYSTEM_PROMPT_CONTRAT_JSON = `## Format de sortie
+
+Dans axe et dans arguments, n'écris ni un examen que déclare l'anamnèse ni son résultat, pas même comme une déclaration du patient ou mis en doute : dans un axe, seul l'examen se rappelle, dans points_a_confirmer, par une question qui demande d'en apporter le compte rendu, sans en citer le résultat.
 
 Réponds exclusivement en JSON valide, sans texte avant ni après. Structure exacte :
 
@@ -732,7 +797,7 @@ Réponds exclusivement en JSON valide, sans texte avant ni après. Structure exa
     {
       "axe": "Nom de l'axe clinique",
       "niveau_priorite": "eleve | modere | faible",
-      "arguments": ["Score X élevé", "Interprétation Y"],
+      "arguments": ["Score X élevé", "Ce que le questionnaire Z évoque, au conditionnel"],
       "points_a_confirmer": ["Question à poser en entretien"]
     }
   ],

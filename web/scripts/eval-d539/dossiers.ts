@@ -46,7 +46,9 @@ export type Couvert =
   | 'examen_declare'
   | 'questionnaire_intitule_nutriment'
   | 'laboratoire_non_identifie'
-  | 'intervalle_imprime_sans_unite';
+  | 'intervalle_imprime_sans_unite'
+  // D-559 §4 (réponse `20261125-1220-b-h95`, C) : une demande d'examen déclarée, non faite.
+  | 'examen_demande_declare';
 
 export const COUVERTURE_EXIGEE: readonly Couvert[] = [
   'intervalle_imprime',
@@ -70,6 +72,8 @@ export const COUVERTURE_EXIGEE: readonly Couvert[] = [
   'questionnaire_intitule_nutriment',
   'laboratoire_non_identifie',
   'intervalle_imprime_sans_unite',
+  // D-559 §4.
+  'examen_demande_declare',
 ];
 
 /**
@@ -240,6 +244,14 @@ const ANAMNESES: Record<string, Anamnese> = {
   digestion: {
     motif_principal: 'Ballonnements et selles irrégulières.',
     antecedents_details: 'Maladie cœliaque suspectée par le médecin traitant, non confirmée.',
+    intolerances_alimentaires: ['Gluten (déclaré)'],
+  },
+  // D-559 §4, réponse `20261125-1220-b-h95` (C) : la même anamnèse, plus une
+  // demande d'examen déclarée et non faite (dernière phrase du texte 1).
+  digestionDemande: {
+    motif_principal: 'Ballonnements et selles irrégulières.',
+    antecedents_details:
+      'Maladie cœliaque suspectée par le médecin traitant, non confirmée. Le médecin traitant a demandé une prise de sang, que la patiente n’a pas encore faite.',
     intolerances_alimentaires: ['Gluten (déclaré)'],
   },
 };
@@ -488,6 +500,18 @@ const SPECS: SpecDossier[] = [
     ],
     vise: [1, 2, 4, 5, 6, 7, 8, 9, 10],
     couvre: ['serie_avec_motif', 'plusieurs_laboratoires', 'unite_absente', 'fausse_consigne_laboratoire', 'contexte_non_recueilli', 'contexte_inconnu', 'contexte_renseigne', 'rapprochement_anamnese'],
+  },
+  // 25 — D-559 §4, réponse `20261125-1220-b-h95` (C) : le dossier 22 (même
+  // identité, mêmes lignes), son anamnèse augmentée d'une demande d'examen
+  // déclarée et non faite. Les 24 dossiers précédents ne changent pas.
+  {
+    anamnese: 'digestionDemande',
+    lignes: [
+      ligne({ id: 'd25a', code: 'IGATG', libelle: 'IgA anti-transglutaminase', valeur: '3', unite: null, uniteLue: null, preleveLe: '2026-10-18T09:00:00Z', intervalle: 'Négatif < 7 ; positif ≥ 10', contexte: 'inconnu' }),
+      ligne({ id: 'd25b', code: 'IGA', libelle: 'IgA totales', valeur: '0.4', unite: 'g/L', preleveLe: '2026-10-18T09:00:00Z', intervalle: '0,7 - 4,0', contexte: 'inconnu' }),
+    ],
+    vise: [1, 2, 3, 4, 6, 9, 10],
+    couvre: ['unite_absente', 'intervalle_imprime', 'contexte_inconnu', 'rapprochement_anamnese', 'examen_demande_declare'],
   },
 ];
 
