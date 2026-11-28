@@ -34,9 +34,11 @@
   libres lus dans PubMed Central ; DOI résolus par doi.org ; métadonnées des
   références hors PubMed lues dans Crossref.
 - **Aucune référence de mémoire.** Une source n'est gardée que si son PMID
-  existe, que son DOI se résout et que l'emplacement invoqué a été lu.
+  existe ou que son DOI se résout, et que l'emplacement invoqué a été lu.
   Cet emplacement est le résumé PubMed, ou une section du texte intégral
-  libre. Une référence dont le DOI se résout mais dont rien n'a pu être lu
+  libre. Une source indexée dans PubMed dont le DOI ne se résout pas est
+  gardée par son PMID quand son emplacement a été lu, et le document le
+  signale : un seul cas, PMID 41333604 (texte intégral PMC lu). Une référence dont le DOI se résout mais dont rien n'a pu être lu
   (éditeur fermé au réseau cloud, aucun résumé dans Crossref) est inscrite
   comme **piste non lue**. Elle n'est pas gardée.
 - Les requêtes menées, avec leur nombre de résultats, sont en annexe.
@@ -246,7 +248,7 @@ Toutes dans PubMed, le 2026-11-28 ; nombre de résultats entre crochets.
 - `Life's Essential 8[tiab] AND (presidential advisory[tiab] OR scoring[tiab]) AND American Heart Association[tiab]` → 28
 - `(equal weight*[tiab]) AND (composite[tiab] OR index[tiab]) AND (well-being[tiab] OR wellbeing[tiab]) AND (sensitivity analysis[tiab] OR robustness[tiab])` → 0
 - `(frailty index[tiab]) AND (deficit accumulation[tiab]) AND (equal weight*[tiab] OR unweighted[tiab] OR weighting[tiab])` → 3, 0 candidat
-- Crossref (DOI des quatre pistes non lues) : métadonnées seulement, aucun résumé ; éditeur injoignable depuis le réseau cloud.
+- Crossref (DOI des quatre pistes non lues de cette famille) : métadonnées seulement, aucun résumé ; éditeur injoignable depuis le réseau cloud.
 
 ### Familles 5 et 6
 - `neuronutrition[tiab] OR neuro-nutrition[tiab]` → 39, 0 candidat sur une hiérarchie
@@ -260,5 +262,6 @@ Toutes dans PubMed, le 2026-11-28 ; nombre de résultats entre crochets.
   et l'année concordent avec PubMed, sans écart. 28 des DOI se résolvent
   (doi.org, 302). Le DOI indexé de PMID 41333604 rend 404 : la source est
   gardée par son PMID et son texte PMC.
-- Les quatre DOI de pistes non lues se résolvent (302) et leurs métadonnées
-  Crossref ont été lues. Leur contenu n'a pas été lu.
+- Les cinq DOI de pistes non lues (un en famille 1, quatre en famille 4) se
+  résolvent (302), et leurs métadonnées Crossref ont été lues, sans résumé.
+  Leur contenu n'a pas été lu.

@@ -72,3 +72,16 @@ Pour chaque famille, les candidats résolus ou un « non trouvé » documenté.
   après « prête ».
 - Aucune adresse de page privée dans le dépôt ; ne jamais supprimer une
   ligne des registres.
+
+## Suite du 2026-11-28 (session de reprise de l'orchestrateur)
+
+- Arbitrage du responsable (D-518) : « Fusion ». `origin/main` a été fusionné
+  dans la branche, sans conflit.
+- Les deux remarques de PR-Agent sont corrigées dans `HIERARCHIE.md` :
+  - « Règle de méthode non respectée » : la règle dit maintenant « PMID ou
+    DOI », comme le titre du lot, et nomme le seul cas gardé par son PMID
+    (PMID 41333604, DOI indexé en 404, texte PMC lu) ;
+  - « Comptage incohérent » : il y a cinq pistes non lues (une en famille 1,
+    quatre en famille 4). Le DOI de la famille 1 a été vérifié le
+    2026-11-28 : il rend 302, et Crossref ne porte pas de résumé.
+- `npm run check` (T1 complet) rejoué après la fusion et les corrections.
