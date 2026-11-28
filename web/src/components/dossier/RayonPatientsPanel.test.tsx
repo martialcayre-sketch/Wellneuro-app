@@ -949,6 +949,31 @@ describe('RayonPatientsPanel — ornement d’état vide (PRA-2 décor)', () => 
     expect(await screen.findByText('Aucun patient.')).toBeTruthy();
     expect(container.querySelector(ORNEMENT)).toBeNull();
   });
+
+  // Constat PR-Agent sur #2411 : le germe suit la recherche qui a produit le
+  // tableau affiché, pas la saisie en cours.
+  it('le germe suit la recherche lue : absent après « zzz », de retour une fois la recherche effacée et relue', async () => {
+    const appels: string[] = [];
+    stubFetch({
+      surPatients: url => {
+        appels.push(url);
+        return tableau(url) ? VIDE : { patients: [], assignations: [] };
+      },
+    });
+    const { container } = render(<RayonPatientsPanel />);
+    await screen.findByText('Aucun patient.');
+    expect(container.querySelector(ORNEMENT)).not.toBeNull();
+
+    const champ = screen.getByPlaceholderText('Rechercher (nom, prénom, email)');
+    fireEvent.change(champ, { target: { value: 'zzz' } });
+    await waitFor(() => expect(container.querySelector(ORNEMENT)).toBeNull(), { timeout: 2000 });
+    expect(appels.some(a => a.includes('search=zzz'))).toBe(true);
+
+    const avant = appels.length;
+    fireEvent.change(champ, { target: { value: '' } });
+    await waitFor(() => expect(appels.slice(avant).some(a => tableau(a) && !a.includes('search='))).toBe(true), { timeout: 2000 });
+    await waitFor(() => expect(container.querySelector(ORNEMENT)).not.toBeNull(), { timeout: 2000 });
+  });
 });
 
 // T-17 « Réessayer » ([[D-488]], DOC-6) : relit le seul tableau, avec la

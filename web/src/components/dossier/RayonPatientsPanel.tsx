@@ -87,6 +87,10 @@ export function RayonPatientsPanel({ lienMagiqueActif = false }: { lienMagiqueAc
   const [sortBy, setSortBy] = useState<SortBy>('nom');
   const [page, setPage] = useState(1);
   const [tablePatients, setTablePatients] = useState<PatientsApiResponse['patients']>([]);
+  // La recherche qui a produit le tableau affiché, et non la saisie en cours :
+  // le germe du cabinet vide (PRA-2 décor) n'apparaît jamais sur le résultat
+  // d'une recherche, même pendant la relecture qui suit son effacement.
+  const [rechercheTable, setRechercheTable] = useState('');
   const [pagination, setPagination] = useState<PatientsPagination | null>(null);
   const [loadingTable, setLoadingTable] = useState(true);
   // Lecture du tableau en échec (PRA-2a, X03) : jamais présentée comme une
@@ -141,6 +145,7 @@ export function RayonPatientsPanel({ lienMagiqueActif = false }: { lienMagiqueAc
       }
       setErreurTable(null);
       setTablePatients(json.patients);
+      setRechercheTable(currentSearch.trim());
       setPagination(json.pagination ?? null);
     } catch {
       setTablePatients([]);
@@ -540,7 +545,7 @@ export function RayonPatientsPanel({ lienMagiqueActif = false }: { lienMagiqueAc
                   {/* Ornement d'état vide réel ([[D-481]] §1 bis ; PRA-2 décor, Q1 A
                       et Q2 de la question 20261128-0838-d) : cabinet vide, jamais
                       une recherche sans résultat, qui garde la même phrase. */}
-                  {!search.trim() && (
+                  {!rechercheTable && (
                     <LienDecor emplacement="etat-vide" element="nutrition-sprout" className="mx-auto mb-3 w-40 max-w-full" />
                   )}
                   Aucun patient.

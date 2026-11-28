@@ -31,7 +31,7 @@ Lot PRA-2 décor, états vides, de la refonte Lien côté praticien. Il pose le 
   - **Q2** : les six vides du corps ;
   - **Q3** : captures téléversées dans l'artefact. Le premier essai avait été refusé par le classifieur du mode auto, le second a été fait après la réponse.
 - **Pose** : `<LienDecor emplacement="etat-vide" element="nutrition-sprout" className="mx-auto mb-3 w-40 max-w-full" />`.
-  - Patients : dans la cellule, sous la condition `!search.trim()`.
+  - Patients : dans la cellule, sous la condition `!rechercheTable`, c'est-à-dire la recherche qui a produit le tableau affiché, et non la saisie en cours. C'est le correctif du constat PR-Agent sur `c8e2acef` : avec `!search.trim()`, effacer une recherche sans résultat aurait montré le germe sur ce résultat jusqu'à la relecture.
   - Agenda : la phrase passe dans un `div` avec le germe. Son texte ne change pas.
   - Aucun texte neuf, aucune classe d'affichage passée à la primitive.
 - **Non ornés** :
@@ -60,6 +60,7 @@ Lot PRA-2 décor, états vides, de la refonte Lien côté praticien. Il pose le 
 - E2E `praticien-etats-vides-decor.spec.ts` en local (`next dev`, base du worktree) : 24 passés (Chromium bureau, WebKit iPhone 13). Un premier passage avait rougi 10 tests sur une mesure fausse du banc (boîte de l'élément au lieu du nœud texte), corrigée avant le vert.
 - Constat local du code réel, sur les six écrans au bureau et à l'iPhone 13 : un germe centré au-dessus de la phrase. Le compteur « 3 patient(s) » de la capture de Patients vient de la sonde, qui ne vidait que le tableau.
 - T1 complet (`npm run check`) : 0.
+- Après le correctif PR-Agent (Patients) : Vitest de `RayonPatientsPanel` 66 passés, banc de régression compris ; E2E Patients 4 passés ; T1 et T1 complet : 0.
 - T2 (`npm run test:worktree -- --fast`) : son résultat est dans la déclaration « prête ».
 
 ## Problèmes ouverts
